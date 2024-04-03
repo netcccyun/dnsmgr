@@ -31,10 +31,21 @@
 ### 部署方法
 
 * 从[Release](https://github.com/netcccyun/dnsmgr/releases)页面下载安装包
+
 * 运行环境要求PHP7.4+，MySQL5.6+
+
 * 设置网站运行目录为`public`
+
 * 设置伪静态为`ThinkPHP`
+
+* 如果是下载的Source code包，还需Composer安装依赖（Release页面下载的安装包不需要）
+
+  ```
+  composer install --no-dev
+  ```
+
 * 访问网站，会自动跳转到安装页面，根据提示安装完成
+
 * 访问首页登录控制面板
 
 ##### 伪静态规则
