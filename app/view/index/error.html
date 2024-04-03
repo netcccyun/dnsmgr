@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>抱歉，出错了</title>
+    <link href="//res.wx.qq.com/open/libs/weui/0.4.3/weui.css" rel="stylesheet">
+    <style>.page{position:absolute;top:0;right:0;bottom:0;left:0;overflow-y:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box}</style>
+</head>
+<body>
+    <div class="weui_msg">
+        <div class="weui_icon_area"><i class="weui_icon_info weui_icon_msg"></i></div>
+        <div class="weui_text_area">
+            <h4 class="weui_msg_title">{$errmsg}</h4>
+        </div>
+    </div>
+<script>
+document.body.addEventListener('touchmove', function (event) {
+	event.preventDefault();
+},{ passive: false });
+</script>
+</body>
+</html>

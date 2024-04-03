@@ -1,0 +1,60 @@
+{extend name="common/layout" /}
+{block name="title"}修改密码{/block}
+{block name="main"}
+<div class="row">
+<div class="col-xs-12 col-sm-8 col-lg-6 center-block" style="float: none;">
+<div class="panel panel-primary">
+<div class="panel-heading"><h3 class="panel-title">修改密码</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveAccount(this)" method="post" class="form" role="form">
+	<div class="form-group">
+	  <label>旧密码：</label>
+	  <input type="password" name="oldpwd" value="" class="form-control"  placeholder="请输入当前的密码" required/>
+	</div>
+    <div class="form-group">
+	  <label>新密码：</label>
+	  <input type="password" name="newpwd" value="" class="form-control"  placeholder="" required/>
+	</div>
+    <div class="form-group">
+	  <label>重输密码：</label>
+	  <input type="password" name="newpwd2" value="" class="form-control"  placeholder="" required/>
+	</div>
+	<div class="form-group text-center">
+	  <input type="submit" name="submit" value="确定" class="btn btn-success btn-block"/>
+	</div>
+  </form>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script>
+function saveAccount(obj){
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'POST',
+		url : '/setpwd',
+		data : $(obj).serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert('密码修改成功！请重新登录。', {
+					icon: 1,
+					closeBtn: false
+				}, function(){
+				  window.location.reload()
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+	return false;
+}
+</script>
+{/block}

@@ -1,0 +1,77 @@
+{extend name="common/layout" /}
+{block name="title"}操作日志{/block}
+{block name="main"}
+
+<div class="row">
+	<div class="col-xs-12 center-block" style="float: none;">
+	<div class="panel panel-default panel-intro">
+	<div class="panel-body">
+	
+<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
+  <div class="form-group">
+	<label>搜索</label>
+    {if request()->user['level'] eq 2}<input type="text" class="form-control" name="uid" placeholder="UID">{/if}
+	<input type="text" class="form-control" name="domain" placeholder="域名">
+	<input type="text" class="form-control" name="kw" placeholder="操作类型/操作详情">
+  </div>
+  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
+  <a href="javascript:searchClear()" class="btn btn-default" title="刷新日志列表"><i class="fa fa-refresh"></i> 刷新</a>
+</form>
+
+      <table id="listTable">
+	  </table>
+    </div>
+  </div>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="{$cdnpublic}bootstrap-table/1.20.2/bootstrap-table.min.js"></script>
+<script src="{$cdnpublic}bootstrap-table/1.20.2/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
+<script src="/static/js/custom.js"></script>
+<script>
+$(document).ready(function(){
+	updateToolbar();
+	const defaultPageSize = 15;
+	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+
+	$("#listTable").bootstrapTable({
+		url: '/log/data',
+		pageNumber: pageNumber,
+		pageSize: pageSize,
+		classes: 'table table-striped table-hover table-bordered',
+		columns: [
+			{
+				field: 'id',
+				title: 'ID'
+			},
+			{
+				field: 'uid',
+				title: 'UID',
+				formatter: function(value, row, index) {
+					return value>0?'<a href="/user?kw='+value+'" target="_blank">'+value+'</a>':'管理员';
+				}
+			},
+			{
+				field: 'domain',
+				title: '域名'
+			},
+			{
+				field: 'action',
+				title: '操作类型'
+			},
+            {
+				field: 'data',
+				title: '操作详情'
+			},
+			{
+				field: 'addtime',
+				title: '时间'
+			}
+		],
+	})
+})
+</script>
+{/block}

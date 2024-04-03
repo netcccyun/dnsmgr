@@ -1,0 +1,436 @@
+{extend name="common/layout" /}
+{block name="title"}解析管理 - {$domainName}{/block}
+{block name="main"}
+<style>
+td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;}
+</style>
+<div class="modal" id="modal-store" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
+	<div class="modal-dialog">
+		<div class="modal-content animated flipInX">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"><span
+							aria-hidden="true">&times;</span><span
+							class="sr-only">Close</span></button>
+				<h4 class="modal-title" id="modal-title">添加/修改解析</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="form-store">
+					<input type="hidden" name="action"/>
+					<input type="hidden" name="recordid"/>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right">主机记录</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="name" placeholder="填写域名前缀，支持多级" required>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">记录类型</label>
+						<div class="col-sm-9">
+							<select name="type" class="form-control">
+								<option value="A">A</option>
+								<option value="CNAME">CNAME</option>
+								<option value="AAAA">AAAA</option>
+								<option value="NS">NS</option>
+								<option value="MX">MX</option>
+								<option value="SRV">SRV</option>
+								<option value="TXT">TXT</option>
+								<option value="CAA">CAA</option>
+								{if $dnsconfig.redirect}<option value="REDIRECT_URL">显性URL</option>
+								<option value="FORWARD_URL">隐性URL</option>{/if}
+							</select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">线路类型</label>
+						<div class="col-sm-9" id="line_list">
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right">记录值</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="value" placeholder="输入记录值" required>
+						</div>
+					</div>
+					<div class="form-group" style="display:none" id="mx_type">
+						<label class="col-sm-3 control-label no-padding-right">MX优先级</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="mx" value="10">
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right">TTL</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="ttl" value="600" placeholder="指解析结果在DNS服务器中的缓存时间" required min="{$minTTL}">
+						</div>
+					</div>
+					{if $dnsconfig.remark == 2}<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right">备注</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="remark" placeholder="">
+						</div>
+					</div>{/if}
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+				<button type="button" class="btn btn-primary" id="store" onclick="save()">保存</button>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-xs-12 center-block" style="float: none;">
+	<div class="panel panel-default panel-default">
+	<div class="panel-heading">
+		<h3 class="panel-title">{if request()->user['type'] eq 'user'}<a href="/domain" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{/if}{$domainName}</h3>
+	</div>
+	<div class="panel-body">
+	
+<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
+  <div class="form-group">
+	<label>搜索</label>
+    <input type="text" class="form-control" name="keyword" placeholder="输入关键字">
+  </div>
+  <div class="form-group">
+	<select name="status" class="form-control"><option value="">所有状态</option><option value="1">启用</option><option value="0">暂停</option></select>
+  </div>
+  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
+  <a href="javascript:searchClear()" class="btn btn-default" title="刷新解析记录列表"><i class="fa fa-refresh"></i> 刷新</a>
+  <a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加记录</a>
+  <div class="btn-group" role="group">
+	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
+	<ul class="dropdown-menu"><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('delete')">删除</a></li></ul>
+  </div>
+  <div class="btn-group" role="group">
+	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">日志 <span class="caret"></span></button>
+	<ul class="dropdown-menu"><li><a href="/log?domain={$domainName}">本站日志</a></li>{if $dnsconfig.log}<li><a href="/record/log/{$domainId}">域名日志</a></li>{/if}</ul>
+  </div>
+</form>
+
+      <table id="listTable">
+	  </table>
+    </div>
+  </div>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="{$cdnpublic}bootstrap-table/1.20.2/bootstrap-table.min.js"></script>
+<script src="{$cdnpublic}bootstrap-table/1.20.2/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
+<script src="/static/js/bootstrapValidator.min.js"></script>
+<script src="/static/js/custom.js"></script>
+<script>
+var recordLine = {$recordLine|json_encode|raw};
+var dnsconfig = {$dnsconfig|json_encode|raw};
+var defaultLine = recordLine[0].id;
+$(document).ready(function(){
+	updateToolbar();
+	const defaultPageSize = 15;
+	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+
+	$("#listTable").bootstrapTable({
+		url: '/record/data/{$domainId}',
+		pageNumber: pageNumber,
+		pageSize: pageSize,
+		classes: 'table table-striped table-hover table-bordered',
+		uniqueId: 'RecordId',
+		sidePagination: "{if $dnsconfig.type=='baidu'}client{else}server{/if}",
+		columns: [
+			{
+				field: '',
+				checkbox: true
+			},
+			{
+				field: 'RecordId',
+				visible: false,
+				title: '记录ID'
+			},
+			{
+				field: 'Name',
+				title: '主机记录'
+			},
+			{
+				field: 'Type',
+				title: '记录类型'
+			},
+            {
+				field: 'LineName',
+				title: '线路类型'
+			},
+			{
+				field: 'Value',
+				title: '记录值',
+				formatter: function(value, row, index) {
+					if(row.Type == 'MX') return value + ' | '+row.MX;
+					return value;
+				}
+			},
+			{
+				field: 'TTL',
+				title: 'TTL'
+			},
+			{
+				field: 'Remark',
+				visible: dnsconfig.remark > 0,
+				title: '备注'
+			},
+			{
+				field: 'UpdateTime',
+				visible: false,
+				title: '最后更新时间'
+			},
+			{
+				field: 'Status',
+				title: '状态',
+				formatter: function(value, row, index) {
+					if(value == '1'){
+						return '<font color="green"><i class="fa fa-check-circle"></i>启用</font>';
+					}else{
+						return '<font color="orange"><i class="fa fa-pause-circle"></i>暂停</font>';
+					}
+				}
+			},
+			{
+				field: '',
+				title: '操作',
+				formatter: function(value, row, index) {
+					if((row.Type == 'NS' || row.Type == 'SOA') && row.Name == '@') return '-';
+					var html = '<a href="javascript:editframe(\''+row.RecordId+'\')" class="btn btn-primary btn-xs">修改</a>&nbsp;&nbsp;';
+					if(dnsconfig.status){
+						if(row.Status == '1'){
+							html += '<a href="javascript:setStatus(\''+row.RecordId+'\', \'0\')" class="btn btn-warning btn-xs">暂停</a>&nbsp;&nbsp;';
+						}else{
+							html += '<a href="javascript:setStatus(\''+row.RecordId+'\', \'1\')" class="btn btn-success btn-xs">启用</a>&nbsp;&nbsp;';
+						}
+					}
+					html += '<a href="javascript:delItem(\''+row.RecordId+'\')" class="btn btn-danger btn-xs">删除</a>&nbsp;&nbsp;';
+					if(dnsconfig.remark == 1){
+						html += '<a href="javascript:setRemark(\''+row.RecordId+'\')" class="btn btn-info btn-xs">备注</a>';
+					}
+					return html;
+				}
+			},
+		],
+	});
+
+	$("select[name=type]").change(function(){
+		if($(this).val() == 'MX'){
+			$("#mx_type").show();
+		}else{
+			$("#mx_type").hide();
+		}
+	});
+
+	$("#form-store").bootstrapValidator();
+})
+function initLine(option){
+	option = option || '';
+	$("#line_list").empty();
+	$.each(recordLine, function(index, item){
+		if(item.parent == null){
+			option += '<option value="'+item.id+'">'+item.name+'</option>';
+		}
+	})
+	$("#line_list").append('<select name="line" class="form-control" onchange="changeLine(this)">'+option+'</select>');
+}
+function changeLine(obj){
+	var line = $(obj).val();
+	var flag = false;
+	$("#line_list").children().each(function(index, elem){
+		if(flag) $(elem).remove()
+		if(obj == elem){
+			flag = true;
+		}
+	})
+	if($(obj).find("option:selected").text() == '子集线路（非必填）') return;
+	var tempLine = recordLine.filter((x) => x.parent == line)
+	if(tempLine.length > 0){
+		var option = '<option value="'+line+'">子集线路（非必填）</option>';
+		$.each(tempLine, function(index, item){
+			option += '<option value="'+item.id+'">'+item.name+'</option>';
+		})
+		$("#line_list").append('<select name="line" class="form-control" onchange="changeLine(this)">'+option+'</select>');
+	}
+}
+function addframe(){
+	$("#modal-store").modal('show');
+	$("#modal-title").html("添加记录");
+	$("#form-store input[name=action]").val("add");
+	$("#form-store input[name=recordid]").val('');
+	$("#form-store input[name=name]").val('');
+	$("#form-store select[name=type]").val('A');
+	$("select[name=type]").change();
+	initLine();
+	$("#form-store input[name=value]").val('');
+	$("#form-store input[name=ttl]").val('600');
+	$("#form-store input[name=remark]").val('');
+	$("#form-store").data("bootstrapValidator").resetForm();
+}
+function editframe(recordid){
+	var row = $("#listTable").bootstrapTable('getRowByUniqueId', recordid);
+	$("#modal-store").modal('show');
+	$("#modal-title").html("修改记录");
+	$("#form-store input[name=action]").val("update");
+	$("#form-store input[name=recordid]").val(recordid);
+	$("#form-store input[name=name]").val(row.Name);
+	$("#form-store select[name=type]").val(row.Type);
+	$("select[name=type]").change();
+	initLine();
+	if($('#form-store select[name=line] option[value="'+row.Line+'"]').length > 0){
+		$("#form-store select[name=line]").val(row.Line);
+		$("#form-store select[name=line]").change();
+	}else{
+		initLine('<option value="'+row.Line+'">'+row.LineName+'</option>');
+	}
+	$("#form-store input[name=value]").val(row.Value);
+	$("#form-store input[name=mx]").val(row.MX);
+	$("#form-store input[name=ttl]").val(row.TTL);
+	$("#form-store input[name=remark]").val(row.Remark);
+	$("#form-store").data("bootstrapValidator").resetForm();
+}
+function save(){
+	$("#form-store").data("bootstrapValidator").validate();
+	if(!$("#form-store").data("bootstrapValidator").isValid()){
+		return;
+	}
+	var act = $("#form-store input[name=action]").val();
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/record/'+act+'/{$domainId}',
+		data : $("#form-store").serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert(data.msg,{
+					icon: 1,
+					closeBtn: false
+				}, function(){
+					layer.closeAll();
+					$("#modal-store").modal('hide');
+					searchSubmit();
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		}
+	});
+}
+function setStatus(recordid, status){
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/record/status/{$domainId}',
+		data : {recordid: recordid, status: status},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.closeAll();
+				layer.msg(status=='1'?'开启成功':'暂停成功', {icon: 1, time:500});
+				searchSubmit();
+			}else{
+				layer.alert(data.msg, {icon: 2});
+			}
+		}
+	});
+}
+function delItem(recordid) {
+	var confirmobj = layer.confirm('确定要删除此解析记录吗？', {
+	  btn: ['确定','取消']
+	}, function(){
+	  var ii = layer.load(2);
+	  $.ajax({
+		type : 'POST',
+		url : '/record/delete/{$domainId}',
+		data : {recordid: recordid},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.closeAll();
+				layer.msg('删除成功', {icon: 1, time:800});
+				searchSubmit();
+			}else{
+				layer.alert(data.msg, {icon: 2});
+			}
+		}
+	  });
+	}, function(){
+	  layer.close(confirmobj);
+	});
+}
+function setRemark(recordid) {
+	var row = $("#listTable").bootstrapTable('getRowByUniqueId', recordid);
+	layer.open({
+		type: 1,
+		area: ['350px'],
+		closeBtn: 2,
+		title: '编辑备注',
+		content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark" value="'+(row.Remark==null?'':row.Remark)+'" autocomplete="off" placeholder="备注信息"></div></div>',
+		btn: ['确认', '取消'],
+		yes: function(){
+			var remark = $("input[name='remark']").val();
+			var ii = layer.load(2, {shade:[0.1,'#fff']});
+			$.ajax({
+				type : 'POST',
+				url : '/record/remark/{$domainId}',
+				data : {recordid:recordid, remark:remark},
+				dataType : 'json',
+				success : function(data) {
+					layer.close(ii);
+					if(data.code == 0){
+						layer.closeAll();
+						layer.msg('保存成功', {icon: 1, time:800});
+						searchSubmit();
+					}else{
+						layer.alert(data.msg, {icon:2});
+					}
+				},
+				error:function(data){
+					layer.close(ii);
+					layer.msg('服务器错误');
+				}
+			});
+		}
+	});
+}
+function operation(action){
+	var rows = $("#listTable").bootstrapTable('getSelections');
+	if(rows.length == 0){
+		layer.msg('请选择要操作的记录');
+		return;
+	}
+	var ids = [];
+	$.each(rows, function(index, item){
+		ids.push(item.RecordId);
+	})
+	var confirmobj = layer.confirm('确定要'+(action=='open'?'启用':(action=='pause'?'暂停':'删除'))+'所选记录吗？', {
+	  btn: ['确定','取消']
+	}, function(){
+	  var ii = layer.load(2);
+	  $.ajax({
+		type : 'POST',
+		url : '/record/batch/{$domainId}',
+		data : {action: action, recordids: ids},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.closeAll();
+				layer.alert(data.msg, {icon: 1});
+				searchSubmit();
+			}else{
+				layer.alert(data.msg, {icon: 2});
+			}
+		}
+	  });
+	}, function(){
+	  layer.close(confirmobj);
+	});
+}
+</script>
+{/block}

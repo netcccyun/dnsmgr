@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="renderer" content="webkit">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>{block name="title"}标题{/block}</title>
+  <link href="{$cdnpublic}twitter-bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="{$cdnpublic}font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+  <link href="{$cdnpublic}select2/4.0.13/css/select2.min.css" rel="stylesheet"/>
+  <link href="/static/css/app.min.css" rel="stylesheet">
+  <link href="/static/css/skins/{$skin}.css" rel="stylesheet">
+  <link href="/static/css/bootstrap-table.css" rel="stylesheet"/>
+  <script src="{$cdnpublic}jquery/3.6.4/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="{$cdnpublic}html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="{$cdnpublic}respond.js/1.4.2/respond.min.js"></script>
+  <![endif]-->
+  <style>
+    .type-logo{width: 18px;margin-top: -2px;padding-right: 4px;}
+  </style>
+</head>
+
+<body class="hold-transition {$skin} sidebar-mini">
+  <div class="wrapper">
+    <header class="main-header">
+      <!-- Logo -->
+      <a href="javascript:;" class="logo">
+        <!-- mini logo for sidebar mini 50x50 pixels -->
+        <span class="logo-mini"><i class="fa fa-cube"></i></span>
+        <!-- logo for regular state and mobile devices -->
+        <span class="logo-lg"></span>聚合DNS管理系统
+      </a>
+      <!-- Header Navbar: style can be found in header.less -->
+      <nav class="navbar navbar-static-top">
+        <!-- Sidebar toggle button-->
+        <a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
+          <span class="visible-xs-inline">菜单</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </a>
+  
+        <div class="navbar-custom-menu">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="/" title="平台首页"><i class="fa fa-home fa-fw"></i></a>
+            </li>
+            <li class="hidden-xs">
+              <a href="#" data-toggle="fullscreen" title="全屏"><i class="fa fa-arrows-alt fa-fw"></i></a>
+            </li>
+            <li class="hidden-xs">
+              <a href="#" data-toggle="control-sidebar" title="更换皮肤"><i class="fa fa-wrench fa-fw"></i></a>
+            </li>
+            <!-- User Account: style can be found in dropdown.less -->
+            <li class="dropdown user user-menu">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                <img src="/static/images/user.png" class="user-image" alt="User Image">
+                <span class="hidden-xs">{$user.username}</span>
+              </a>
+              <ul class="dropdown-menu">
+                <!-- User image -->
+                <li class="user-header">
+                  <img src="/static/images/user.png" class="img-circle" alt="User Image">
+                  <p>
+                    {$user.username}
+                    <small>{$user.regtime}</small>
+                  </p>
+                </li>
+                <!-- Menu Footer-->
+                <li class="user-footer">
+                  {if request()->user['type'] eq 'user'}<div class="pull-left">
+                    <a href="/setpwd" class="btn btn-primary"><i class="fa fa-lock"></i> 修改密码</a>
+                  </div>{/if}
+                  <div class="pull-right">
+                    <a href="/logout" class="btn btn-danger"><i class="fa fa-sign-out"></i> 退出登录</a>
+                  </div>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </header>
+    <!-- Left side column. contains the logo and sidebar -->
+    <aside class="main-sidebar">
+      <!-- sidebar: style can be found in sidebar.less -->
+      <section class="sidebar">
+        <!-- Sidebar user panel -->
+        <div class="user-panel">
+          <div class="pull-left image">
+            <img src="/static/images/user.png" class="img-circle" alt="User Image">
+          </div>
+          <div class="pull-left info">
+            <p>{$user.username}</p>
+            <i class="fa fa-circle text-success"></i> Online
+          </div>
+        </div>
+        <!-- sidebar menu: : style can be found in sidebar.less -->
+        <ul class="sidebar-menu" data-widget="tree">
+          <li class="header">功能导航</li>
+          {if request()->user['type'] eq 'user'}<li class="{:checkIfActive('index')}">
+            <a href="/"><i class="fa fa-home fa-fw"></i> <span>后台首页</span></a>
+          </li>{/if}
+          <li class="{:checkIfActive('domain,record,record_log')}">
+            <a href="/domain"><i class="fa fa-list-ul fa-fw"></i> <span>域名管理</span></a>
+          </li>
+          {if request()->user['level'] eq 2}<li class="{:checkIfActive('account')}">
+            <a href="/account"><i class="fa fa-lock fa-fw"></i> <span>域名账户</span></a>
+          </li>
+          <li class="{:checkIfActive('user')}">
+            <a href="/user"><i class="fa fa-user fa-fw"></i> <span>用户管理</span></a>
+          </li>{/if}
+          <li class="{:checkIfActive('log')}">
+            <a href="/log"><i class="fa fa-list fa-fw"></i> <span>操作日志</span></a>
+          </li>
+          {if request()->user['type'] eq 'user'}
+          <li class="">
+            <a href="https://www.showdoc.com.cn/dnsmgr/11058996709621562" target="_blank"><i class="fa fa-book fa-fw"></i> <span>接口文档</span></a>
+          </li>
+          {/if}
+        </ul>
+      </section>
+      <!-- /.sidebar -->
+    </aside>
+  
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper">
+      <!-- Main content -->
+      <section class="content">
+{block name="main"}主内容{/block}
+</section>
+<!-- /.content -->
+</div>
+<!-- Control Sidebar -->
+<aside class="control-sidebar control-sidebar-dark" style="display: none;">
+<!-- Tab panes -->
+<div class="tab-content">
+  <!-- Home tab content -->
+  <div class="tab-pane active">
+  <h4 class="control-sidebar-heading">皮肤</h4>
+    <ul class="list-unstyled clearfix skin-list">
+        <li><a href="javascript:;" data-skin="skin-blue" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #4e73df;"></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Blue</p></li>
+        <li><a href="javascript:;" data-skin="skin-black" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black</p></li>
+        <li><a href="javascript:;" data-skin="skin-purple" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #605ca8;"></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Purple</p></li>
+        <li><a href="javascript:;" data-skin="skin-green" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 7px;" class="bg-green-active"></span><span class="bg-green" style="width: 80%; height: 7px;"></span></div><div><span style="width: 20%; height: 20px; background: #000;"></span><span style="width: 80%; height: 20px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Green</p></li>
+        <li><a href="javascript:;" data-skin="skin-red" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 7px;" class="bg-red-active"></span><span class="bg-red" style="width: 80%; height: 7px;"></span></div><div><span style="width: 20%; height: 20px; background: #000;"></span><span style="width: 80%; height: 20px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Red</p></li>
+        <li><a href="javascript:;" data-skin="skin-yellow" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 7px;" class="bg-yellow-active"></span><span class="bg-yellow" style="width: 80%; height: 7px;"></span></div><div><span style="width: 20%; height: 20px; background: #000;"></span><span style="width: 80%; height: 20px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Yellow</p></li>
+
+        <li><a href="javascript:;" data-skin="skin-blue-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px; background: #4e73df;"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Blue Light</p></li>
+        <li><a href="javascript:;" data-skin="skin-black-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px; background: #000;"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Black Light</p></li>
+        <li><a href="javascript:;" data-skin="skin-purple-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px; background: #605ca8;"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Purple Light</p></li>
+        <li><a href="javascript:;" data-skin="skin-green-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px;" class="bg-green"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Green Light</p></li>
+        <li><a href="javascript:;" data-skin="skin-red-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px;" class="bg-red"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Red Light</p></li>
+        <li><a href="javascript:;" data-skin="skin-yellow-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px;" class="bg-yellow"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Yellow Light</p></li>
+
+        <li><a href="javascript:;" data-skin="skin-black-blue" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px; background: #4e73df;"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Blue</p></li>
+        <li><a href="javascript:;" data-skin="skin-black-purple" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px; background: #605ca8;"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Purple</p></li>
+        <li><a href="javascript:;" data-skin="skin-black-green" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px;" class="bg-green"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Green</p></li>
+        <li><a href="javascript:;" data-skin="skin-black-red" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px;" class="bg-red"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Red</p></li>
+        <li><a href="javascript:;" data-skin="skin-black-yellow" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px;" class="bg-yellow"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Yellow</p></li>
+        <li><a href="javascript:;" data-skin="skin-black-pink" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px; background: #f5549f;"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Pink</p></li>
+    </ul>
+  </div>
+  <!-- /.tab-pane -->
+</div>
+</aside>
+<!-- /.control-sidebar -->
+<!-- Add the sidebar's background. This div must be placed
+   immediately after the control sidebar -->
+<div class="control-sidebar-bg"></div>
+</div>
+<!-- ./wrapper -->
+
+<script src="<?php echo $cdnpublic?>twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script src="<?php echo $cdnpublic?>fastclick/1.0.6/fastclick.min.js"></script>
+<script src="/static/js/app.js"></script>
+<script>
+  document.addEventListener('pointerdown', function(e) {
+    if (e.target.closest('table')) {
+        return;
+    }
+
+    startX = e.clientX;
+
+    // 如果触摸开始于屏幕左边缘的10%区域内
+    if (startX < window.innerWidth * 0.1) {
+        e.preventDefault(); // 尝试阻止默认行为
+    }
+}, false);
+
+</script>
+{block name="script"}{/block}
+</body>
+</html>

@@ -1,0 +1,234 @@
+{extend name="common/layout" /}
+{block name="title"}域名账户{/block}
+{block name="main"}
+<div class="modal" id="modal-store" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
+	<div class="modal-dialog">
+		<div class="modal-content animated flipInX">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"><span
+							aria-hidden="true">&times;</span><span
+							class="sr-only">Close</span></button>
+				<h4 class="modal-title" id="modal-title">添加/修改域名账户</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="form-store">
+					<input type="hidden" name="action"/>
+					<input type="hidden" name="id"/>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">所属平台</label>
+						<div class="col-sm-9">
+							<select name="type" class="form-control">
+								{foreach $dnsconfig as $k=>$v}
+									<option value="{$k}">{$v['name']}</option>
+								{/foreach}
+							</select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right" id="ak_name">AccessKey</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="ak" required>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right" id="sk_name">SecretKey</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="sk" required>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right" id="ext_name">扩展字段</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="ext" placeholder="没有请勿填写">
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right">备注</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="remark" placeholder="备注选填">
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+				<button type="button" class="btn btn-primary" id="store" onclick="save()">保存</button>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-xs-12 center-block" style="float: none;">
+	<div class="panel panel-default panel-intro">
+	<div class="panel-body">
+	
+<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
+  <div class="form-group">
+	<label>搜索</label>
+    <input type="text" class="form-control" name="kw" placeholder="AccessKey或备注">
+  </div>
+  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
+  <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名账户列表"><i class="fa fa-refresh"></i> 刷新</a>
+  <a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
+</form>
+
+      <table id="listTable">
+	  </table>
+    </div>
+  </div>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="{$cdnpublic}bootstrap-table/1.20.2/bootstrap-table.min.js"></script>
+<script src="{$cdnpublic}bootstrap-table/1.20.2/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
+<script src="/static/js/custom.js"></script>
+<script>
+var dnsconfig = {$dnsconfig|json_encode|raw};
+$(document).ready(function(){
+	updateToolbar();
+	const defaultPageSize = 15;
+	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+
+	$("#listTable").bootstrapTable({
+		url: '/account/data',
+		pageNumber: pageNumber,
+		pageSize: pageSize,
+		classes: 'table table-striped table-hover table-bordered',
+		columns: [
+			{
+				field: 'id',
+				title: 'ID'
+			},
+			{
+				field: 'typename',
+				title: '所属平台',
+				formatter: function(value, row, index) {
+					return '<img src="/static/images/'+row.type+'.ico" class="type-logo"></img>'+value;
+				}
+			},
+            {
+				field: 'ak',
+				title: 'AccessKey'
+			},
+			{
+				field: 'remark',
+				title: '备注'
+			},
+			{
+				field: 'addtime',
+				title: '添加时间'
+			},
+			{
+				field: '',
+				title: '操作',
+				formatter: function(value, row, index) {
+					var html = '<a href="javascript:editframe('+row.id+')" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a>';
+					return html;
+				}
+			},
+		],
+	})
+
+	$("select[name=type]").change(function(){
+		var type = $(this).val();
+		if(dnsconfig[type] == undefined) return;
+		$("#ak_name").html(dnsconfig[type].config.ak);
+		$("#sk_name").html(dnsconfig[type].config.sk);
+		if(dnsconfig[type].config.ext == undefined) dnsconfig[type].config.ext = '扩展字段';
+		else $("#ext_name").html(dnsconfig[type].config.ext);
+	});
+})
+function addframe(){
+	$("#modal-store").modal('show');
+	$("#modal-title").html("添加域名账户");
+	$("#form-store input[name=action]").val("add");
+	$("#form-store input[name=id]").val('');
+	$("#form-store input[name=ak]").val('');
+	$("#form-store input[name=sk]").val('');
+	$("#form-store input[name=ext]").val('');
+	$("#form-store input[name=remark]").val('');
+	$("select[name=type]").change();
+}
+function editframe(id){
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/account/op/act/get',
+		data : {id: id},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				$("#modal-store").modal('show');
+				$("#modal-title").html("修改域名账户");
+				$("#form-store input[name=action]").val("edit");
+				$("#form-store input[name=id]").val(data.data.id);
+				$("#form-store select[name=type]").val(data.data.type);
+				$("#form-store input[name=ak]").val(data.data.ak);
+				$("#form-store input[name=sk]").val(data.data.sk);
+				$("#form-store input[name=ext]").val(data.data.ext);
+				$("#form-store input[name=remark]").val(data.data.remark);
+				$("select[name=type]").change();
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		}
+	});
+}
+function save(){
+	if($("#form-store input[name=username]").val()==''){
+		layer.alert('请确保各项不能为空！');return false;
+	}
+	var act = $("#form-store input[name=action]").val();
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/account/op/act/'+act,
+		data : $("#form-store").serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert(data.msg,{
+					icon: 1,
+					closeBtn: false
+				}, function(){
+					layer.closeAll();
+					$("#modal-store").modal('hide');
+					searchSubmit();
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		}
+	});
+}
+function delItem(id) {
+	var confirmobj = layer.confirm('确定要删除此域名账户吗？', {
+	  btn: ['确定','取消']
+	}, function(){
+	  var ii = layer.load(2);
+	  $.ajax({
+		type : 'POST',
+		url : '/account/op/act/del',
+		data : {id: id},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.closeAll();
+				searchSubmit();
+			}else{
+				layer.alert(data.msg, {icon: 2});
+			}
+		}
+	  });
+	}, function(){
+	  layer.close(confirmobj);
+	});
+}
+</script>
+{/block}
