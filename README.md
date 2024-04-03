@@ -30,6 +30,7 @@
 
 ### 部署方法
 
+* 从[Release](https://github.com/netcccyun/dnsmgr/releases)页面下载安装包
 * 运行环境要求PHP7.4+，MySQL5.6+
 * 设置网站运行目录为`public`
 * 设置伪静态为`ThinkPHP`
