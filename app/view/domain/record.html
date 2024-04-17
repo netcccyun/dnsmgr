@@ -153,7 +153,12 @@ $(document).ready(function(){
 			},
 			{
 				field: 'Type',
-				title: '记录类型'
+				title: '记录类型',
+				formatter: function(value, row, index) {
+					if(value == 'REDIRECT_URL') return '显性URL';
+					if(value == 'FORWARD_URL') return '隐性URL';
+					return value;
+				}
 			},
             {
 				field: 'LineName',

@@ -7,8 +7,6 @@ class baidu implements DnsInterface {
 	private $AccessKeyId;
 	private $SecretAccessKey;
 	private $endpoint = "dns.baidubce.com";
-	private $service = "dnspod";
-	private $version = "2021-03-23";
 	private $error;
 	private $domain;
 	private $domainid;

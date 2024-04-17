@@ -267,7 +267,7 @@ class Domain extends BaseController
 
         $recordLineArr = [];
         foreach($recordLine as $key=>$item){
-            $recordLineArr[] = ['id'=>$key, 'name'=>$item['name'], 'parent'=>$item['parent']];
+            $recordLineArr[] = ['id'=>strval($key), 'name'=>$item['name'], 'parent'=>$item['parent']];
         }
 
         $dnsconfig = DnsHelper::$dns_config[$dnstype];
@@ -300,7 +300,7 @@ class Domain extends BaseController
 
         $recordLineArr = [];
         foreach($recordLine as $key=>$item){
-            $recordLineArr[] = ['id'=>$key, 'name'=>$item['name'], 'parent'=>$item['parent']];
+            $recordLineArr[] = ['id'=>strval($key), 'name'=>$item['name'], 'parent'=>$item['parent']];
         }
 
         $dnsconfig = DnsHelper::$dns_config[$dnstype];

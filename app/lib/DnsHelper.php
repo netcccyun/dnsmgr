@@ -50,6 +50,17 @@ class DnsHelper
             'redirect' => false,
             'log' => false,
         ],
+        'dnsla' => [
+            'name' => 'DNSLA',
+            'config' => [
+                'ak' => 'APIID',
+                'sk' => 'API密钥'
+            ],
+            'remark' => 0,
+            'status' => true,
+            'redirect' => true,
+            'log' => false,
+        ],
         'cloudflare' => [
             'name' => 'Cloudflare',
             'config' => [
@@ -57,7 +68,7 @@ class DnsHelper
                 'sk' => 'API密钥'
             ],
             'remark' => 2,
-            'status' => false,
+            'status' => true,
             'redirect' => false,
             'log' => false,
         ],

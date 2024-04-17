@@ -57,11 +57,11 @@ class dnspod implements DnsInterface {
 			$action = 'DescribeRecordFilterList';
 			$Status = $Status == '1' ? 'ENABLE' : 'DISABLE';
 			$param = ['Domain' => $this->domain, 'Subdomain' => $SubDomain, 'Keyword' => $KeyWord, 'Offset' => $offset, 'Limit' => $PageSize, 'RecordStatus' => [$Status]];
-			if(!isNullOrEmpty($Type)) $param['RecordType'] = [$Type];
+			if(!isNullOrEmpty($Type)) $param['RecordType'] = [$this->convertType($Type)];
 			if(!isNullOrEmpty($Line)) $param['RecordLine'] = [$Line];
 		}else{
 			$action = 'DescribeRecordList';
-			$param = ['Domain' => $this->domain, 'Subdomain' => $SubDomain, 'RecordType' => $Type, 'RecordLineId' => $Line, 'Keyword' => $KeyWord, 'Offset' => $offset, 'Limit' => $PageSize];
+			$param = ['Domain' => $this->domain, 'Subdomain' => $SubDomain, 'RecordType' => $this->convertType($Type), 'RecordLineId' => $Line, 'Keyword' => $KeyWord, 'Offset' => $offset, 'Limit' => $PageSize];
 		}
 		$data = $this->send_reuqest($action, $param);
 		if($data){
@@ -72,7 +72,7 @@ class dnspod implements DnsInterface {
 					'RecordId' => $row['RecordId'],
 					'Domain' => $this->domain,
 					'Name' => $row['Name'],
-					'Type' => $row['Type'],
+					'Type' => $this->convertTypeId($row['Type']),
 					'Value' => $row['Value'],
 					'Line' => $row['LineId'],
 					'TTL' => $row['TTL'],
@@ -107,7 +107,7 @@ class dnspod implements DnsInterface {
 				'RecordId' => $data['RecordInfo']['Id'],
 				'Domain' => $this->domain,
 				'Name' => $data['RecordInfo']['SubDomain'],
-				'Type' => $data['RecordInfo']['RecordType'],
+				'Type' => $this->convertTypeId($data['RecordInfo']['RecordType']),
 				'Value' => $data['RecordInfo']['Value'],
 				'Line' => $data['RecordInfo']['RecordLineId'],
 				'TTL' => $data['RecordInfo']['TTL'],
@@ -260,6 +260,14 @@ class dnspod implements DnsInterface {
 
 	private function convertType($type){
 		$convert_dict = ['REDIRECT_URL'=>'显性URL', 'FORWARD_URL'=>'隐性URL'];
+		if(array_key_exists($type, $convert_dict)){
+			return $convert_dict[$type];
+		}
+		return $type;
+	}
+
+	private function convertTypeId($type){
+		$convert_dict = ['显性URL'=>'REDIRECT_URL', '隐性URL'=>'FORWARD_URL'];
 		if(array_key_exists($type, $convert_dict)){
 			return $convert_dict[$type];
 		}
