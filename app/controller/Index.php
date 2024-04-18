@@ -32,6 +32,12 @@ class Index extends BaseController
             return json(['code'=>-3]);
         }
 
+        if(config('app.dbversion') && config_get('version') != config('app.dbversion')){
+            $this->db_update();
+            config_set('version', config('app.dbversion'));
+            Cache::clear();
+        }
+
         $tmp = 'version()';
         $mysqlVersion = Db::query("select version()")[0][$tmp];
         $info = [
@@ -47,13 +53,26 @@ class Index extends BaseController
         return view();
     }
 
+    private function db_update(){
+        $sqls=file_get_contents(app()->getAppPath().'sql/update.sql');
+        $mysql_prefix = env('database.prefix', 'dnsmgr_');
+        $sqls=explode(';', $sqls);
+        foreach ($sqls as $value) {
+            $value=trim($value);
+            if(empty($value))continue;
+            $value = str_replace('dnsmgr_',$mysql_prefix,$value);
+            Db::execute($value);
+        }
+    }
+
     public function changeskin(){
         $skin = input('post.skin');
         if(request()->user['level'] == 2){
             if(cookie('admin_skin')){
                 cookie('admin_skin', null);
             }
-            cache('admin_skin', $skin);
+            config_set('admin_skin', $skin);
+            Cache::clear();
         }else{
             cookie('admin_skin', $skin);
         }

@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app\middleware;
 
+use Exception;
 use think\facade\Db;
 use think\facade\Config;
 
@@ -27,7 +28,15 @@ class LoadConfig
                 return $next($request);
             }
         }
-        Config::set([], 'sys');
+        
+        try{
+            $res = Db::name('config')->cache('configs',0)->column('value','key');
+            Config::set($res, 'sys');
+        }catch(Exception $e){
+            if(!strpos($e->getMessage(), 'doesn\'t exist')){
+                throw $e;
+            }
+        }
 
         $request->isApi = false;
 

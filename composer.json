@@ -28,7 +28,8 @@
     },
     "require-dev": {
         "symfony/var-dumper": "^4.2",
-        "topthink/think-trace":"^1.0"
+        "topthink/think-trace":"^1.0",
+        "swoole/ide-helper": "^5.1"
     },
     "autoload": {
         "psr-4": {

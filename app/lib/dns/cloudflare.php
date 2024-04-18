@@ -57,10 +57,11 @@ class cloudflare implements DnsInterface {
 		if($data){
 			$list = [];
 			foreach($data['result'] as $row){
+				$name = $row['zone_name'] == $row['name'] ? '@' : str_replace('.'.$row['zone_name'], '', $row['name']);
 				$list[] = [
 					'RecordId' => $row['id'],
 					'Domain' => $row['zone_name'],
-					'Name' => str_replace('.'.$row['zone_name'], '', $row['name']),
+					'Name' => $name,
 					'Type' => $row['type'],
 					'Value' => $row['content'],
 					'Line' => $row['proxied'] ? '1' : '0',
@@ -79,17 +80,16 @@ class cloudflare implements DnsInterface {
 
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
-		$domain_arr = explode('.', $SubDomain);
-		$domain = $domain_arr[count($domain_arr)-2].'.'.$domain_arr[count($domain_arr)-1];
-		$subdomain = rtrim(str_replace($domain,'',$SubDomain),'.');
-		if($subdomain == '')$subdomain='@';
-		return $this->getDomainRecords($PageNumber, $PageSize, null, $subdomain, $Type, $Line);
+		if($SubDomain == '@')$SubDomain=$this->domain;
+		else $SubDomain .= '.'.$this->domain;
+		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, $Type, $Line);
 	}
 
 	//获取解析记录详细信息
 	public function getDomainRecordInfo($RecordId){
 		$data = $this->send_reuqest('GET', '/zones/'.$this->domainid.'/dns_records/'.$RecordId);
 		if($data){
+			$name = $data['result']['zone_name'] == $data['result']['name'] ? '@' : str_replace('.'.$data['result']['zone_name'], '', $data['result']['name']);
 			return [
 				'RecordId' => $data['result']['id'],
 				'Domain' => $data['result']['zone_name'],

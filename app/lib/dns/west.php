@@ -3,6 +3,9 @@ namespace app\lib\dns;
 
 use app\lib\DnsInterface;
 
+/**
+ * @see http://apipost.west.cn/
+ */
 class west implements DnsInterface {
 	private $username;
 	private $api_password;
@@ -30,8 +33,8 @@ class west implements DnsInterface {
 
 	//获取域名列表
 	public function getDomainList($KeyWord=null, $PageNumber=1, $PageSize=20){
-		$param = ['page' => $PageNumber, 'limit' => $PageSize, 'domain' => $KeyWord];
-		$data = $this->execute('/domain/?act=getdomains', $param);
+		$param = ['act' => 'getdomains', 'page' => $PageNumber, 'limit' => $PageSize, 'domain' => $KeyWord];
+		$data = $this->execute('/domain/', $param);
 		if($data){
 			$list = [];
 			foreach($data['items'] as $row){
@@ -48,23 +51,23 @@ class west implements DnsInterface {
 
 	//获取解析记录列表
 	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Type = null, $Line = null, $Status = null){
-		$param = ['act' => 'dnsrec.list', 'domain' => $this->domain, 'record_type' => $Type, 'record_line' => $Line, 'hostname' => $KeyWord, 'pageno' => $PageNumber, 'limit' => $PageSize];
+		$param = ['act' => 'getdnsrecord', 'domain' => $this->domain, 'type' => $Type, 'line' => $Line, 'host' => $KeyWord, 'pageno' => $PageNumber, 'limit' => $PageSize];
 		if(!isNullOrEmpty(($SubDomain))){
-			$param['hostname'] = $SubDomain;
+			$param['host'] = $SubDomain;
 		}
-		$data = $this->execute2('/domain/dns/', $param);
+		$data = $this->execute('/domain/', $param);
 		if($data){
 			$list = [];
 			foreach($data['items'] as $row){
 				$list[] = [
-					'RecordId' => $row['record_id'],
+					'RecordId' => $row['id'],
 					'Domain' => $this->domain,
-					'Name' => $row['hostname'],
-					'Type' => $row['record_type'],
-					'Value' => $row['record_value'],
-					'Line' => $row['record_line'],
-					'TTL' => $row['record_ttl'],
-					'MX' => $row['record_mx'],
+					'Name' => $row['item'],
+					'Type' => $row['type'],
+					'Value' => $row['value'],
+					'Line' => $row['line'],
+					'TTL' => $row['ttl'],
+					'MX' => $row['level'],
 					'Status' => $row['pause'] == 1 ? '0' : '1',
 					'Weight' => null,
 					'Remark' => null,
@@ -78,11 +81,8 @@ class west implements DnsInterface {
 
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
-		$domain_arr = explode('.', $SubDomain);
-		$domain = $domain_arr[count($domain_arr)-2].'.'.$domain_arr[count($domain_arr)-1];
-		$subdomain = rtrim(str_replace($domain,'',$SubDomain),'.');
-		if($subdomain == '')$subdomain='@';
-		return $this->getDomainRecords($PageNumber, $PageSize, null, $subdomain, $Type, $Line);
+		if($SubDomain == '')$SubDomain='@';
+		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, $Type, $Line);
 	}
 
 	//获取解析记录详细信息
@@ -92,15 +92,15 @@ class west implements DnsInterface {
 
 	//添加解析记录
 	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
-		$param = ['act' => 'dnsrec.add', 'domain' => $this->domain, 'hostname' => $Name, 'record_type' => $this->convertType($Type), 'record_value' => $Value, 'record_level' => $MX, 'record_ttl' => intval($TTL), 'record_line' => $Line];
-		$data = $this->execute2('/domain/dns/', $param);
-		return is_array($data) ? $data['record_id'] : false;
+		$param = ['act' => 'adddnsrecord', 'domain' => $this->domain, 'host' => $Name, 'type' => $this->convertType($Type), 'value' => $Value, 'level' => $MX, 'ttl' => intval($TTL), 'line' => $Line];
+		$data = $this->execute('/domain/', $param);
+		return is_array($data) ? $data['id'] : false;
 	}
 
 	//修改解析记录
 	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
-		$param = ['act' => 'dnsrec.modify', 'domain' => $this->domain, 'record_id' => $RecordId, 'record_type' => $this->convertType($Type), 'record_value' => $Value, 'record_level' => $MX, 'record_ttl' => intval($TTL), 'record_line' => $Line];
-		$data = $this->execute2('/domain/dns/', $param);
+		$param = ['act' => 'moddnsrecord', 'domain' => $this->domain, 'id' => $RecordId, 'type' => $this->convertType($Type), 'value' => $Value, 'level' => $MX, 'ttl' => intval($TTL), 'line' => $Line];
+		$data = $this->execute('/domain/', $param);
 		return is_array($data);
 	}
 
@@ -111,14 +111,16 @@ class west implements DnsInterface {
 
 	//删除解析记录
 	public function deleteDomainRecord($RecordId){
-		$param = ['act' => 'dnsrec.remove', 'domain' => $this->domain, 'record_id' => $RecordId];
-		$data = $this->execute2('/domain/dns/', $param);
+		$param = ['act' => 'deldnsrecord', 'domain' => $this->domain, 'id' => $RecordId];
+		$data = $this->execute('/domain/', $param);
 		return is_array($data);
 	}
 
 	//设置解析记录状态
 	public function setDomainRecordStatus($RecordId, $Status){
-		return false;
+		$param = ['act' => 'pause', 'domain' => $this->domain, 'id' => $RecordId, 'val' => $Status == '1' ? '0' : '1'];
+		$data = $this->execute('/domain/', $param);
+		return $data !== false;
 	}
 
 	//获取解析记录操作日志
@@ -162,26 +164,7 @@ class west implements DnsInterface {
 		$arr=json_decode($response,true);
 		if($arr){
 			if($arr['result'] == 200){
-				return $arr['data'];
-			}else{
-				$this->setError($arr['msg']);
-				return false;
-			}
-		}else{
-			$this->setError('返回数据解析失败');
-			return false;
-		}
-	}
-
-	private function execute2($path, $params){
-		$params['username'] = $this->username;
-		$params['apikey'] = md5($this->api_password);
-		$response = $this->curl($path, $params);
-		$response = mb_convert_encoding($response, 'UTF-8', 'GBK');
-		$arr=json_decode($response,true);
-		if($arr){
-			if($arr['code'] == 200){
-				return $arr['body'];
+				return isset($arr['data']) ? $arr['data'] : [];
 			}else{
 				$this->setError($arr['msg']);
 				return false;

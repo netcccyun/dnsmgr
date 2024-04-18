@@ -201,10 +201,53 @@ function checkPermission($type, $domain = null){
 function getAdminSkin(){
 	$skin = cookie('admin_skin');
 	if(empty($skin)){
-		$skin = cache('admin_skin');
+		$skin = config_get('admin_skin');
 	}
 	if(empty($skin)){
 		$skin = 'skin-black-blue';
 	}
 	return $skin;
+}
+
+function config_get($key, $default = null, $force = false)
+{
+	if ($force) {
+		$value = Db::name('config')->where('key', $key)->value('value');
+	} else {
+		$value = config('sys.'.$key);
+	}
+    return $value ?: $default;
+}
+
+function config_set($key, $value)
+{
+    $res = Db::name('config')->replace()->insert(['key'=>$key, 'value'=>$value]);
+    return $res!==false;
+}
+
+function getMillisecond()
+{
+    list($s1, $s2) = explode(' ', microtime());
+    return (int)sprintf('%.0f', (floatval($s1) + floatval($s2)) * 1000);
+}
+
+function getDnsType($value){
+	if(filter_var($value, FILTER_VALIDATE_IP))return 'A';
+	else return 'CNAME';
+}
+
+function convert_second($s){
+	$m = floor($s/60);
+	if($m == 0){
+		return $s.'秒';
+	}else{
+		$s = $s%60;
+		$h = floor($m/60);
+		if($h == 0){
+			return $m.'分钟'.$s.'秒';
+		}else{
+			$m = $m%60;
+			return $h.'小时'.$m.'分钟'.$s.'秒';
+		}
+	}
 }

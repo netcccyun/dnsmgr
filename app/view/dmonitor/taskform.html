@@ -1,0 +1,242 @@
+{extend name="common/layout" /}
+{block name="title"}容灾切换策略{/block}
+{block name="main"}
+<style>
+    .dselect::before{
+        content: '.';
+        position: absolute;
+        left: 0;
+    }
+</style>
+<div class="row" id="app">
+<div class="col-xs-12 center-block" style="float: none;">
+<div class="panel panel-default">
+<div class="panel-heading"><h3 class="panel-title"><a href="/dmonitor/task" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{if $action=='edit'}编辑{else}添加{/if}容灾切换策略</h3></div>
+<div class="panel-body">
+  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="taskform">
+    <div class="form-group">
+        <label class="col-sm-3 col-xs-12 control-label no-padding-right">域名选择</label>
+        <div class="col-sm-3 col-xs-5"><input type="text" name="rr" v-model="set.rr" placeholder="主机记录" class="form-control" required></div>
+        <div class="col-sm-3 col-xs-7 dselect"><select name="did" v-model="set.did" class="form-control" required>
+            <option value="">--主域名--</option>
+            {foreach $domains as $k=>$v}
+                <option value="{$k}">{$v}</option>
+            {/foreach}
+        </select></div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">解析记录</label>
+        <div class="col-sm-6"><div class="input-group">
+            <select name="recordid" v-model="set.recordid" id="recordid" class="form-control" required>
+                <option v-for="option in recordList" :value="option.RecordId">{{option.Value}} (线路:{{option.LineName}})</option>
+            </select>
+            <div class="input-group-btn">
+                <button type="button" @click="getRecordList" class="btn btn-info">点击获取</button>
+            </div>
+        </div></div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">切换设置</label>
+        <div class="col-sm-6">
+            <label class="radio-inline" v-for="option in typeList">
+                <input type="radio" name="type" :value="option.value" v-model="set.type" :disabled="option.disabled"> {{option.label}}
+            </label>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.type==2">
+        <label class="col-sm-3 control-label no-padding-right">备用解析记录</label>
+        <div class="col-sm-6">
+            <input type="text" name="backup_value" v-model="set.backup_value" placeholder="支持填写IPv4或CNAME地址" class="form-control" required>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">检测协议</label>
+        <div class="col-sm-6">
+            <label class="radio-inline" v-for="option in checktypeList">
+                <input type="radio" name="checktype" :value="option.value" v-model="set.checktype" :disabled="option.disabled"> {{option.label}}
+            </label>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.checktype==1">
+        <label class="col-sm-3 control-label no-padding-right">TCP检测端口</label>
+        <div class="col-sm-6">
+            <input type="text" name="tcpport" v-model="set.tcpport" placeholder="填写TCP端口号" class="form-control" data-bv-integer="true" min="1" max="65535" required>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.checktype==2">
+        <label class="col-sm-3 control-label no-padding-right">检测URL地址</label>
+        <div class="col-sm-6">
+            <input type="text" name="checkurl" v-model="set.checkurl" placeholder="填写以http(s)://开头的完整地址，http状态码须为2xx/3xx" class="form-control" data-bv-uri="true" required>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.checktype>0">
+        <label class="col-sm-3 control-label no-padding-right">最大超时时间</label>
+        <div class="col-sm-3">
+            <div class="input-group">
+                <input type="text" name="timeout" v-model="set.timeout" placeholder="填写请求最大超时时间" class="form-control" data-bv-integer="true" min="1" required>
+                <span class="input-group-addon">秒</span>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">检测间隔</label>
+        <div class="col-sm-3">
+            <div class="input-group">
+                <input type="text" name="frequency" v-model="set.frequency" placeholder="每次检测的间隔时间" class="form-control" data-bv-integer="true" min="1" required>
+                <span class="input-group-addon">秒</span>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">确认次数</label>
+        <div class="col-sm-3">
+            <input type="text" name="cycle" v-model="set.cycle" placeholder="连续失败几次后进行切换" class="form-control" data-bv-integer="true" min="1" required>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">备注</label>
+        <div class="col-sm-6">
+            <input type="text" name="remark" v-model="set.remark" placeholder="可留空" class="form-control">
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
+    </div>
+  </form>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}vue/2.6.14/vue.min.js"></script>
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="/static/js/bootstrapValidator.min.js"></script>
+<script>
+var action = '{$action}';
+var info = {$info|json_encode|raw};
+var support_ping = '{$support_ping}';
+new Vue({
+    el: '#app',
+    data: {
+        action: '{$action}',
+        set: {
+            id: '',
+            remark: '',
+            rr: '',
+            did: '',
+            recordid: '',
+            recordinfo: '',
+            main_value: '',
+            type: 1,
+            backup_value: '',
+            checktype: 2,
+            tcpport: 80,
+            checkurl: '',
+            frequency: 5,
+            timeout: 2,
+            cycle: 3,
+        },
+        recordList: [],
+        typeList: [
+            {value:0, label:'无操作'},
+            {value:1, label:'暂停解析'},
+            {value:2, label:'切换备用解析'},
+        ],
+        checktypeList: [
+            {value:0, label:'PING', disabled: support_ping=='0'},
+            {value:1, label:'TCP'},
+            {value:2, label:'HTTP(S)'},
+        ]
+    },
+    watch: {
+        'set.recordid': function(val){
+            if(val == '') return;
+            var record = this.recordList.find(item => item.RecordId == val);
+            if(record){
+                this.set.recordinfo = JSON.stringify({Line:record.Line, LineName:record.LineName, TTL:record.TTL});
+                if(typeof record.Value == 'object') this.set.main_value = record.Value[0];
+                else this.set.main_value = record.Value;
+            }
+        }
+    },
+    mounted() {
+        if(this.action == 'edit'){
+            Object.keys(info).forEach((key) => {
+                this.$set(this.set, key, info[key])
+            })
+            var recordinfo = JSON.parse(this.set.recordinfo);
+            this.recordList = [{RecordId:this.set.recordid, Value:this.set.main_value, Line:recordinfo.Line, LineName:recordinfo.LineName, TTL:recordinfo.TTL}];
+        }
+        $("#taskform").bootstrapValidator({
+            live: 'submitted',
+        });
+    },
+    methods: {
+        getRecordList(){
+            var that = this;
+            if(this.set.did == ''){
+                layer.msg('请先选择域名', {time: 800});return;
+            }
+            if(this.set.rr == ''){
+                layer.msg('主机记录不能为空', {time: 800});return;
+            }
+            var ii = layer.load(2, {shade:[0.1,'#fff']});
+            $.ajax({
+                type : 'POST',
+                url : '/record/list',
+                data : {id:this.set.did, rr:this.set.rr},
+                dataType : 'json',
+                success : function(data) {
+                    layer.close(ii);
+                    if(data.code == 0){
+                        layer.msg('成功获取到'+data.data.length+'条解析记录', {icon:1, time:800});
+                        that.recordList = data.data;
+                        if(that.set.recordid){
+                            var record = that.recordList.find(item => item.RecordId == that.set.recordid);
+                            if(record){
+                                that.set.recordinfo = JSON.stringify({Line:record.Line, LineName:record.LineName, TTL:record.TTL});
+                                if(typeof record.Value == 'object') that.set.main_value = record.Value[0];
+                                else that.set.main_value = record.Value;
+                            }
+                        }
+                    }else{
+                        layer.alert(data.msg, {icon:2});
+                    }
+                },
+                error:function(data){
+                    layer.close(ii);
+                    layer.msg('服务器错误');
+                }
+            });
+        },
+        submit(){
+            var that=this;
+            $("#taskform").data("bootstrapValidator").validate();
+            if(!$("#taskform").data("bootstrapValidator").isValid()){
+                return false;
+            }
+            var ii = layer.load(2, {shade:[0.1,'#fff']});
+            $.ajax({
+                type: "POST",
+                url: "",
+                data: this.set,
+                dataType: 'json',
+                success: function(data) {
+                    layer.close(ii);
+                    if(data.code == 0){
+                        layer.alert(data.msg, {icon: 1}, function(){
+                            window.history.back();
+                        });
+                    }else{
+                        layer.alert(data.msg, {icon: 2});
+                    }
+                },
+                error: function(data){
+                    layer.close(ii);
+                    layer.msg('服务器错误');
+                }
+            });
+        }
+    },
+});
+</script>
+{/block}

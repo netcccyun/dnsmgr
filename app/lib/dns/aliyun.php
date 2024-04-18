@@ -86,7 +86,7 @@ class aliyun implements DnsInterface {
 
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
-		$param = ['Action' => 'DescribeSubDomainRecords', 'SubDomain' => $SubDomain, 'PageNumber' => $PageNumber, 'PageSize' => $PageSize, 'Type' => $Type, 'Line' => $Line];
+		$param = ['Action' => 'DescribeSubDomainRecords', 'SubDomain' => $SubDomain . '.' . $this->domain, 'PageNumber' => $PageNumber, 'PageSize' => $PageSize, 'Type' => $Type, 'Line' => $Line];
 		$data = $this->request($param, true);
 		if($data){
 			$list = [];

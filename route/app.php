@@ -23,6 +23,7 @@ Route::any('/login', 'auth/login')->middleware(\think\middleware\SessionInit::cl
 ->middleware(\app\middleware\ViewOutput::class);
 Route::get('/logout', 'auth/logout');
 Route::any('/quicklogin', 'auth/quicklogin');
+Route::any('/dmtask/status', 'dmonitor/status');
 
 Route::group(function () {
     Route::any('/', 'index/index');
@@ -54,7 +55,18 @@ Route::group(function () {
     Route::post('/record/remark/:id', 'domain/record_remark');
     Route::post('/record/batch/:id', 'domain/record_batch');
     Route::any('/record/log/:id', 'domain/record_log');
+    Route::post('/record/list', 'domain/record_list');
     Route::get('/record/:id', 'domain/record');
+
+    Route::get('/dmonitor/overview', 'dmonitor/overview');
+    Route::post('/dmonitor/task/data', 'dmonitor/task_data');
+    Route::post('/dmonitor/task/log/data/:id', 'dmonitor/tasklog_data');
+    Route::get('/dmonitor/task/info/:id', 'dmonitor/taskinfo');
+    Route::any('/dmonitor/task/:action', 'dmonitor/taskform');
+    Route::get('/dmonitor/task', 'dmonitor/task');
+    Route::any('/dmonitor/noticeset', 'dmonitor/noticeset');
+    Route::get('/dmonitor/mailtest', 'dmonitor/mailtest');
+    Route::post('/dmonitor/clean', 'dmonitor/clean');
 
 })->middleware(\app\middleware\CheckLogin::class)
 ->middleware(\app\middleware\ViewOutput::class);

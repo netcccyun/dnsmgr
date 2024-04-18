@@ -89,11 +89,8 @@ class dnsla implements DnsInterface {
 
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
-		$domain_arr = explode('.', $SubDomain);
-		$domain = $domain_arr[count($domain_arr)-2].'.'.$domain_arr[count($domain_arr)-1];
-		$subdomain = rtrim(str_replace($domain,'',$SubDomain),'.');
-		if($subdomain == '')$subdomain='@';
-		return $this->getDomainRecords($PageNumber, $PageSize, null, $subdomain, $Type, $Line);
+		if($SubDomain == '')$SubDomain='@';
+		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, $Type, $Line);
 	}
 
 	//获取解析记录详细信息

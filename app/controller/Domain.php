@@ -219,6 +219,7 @@ class Domain extends BaseController
             if(!checkPermission(2)) return $this->alert('error', '无权限');
             $id = input('post.id/d');
             Db::name('domain')->where('id', $id)->delete();
+            Db::name('dmtask')->where('did', $id)->delete();
             return json(['code'=>0]);
         }
         return json(['code'=>-3]);
@@ -345,13 +346,35 @@ class Domain extends BaseController
 
         $recordLine = cache('record_line_'.$id);
 
-        $list = [];
-        foreach($domainRecords['list'] as $row){
+        foreach($domainRecords['list'] as &$row){
             $row['LineName'] = isset($recordLine[$row['Line']]) ? $recordLine[$row['Line']]['name'] : $row['Line'];
-            $list[] = $row;
         }
 
-        return json(['total'=>$domainRecords['total'], 'rows'=>$list]);
+        return json(['total'=>$domainRecords['total'], 'rows'=>$domainRecords['list']]);
+    }
+
+    public function record_list(){
+        if(!checkPermission(2)) return $this->alert('error', '无权限');
+        $id = input('post.id/d');
+        $rr = input('post.rr', null, 'trim');
+
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if(!$drow){
+            return json(['code'=>-1, 'msg'=>'域名不存在']);
+        }
+        if(!checkPermission(0, $drow['name'])) return json(['code'=>-1, 'msg'=>'无权限']);
+
+        $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+        $domainRecords = $dns->getSubDomainRecords($rr, 1, 100);
+        if(!$domainRecords) return json(['code'=>-1, 'msg'=>'获取记录列表失败，'.$dns->getError()]);
+
+        list($recordLine, $minTTL) = $this->get_line_and_ttl($drow);
+
+        foreach($domainRecords['list'] as &$row){
+            $row['LineName'] = isset($recordLine[$row['Line']]) ? $recordLine[$row['Line']]['name'] : $row['Line'];
+        }
+
+        return json(['code'=>0, 'data'=>$domainRecords['list']]);
     }
 
     public function record_add(){

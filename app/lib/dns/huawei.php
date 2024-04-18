@@ -7,8 +7,6 @@ class huawei implements DnsInterface {
 	private $AccessKeyId;
 	private $SecretAccessKey;
 	private $endpoint = "dns.myhuaweicloud.com";
-	private $service = "dnspod";
-	private $version = "2021-03-23";
 	private $error;
 	private $domain;
 	private $domainid;
@@ -55,7 +53,7 @@ class huawei implements DnsInterface {
 		$offset = ($PageNumber-1)*$PageSize;
 		$query = ['type' => $Type, 'line_id' => $Line, 'name' => $KeyWord, 'status' => $Status, 'offset' => $offset, 'limit' => $PageSize];
 		if(!isNullOrEmpty(($SubDomain))){
-			$param['name'] = $SubDomain;
+			$query['name'] = $SubDomain;
 		}
 		$data = $this->send_reuqest('GET', '/v2.1/zones/'.$this->domainid.'/recordsets', $query);
 		if($data){
@@ -84,11 +82,8 @@ class huawei implements DnsInterface {
 
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
-		$domain_arr = explode('.', $SubDomain);
-		$domain = $domain_arr[count($domain_arr)-2].'.'.$domain_arr[count($domain_arr)-1];
-		$subdomain = rtrim(str_replace($domain,'',$SubDomain),'.');
-		if($subdomain == '')$subdomain='@';
-		return $this->getDomainRecords($PageNumber, $PageSize, null, $subdomain, $Type, $Line);
+		if($SubDomain == '')$SubDomain='@';
+		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, $Type, $Line);
 	}
 
 	//获取解析记录详细信息

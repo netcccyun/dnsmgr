@@ -46,7 +46,7 @@ class DnsHelper
                 'sk' => 'API密码'
             ],
             'remark' => 0,
-            'status' => false,
+            'status' => true,
             'redirect' => false,
             'log' => false,
         ],
@@ -94,6 +94,19 @@ class DnsHelper
         if(class_exists($class)){
             $config['domain'] = $domain;
             $config['domainid'] = $domainid;
+            $model = new $class($config);
+            return $model;
+        }
+        return false;
+    }
+
+    public static function getModel2($config)
+    {
+        $dnstype = $config['type'];
+        $class = "\\app\\lib\\dns\\{$dnstype}";
+        if(class_exists($class)){
+            $config['domain'] = $config['name'];
+            $config['domainid'] = $config['thirdid'];
             $model = new $class($config);
             return $model;
         }

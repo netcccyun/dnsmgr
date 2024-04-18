@@ -12,6 +12,10 @@
 // [ 应用入口文件 ]
 namespace think;
 
+if (version_compare(PHP_VERSION, '7.4.0', '<')) {
+    die('require PHP >= 7.4 !');
+}
+
 require __DIR__ . '/../vendor/autoload.php';
 
 // 执行HTTP应用并响应
