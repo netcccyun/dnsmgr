@@ -15,7 +15,7 @@ class Dmonitor extends BaseController
         $switch_count = Db::name('dmlog')->where('date', '>=', date("Y-m-d H:i:s",strtotime("-1 days")))->count();
         $fail_count = Db::name('dmlog')->where('date', '>=', date("Y-m-d H:i:s",strtotime("-1 days")))->where('action', 1)->count();
 
-        $run_state = config_get('run_time') ? (time()-strtotime(config_get('run_time')) > 10 ? 0 : 1) : 0;
+        $run_state = config_get('run_time', null, true) ? (time()-strtotime(config_get('run_time')) > 10 ? 0 : 1) : 0;
         View::assign('info', [
             'run_count' => config_get('run_count', null, true) ?? 0,
             'run_time' => config_get('run_time', null, true) ?? '无',

@@ -224,7 +224,10 @@ new Vue({
                     layer.close(ii);
                     if(data.code == 0){
                         layer.alert(data.msg, {icon: 1}, function(){
-                            window.history.back();
+                            if(document.referrer.indexOf('task?') > 0)
+                                window.location.href = document.referrer;
+                            else
+                                window.location.href = '/dmonitor/task';
                         });
                     }else{
                         layer.alert(data.msg, {icon: 2});

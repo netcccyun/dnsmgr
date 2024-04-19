@@ -68,7 +68,7 @@ class DnsHelper
                 'sk' => 'API密钥'
             ],
             'remark' => 2,
-            'status' => true,
+            'status' => false,
             'redirect' => false,
             'log' => false,
         ],
