@@ -222,6 +222,7 @@ class Dmonitor extends BaseController
                     continue;
                 }
                 config_set($key, $value);
+                Cache::clear();
             }
             return json(['code'=>0, 'msg'=>'succ']);
         }
