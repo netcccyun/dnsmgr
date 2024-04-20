@@ -54,6 +54,7 @@ class huawei implements DnsInterface {
 		$query = ['type' => $Type, 'line_id' => $Line, 'name' => $KeyWord, 'status' => $Status, 'offset' => $offset, 'limit' => $PageSize];
 		if(!isNullOrEmpty(($SubDomain))){
 			$query['name'] = $SubDomain;
+			$query['search_mode'] = 'equal';
 		}
 		$data = $this->send_reuqest('GET', '/v2.1/zones/'.$this->domainid.'/recordsets', $query);
 		if($data){
@@ -82,7 +83,7 @@ class huawei implements DnsInterface {
 
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
-		if($SubDomain == '')$SubDomain='@';
+		$SubDomain = $this->getHost($SubDomain);
 		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, $Type, $Line);
 	}
 
@@ -110,9 +111,7 @@ class huawei implements DnsInterface {
 
 	//添加解析记录
 	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
-		if($Name == '@') $Name = '';
-		else $Name .= '.';
-		$Name .= $this->domain . '.';
+		$Name = $this->getHost($Name);
 		$params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => [$Value], 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
 		if($Type == 'MX')$param['weight'] = intval($MX);
 		$data = $this->send_reuqest('POST', '/v2.1/zones/'.$this->domainid.'/recordsets', null, $params);
@@ -121,9 +120,7 @@ class huawei implements DnsInterface {
 
 	//修改解析记录
 	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
-		if($Name == '@') $Name = '';
-		else $Name .= '.';
-		$Name .= $this->domain . '.';
+		$Name = $this->getHost($Name);
 		$params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => [$Value], 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
 		if($Type == 'MX')$param['weight'] = intval($MX);
 		$data = $this->send_reuqest('PUT', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId, null, $params);
@@ -197,6 +194,13 @@ class huawei implements DnsInterface {
 
 	private function convertType($type){
 		return $type;
+	}
+
+	private function getHost($Name){
+		if($Name == '@') $Name = '';
+		else $Name .= '.';
+		$Name .= $this->domain . '.';
+		return $Name;
 	}
 
 	private function send_reuqest($method, $path, $query = null, $params = null){
@@ -323,6 +327,9 @@ class huawei implements DnsInterface {
 		if($arr){
 			if(isset($arr['error_msg'])){
 				$this->setError($arr['error_msg']);
+				return false;
+			}elseif(isset($arr['message'])){
+				$this->setError($arr['message']);
 				return false;
 			}else{
 				return $arr;

@@ -5,6 +5,7 @@ use app\BaseController;
 use Exception;
 use think\facade\Db;
 use think\facade\View;
+use think\facade\Cache;
 use app\lib\DnsHelper;
 
 class Dmonitor extends BaseController
@@ -222,7 +223,7 @@ class Dmonitor extends BaseController
                     continue;
                 }
                 config_set($key, $value);
-                Cache::clear();
+                Cache::delete('configs'); 
             }
             return json(['code'=>0, 'msg'=>'succ']);
         }
