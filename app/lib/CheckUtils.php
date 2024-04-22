@@ -4,10 +4,20 @@ namespace app\lib;
 
 class CheckUtils
 {
-    public static function curl($url, $timeout)
+    public static function curl($url, $timeout, $ip = null)
     {
         $status = true;
         $errmsg = null;
+        $urlarr = parse_url($url);
+        if (!empty($ip) && !filter_var($urlarr['host'], FILTER_VALIDATE_IP)) {
+            if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+                $ip = gethostbyname($ip);
+            }
+            if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP)) {
+                $port = isset($urlarr['port']) ? $urlarr['port'] : ($urlarr['scheme'] == 'https' ? 443 : 80);
+                $resolve = $urlarr['host'] . ':' . $port . ':' . $ip;
+            }
+        }
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -20,6 +30,10 @@ class CheckUtils
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+        if(!empty($resolve)){
+            curl_setopt($ch, CURLOPT_DNS_USE_GLOBAL_CACHE, false);
+            curl_setopt($ch, CURLOPT_RESOLVE, [$resolve]);
+        }
         curl_exec($ch);
         $errno = curl_errno($ch);
         if ($errno) {

@@ -112,7 +112,8 @@ class huawei implements DnsInterface {
 	//添加解析记录
 	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
 		$Name = $this->getHost($Name);
-		$params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => [$Value], 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
+		$records = explode(',', $Value);
+		$params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => $records, 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
 		if($Type == 'MX')$param['weight'] = intval($MX);
 		$data = $this->send_reuqest('POST', '/v2.1/zones/'.$this->domainid.'/recordsets', null, $params);
 		return is_array($data) ? $data['id'] : false;
@@ -121,7 +122,8 @@ class huawei implements DnsInterface {
 	//修改解析记录
 	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
 		$Name = $this->getHost($Name);
-		$params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => [$Value], 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
+		$records = explode(',', $Value);
+		$params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => $records, 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
 		if($Type == 'MX')$param['weight'] = intval($MX);
 		$data = $this->send_reuqest('PUT', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId, null, $params);
 		return is_array($data);

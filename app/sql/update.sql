@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_dmtask` (
   `backup_value` varchar(128) DEFAULT NULL,
   `checktype` tinyint(1) NOT NULL DEFAULT 0,
   `checkurl` varchar(512) DEFAULT NULL,
-  `tcpport` tinyint(5) DEFAULT NULL,
+  `tcpport` int(5) DEFAULT NULL,
   `frequency` tinyint(5) NOT NULL,
   `cycle` tinyint(5) NOT NULL DEFAULT 3,
   `timeout` tinyint(5) NOT NULL DEFAULT 2,

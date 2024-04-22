@@ -28,7 +28,7 @@ class TaskRunner
     public function execute($row)
     {
         if($row['checktype'] == 2){
-            $result = CheckUtils::curl($row['checkurl'], $row['timeout']);
+            $result = CheckUtils::curl($row['checkurl'], $row['timeout'], $row['main_value']);
         }else if($row['checktype'] == 1){
             $result = CheckUtils::tcp($row['main_value'], $row['tcpport'], $row['timeout']);
         }else{
