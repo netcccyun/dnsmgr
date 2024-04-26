@@ -36,7 +36,7 @@ class Auth extends BaseController
             }
             if (file_exists($login_limit_file)) {
                 $login_limit = unserialize(file_get_contents($login_limit_file));
-                if ($login_limit['count'] >= $login_limit_count && $login_limit['time'] > time() - 86400) {
+                if ($login_limit['count'] >= $login_limit_count && $login_limit['time'] > time() - 7200) {
                     exit(json_encode(['code' => -1, 'msg' => '多次登录失败，暂时禁止登录。可删除/runtime/@login.lock文件解除限制', 'vcode'=>1]));
                 }
             }
@@ -49,6 +49,9 @@ class Auth extends BaseController
                 $expiretime = time()+2562000;
                 $token = authcode("user\t{$user['id']}\t{$session}\t{$expiretime}", 'ENCODE', env('app.sys_key'));
                 cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true]);
+                if (file_exists($login_limit_file)) {
+                    unlink($login_limit_file);
+                }
                 return json(['code'=>0]);
             }else{
                 if($user){

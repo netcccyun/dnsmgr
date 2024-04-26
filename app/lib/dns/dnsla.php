@@ -196,6 +196,9 @@ class dnsla implements DnsInterface {
 			}
 			$response = $this->curl($method, $path, $header);
 		}
+		if(!$response){
+			return false;
+		}
 		$arr=json_decode($response,true);
 		if($arr){
 			if($arr['code'] == 200){

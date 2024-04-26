@@ -357,5 +357,10 @@ function getDomainList(){
 function loading(){
 	layer.load(2);
 }
+document.addEventListener("visibilitychange", function() {
+	if (document.visibilityState === "visible") {
+		layer.closeAll();
+	}
+});
 </script>
 {/block}

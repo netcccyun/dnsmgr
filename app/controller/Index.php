@@ -72,7 +72,7 @@ class Index extends BaseController
                 cookie('admin_skin', null);
             }
             config_set('admin_skin', $skin);
-            Cache::delete('configs'); 
+            Cache::delete('configs');
         }else{
             cookie('admin_skin', $skin);
         }
