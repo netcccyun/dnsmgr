@@ -155,7 +155,7 @@ function setActive(id, active){
 	}, 'json');
 }
 function delItem(id){
-	layer.confirm('确定要删除此切换策略吗？', {
+	layer.confirm('确定要删除此任务吗？', {
 		btn: ['确定','取消']
 	}, function(){
 		$.post('/optimizeip/opipform/del', {id: id}, function(data){

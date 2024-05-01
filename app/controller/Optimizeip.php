@@ -69,7 +69,7 @@ class Optimizeip extends BaseController
                     'recordnum' => input('post.recordnum/d'),
                     'ttl' => input('post.ttl/d'),
                     'remark' => input('post.remark', null, 'trim'),
-                    'addtime' => time(),
+                    'addtime' => date('Y-m-d H:i:s'),
                     'active' => 1
                 ];
     
