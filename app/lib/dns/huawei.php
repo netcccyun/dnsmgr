@@ -91,6 +91,7 @@ class huawei implements DnsInterface {
 	public function getDomainRecordInfo($RecordId){
 		$data = $this->send_reuqest('GET', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId);
 		if($data){
+			if($data['name'] == $data['zone_name']) $data['name'] = '@';
 			return [
 				'RecordId' => $data['id'],
 				'Domain' => rtrim($data['zone_name'], '.'),

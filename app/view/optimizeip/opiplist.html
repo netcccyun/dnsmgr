@@ -1,5 +1,5 @@
 {extend name="common/layout" /}
-{block name="title"}容灾切换策略{/block}
+{block name="title"}CF优选IP任务管理{/block}
 {block name="main"}
 <style>
 tbody tr>td:nth-child(2){overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:180px;}
@@ -13,7 +13,7 @@ tbody tr>td:nth-child(2){overflow: hidden;text-overflow: ellipsis;white-space: n
   <div class="form-group">
 	<label>搜索</label>
 	<div class="form-group">
-		<select name="type" class="form-control"><option value="1">域名</option><option value="3">解析记录</option><option value="4">备用解析记录</option><option value="2">解析记录ID</option><option value="5">备注</option></select>
+		<select name="type" class="form-control"><option value="1">域名</option><option value="2">备注</option></select>
 	  </div>
   </div>
   <div class="form-group">
@@ -21,7 +21,7 @@ tbody tr>td:nth-child(2){overflow: hidden;text-overflow: ellipsis;white-space: n
   </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名账户列表"><i class="fa fa-refresh"></i> 刷新</a>
-  <a href="/dmonitor/task/add" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
+  <a href="/optimizeip/opipform/add" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
 </form>
 
       <table id="listTable">
@@ -44,7 +44,7 @@ $(document).ready(function(){
 	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
 	$("#listTable").bootstrapTable({
-		url: '/dmonitor/task/data',
+		url: '/optimizeip/opiplist/data',
 		pageNumber: pageNumber,
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
@@ -61,81 +61,78 @@ $(document).ready(function(){
 				}
 			},
 			{
-				field: 'main_value',
-				title: '解析记录',
+				field: 'cdn_type',
+				title: 'CDN运营商',
 				formatter: function(value, row, index) {
-					return value;
-				}
-			},
-			{
-				field: 'type',
-				title: '切换设置',
-				formatter: function(value, row, index) {
-					if(value == 1) {
-						return '暂停解析';
-					} else if(value == 2) {
-						return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="备用：'+row.backup_value+'" class="tips">切换备用</span>';
-					} else if(value == 3) {
-						return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="同域名正常数量<='+row.cycle+'" class="tips">条件开启</span>';
-					} else {
-						return '无操作';
-					}
-				}
-			},
-			{
-				field: 'frequency',
-				title: '检测间隔',
-				formatter: function(value, row, index) {
-					if(row.type <= 2){
-						var checktype = 'PING';
-						if(row.checktype == 2){
-							checktype = row.checkurl;
-						}else if(row.checktype == 1){
-							checktype = 'TCP('+row.tcpport+'端口)';
-						}
+					if(value == 1){
+						return 'CloudFlare';
+					}else if(value == 2){
+						return 'CloudFront';
+					}else if(value == 3){
+						return 'Gcore';
 					}else{
-						var checktype = '';
+						return '未知';
 					}
-					return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="'+checktype+'" class="tips">' + value + '秒</span>';
 				}
 			},
 			{
-				field: 'status',
-				title: '健康状况',
+				field: 'recordnum',
+				title: '解析数量',
 				formatter: function(value, row, index) {
-					if(value == 0) {
-						return '<span class="label label-success">正常</span>';
-					} else {
-						return '<span class="label label-danger">异常</span>';
-					}
+					return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="TTL：'+row.ttl+'" class="tips">'+value+'</span>';
+				}
+			},
+			{
+				field: 'ip_type',
+				title: '解析IP类型',
+				formatter: function(value, row, index) {
+					var value = value.split(',')
+					value.forEach((element, index) => {
+						if(element == 'v4') value[index] = 'IPv4'
+						else if(element == 'v6') value[index] = 'IPv6'
+					});
+					return value.join(',');
 				}
 			},
 			{
 				field: 'active',
-				title: '运行开关',
+				title: '任务开关',
 				formatter: function(value, row, index) {
 					var html = '';
 					if(value == 1) {
 						html += '<span class="btn btn-success btn-xs" onclick="setActive('+row.id+', 0)">开启</span>';
 					} else {
-						html += '<span class="btn btn-warning btn-xs" onclick="setActive('+row.id+', 1)">暂停</span>';
+						html += '<span class="btn btn-warning btn-xs" onclick="setActive('+row.id+', 1)">关闭</span>';
 					}
 					return html;
 				}
 			},
 			{
-				field: 'checktime',
-				title: '上次检测时间',
+				field: 'updatetime',
+				title: '上次更新时间',
 				formatter: function(value, row, index) {
-					return value > 0 ? row.checktimestr : '未运行';
+					return value ? value : '无';
+				}
+			},
+			{
+				field: 'status',
+				title: '上次更新结果',
+				formatter: function(value, row, index) {
+					if(value == 1) {
+						return '<span class="label label-success">成功</span>';
+					} else if(value == 2) {
+						return '<span class="label label-danger">失败</span> <span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="'+row.errmsg+'" class="tips"><i class="fa fa-info-circle"></i></span>';
+					} else {
+						return '<span class="label label-warning">未运行</span>';
+					}
 				}
 			},
 			{
 				field: '',
 				title: '操作',
 				formatter: function(value, row, index) {
-					var html = '<a href="/dmonitor/task/info/'+row.id+'" class="btn btn-info btn-xs">切换日志</a>&nbsp;&nbsp;';
-					html += '<a href="/dmonitor/task/edit?id='+row.id+'" class="btn btn-primary btn-xs">修改</a>&nbsp;&nbsp;';
+					var html = '<a href="javascript:runTask(\''+row.id+'\')" class="btn btn-success btn-xs">手动更新</a>&nbsp;&nbsp;';
+					html += '<a href="/optimizeip/opipform/edit?id='+row.id+'" class="btn btn-primary btn-xs">修改</a>&nbsp;&nbsp;';
 					html += '<a href="/record/'+row.did+'?keyword='+row.rr+'" class="btn btn-default btn-xs" target="_blank">解析</a>&nbsp;&nbsp;';
 					html += '<a href="javascript:delItem(\''+row.id+'\')" class="btn btn-danger btn-xs">删除</a>&nbsp;&nbsp;';
 					return html;
@@ -148,7 +145,7 @@ $(document).ready(function(){
 	})
 })
 function setActive(id, active){
-	$.post('/dmonitor/task/setactive', {id: id, active: active}, function(data){
+	$.post('/optimizeip/opipform/setactive', {id: id, active: active}, function(data){
 		if(data.code == 0) {
 			layer.msg('修改成功', {icon: 1, time:800});
 			$('#listTable').bootstrapTable('refresh');
@@ -161,7 +158,7 @@ function delItem(id){
 	layer.confirm('确定要删除此切换策略吗？', {
 		btn: ['确定','取消']
 	}, function(){
-		$.post('/dmonitor/task/del', {id: id}, function(data){
+		$.post('/optimizeip/opipform/del', {id: id}, function(data){
 			if(data.code == 0) {
 				layer.msg('删除成功', {icon: 1, time:800});
 				$('#listTable').bootstrapTable('refresh');
@@ -170,6 +167,18 @@ function delItem(id){
 			}
 		}, 'json');
 	});
+}
+function runTask(id){
+	var ii = layer.msg('正在更新中...', {icon: 16,shade: 0.1,time: 0});
+	$.post('/optimizeip/opipform/run', {id: id}, function(data){
+		layer.close(ii);
+		if(data.code == 0) {
+			layer.alert(data.msg, {icon: 1});
+			$('#listTable').bootstrapTable('refresh');
+		} else {
+			layer.alert(data.msg, {icon: 2});
+		}
+	}, 'json');
 }
 </script>
 {/block}

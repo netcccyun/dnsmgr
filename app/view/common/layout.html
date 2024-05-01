@@ -121,6 +121,19 @@
               <li><a href="/dmonitor/noticeset"><i class="fa fa-circle-o"></i> 通知设置</a></li>
             </ul>
           </li>
+          <li class="treeview {:checkIfActive('opipset,opiplist,opipform')}">
+            <a href="javascript:;">
+              <i class="fa fa-globe fa-fw"></i>
+              <span>CF优选IP</span>
+              <span class="pull-right-container">
+                <i class="fa fa-angle-left pull-right"></i>
+              </span>
+            </a>
+            <ul class="treeview-menu">
+              <li><a href="/optimizeip/opipset"><i class="fa fa-circle-o"></i> 优选设置</a></li>
+              <li><a href="/optimizeip/opiplist"><i class="fa fa-circle-o"></i> 任务管理</a></li>
+            </ul>
+          </li>
           <li class="{:checkIfActive('account')}">
             <a href="/account"><i class="fa fa-lock fa-fw"></i> <span>域名账户</span></a>
           </li>

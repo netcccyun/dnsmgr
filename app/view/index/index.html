@@ -169,6 +169,10 @@ function speedModeNotice(){
 		var html = "<div class=\"panel panel-default\"><div class=\"panel-body\">当前浏览器是兼容模式，为确保后台功能正常使用，请切换到<b style='color:#51b72f'>极速模式</b>！<br>操作方法：点击浏览器地址栏右侧的IE符号<b style='color:#51b72f;'><i class='fa fa-internet-explorer fa-fw'></i></b>→选择“<b style='color:#51b72f;'><i class='fa fa-flash fa-fw'></i></b><b style='color:#51b72f;'>极速模式</b>”</div></div>";
 		$("#browser-notice").html(html)
 	}
+	else if(window.location.protocol.indexOf("https")==-1){
+		var html = "<div class=\"panel panel-default\"><div class=\"panel-body\"><b style='color:#CC3022;'><i class='fa fa-info-circle fa-fw'></i></b>当前正在使用HTTP访问，可能存在被窃取敏感信息风险，请使用HTTPS访问！</div></div>";
+		$("#browser-notice").html(html)
+	}
 }
 speedModeNotice();
 </script>

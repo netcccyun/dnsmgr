@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_config` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `dnsmgr_dmtask` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `did` int(11) unsigned NOT NULL,
   `rr` varchar(128) NOT NULL,
   `recordid` varchar(60) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_dmtask` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `dnsmgr_dmlog` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `taskid` int(11) unsigned NOT NULL,
   `action` tinyint(4) NOT NULL DEFAULT 0,
   `errmsg` varchar(100) DEFAULT NULL,
@@ -40,4 +40,23 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_dmlog` (
   PRIMARY KEY (`id`),
   KEY `taskid` (`taskid`),
   KEY `date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `dnsmgr_optimizeip` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `did` int(11) unsigned NOT NULL,
+  `rr` varchar(128) NOT NULL,
+  `type` tinyint(1) NOT NULL DEFAULT 0,
+  `ip_type` varchar(10) NOT NULL,
+  `cdn_type` tinyint(5) NOT NULL DEFAULT 1,
+  `recordnum` tinyint(5) NOT NULL DEFAULT 2,
+  `ttl` int(5) NOT NULL DEFAULT 600,
+  `remark` varchar(100) DEFAULT NULL,
+  `addtime` datetime NOT NULL,
+  `updatetime` datetime DEFAULT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT 0,
+  `active` tinyint(1) NOT NULL DEFAULT 0,
+  `errmsg` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `did` (`did`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

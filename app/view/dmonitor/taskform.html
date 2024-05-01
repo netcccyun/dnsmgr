@@ -7,6 +7,7 @@
         position: absolute;
         left: 0;
     }
+    .tips{color: #f6a838; padding-left: 5px;}
 </style>
 <div class="row" id="app">
 <div class="col-xs-12 center-block" style="float: none;">
@@ -49,7 +50,7 @@
             <input type="text" name="backup_value" v-model="set.backup_value" placeholder="支持填写IPv4或CNAME地址" class="form-control" required>
         </div>
     </div>
-    <div class="form-group">
+    <div class="form-group" v-show="set.type<=2">
         <label class="col-sm-3 control-label no-padding-right">检测协议</label>
         <div class="col-sm-6">
             <label class="radio-inline" v-for="option in checktypeList">
@@ -57,25 +58,31 @@
             </label>
         </div>
     </div>
-    <div class="form-group" v-show="set.checktype==1">
+    <div class="form-group" v-show="set.type<=2&&set.checktype==1">
         <label class="col-sm-3 control-label no-padding-right">TCP检测端口</label>
         <div class="col-sm-6">
             <input type="text" name="tcpport" v-model="set.tcpport" placeholder="填写TCP端口号" class="form-control" data-bv-integer="true" min="1" max="65535" required>
         </div>
     </div>
-    <div class="form-group" v-show="set.checktype==2">
+    <div class="form-group" v-show="set.type<=2&&set.checktype==2">
         <label class="col-sm-3 control-label no-padding-right">检测URL地址</label>
         <div class="col-sm-6">
             <input type="text" name="checkurl" v-model="set.checkurl" placeholder="填写以http(s)://开头的完整地址，http状态码须为2xx/3xx" class="form-control" data-bv-uri="true" required>
         </div>
     </div>
-    <div class="form-group" v-show="set.checktype>0">
+    <div class="form-group" v-show="set.type<=2&&set.checktype>0">
         <label class="col-sm-3 control-label no-padding-right">最大超时时间</label>
         <div class="col-sm-3">
             <div class="input-group">
                 <input type="text" name="timeout" v-model="set.timeout" placeholder="填写请求最大超时时间" class="form-control" data-bv-integer="true" min="1" required>
                 <span class="input-group-addon">秒</span>
             </div>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.type==3">
+        <label class="col-sm-3 control-label no-padding-right">同域名正常数量<span class="tips" title="" data-toggle="tooltip" data-placement="bottom" data-original-title="与暂停解析配合使用，当同域名正常记录数量&lt;=几条时开启解析"><i class="fa fa-question-circle"></i></span></label>
+        <div class="col-sm-3">
+            <input type="text" name="cycle" v-model="set.cycle" placeholder="同域名正常记录数量&lt;=几条时开启解析" class="form-control" data-bv-integer="true" min="0" required>
         </div>
     </div>
     <div class="form-group">
@@ -87,7 +94,7 @@
             </div>
         </div>
     </div>
-    <div class="form-group">
+    <div class="form-group" v-show="set.type<=2">
         <label class="col-sm-3 control-label no-padding-right">确认次数</label>
         <div class="col-sm-3">
             <input type="text" name="cycle" v-model="set.cycle" placeholder="连续失败几次后进行切换" class="form-control" data-bv-integer="true" min="1" required>
@@ -128,7 +135,7 @@ new Vue({
             main_value: '',
             type: 1,
             backup_value: '',
-            checktype: 2,
+            checktype: 1,
             tcpport: 80,
             checkurl: '',
             frequency: 5,
@@ -140,6 +147,7 @@ new Vue({
             {value:0, label:'无操作'},
             {value:1, label:'暂停解析'},
             {value:2, label:'切换备用解析'},
+            {value:3, label:'条件开启解析'},
         ],
         checktypeList: [
             {value:0, label:'PING', disabled: support_ping=='0'},
@@ -169,6 +177,7 @@ new Vue({
         $("#taskform").bootstrapValidator({
             live: 'submitted',
         });
+        $('[data-toggle="tooltip"]').tooltip();
     },
     methods: {
         getRecordList(){

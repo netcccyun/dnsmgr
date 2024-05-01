@@ -112,4 +112,7 @@ class Index extends BaseController
         return view();
     }
 
+    public function test(){
+
+    }
 }

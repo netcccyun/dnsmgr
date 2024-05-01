@@ -31,7 +31,7 @@ return [
     'show_error_msg'   => true,
     'exception_tmpl'   => \think\facade\App::getAppPath() . 'view/exception.tpl',
 
-    'version' => '1004',
+    'version' => '1005',
 
-    'dbversion' => '1003'
+    'dbversion' => '1005'
 ];

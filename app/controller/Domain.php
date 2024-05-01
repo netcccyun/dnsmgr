@@ -220,6 +220,7 @@ class Domain extends BaseController
             $id = input('post.id/d');
             Db::name('domain')->where('id', $id)->delete();
             Db::name('dmtask')->where('did', $id)->delete();
+            Db::name('optimizeip')->where('did', $id)->delete();
             return json(['code'=>0]);
         }
         return json(['code'=>-3]);
@@ -232,9 +233,16 @@ class Domain extends BaseController
         $page = input('?post.page') ? input('post.page/d') : 1;
         $pagesize = input('?post.pagesize') ? input('post.pagesize/d') : 10;
         $dns = DnsHelper::getModel($aid);
-        $list = $dns->getDomainList($kw, $page, $pagesize);
-        if(!$list) return json(['code'=>-1, 'msg'=>'获取域名列表失败，'.$dns->getError()]);
-        return json(['code'=>0, 'data'=>$list]);
+        $result = $dns->getDomainList($kw, $page, $pagesize);
+        if(!$result) return json(['code'=>-1, 'msg'=>'获取域名列表失败，'.$dns->getError()]);
+
+        $newlist = [];
+        foreach($result['list'] as $row){
+            if(!Db::name('domain')->where('aid', $aid)->where('name', $row['Domain'])->find()){
+                $newlist[] = $row;
+            }
+        }
+        return json(['code'=>0, 'data'=>['total'=>$result['total'], 'list'=>$newlist]]);
     }
 
     //获取解析线路和最小TTL
@@ -244,10 +252,10 @@ class Domain extends BaseController
         if(empty($recordLine)){
             $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
             if(!$dns) return $this->alert('error', 'DNS模块不存在');
-            $recordLine = $dns->getRecordLine($drow['name']);
+            $recordLine = $dns->getRecordLine();
             if(!$recordLine) return $this->alert('error', '获取解析线路列表失败，'.$dns->getError());
             cache('record_line_'.$drow['id'], $recordLine, 604800);
-            $minTTL = $dns->getMinTTL($drow['name']);
+            $minTTL = $dns->getMinTTL();
             if($minTTL){
                 cache('min_ttl_'.$drow['id'], $minTTL, 604800);
             }

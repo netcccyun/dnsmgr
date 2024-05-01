@@ -27,31 +27,43 @@ class TaskRunner
 
     public function execute($row)
     {
-        if($row['checktype'] == 2){
-            $result = CheckUtils::curl($row['checkurl'], $row['timeout'], $row['main_value']);
-        }else if($row['checktype'] == 1){
-            $result = CheckUtils::tcp($row['main_value'], $row['tcpport'], $row['timeout']);
-        }else{
-            $result = CheckUtils::ping($row['main_value']);
-        }
-
-        $action = 0;
-        if($result['status'] && $row['status']==1){
-            if($row['cycle'] <= 1 || $row['errcount'] >= $row['cycle']){
-                $this->db()->name('dmtask')->where('id', $row['id'])->update(['status'=>0, 'errcount'=>0, 'switchtime'=>time()]);
+        if($row['type'] == 3){ //条件开启解析
+            $action = 0;
+            $remain = $this->db()->name('dmtask')->where(['did'=>$row['did'], 'rr'=>$row['rr'], 'type'=>1, 'status'=>0])->count();
+            if($remain<=$row['cycle'] && $row['status']==0){
                 $action = 2;
-            }else{
-                $this->db()->name('dmtask')->where('id', $row['id'])->inc('errcount')->update();
-            }
-        }elseif(!$result['status'] && $row['status']==0){
-            if($row['cycle'] <= 1 || $row['errcount'] >= $row['cycle']){
                 $this->db()->name('dmtask')->where('id', $row['id'])->update(['status'=>1, 'errcount'=>0, 'switchtime'=>time()]);
+            }elseif($remain>$row['cycle'] && $row['status']==1){
                 $action = 1;
+                $this->db()->name('dmtask')->where('id', $row['id'])->update(['status'=>0, 'errcount'=>0, 'switchtime'=>time()]);
+			}
+        }else{
+            if($row['checktype'] == 2){
+                $result = CheckUtils::curl($row['checkurl'], $row['timeout'], $row['main_value']);
+            }else if($row['checktype'] == 1){
+                $result = CheckUtils::tcp($row['main_value'], $row['tcpport'], $row['timeout']);
             }else{
-                $this->db()->name('dmtask')->where('id', $row['id'])->inc('errcount')->update();
+                $result = CheckUtils::ping($row['main_value']);
             }
-        }elseif($row['errcount'] > 0){
-            $this->db()->name('dmtask')->where('id', $row['id'])->update(['errcount'=>0]);
+    
+            $action = 0;
+            if($result['status'] && $row['status']==1){
+                if($row['cycle'] <= 1 || $row['errcount'] >= $row['cycle']){
+                    $this->db()->name('dmtask')->where('id', $row['id'])->update(['status'=>0, 'errcount'=>0, 'switchtime'=>time()]);
+                    $action = 2;
+                }else{
+                    $this->db()->name('dmtask')->where('id', $row['id'])->inc('errcount')->update();
+                }
+            }elseif(!$result['status'] && $row['status']==0){
+                if($row['cycle'] <= 1 || $row['errcount'] >= $row['cycle']){
+                    $this->db()->name('dmtask')->where('id', $row['id'])->update(['status'=>1, 'errcount'=>0, 'switchtime'=>time()]);
+                    $action = 1;
+                }else{
+                    $this->db()->name('dmtask')->where('id', $row['id'])->inc('errcount')->update();
+                }
+            }elseif($row['errcount'] > 0){
+                $this->db()->name('dmtask')->where('id', $row['id'])->update(['errcount'=>0]);
+            }
         }
 
         if($action > 0){
@@ -71,7 +83,7 @@ class TaskRunner
                 if(!$res){
                     $this->db()->name('log')->insert(['uid' => 0, 'domain' => $drow['name'], 'action' => '修改解析失败', 'data' => $dns->getError(), 'addtime' => date("Y-m-d H:i:s")]);
                 }
-            }elseif($row['type'] == 1){
+            }elseif($row['type'] == 1 || $row['type'] == 3){
                 $dns = DnsHelper::getModel2($drow);
                 $res = $dns->setDomainRecordStatus($row['recordid'], '0');
                 if(!$res){
@@ -86,7 +98,7 @@ class TaskRunner
                 if(!$res){
                     $this->db()->name('log')->insert(['uid' => 0, 'domain' => $drow['name'], 'action' => '修改解析失败', 'data' => $dns->getError(), 'addtime' => date("Y-m-d H:i:s")]);
                 }
-            }elseif($row['type'] == 1){
+            }elseif($row['type'] == 1 || $row['type'] == 3){
                 $dns = DnsHelper::getModel2($drow);
                 $res = $dns->setDomainRecordStatus($row['recordid'], '1');
                 if(!$res){
@@ -101,11 +113,13 @@ class TaskRunner
         $this->db()->name('dmlog')->insert([
             'taskid' => $row['id'],
             'action' => $action,
-            'errmsg' => $result['status'] ? null : $result['errmsg'],
+            'errmsg' => isset($result) ? ($result['status'] ? null : $result['errmsg']) : null,
             'date' => date('Y-m-d H:i:s')
         ]);
         $this->closeDb();
 
-        MsgNotice::send($action, $row, $result);
+        if($row['type'] != 3){
+            MsgNotice::send($action, $row, $result);
+        }
     }
 }

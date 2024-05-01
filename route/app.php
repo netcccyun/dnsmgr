@@ -24,12 +24,14 @@ Route::any('/login', 'auth/login')->middleware(\think\middleware\SessionInit::cl
 Route::get('/logout', 'auth/logout');
 Route::any('/quicklogin', 'auth/quicklogin');
 Route::any('/dmtask/status', 'dmonitor/status');
+Route::any('/optimizeip/status', 'optimizeip/status');
 
 Route::group(function () {
     Route::any('/', 'index/index');
     Route::post('/changeskin', 'index/changeskin');
     Route::get('/cleancache', 'index/cleancache');
     Route::any('/setpwd', 'index/setpwd');
+    Route::get('/test', 'index/test');
 
     Route::post('/user/data', 'user/user_data');
     Route::post('/user/op', 'user/user_op');
@@ -67,6 +69,12 @@ Route::group(function () {
     Route::any('/dmonitor/noticeset', 'dmonitor/noticeset');
     Route::get('/dmonitor/mailtest', 'dmonitor/mailtest');
     Route::post('/dmonitor/clean', 'dmonitor/clean');
+
+    Route::any('/optimizeip/opipset', 'optimizeip/opipset');
+    Route::post('/optimizeip/queryapi', 'optimizeip/queryapi');
+    Route::post('/optimizeip/opiplist/data', 'optimizeip/opiplist_data');
+    Route::get('/optimizeip/opiplist', 'optimizeip/opiplist');
+    Route::any('/optimizeip/opipform/:action', 'optimizeip/opipform');
 
 })->middleware(\app\middleware\CheckLogin::class)
 ->middleware(\app\middleware\ViewOutput::class);

@@ -84,6 +84,8 @@ class dnspod implements DnsInterface {
 				];
 			}
 			return ['total' => $data['RecordCountInfo']['TotalCount'], 'list' => $list];
+		}elseif($this->error == '记录列表为空。'){
+			return ['total' => 0, 'list' => []];
 		}
 		return false;
 	}

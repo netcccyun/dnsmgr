@@ -5,7 +5,7 @@ CREATE TABLE `dnsmgr_config` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `dnsmgr_config` VALUES ('version', '1003');
+INSERT INTO `dnsmgr_config` VALUES ('version', '1005');
 INSERT INTO `dnsmgr_config` VALUES ('notice_mail', '0');
 INSERT INTO `dnsmgr_config` VALUES ('notice_wxtpl', '0');
 INSERT INTO `dnsmgr_config` VALUES ('mail_smtp', 'smtp.qq.com');
@@ -64,7 +64,7 @@ CREATE TABLE `dnsmgr_permission` (
 
 DROP TABLE IF EXISTS `dnsmgr_log`;
 CREATE TABLE `dnsmgr_log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `uid` int(11) unsigned NOT NULL,
   `action` varchar(40) NOT NULL,
   `domain` varchar(128) NOT NULL DEFAULT '',
@@ -77,7 +77,7 @@ CREATE TABLE `dnsmgr_log` (
 
 DROP TABLE IF EXISTS `dnsmgr_dmtask`;
 CREATE TABLE `dnsmgr_dmtask` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `did` int(11) unsigned NOT NULL,
   `rr` varchar(128) NOT NULL,
   `recordid` varchar(60) NOT NULL,
@@ -105,7 +105,7 @@ CREATE TABLE `dnsmgr_dmtask` (
 
 DROP TABLE IF EXISTS `dnsmgr_dmlog`;
 CREATE TABLE `dnsmgr_dmlog` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `taskid` int(11) unsigned NOT NULL,
   `action` tinyint(4) NOT NULL DEFAULT 0,
   `errmsg` varchar(100) DEFAULT NULL,
@@ -113,4 +113,24 @@ CREATE TABLE `dnsmgr_dmlog` (
   PRIMARY KEY (`id`),
   KEY `taskid` (`taskid`),
   KEY `date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_optimizeip`;
+CREATE TABLE `dnsmgr_optimizeip` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `did` int(11) unsigned NOT NULL,
+  `rr` varchar(128) NOT NULL,
+  `type` tinyint(1) NOT NULL DEFAULT 0,
+  `ip_type` varchar(10) NOT NULL,
+  `cdn_type` tinyint(5) NOT NULL DEFAULT 1,
+  `recordnum` tinyint(5) NOT NULL DEFAULT 2,
+  `ttl` int(5) NOT NULL DEFAULT 600,
+  `remark` varchar(100) DEFAULT NULL,
+  `addtime` datetime NOT NULL,
+  `updatetime` datetime DEFAULT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT 0,
+  `active` tinyint(1) NOT NULL DEFAULT 0,
+  `errmsg` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `did` (`did`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

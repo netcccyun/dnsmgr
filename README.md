@@ -9,7 +9,12 @@
 - DNSLA
 - CloudFlare
 
-本系统支持多用户，每个用户可分配不同的域名解析权限；支持API接口，支持获取域名独立DNS控制面板登录链接，方便各种IDC系统对接。
+### 功能特性
+
+- 多用户管理，可为每个用户可分配不同的域名解析权限
+- 提供API接口，可获取域名单独的登录链接，方便各种IDC系统对接
+- 容灾切换功能，支持ping、tcp、http(s)检测协议并自动暂停/修改域名解析，并支持邮件、微信公众号通知
+- CF优选IP功能，支持获取最新的Cloudflare优选IP，并自动更新到解析记录
 
 ### 演示截图
 
@@ -28,6 +33,10 @@
 用户管理添加用户，支持为用户开启API接口
 
 ![](https://p0.meituan.net/csc/d1bd90bedca9b6cbc5da40286bdb5cd5228438.png)
+
+CF优选IP功能，添加优选IP任务
+
+![](https://p1.meituan.net/csc/da70c76753aee4bce044d16fadd56e5f217660.png)
 
 ### 部署方法
 

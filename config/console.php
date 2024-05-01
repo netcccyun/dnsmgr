@@ -6,5 +6,6 @@ return [
     // 指令定义
     'commands' => [
         'dmtask' => 'app\command\Dmtask',
+        'opiptask' => 'app\command\Opiptask',
     ],
 ];

@@ -157,7 +157,7 @@ class Dmonitor extends BaseController
         if($action == 'edit'){
             $id = input('get.id/d');
             $task = Db::name('dmtask')->where('id', $id)->find();
-            if(empty($task)) return $this->alert('error', '任务不存在');
+            if(empty($task)) return $this->alert('error', '切换策略不存在');
         }
 
         $domains = [];
@@ -169,7 +169,7 @@ class Dmonitor extends BaseController
         View::assign('info', $task);
         View::assign('action', $action);
         View::assign('support_ping', function_exists('exec')?'1':'0');
-        return View::fetch('taskform');
+        return View::fetch();
     }
 
     public function taskinfo()
@@ -177,14 +177,16 @@ class Dmonitor extends BaseController
         if(!checkPermission(2)) return $this->alert('error', '无权限');
         $id = input('param.id/d');
         $task = Db::name('dmtask')->where('id', $id)->find();
-        if(empty($task)) return $this->alert('error', '任务不存在');
+        if(empty($task)) return $this->alert('error', '切换策略不存在');
 
         $switch_count = Db::name('dmlog')->where('taskid', $id)->where('date', '>=', date("Y-m-d H:i:s",strtotime("-1 days")))->count();
         $fail_count = Db::name('dmlog')->where('taskid', $id)->where('date', '>=', date("Y-m-d H:i:s",strtotime("-1 days")))->where('action', 1)->count();
 
         $task['switch_count'] = $switch_count;
         $task['fail_count'] = $fail_count;
-        if($task['type'] == 2){
+        if($task['type'] == 3){
+            $task['action_name'] = ['未知', '<font color="red">开启解析</font>', '<font color="green">暂停解析</font>'];
+        }elseif($task['type'] == 2){
             $task['action_name'] = ['未知', '<font color="red">切换备用解析记录</font>', '<font color="green">恢复主解析记录</font>'];
         }else{
             $task['action_name'] = ['未知', '<font color="red">暂停解析</font>', '<font color="green">启用解析</font>'];
