@@ -103,7 +103,7 @@
           {if request()->user['type'] eq 'user'}<li class="{:checkIfActive('index')}">
             <a href="/"><i class="fa fa-home fa-fw"></i> <span>后台首页</span></a>
           </li>{/if}
-          <li class="{:checkIfActive('domain,record,record_log')}">
+          <li class="{:checkIfActive('domain,record,record_log,record_batch_add')}">
             <a href="/domain"><i class="fa fa-list-ul fa-fw"></i> <span>域名管理</span></a>
           </li>
           {if request()->user['level'] eq 2}

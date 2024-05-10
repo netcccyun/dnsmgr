@@ -563,6 +563,121 @@ class Domain extends BaseController
         return json(['code'=>0, 'msg'=>$msg]);
     }
 
+    public function record_batch_edit(){
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if(!$drow){
+            return json(['code'=>-1, 'msg'=>'域名不存在']);
+        }
+        if(!checkPermission(0, $drow['name'])) return $this->alert('error', '无权限');
+
+        $action = input('post.action', null, 'trim');
+        $recordinfo = input('post.recordinfo', null, 'trim');
+        $recordinfo = json_decode($recordinfo, true);
+
+        if($action == 'value'){
+            $type = input('post.type', null, 'trim');
+            $value = input('post.value', null, 'trim');
+    
+            if(empty($recordinfo) || empty($type) || empty($value)){
+                return json(['code'=>-1, 'msg'=>'参数不能为空']);
+            }
+    
+            $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+    
+            $success = 0; $fail = 0;
+            foreach($recordinfo as $record){
+                $recordid = $dns->updateDomainRecord($record['recordid'], $record['name'], $type, $value, $record['line'], $record['ttl'], $record['mx'], $record['remark']);
+                if($recordid){
+                    $this->add_log($drow['name'], '修改解析', $type.'记录 '.$record['name'].' '.$value.' (线路:'.$record['line'].' TTL:'.$record['ttl'].')');
+                    $success++;
+                }else{
+                    $fail++;
+                }
+            }
+            return json(['code'=>0, 'msg'=>'批量修改解析记录，成功'.$success.'条，失败'.$fail.'条']);
+
+        }else if($action == 'line'){
+            $line = input('post.line', null, 'trim');
+
+            if(empty($recordinfo) || empty($line)){
+                return json(['code'=>-1, 'msg'=>'参数不能为空']);
+            }
+
+            $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+    
+            $success = 0; $fail = 0;
+            foreach($recordinfo as $record){
+                $recordid = $dns->updateDomainRecord($record['recordid'], $record['name'], $record['type'], $record['value'], $line, $record['ttl'], $record['mx'], $record['remark']);
+                if($recordid){
+                    $this->add_log($drow['name'], '修改解析', $record['type'].'记录 '.$record['name'].' '.$record['value'].' (线路:'.$line.' TTL:'.$record['ttl'].')');
+                    $success++;
+                }else{
+                    $fail++;
+                }
+            }
+            return json(['code'=>0, 'msg'=>'批量修改解析线路，成功'.$success.'条，失败'.$fail.'条']);
+        }
+    }
+
+    public function record_batch_add(){
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if(!$drow){
+            return $this->alert('error', '域名不存在');
+        }
+        $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+        if(!checkPermission(0, $drow['name'])) return $this->alert('error', '无权限');
+
+        if(request()->isAjax()){
+            $record = input('post.record', null, 'trim');
+            $type = input('post.type', null, 'trim');
+            $line = input('post.line', null, 'trim');
+            $ttl = input('post.ttl/d', 600);
+            $mx = input('post.mx/d', 1);
+            $recordlist = explode("\n", $record);
+
+            if(empty($record) || empty($recordlist)){
+                return json(['code'=>-1, 'msg'=>'参数不能为空']);
+            }
+            
+            $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+
+            $success = 0; $fail = 0;
+            foreach($recordlist as $record){
+                $record = trim($record);
+                $arr = explode(' ', $record);
+                if(empty($record) || empty($arr[0]) || empty($arr[1])) continue;
+                $thistype = empty($type) ? getDnsType($arr[1]) : $type;
+                $recordid = $dns->addDomainRecord($arr[0], $thistype, $arr[1], $line, $ttl, $mx);
+                if($recordid){
+                    $this->add_log($drow['name'], '添加解析', $thistype.'记录 '.$arr[0].' '.$arr[1].' (线路:'.$line.' TTL:'.$ttl.')');
+                    $success++;
+                }else{
+                    $fail++;
+                }
+            }
+            return json(['code'=>0, 'msg'=>'批量添加解析，成功'.$success.'条，失败'.$fail.'条']);
+        }
+
+        list($recordLine, $minTTL) = $this->get_line_and_ttl($drow);
+
+        $recordLineArr = [];
+        foreach($recordLine as $key=>$item){
+            $recordLineArr[] = ['id'=>strval($key), 'name'=>$item['name'], 'parent'=>$item['parent']];
+        }
+
+        $dnsconfig = DnsHelper::$dns_config[$dnstype];
+        $dnsconfig['type'] = $dnstype;
+
+        View::assign('domainId', $id);
+        View::assign('domainName', $drow['name']);
+        View::assign('recordLine', $recordLineArr);
+        View::assign('minTTL', $minTTL?$minTTL:1);
+        View::assign('dnsconfig', $dnsconfig);
+        return view('batchadd');
+    }
+
     public function record_log(){
         $id = input('param.id/d');
         $drow = Db::name('domain')->where('id', $id)->find();

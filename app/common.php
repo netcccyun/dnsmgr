@@ -232,7 +232,8 @@ function getMillisecond()
 }
 
 function getDnsType($value){
-	if(filter_var($value, FILTER_VALIDATE_IP))return 'A';
+	if(filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))return 'A';
+	else if(filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6))return 'AAAA';
 	else return 'CNAME';
 }
 

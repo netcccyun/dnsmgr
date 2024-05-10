@@ -78,6 +78,78 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 		</div>
 	</div>
 </div>
+<div class="modal" id="modal-store2" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
+	<div class="modal-dialog">
+		<div class="modal-content animated flipInX">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"><span
+							aria-hidden="true">&times;</span><span
+							class="sr-only">Close</span></button>
+				<h4 class="modal-title" id="modal-title">批量修改解析记录</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="form-store2">
+					<input type="hidden" name="action" value="value"/>
+					<input type="hidden" name="recordinfo"/>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">记录类型</label>
+						<div class="col-sm-9">
+							<select name="type" class="form-control">
+								<option value="A">A</option>
+								<option value="CNAME">CNAME</option>
+								<option value="AAAA">AAAA</option>
+								<option value="NS">NS</option>
+								<option value="MX">MX</option>
+								<option value="SRV">SRV</option>
+								<option value="TXT">TXT</option>
+								<option value="CAA">CAA</option>
+								{if $dnsconfig.redirect}<option value="REDIRECT_URL">显性URL</option>
+								<option value="FORWARD_URL">隐性URL</option>{/if}
+							</select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right">记录值</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="value" placeholder="输入记录值" required>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+				<button type="button" class="btn btn-primary" id="store" onclick="batch_save()">保存</button>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="modal" id="modal-store3" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
+	<div class="modal-dialog">
+		<div class="modal-content animated flipInX">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"><span
+							aria-hidden="true">&times;</span><span
+							class="sr-only">Close</span></button>
+				<h4 class="modal-title" id="modal-title">批量修改解析线路</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="form-store3">
+					<input type="hidden" name="action" value="line"/>
+					<input type="hidden" name="recordinfo"/>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">线路类型</label>
+						<div class="col-sm-9" id="line_list3">
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+				<button type="button" class="btn btn-primary" id="store" onclick="batch_save_line()">保存</button>
+			</div>
+		</div>
+	</div>
+</div>
 <div class="row">
 	<div class="col-xs-12 center-block" style="float: none;">
 	<div class="panel panel-default panel-default">
@@ -99,7 +171,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   <a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加记录</a>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
-	<ul class="dropdown-menu"><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('delete')">删除</a></li></ul>
+	<ul class="dropdown-menu"><li><a href="/record/batchadd/{$domainId}">添加</a></li><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('edit')">修改记录</a></li><li><a href="javascript:operation('editline')">修改线路</a></li><li><a href="javascript:operation('delete')">删除</a></li></ul>
   </div>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">日志 <span class="caret"></span></button>
@@ -229,21 +301,23 @@ $(document).ready(function(){
 	});
 
 	$("#form-store").bootstrapValidator();
+	$("#form-store2").bootstrapValidator();
 })
-function initLine(option){
+function initLine(option, elem){
 	option = option || '';
-	$("#line_list").empty();
+	elem = elem || 'line_list';
+	$("#"+elem).empty();
 	$.each(recordLine, function(index, item){
 		if(item.parent == null){
 			option += '<option value="'+item.id+'">'+item.name+'</option>';
 		}
 	})
-	$("#line_list").append('<select name="line" class="form-control" onchange="changeLine(this)">'+option+'</select>');
+	$("#"+elem).append('<select name="line" class="form-control" onchange="changeLine(this, \''+elem+'\')">'+option+'</select>');
 }
-function changeLine(obj){
+function changeLine(obj, elem){
 	var line = $(obj).val();
 	var flag = false;
-	$("#line_list").children().each(function(index, elem){
+	$("#"+elem).children().each(function(index, elem){
 		if(flag) $(elem).remove()
 		if(obj == elem){
 			flag = true;
@@ -256,7 +330,7 @@ function changeLine(obj){
 		$.each(tempLine, function(index, item){
 			option += '<option value="'+item.id+'">'+item.name+'</option>';
 		})
-		$("#line_list").append('<select name="line" class="form-control" onchange="changeLine(this)">'+option+'</select>');
+		$("#"+elem).append('<select name="line" class="form-control" onchange="changeLine(this, \''+elem+'\')">'+option+'</select>');
 	}
 }
 function addframe(){
@@ -409,6 +483,22 @@ function operation(action){
 		layer.msg('请选择要操作的记录');
 		return;
 	}
+	if(action == 'edit'){
+		var records = [];
+		$.each(rows, function(index, item){
+			records.push({recordid:item.RecordId, name:item.Name, line:item.Line, mx:item.MX, ttl:item.TTL, remark:item.Remark});
+		})
+		batch_edit(records)
+		return;
+	}else if(action == 'editline'){
+		var records = [];
+		$.each(rows, function(index, item){
+			records.push({recordid:item.RecordId, name:item.Name, type:item.Type, value:item.Value, mx:item.MX, ttl:item.TTL, remark:item.Remark});
+		})
+		batch_edit_line(records)
+		return;
+	}
+
 	var ids = [];
 	$.each(rows, function(index, item){
 		ids.push(item.RecordId);
@@ -435,6 +525,76 @@ function operation(action){
 	  });
 	}, function(){
 	  layer.close(confirmobj);
+	});
+}
+function batch_edit(records){
+	var row = $("#listTable").bootstrapTable('getSelections')[0];
+	$("#batch_num").text(records.length);
+	$("#modal-store2").modal('show');
+	$("#form-store2 input[name=recordinfo]").val(JSON.stringify(records));
+	$("#form-store2 input[name=recordid]").val(row.RecordId);
+	$("#form-store2 input[name=name]").val(row.Name);
+	$("#form-store2 select[name=type]").val(row.Type);
+	$("select[name=type]").change();
+	$("#form-store2 input[name=value]").val(row.Value);
+	$("#form-store2").data("bootstrapValidator").resetForm();
+}
+function batch_save(){
+	$("#form-store2").data("bootstrapValidator").validate();
+	if(!$("#form-store2").data("bootstrapValidator").isValid()){
+		return;
+	}
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/record/batchedit/{$domainId}',
+		data : $("#form-store2").serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert(data.msg,{
+					icon: 1,
+					closeBtn: false
+				}, function(){
+					layer.closeAll();
+					$("#modal-store2").modal('hide');
+					searchSubmit();
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		}
+	});
+}
+function batch_edit_line(records){
+	$("#batch_num").text(records.length);
+	$("#modal-store3").modal('show');
+	$("#form-store3 input[name=recordinfo]").val(JSON.stringify(records));
+	initLine('', 'line_list3');
+}
+function batch_save_line(){
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/record/batchedit/{$domainId}',
+		data : $("#form-store3").serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert(data.msg,{
+					icon: 1,
+					closeBtn: false
+				}, function(){
+					layer.closeAll();
+					$("#modal-store3").modal('hide');
+					searchSubmit();
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		}
 	});
 }
 </script>
