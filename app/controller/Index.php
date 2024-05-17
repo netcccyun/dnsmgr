@@ -61,7 +61,11 @@ class Index extends BaseController
             $value=trim($value);
             if(empty($value))continue;
             $value = str_replace('dnsmgr_',$mysql_prefix,$value);
-            Db::execute($value);
+            try{
+                Db::execute($value);
+            }catch(Exception $e){
+                
+            }
         }
     }
 

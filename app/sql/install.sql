@@ -33,6 +33,7 @@ CREATE TABLE `dnsmgr_domain` (
   `is_hide` tinyint(1) NOT NULL DEFAULT '0',
   `is_sso` tinyint(1) NOT NULL DEFAULT '0',
   `recordcount` int(1) NOT NULL DEFAULT '0',
+  `remark` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

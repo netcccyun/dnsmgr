@@ -171,7 +171,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   <a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加记录</a>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
-	<ul class="dropdown-menu"><li><a href="/record/batchadd/{$domainId}">添加</a></li><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('edit')">修改记录</a></li><li><a href="javascript:operation('editline')">修改线路</a></li><li><a href="javascript:operation('delete')">删除</a></li></ul>
+	<ul class="dropdown-menu"><li><a href="/record/batchadd/{$domainId}">添加</a></li><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('edit')">修改记录</a></li><li><a href="javascript:operation('editline')">修改线路</a></li>{if $dnsconfig.remark == 1}<li><a href="javascript:operation('editremark')">修改备注</a></li>{/if}<li><a href="javascript:operation('delete')">删除</a></li></ul>
   </div>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">日志 <span class="caret"></span></button>
@@ -497,6 +497,13 @@ function operation(action){
 		})
 		batch_edit_line(records)
 		return;
+	}else if(action == 'editremark'){
+		var ids = [];
+		$.each(rows, function(index, item){
+			ids.push(item.RecordId);
+		})
+		batch_edit_remark(ids)
+		return;
 	}
 
 	var ids = [];
@@ -594,6 +601,40 @@ function batch_save_line(){
 			}else{
 				layer.alert(data.msg, {icon: 2})
 			}
+		}
+	});
+}
+function batch_edit_remark(recordids) {
+	layer.open({
+		type: 1,
+		area: ['350px'],
+		closeBtn: 2,
+		title: '批量修改备注',
+		content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark" value="" autocomplete="off" placeholder="备注信息"></div></div>',
+		btn: ['确认', '取消'],
+		yes: function(){
+			var remark = $("input[name='remark']").val();
+			var ii = layer.load(2, {shade:[0.1,'#fff']});
+			$.ajax({
+				type : 'POST',
+				url : '/record/batch/{$domainId}',
+				data : {action:'remark', recordids:recordids, remark:remark},
+				dataType : 'json',
+				success : function(data) {
+					layer.close(ii);
+					layer.alert(data.msg,{
+						icon: 1,
+						closeBtn: false
+					}, function(){
+						layer.closeAll();
+						searchSubmit();
+					});
+				},
+				error:function(data){
+					layer.close(ii);
+					layer.msg('服务器错误');
+				}
+			});
 		}
 	});
 }

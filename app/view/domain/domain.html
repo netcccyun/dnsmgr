@@ -74,6 +74,12 @@
 							</div>
 						</div>
 					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right">备注</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="remark" placeholder="">
+						</div>
+					</div>
 				</form>
 			</div>
 			<div class="modal-footer">
@@ -91,7 +97,7 @@
 <form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
   <div class="form-group">
 	<label>搜索</label>
-    <input type="text" class="form-control" name="kw" placeholder="域名">
+    <input type="text" class="form-control" name="kw" placeholder="域名或备注">
   </div>
   <div class="form-group">
 	<select name="type" class="form-control"><option value="">所有平台</option>{foreach $types as $k=>$v}
@@ -139,7 +145,7 @@ $(document).ready(function(){
 				field: 'typename',
 				title: '平台账户',
 				formatter: function(value, row, index) {
-					return '<span title="'+row.remark+'" data-toggle="tooltip" data-placement="right" title="Tooltip on right"><img src="/static/images/'+row.type+'.ico" class="type-logo"></img>'+value+'('+row.aid+')</span>';
+					return '<span title="'+row.aremark+'" data-toggle="tooltip" data-placement="right" title="Tooltip on right"><img src="/static/images/'+row.type+'.ico" class="type-logo"></img>'+value+'('+row.aid+')</span>';
 				}
 			},
             {
@@ -156,6 +162,10 @@ $(document).ready(function(){
 			{
 				field: 'addtime',
 				title: '添加时间'
+			},
+			{
+				field: 'remark',
+				title: '备注'
 			},
 			{
 				field: 'is_hide',

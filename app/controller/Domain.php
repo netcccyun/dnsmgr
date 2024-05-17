@@ -155,7 +155,7 @@ class Domain extends BaseController
 
         $select = Db::name('domain')->alias('A')->join('account B','A.aid = B.id');
         if(!empty($kw)){
-            $select->whereLike('name', '%'.$kw.'%');
+            $select->whereLike('name|A.remark', '%'.$kw.'%');
         }
         if(!empty($type)){
             $select->whereLike('B.type', $type);
@@ -164,7 +164,7 @@ class Domain extends BaseController
             $select->where('is_hide', 0)->where('A.name', 'in', request()->user['permission']);
         }
         $total = $select->count();
-        $rows = $select->fieldRaw('A.*,B.type,B.remark')->order('A.id','desc')->limit($offset, $limit)->select();
+        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->order('A.id','desc')->limit($offset, $limit)->select();
 
         $list = [];
         foreach($rows as $row){
@@ -210,9 +210,11 @@ class Domain extends BaseController
             if(!$row) return json(['code'=>-1, 'msg'=>'域名不存在']);
             $is_hide = input('post.is_hide/d');
             $is_sso = input('post.is_sso/d');
+            $remark = input('post.remark', null, 'trim');
             Db::name('domain')->where('id', $id)->update([
                 'is_hide' => $is_hide,
                 'is_sso' => $is_sso,
+                'remark' => $remark,
             ]);
             return json(['code'=>0, 'msg'=>'修改域名配置成功！']);
         }elseif($act == 'del'){
@@ -534,6 +536,7 @@ class Domain extends BaseController
         }
 
         $success = 0;
+        $fail = 0;
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         if($action == 'open'){
             foreach($recordids as $recordid){
@@ -559,6 +562,17 @@ class Domain extends BaseController
                 }
             }
             $msg = '成功删除'.$success.'条解析记录';
+        }else if($action == 'remark'){
+            $remark = input('post.remark', null, 'trim');
+            if(empty($remark)) $remark = null;
+            foreach($recordids as $recordid){
+                if($dns->updateDomainRecordRemark($recordid, $remark)){
+                    $success++;
+                }else{
+                    $fail++;
+                }
+            }
+            $msg = '批量修改备注，成功'.$success.'条，失败'.$fail.'条';
         }
         return json(['code'=>0, 'msg'=>$msg]);
     }

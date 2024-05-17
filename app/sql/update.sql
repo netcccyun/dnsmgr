@@ -60,3 +60,6 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_optimizeip` (
   PRIMARY KEY (`id`),
   KEY `did` (`did`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `dnsmgr_domain`
+ADD COLUMN `remark` varchar(100) DEFAULT NULL;
