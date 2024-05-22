@@ -191,14 +191,14 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 <script src="{$cdnpublic}bootstrap-table/1.20.2/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.20.2/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
-<script src="/static/js/custom.js"></script>
+<script src="/static/js/custom.js?v=1001"></script>
 <script>
 var recordLine = {$recordLine|json_encode|raw};
 var dnsconfig = {$dnsconfig|json_encode|raw};
 var defaultLine = recordLine[0].id;
 $(document).ready(function(){
 	updateToolbar();
-	const defaultPageSize = 15;
+	let defaultPageSize = getCookie('record_pagesize') ? getCookie('record_pagesize') : 15;
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
 	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
@@ -290,6 +290,12 @@ $(document).ready(function(){
 				}
 			},
 		],
+		onPageChange: function(number, size){
+			if(size != defaultPageSize){
+				defaultPageSize = size;
+				setCookie('record_pagesize', size);
+			}
+		},
 	});
 
 	$("select[name=type]").change(function(){
