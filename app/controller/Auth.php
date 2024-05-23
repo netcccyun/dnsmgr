@@ -47,7 +47,7 @@ class Auth extends BaseController
                 DB::name('user')->where('id', $user['id'])->update(['lasttime' => date("Y-m-d H:i:s")]);
                 $session = md5($user['id'].$user['password']);
                 $expiretime = time()+2562000;
-                $token = authcode("user\t{$user['id']}\t{$session}\t{$expiretime}", 'ENCODE', env('app.sys_key'));
+                $token = authcode("user\t{$user['id']}\t{$session}\t{$expiretime}", 'ENCODE', config_get('sys_key'));
                 cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true]);
                 if (file_exists($login_limit_file)) {
                     unlink($login_limit_file);
@@ -93,7 +93,7 @@ class Auth extends BaseController
         if($timestamp < time()-300 || $timestamp > time()+300){
             return $this->alert('error', '时间戳无效');
         }
-        if(md5(env('app.sys_key').$domain.$timestamp.$token.env('app.sys_key')) !== $sign){
+        if(md5(config_get('sys_key').$domain.$timestamp.$token.config_get('sys_key')) !== $sign){
             return $this->alert('error', '签名错误');
         }
         if($token != cache('quicklogin_'.$domain)){
@@ -111,7 +111,7 @@ class Auth extends BaseController
 
         $session = md5($row['id'].$row['name']);
         $expiretime = time()+2562000;
-        $token = authcode("domain\t{$row['id']}\t{$session}\t{$expiretime}", 'ENCODE', env('app.sys_key'));
+        $token = authcode("domain\t{$row['id']}\t{$session}\t{$expiretime}", 'ENCODE', config_get('sys_key'));
         cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true]);
         return redirect('/record/'.$row['id']);
     }

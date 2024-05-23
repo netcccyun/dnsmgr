@@ -31,6 +31,10 @@ class LoadConfig
         
         try{
             $res = Db::name('config')->cache('configs',0)->column('value','key');
+            if(empty($res['sys_key']) && !empty(env('app.sys_key'))){
+                config_set('sys_key', env('app.sys_key'));
+                $res['sys_key'] = env('app.sys_key');
+            }
             Config::set($res, 'sys');
         }catch(Exception $e){
             if(!strpos($e->getMessage(), 'doesn\'t exist')){

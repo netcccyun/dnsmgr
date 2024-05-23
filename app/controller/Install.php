@@ -29,7 +29,7 @@ class Install extends BaseController
             }
 
             $configdata = file_get_contents(app()->getRootPath().'.example.env');
-            $configdata = str_replace(['{syskey}','{dbhost}','{dbname}','{dbuser}','{dbpwd}','{dbport}','{dbprefix}'], [random(16), $mysql_host, $mysql_name, $mysql_user, $mysql_pwd, $mysql_port, $mysql_prefix], $configdata);
+            $configdata = str_replace(['{dbhost}','{dbname}','{dbuser}','{dbpwd}','{dbport}','{dbprefix}'], [$mysql_host, $mysql_name, $mysql_user, $mysql_pwd, $mysql_port, $mysql_prefix], $configdata);
 
             try{
                 $DB=new PDO("mysql:host=".$mysql_host.";dbname=".$mysql_name.";port=".$mysql_port,$mysql_user,$mysql_pwd);
@@ -53,6 +53,7 @@ class Install extends BaseController
             $sqls=explode(';', $sqls);
 
             $password = password_hash($admin_password, PASSWORD_DEFAULT);
+            $sqls[]="REPLACE INTO `".$mysql_prefix."config` VALUES ('sys_key', '".random(16)."')";
             $sqls[]="INSERT INTO `".$mysql_prefix."user` (`username`,`password`,`level`,`regtime`,`lasttime`,`status`) VALUES ('".addslashes($admin_username)."', '$password', 2, NOW(), NOW(), 1)";
 
             $success=0;$error=0;$errorMsg=null;

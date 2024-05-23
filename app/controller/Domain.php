@@ -291,7 +291,7 @@ class Domain extends BaseController
             $token = getSid();
             cache('quicklogin_'.$drow['name'], $token, 3600);
             $timestamp = time();
-            $sign = md5(env('app.sys_key').$drow['name'].$timestamp.$token.env('app.sys_key'));
+            $sign = md5(config_get('sys_key').$drow['name'].$timestamp.$token.config_get('sys_key'));
             $drow['loginurl'] = request()->root(true).'/quicklogin?domain='.$drow['name'].'&timestamp='.$timestamp.'&token='.$token.'&sign='.$sign;
         }
 
