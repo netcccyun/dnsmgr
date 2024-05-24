@@ -12,7 +12,7 @@ class AuthUser
         $islogin = false;
         $cookie = cookie('user_token');
         $user = null;
-        if($cookie){
+        if($cookie && config_get('sys_key')){
             $token=authcode($cookie, 'DECODE', config_get('sys_key'));
             if($token){
                 list($type, $uid, $sid, $expiretime) = explode("\t", $token);

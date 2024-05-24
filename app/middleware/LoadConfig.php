@@ -6,6 +6,7 @@ namespace app\middleware;
 use Exception;
 use think\facade\Db;
 use think\facade\Config;
+use think\facade\Cache;
 
 class LoadConfig
 {
@@ -33,6 +34,7 @@ class LoadConfig
             $res = Db::name('config')->cache('configs',0)->column('value','key');
             if(empty($res['sys_key']) && !empty(env('app.sys_key'))){
                 config_set('sys_key', env('app.sys_key'));
+                Cache::delete('configs');
                 $res['sys_key'] = env('app.sys_key');
             }
             Config::set($res, 'sys');
