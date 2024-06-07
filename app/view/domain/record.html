@@ -159,6 +159,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 	<div class="panel-body">
 	
 <form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
+<div id="searchbox1">
   <div class="form-group">
 	<label>搜索</label>
     <input type="text" class="form-control" name="keyword" placeholder="输入关键字">
@@ -177,6 +178,39 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">日志 <span class="caret"></span></button>
 	<ul class="dropdown-menu"><li><a href="/log?domain={$domainName}">本站日志</a></li>{if $dnsconfig.log}<li><a href="/record/log/{$domainId}">域名日志</a></li>{/if}</ul>
   </div>
+  <a href="javascript:advanceSearch()" class="btn"><i class="fa fa-angle-down"></i> 高级搜索</a>
+</div>
+<div id="searchbox2" style="display:none">
+  <div class="form-group">
+	<select name="type" class="form-control"><option value="">全部类型</option>
+		<option value="A">A</option>
+		<option value="CNAME">CNAME</option>
+		<option value="AAAA">AAAA</option>
+		<option value="NS">NS</option>
+		<option value="MX">MX</option>
+		<option value="SRV">SRV</option>
+		<option value="TXT">TXT</option>
+		<option value="CAA">CAA</option>
+		{if $dnsconfig.redirect}<option value="REDIRECT_URL">显性URL</option>
+		<option value="FORWARD_URL">隐性URL</option>{/if}
+	</select>
+  </div>
+  <div class="form-group">
+    <input type="text" class="form-control" name="subdomain" placeholder="输入主机记录">
+  </div>
+  <div class="form-group">
+	<select name="line" class="form-control"><option value="">全部线路</option></select>
+  </div>
+  <div class="form-group">
+    <input type="text" class="form-control" name="value" placeholder="输入记录值">
+  </div>
+  <div class="form-group">
+	<select name="status" class="form-control"><option value="">所有状态</option><option value="1">启用</option><option value="0">暂停</option></select>
+  </div>
+  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
+  <a href="javascript:searchClear()" class="btn btn-default" title="刷新解析记录列表"><i class="fa fa-refresh"></i> 刷新</a>
+  <a href="javascript:advanceSearch()" class="btn"><i class="fa fa-angle-up"></i> 收起</a>
+</div>
 </form>
 
       <table id="listTable">
@@ -191,7 +225,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 <script src="{$cdnpublic}bootstrap-table/1.20.2/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.20.2/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
-<script src="/static/js/custom.js?v=1001"></script>
+<script src="/static/js/custom.js?v=1002"></script>
 <script>
 var recordLine = {$recordLine|json_encode|raw};
 var dnsconfig = {$dnsconfig|json_encode|raw};
@@ -308,6 +342,12 @@ $(document).ready(function(){
 
 	$("#form-store").bootstrapValidator();
 	$("#form-store2").bootstrapValidator();
+
+	$.each(recordLine, function(index, item){
+		if(item.parent == null){
+			$("#searchToolbar select[name='line']").append('<option value="'+item.id+'">'+item.name+'</option>');
+		}
+	})
 })
 function initLine(option, elem){
 	option = option || '';
@@ -643,6 +683,21 @@ function batch_edit_remark(recordids) {
 			});
 		}
 	});
+}
+function advanceSearch(){
+	$('#searchToolbar').find('input[name]').each(function() {
+		$(this).val('');
+	});
+	$('#searchToolbar').find('select[name]').each(function() {
+		$(this).find('option:first').prop("selected", 'selected');
+	});
+	if($("#searchbox1").is(":visible")){
+		$("#searchbox1").slideUp();
+		$("#searchbox2").slideDown();
+	}else{
+		$("#searchbox2").slideUp();
+		$("#searchbox1").slideDown();
+	}
 }
 </script>
 {/block}

@@ -48,7 +48,7 @@ class baidu implements DnsInterface {
 	}
 
 	//获取解析记录列表
-	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Type = null, $Line = null, $Status = null){
+	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null){
 		$marker = cookie('baidu_record_marker');
 		$query = ['rr' => $KeyWord];
 		if(!isNullOrEmpty(($SubDomain))){
@@ -81,7 +81,7 @@ class baidu implements DnsInterface {
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
 		if($SubDomain == '')$SubDomain='@';
-		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, $Type, $Line);
+		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, null, $Type, $Line);
 	}
 
 	//获取解析记录详细信息

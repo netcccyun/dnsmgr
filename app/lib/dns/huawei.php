@@ -49,10 +49,15 @@ class huawei implements DnsInterface {
 	}
 
 	//获取解析记录列表
-	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Type = null, $Line = null, $Status = null){
+	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null){
 		$offset = ($PageNumber-1)*$PageSize;
-		$query = ['type' => $Type, 'line_id' => $Line, 'name' => $KeyWord, 'status' => $Status, 'offset' => $offset, 'limit' => $PageSize];
-		if(!isNullOrEmpty(($SubDomain))){
+		$query = ['type' => $Type, 'line_id' => $Line, 'name' => $KeyWord, 'offset' => $offset, 'limit' => $PageSize];
+		if(!isNullOrEmpty($Status)){
+			$Status = $Status == '1' ? 'ACTIVE' : 'DISABLE';
+			$query['status'] = $Status;
+		}
+		if(!isNullOrEmpty($SubDomain)){
+			$SubDomain = $this->getHost($SubDomain);
 			$query['name'] = $SubDomain;
 			$query['search_mode'] = 'equal';
 		}
@@ -83,8 +88,7 @@ class huawei implements DnsInterface {
 
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
-		$SubDomain = $this->getHost($SubDomain);
-		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, $Type, $Line);
+		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, null, $Type, $Line);
 	}
 
 	//获取解析记录详细信息

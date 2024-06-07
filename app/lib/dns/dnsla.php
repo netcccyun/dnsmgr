@@ -49,7 +49,7 @@ class dnsla implements DnsInterface {
 	}
 
 	//获取解析记录列表
-	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Type = null, $Line = null, $Status = null){
+	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null){
 		$param = ['domainId' => $this->domainid, 'pageIndex' => $PageNumber, 'pageSize' => $PageSize];
 		if(!isNullOrEmpty(($KeyWord))){
 			$param['host'] = $KeyWord;
@@ -62,6 +62,9 @@ class dnsla implements DnsInterface {
 		}
 		if(!isNullOrEmpty(($SubDomain))){
 			$param['host'] = $SubDomain;
+		}
+		if(!isNullOrEmpty(($Value))){
+			$param['data'] = $Value;
 		}
 		$data = $this->execute('GET', '/api/recordList', $param);
 		if($data){
@@ -90,7 +93,7 @@ class dnsla implements DnsInterface {
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
 		if($SubDomain == '')$SubDomain='@';
-		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, $Type, $Line);
+		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, null, $Type, $Line);
 	}
 
 	//获取解析记录详细信息

@@ -15,7 +15,7 @@ if (parameter_str !== undefined) {
 }
 
 function searchSubmit(){
-	$('#listTable').bootstrapTable('refresh');
+	$('#listTable').bootstrapTable('selectPage', 1);
 	return false;
 }
 function searchClear(){
@@ -25,7 +25,7 @@ function searchClear(){
 	$('#searchToolbar').find('select[name]').each(function() {
 		$(this).find('option:first').prop("selected", 'selected');
 	});
-	$('#listTable').bootstrapTable('refresh');
+	$('#listTable').bootstrapTable('selectPage', 1);
 }
 function updateToolbar(){
     $('#searchToolbar').find(':input[name]').each(function() {
@@ -67,6 +67,7 @@ if (typeof $.fn.bootstrapTable !== "undefined") {
 		queryParamsType: '',
 		queryParams: function(params) {
 			$('#searchToolbar').find(':input[name]').each(function() {
+				if(!$(this).is(":visible")) return;
 				params[$(this).attr('name')] = $(this).val()
 			})
 			updateQueryStr(params);

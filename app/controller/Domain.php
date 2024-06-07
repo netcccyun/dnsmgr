@@ -329,6 +329,7 @@ class Domain extends BaseController
         $id = input('param.id/d');
         $keyword = input('post.keyword', null, 'trim');
         $subdomain = input('post.subdomain', null, 'trim');
+        $value = input('post.value', null, 'trim');
         $type = input('post.type', null, 'trim');
         $line = input('post.line', null, 'trim');
         $status = input('post.status', null, 'trim');
@@ -347,10 +348,10 @@ class Domain extends BaseController
         if(!checkPermission(0, $drow['name'])) return json(['total'=>0, 'rows'=>[]]);
 
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-        $domainRecords = $dns->getDomainRecords($page, $limit, $keyword, $subdomain, $type, $line, $status);
+        $domainRecords = $dns->getDomainRecords($page, $limit, $keyword, $subdomain, $value, $type, $line, $status);
         if(!$domainRecords) return json(['total'=>0, 'rows'=>[]]);
 
-        if($domainRecords['total'] != $drow['recordcount']){
+        if(empty($keyword) && empty($subdomain) && empty($type) && empty($line) && empty($status) && empty($value) && $domainRecords['total'] != $drow['recordcount']){
             Db::name('domain')->where('id', $id)->update(['recordcount'=>$domainRecords['total']]);
         }
 

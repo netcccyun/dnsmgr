@@ -51,12 +51,18 @@ class dnspod implements DnsInterface {
 	}
 
 	//获取解析记录列表
-	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Type = null, $Line = null, $Status = null){
+	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null){
 		$offset = ($PageNumber-1)*$PageSize;
-		if(!isNullOrEmpty($Status)){
+		if(!isNullOrEmpty($Status) || !isNullOrEmpty($Value)){
 			$action = 'DescribeRecordFilterList';
-			$Status = $Status == '1' ? 'ENABLE' : 'DISABLE';
-			$param = ['Domain' => $this->domain, 'Subdomain' => $SubDomain, 'Keyword' => $KeyWord, 'Offset' => $offset, 'Limit' => $PageSize, 'RecordStatus' => [$Status]];
+			$param = ['Domain' => $this->domain, 'Offset' => $offset, 'Limit' => $PageSize, 'RecordValue' => $Value];
+			if(!isNullOrEmpty($SubDomain)) $param['SubDomain'] = $SubDomain;
+			if(!isNullOrEmpty($KeyWord)) $param['Keyword'] = $KeyWord;
+			if(!isNullOrEmpty($Value)) $param['RecordValue'] = $Value;
+			if(!isNullOrEmpty($Status)){
+				$Status = $Status == '1' ? 'ENABLE' : 'DISABLE';
+				$param['RecordStatus'] = [$Status];
+			}
 			if(!isNullOrEmpty($Type)) $param['RecordType'] = [$this->convertType($Type)];
 			if(!isNullOrEmpty($Line)) $param['RecordLine'] = [$Line];
 		}else{
@@ -93,7 +99,7 @@ class dnspod implements DnsInterface {
 	//获取子域名解析记录列表
 	public function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null){
 		if($SubDomain == '')$SubDomain='@';
-		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, $Type, $Line);
+		return $this->getDomainRecords($PageNumber, $PageSize, null, $SubDomain, null, $Type, $Line);
 	}
 
 	//获取解析记录详细信息

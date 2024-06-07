@@ -10,7 +10,7 @@ interface DnsInterface
 
     function getDomainList($KeyWord=null, $PageNumber=1, $PageSize=20);
 
-    function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Type = null, $Line = null, $Status = null);
+    function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null);
 
     function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null);
 

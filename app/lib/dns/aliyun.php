@@ -49,10 +49,10 @@ class aliyun implements DnsInterface {
 	}
 
 	//获取解析记录列表
-	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Type = null, $Line = null, $Status = null){
+	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null){
 		$param = ['Action' => 'DescribeDomainRecords', 'DomainName' => $this->domain, 'PageNumber' => $PageNumber, 'PageSize' => $PageSize];
-		if(!empty($SubDomain) || !empty($Type) || !empty($Line)){
-			$param += ['SearchMode' => 'ADVANCED', 'RRKeyWord' => $SubDomain, 'ValueKeyWord' => $KeyWord, 'Type' => $Type, 'Line' => $Line, 'ValueKeyWord' => $KeyWord];
+		if(!empty($SubDomain) || !empty($Type) || !empty($Line) || !empty($Value)){
+			$param += ['SearchMode' => 'ADVANCED', 'RRKeyWord' => $SubDomain, 'ValueKeyWord' => $Value, 'Type' => $Type, 'Line' => $Line];
 		}elseif(!empty($KeyWord)){
 			$param += ['KeyWord' => $KeyWord];
 		}

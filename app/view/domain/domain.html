@@ -266,6 +266,7 @@ function editframe(id){
 				$("#form-store2 input[name=id]").val(data.data.id);
 				$("#form-store2 select[name=is_hide]").val(data.data.is_hide);
 				$("#form-store2 select[name=is_sso]").val(data.data.is_sso);
+				$("#form-store2 input[name=remark]").val(data.data.remark);
 			}else{
 				layer.alert(data.msg, {icon: 2})
 			}
