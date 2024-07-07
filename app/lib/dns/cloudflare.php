@@ -178,10 +178,16 @@ class cloudflare implements DnsInterface {
 	private function send_reuqest($method, $path, $params = null){
 		$url = $this->baseUrl . $path;
 		
-		$headers = [
-			'X-Auth-Email: '.$this->Email,
-			'X-Auth-Key: '.$this->ApiKey,
-		];
+		if(preg_match('/^[0-9a-z]+$/i',$this->ApiKey)){
+			$headers = [
+				'X-Auth-Email: '.$this->Email,
+				'X-Auth-Key: '.$this->ApiKey,
+			];
+		}else{
+			$headers = [
+				'Authorization: Bearer '.$this->ApiKey,
+			];
+		}
 
 		$body = '';
         if ($method == 'GET' || $method == 'DELETE') {

@@ -86,6 +86,7 @@ class Dmonitor extends BaseController
                     'frequency' => input('post.frequency/d'),
                     'cycle' => input('post.cycle/d'),
                     'timeout' => input('post.timeout/d'),
+                    'proxy' => input('post.proxy/d'),
                     'remark' => input('post.remark', null, 'trim'),
                     'recordinfo' => input('post.recordinfo', null, 'trim'),
                     'addtime' => time(),
@@ -121,6 +122,7 @@ class Dmonitor extends BaseController
                     'frequency' => input('post.frequency/d'),
                     'cycle' => input('post.cycle/d'),
                     'timeout' => input('post.timeout/d'),
+                    'proxy' => input('post.proxy/d'),
                     'remark' => input('post.remark', null, 'trim'),
                     'recordinfo' => input('post.recordinfo', null, 'trim'),
                 ];
@@ -233,6 +235,23 @@ class Dmonitor extends BaseController
         return View::fetch();
     }
 
+    public function proxyset()
+    {
+        if(!checkPermission(2)) return $this->alert('error', '无权限');
+        if(request()->isPost()){
+            $params = input('post.');
+            foreach ($params as $key=>$value){
+                if (empty($key)) {
+                    continue;
+                }
+                config_set($key, $value);
+                Cache::delete('configs'); 
+            }
+            return json(['code'=>0, 'msg'=>'succ']);
+        }
+        return View::fetch();
+    }
+
     public function mailtest()
     {
         if(!checkPermission(2)) return $this->alert('error', '无权限');
@@ -243,6 +262,21 @@ class Dmonitor extends BaseController
             return json(['code'=>0, 'msg'=>'邮件发送成功！']);
         }else{
             return json(['code'=>-1, 'msg'=>'邮件发送失败！'.$result]);
+        }
+    }
+
+    public function tgbottest()
+    {
+        if(!checkPermission(2)) return $this->alert('error', '无权限');
+        $tgbot_token = config_get('tgbot_token');
+        $tgbot_chatid = config_get('tgbot_chatid');
+        if(empty($tgbot_token) || empty($tgbot_chatid)) return json(['code'=>-1, 'msg'=>'请先保存设置']);
+        $content = "<strong>消息发送测试</strong>\n\n这是一封测试消息！\n\n来自：".request()->root(true);
+        $result = \app\lib\MsgNotice::send_telegram_bot($content);
+        if($result === true){
+            return json(['code'=>0, 'msg'=>'消息发送成功！']);
+        }else{
+            return json(['code'=>-1, 'msg'=>'消息发送失败！'.$result]);
         }
     }
 

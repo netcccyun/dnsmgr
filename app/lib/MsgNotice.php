@@ -41,8 +41,13 @@ class MsgNotice
             self::send_mail($mail_name, $mail_title, $mail_content);
         }
         if(config_get('notice_wxtpl') == 1){
-            $mail_content = str_replace(['<br/>', '<b>', '</b>'], ["\n\n", '**', '**'], $mail_content);
-            self::send_wechat_tplmsg($mail_title, $mail_content);
+            $content = str_replace(['<br/>', '<b>', '</b>'], ["\n\n", '**', '**'], $mail_content);
+            self::send_wechat_tplmsg($mail_title, $content);
+        }
+        if(config_get('notice_tgbot') == 1){
+            $content = str_replace('<br/>', "\n", $mail_content);
+            $content = "<strong>".$mail_title."</strong>\n".$content;
+            self::send_telegram_bot($content);
         }
     }
     
@@ -101,5 +106,62 @@ class MsgNotice
 		}else{
 			return $arr['msg'];
 		}
+    }
+
+    public static function send_telegram_bot($content){
+        $tgbot_token = config_get('tgbot_token');
+        $tgbot_chatid = config_get('tgbot_chatid');
+        if(!$tgbot_token||!$tgbot_chatid)return false;
+        $url = 'https://api.telegram.org/bot'.$tgbot_token.'/sendMessage';
+        $post = ['chat_id'=>$tgbot_chatid, 'text'=>$content, 'parse_mode'=>'HTML'];
+        $result = self::telegram_curl($url, http_build_query($post));
+        $arr = json_decode($result, true);
+        if(isset($arr['ok']) && $arr['ok']==true){
+            return true;
+        }else{
+            return $arr['description'];
+        }
+    }
+
+    private static function telegram_curl($url, $post){
+        $ch = curl_init();
+        if(config_get('tgbot_proxy') == 1){
+            $proxy_server = config_get('proxy_server');
+            $proxy_port = intval(config_get('proxy_port'));
+            $proxy_userpwd = config_get('proxy_user').':'.config_get('proxy_pwd');
+            $proxy_type = config_get('proxy_type');
+            if($proxy_type == 'https'){
+                $proxy_type = CURLPROXY_HTTPS;
+            }elseif($proxy_type == 'sock4'){
+                $proxy_type = CURLPROXY_SOCKS4;
+            }elseif($proxy_type == 'sock5'){
+                $proxy_type = CURLPROXY_SOCKS5;
+            }else{
+                $proxy_type = CURLPROXY_HTTP;
+            }
+            curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
+            curl_setopt($ch, CURLOPT_PROXY, $proxy_server);
+            curl_setopt($ch, CURLOPT_PROXYPORT, $proxy_port);
+            if($proxy_userpwd != ':'){
+                curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxy_userpwd);
+            }
+            curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy_type);
+        }
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $httpheader[] = "Accept: */*";
+        $httpheader[] = "Accept-Encoding: gzip,deflate,sdch";
+        $httpheader[] = "Accept-Language: zh-CN,zh;q=0.8";
+        $httpheader[] = "Connection: close";
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $httpheader);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+        curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Linux; U; Android 4.0.4; es-mx; HTC_One_X Build/IMM76D) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0");
+        curl_setopt($ch, CURLOPT_ENCODING, "gzip");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $ret = curl_exec($ch);
+        curl_close($ch);
+        return $ret;
     }
 }

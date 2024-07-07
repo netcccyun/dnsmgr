@@ -4,7 +4,7 @@ namespace app\lib;
 
 class CheckUtils
 {
-    public static function curl($url, $timeout, $ip = null)
+    public static function curl($url, $timeout, $ip = null, $proxy = false)
     {
         $status = true;
         $errmsg = null;
@@ -19,6 +19,28 @@ class CheckUtils
             }
         }
         $ch = curl_init();
+        if($proxy){
+            $proxy_server = config_get('proxy_server');
+            $proxy_port = intval(config_get('proxy_port'));
+            $proxy_userpwd = config_get('proxy_user').':'.config_get('proxy_pwd');
+            $proxy_type = config_get('proxy_type');
+            if($proxy_type == 'https'){
+                $proxy_type = CURLPROXY_HTTPS;
+            }elseif($proxy_type == 'sock4'){
+                $proxy_type = CURLPROXY_SOCKS4;
+            }elseif($proxy_type == 'sock5'){
+                $proxy_type = CURLPROXY_SOCKS5;
+            }else{
+                $proxy_type = CURLPROXY_HTTP;
+            }
+            curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
+            curl_setopt($ch, CURLOPT_PROXY, $proxy_server);
+            curl_setopt($ch, CURLOPT_PROXYPORT, $proxy_port);
+            if($proxy_userpwd != ':'){
+                curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxy_userpwd);
+            }
+            curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy_type);
+        }
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);

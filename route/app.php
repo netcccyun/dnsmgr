@@ -69,7 +69,9 @@ Route::group(function () {
     Route::any('/dmonitor/task/:action', 'dmonitor/taskform');
     Route::get('/dmonitor/task', 'dmonitor/task');
     Route::any('/dmonitor/noticeset', 'dmonitor/noticeset');
+    Route::any('/dmonitor/proxyset', 'dmonitor/proxyset');
     Route::get('/dmonitor/mailtest', 'dmonitor/mailtest');
+    Route::get('/dmonitor/tgbottest', 'dmonitor/tgbottest');
     Route::post('/dmonitor/clean', 'dmonitor/clean');
 
     Route::any('/optimizeip/opipset', 'optimizeip/opipset');

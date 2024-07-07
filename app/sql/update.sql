@@ -63,3 +63,6 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_optimizeip` (
 
 ALTER TABLE `dnsmgr_domain`
 ADD COLUMN `remark` varchar(100) DEFAULT NULL;
+
+ALTER TABLE `dnsmgr_dmtask`
+ADD COLUMN `proxy` tinyint(1) NOT NULL DEFAULT 0;

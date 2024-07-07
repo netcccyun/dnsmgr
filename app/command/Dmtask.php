@@ -10,6 +10,7 @@ use think\console\input\Argument;
 use think\console\input\Option;
 use think\console\Output;
 use think\facade\Db;
+use think\facade\Config;
 use app\lib\TaskRunner;
 
 class Dmtask extends Command
@@ -23,6 +24,9 @@ class Dmtask extends Command
 
     protected function execute(Input $input, Output $output)
     {
+        $res = Db::name('config')->cache('configs',0)->column('value','key');
+        Config::set($res, 'sys');
+
         config_set('run_error', '');
         if(!extension_loaded('swoole')){
             $output->writeln('[Error] 未安装Swoole扩展');

@@ -16,6 +16,10 @@
 	  <div class="col-sm-9"><select class="form-control" name="notice_wxtpl" default="{:config_get('notice_wxtpl')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
 	</div>
 	<div class="form-group">
+		<label class="col-sm-3 control-label">Telegram机器人通知</label>
+		<div class="col-sm-9"><select class="form-control" name="notice_tgbot" default="{:config_get('notice_tgbot')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+	  </div>
+	<div class="form-group">
 	  <div class="col-sm-offset-3 col-sm-9"><input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/></div>
 	</div>
   </form>
@@ -99,6 +103,34 @@
 <b>WxPusher：</b><a href="https://wxpusher.zjiecode.com/admin/" target="_blank" rel="noopener noreferrer">点此进入</a> ，注册并且创建应用 -> 将appToken填写到上方输入框 -> 扫码关注应用 -> 在用户列表查看自己的UID填写到上方输入框<br/>
 </div>
 </div>
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">Telegram机器人接口设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">Token</label>
+	  <div class="col-sm-9"><input type="text" name="tgbot_token" value="{:config_get('tgbot_token')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">Chat Id</label>
+	  <div class="col-sm-9"><input type="text" name="tgbot_chatid" value="{:config_get('tgbot_chatid')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+		<label class="col-sm-3 control-label">使用代理服务器</label>
+		<div class="col-sm-9"><select class="form-control" name="tgbot_proxy" default="{:config_get('tgbot_proxy')}"><option value="0">否</option><option value="1">是</option></select></div>
+	  </div>
+	<div class="form-group">
+	  <div class="col-sm-offset-3 col-sm-9">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+		<a href="javascript:tgbottest()" class="btn btn-default btn-block">发送测试消息</a>
+	</div>
+	</div>
+  </form>
+</div>
+<div class="panel-footer">
+与<a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">@BotFather</a>对话，使用/newbot命令创建一个新的机器人，根据提示输入机器人的名称和用户名，可得到Token，或使用/mybots命令查看已创建的机器人；与<a href="https://t.me/getmyid_bot" target="_blank" rel="noopener noreferrer">@getmyid_bot</a>对话，可得到Chat Id<br/>
+</div>
+</div>
 </div>
 </div>
 {/block}
@@ -129,7 +161,7 @@ function saveSetting(obj){
 		success : function(data) {
 			layer.close(ii);
 			if(data.code == 0){
-				layer.alert('设置保存成功！', {
+				layer.alert('设置保存成功！<br/>重启检测进程或容器后生效', {
 					icon: 1,
 					closeBtn: false
 				}, function(){
@@ -151,6 +183,26 @@ function mailtest(){
 	$.ajax({
 		type : 'GET',
 		url : '/dmonitor/mailtest',
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert(data.msg, {icon: 1});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+}
+function tgbottest(){
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'GET',
+		url : '/dmonitor/tgbottest',
 		dataType : 'json',
 		success : function(data) {
 			layer.close(ii);

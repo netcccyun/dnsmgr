@@ -107,7 +107,7 @@
             <a href="/domain"><i class="fa fa-list-ul fa-fw"></i> <span>域名管理</span></a>
           </li>
           {if request()->user['level'] eq 2}
-          <li class="treeview {:checkIfActive('overview,task,noticeset,taskinfo,taskform')}">
+          <li class="treeview {:checkIfActive('overview,task,noticeset,taskinfo,taskform,proxyset')}">
             <a href="javascript:;">
               <i class="fa fa-heartbeat fa-fw"></i>
               <span>容灾切换</span>
@@ -119,6 +119,7 @@
               <li><a href="/dmonitor/overview"><i class="fa fa-circle-o"></i> 运行概览</a></li>
               <li><a href="/dmonitor/task"><i class="fa fa-circle-o"></i> 切换策略</a></li>
               <li><a href="/dmonitor/noticeset"><i class="fa fa-circle-o"></i> 通知设置</a></li>
+              <li><a href="/dmonitor/proxyset"><i class="fa fa-circle-o"></i> 代理设置</a></li>
             </ul>
           </li>
           <li class="treeview {:checkIfActive('opipset,opiplist,opipform')}">

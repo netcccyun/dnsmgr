@@ -65,7 +65,7 @@ class DnsHelper
             'name' => 'Cloudflare',
             'config' => [
                 'ak' => '邮箱地址',
-                'sk' => 'API密钥'
+                'sk' => 'API密钥/令牌'
             ],
             'remark' => 2,
             'status' => false,

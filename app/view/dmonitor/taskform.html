@@ -70,6 +70,17 @@
             <input type="text" name="checkurl" v-model="set.checkurl" placeholder="填写以http(s)://开头的完整地址，http状态码须为2xx/3xx" class="form-control" data-bv-uri="true" required>
         </div>
     </div>
+    <div class="form-group" v-show="set.type<=2&&set.checktype==2">
+        <label class="col-sm-3 control-label no-padding-right">使用代理请求</label>
+        <div class="col-sm-6">
+            <label class="radio-inline">
+                <input type="radio" name="proxy" value="0" v-model="set.proxy"> 否
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="proxy" value="1" v-model="set.proxy"> 是
+            </label>
+        </div>
+    </div>
     <div class="form-group" v-show="set.type<=2&&set.checktype>0">
         <label class="col-sm-3 control-label no-padding-right">最大超时时间</label>
         <div class="col-sm-3">
@@ -141,6 +152,7 @@ new Vue({
             frequency: 5,
             timeout: 2,
             cycle: 3,
+            proxy: 0,
         },
         recordList: [],
         typeList: [
