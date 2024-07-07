@@ -7,6 +7,7 @@ use think\facade\Db;
 use think\facade\View;
 use think\facade\Request;
 use app\lib\DnsHelper;
+use Exception;
 
 class Domain extends BaseController
 {
@@ -253,9 +254,9 @@ class Domain extends BaseController
         $minTTL = cache('min_ttl_'.$drow['id']);
         if(empty($recordLine)){
             $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-            if(!$dns) return $this->alert('error', 'DNS模块不存在');
+            if(!$dns) throw new Exception('DNS模块不存在');
             $recordLine = $dns->getRecordLine();
-            if(!$recordLine) return $this->alert('error', '获取解析线路列表失败，'.$dns->getError());
+            if(!$recordLine) throw new Exception('获取解析线路列表失败，'.$dns->getError());
             cache('record_line_'.$drow['id'], $recordLine, 604800);
             $minTTL = $dns->getMinTTL();
             if($minTTL){

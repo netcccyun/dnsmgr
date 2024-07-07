@@ -12,6 +12,7 @@ class dnspod implements DnsInterface {
 	private $error;
 	private $domain;
 	private $domainid;
+	private $domainInfo;
 
 	function __construct($config){
 		$this->SecretId = $config['ak'];
@@ -24,7 +25,7 @@ class dnspod implements DnsInterface {
 	}
 
 	public function check(){
-		if($this->getAccountInfo() != false){
+		if($this->getDomainList() != false){
 			return true;
 		}
 		return false;
@@ -194,6 +195,15 @@ class dnspod implements DnsInterface {
 			$list = [];
 			$this->processLineList($list, $data['LineList'], null);
 			return $list;
+		}else{
+			$data = $this->getRecordLineByGrade();
+			if($data){
+				$list = [];
+				foreach($data as $row){
+					$list[$row['LineId']] = ['name'=>$row['Name'], 'parent'=>null];
+				}
+				return $list;
+			}
 		}
 		return false;
 	}
@@ -211,11 +221,12 @@ class dnspod implements DnsInterface {
 
 	//获取域名概览信息
 	public function getDomainInfo(){
-		$action = 'DescribeDomainPreview';
+		$action = 'DescribeDomain';
 		$param = ['Domain' => $this->domain];
 		$data = $this->send_reuqest($action, $param);
 		if($data){
-			return $data['Domain'];
+			$this->domainInfo = $data['DomainInfo'];
+			return $data['DomainInfo'];
 		}
 		return false;
 	}
@@ -233,12 +244,32 @@ class dnspod implements DnsInterface {
 
 	//获取域名最低TTL
 	public function getMinTTL(){
+		if($this->domainInfo){
+			return $this->domainInfo['TTL'];
+		}
 		$PurviewList = $this->getDomainPurview();
 		if($PurviewList){
 			foreach($PurviewList as $row){
-				if($row['Name'] == '记录 TTL 最低'){
+				if($row['Name'] == '记录 TTL 最低' || $row['Name'] == 'Min TTL value'){
 					return intval($row['Value']);
 				}
+			}
+		}
+		return false;
+	}
+	
+	//获取等级允许的线路
+	public function getRecordLineByGrade(){
+		$action = 'DescribeRecordLineList';
+		$param = ['Domain' => $this->domain, 'DomainGrade' => ''];
+		$data = $this->send_reuqest($action, $param);
+		if($data){
+			$line_list = $data['LineList'];
+			if(!empty($data['LineGroupList'])){
+				foreach($data['LineGroupList'] as $row){
+					$line_list[] = ['Name' => $row['Name'], 'LineId' => $row['LineId']];
+				}
+				return $line_list;
 			}
 		}
 		return false;
