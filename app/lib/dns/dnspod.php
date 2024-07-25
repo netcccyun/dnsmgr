@@ -269,8 +269,8 @@ class dnspod implements DnsInterface {
 				foreach($data['LineGroupList'] as $row){
 					$line_list[] = ['Name' => $row['Name'], 'LineId' => $row['LineId']];
 				}
-				return $line_list;
 			}
+			return $line_list;
 		}
 		return false;
 	}
