@@ -372,7 +372,7 @@ function changeLine(obj, elem){
 	if($(obj).find("option:selected").text() == '子集线路（非必填）') return;
 	var tempLine = recordLine.filter((x) => x.parent == line)
 	if(tempLine.length > 0){
-		var option = '<option value="'+line+'">子集线路（非必填）</option>';
+		var option = line.substr(0,2) == 'N.' ? '' : '<option value="'+line+'">子集线路（非必填）</option>';
 		$.each(tempLine, function(index, item){
 			option += '<option value="'+item.id+'">'+item.name+'</option>';
 		})

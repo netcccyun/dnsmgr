@@ -49,7 +49,6 @@ class baidu implements DnsInterface {
 
 	//获取解析记录列表
 	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null){
-		$marker = cookie('baidu_record_marker');
 		$query = ['rr' => $KeyWord];
 		if(!isNullOrEmpty(($SubDomain))){
 			$param['rr'] = $SubDomain;

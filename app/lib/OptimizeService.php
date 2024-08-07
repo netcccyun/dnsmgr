@@ -21,7 +21,9 @@ class OptimizeService
     private $del_num = 0;
 
     public static function get_license($api, $key){
-        if($api == 1){
+        if($api == 2){
+            throw new Exception('当前接口暂不支持');
+        }elseif($api == 1){
             $url = 'https://api.hostmonit.com/get_license?license='.$key;
         }else{
             $url = 'https://monitor.gacjie.cn/api/client/get_account_integral?license='.$key;
@@ -40,6 +42,8 @@ class OptimizeService
     public function get_ip_address($cdn_type = 1, $ip_type = 'v4'){
         $api = config_get('optimize_ip_api', 0);
         if($api == 1){
+            $url = 'https://api.345673.xyz/get_data';
+        }elseif($api == 1){
             $url = 'https://api.hostmonit.com/get_optimization_ip';
         }else{
             $url = 'https://monitor.gacjie.cn/api/client/get_ip_address';

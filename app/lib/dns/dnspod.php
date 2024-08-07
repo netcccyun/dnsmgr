@@ -210,7 +210,8 @@ class dnspod implements DnsInterface {
 
 	private function processLineList(&$list, $line_list, $parent){
 		foreach($line_list as $row){
-			if(!isNullOrEmpty($row['LineId']) && $row['Useful'] && !isset($list[$row['LineId']])){
+			if(isNullOrEmpty($row['LineId'])) $row['LineId'] = 'N.'.$row['LineName'];
+			if($row['Useful'] && !isset($list[$row['LineId']])){
 				$list[$row['LineId']] = ['name'=>$row['LineName'], 'parent'=>$parent];
 				if($row['SubGroup']){
 					$this->processLineList($list, $row['SubGroup'], $row['LineId']);
