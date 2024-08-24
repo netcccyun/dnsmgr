@@ -50,8 +50,8 @@ class baidu implements DnsInterface {
 	//获取解析记录列表
 	public function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null){
 		$query = ['rr' => $KeyWord];
-		if(!isNullOrEmpty(($SubDomain))){
-			$param['rr'] = $SubDomain;
+		if(!isNullOrEmpty($SubDomain)){
+			$query['rr'] = $SubDomain;
 		}
 		$data = $this->send_reuqest('GET', '/v1/dns/zone/'.$this->domain.'/record', $query);
 		if($data){

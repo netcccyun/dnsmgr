@@ -253,7 +253,7 @@ function save(){
 				}, function(){
 					layer.closeAll();
 					$("#modal-store").modal('hide');
-					searchSubmit();
+					searchRefresh();
 				});
 			}else{
 				layer.alert(data.msg, {icon: 2})
@@ -271,7 +271,7 @@ function setStatus(id,status) {
 		success : function(data) {
 			layer.close(ii);
 			if(data.code == 0){
-				searchSubmit();
+				searchRefresh();
 			}else{
 				layer.msg(data.msg, {icon:2, time:1500});
 			}
@@ -292,7 +292,7 @@ function delItem(id) {
 			layer.close(ii);
 			if(data.code == 0){
 				layer.closeAll();
-				searchSubmit();
+				searchRefresh();
 			}else{
 				layer.alert(data.msg, {icon: 2});
 			}

@@ -198,7 +198,7 @@ function save(){
 				}, function(){
 					layer.closeAll();
 					$("#modal-store").modal('hide');
-					searchSubmit();
+					searchRefresh();
 				});
 			}else{
 				layer.alert(data.msg, {icon: 2})
@@ -220,7 +220,7 @@ function delItem(id) {
 			layer.close(ii);
 			if(data.code == 0){
 				layer.closeAll();
-				searchSubmit();
+				searchRefresh();
 			}else{
 				layer.alert(data.msg, {icon: 2});
 			}

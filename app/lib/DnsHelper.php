@@ -39,6 +39,17 @@ class DnsHelper
             'redirect' => false,
             'log' => false,
         ],
+        'baidu' => [
+            'name' => '百度云',
+            'config' => [
+                'ak' => 'AccessKey',
+                'sk' => 'SecretKey'
+            ],
+            'remark' => 2,
+            'status' => false,
+            'redirect' => false,
+            'log' => false,
+        ],
         'west' => [
             'name' => '西部数码',
             'config' => [
@@ -46,6 +57,17 @@ class DnsHelper
                 'sk' => 'API密码'
             ],
             'remark' => 0,
+            'status' => true,
+            'redirect' => false,
+            'log' => false,
+        ],
+        'huoshan' => [
+            'name' => '火山引擎',
+            'config' => [
+                'ak' => 'AccessKeyId',
+                'sk' => 'SecretAccessKey'
+            ],
+            'remark' => 2,
             'status' => true,
             'redirect' => false,
             'log' => false,
@@ -95,6 +117,7 @@ class DnsHelper
             $config['domain'] = $domain;
             $config['domainid'] = $domainid;
             $model = new $class($config);
+            $model->type = $dnstype;
             return $model;
         }
         return false;
@@ -108,6 +131,7 @@ class DnsHelper
             $config['domain'] = $config['name'];
             $config['domainid'] = $config['thirdid'];
             $model = new $class($config);
+            $model->type = $dnstype;
             return $model;
         }
         return false;

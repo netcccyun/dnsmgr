@@ -225,11 +225,12 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 <script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
-<script src="/static/js/custom.js?v=1002"></script>
+<script src="/static/js/custom.js?v=1003"></script>
 <script>
 var recordLine = {$recordLine|json_encode|raw};
 var dnsconfig = {$dnsconfig|json_encode|raw};
 var defaultLine = recordLine[0].id;
+var sidePagination = dnsconfig.type == 'baidu' ? 'client' : 'server';
 $(document).ready(function(){
 	updateToolbar();
 	let defaultPageSize = getCookie('record_pagesize') ? getCookie('record_pagesize') : 15;
@@ -242,7 +243,7 @@ $(document).ready(function(){
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
 		uniqueId: 'RecordId',
-		sidePagination: "{if $dnsconfig.type=='baidu'}client{else}server{/if}",
+		sidePagination: sidePagination,
 		columns: [
 			{
 				field: '',
@@ -436,7 +437,7 @@ function save(){
 				}, function(){
 					layer.closeAll();
 					$("#modal-store").modal('hide');
-					searchSubmit();
+					searchRefresh();
 				});
 			}else{
 				layer.alert(data.msg, {icon: 2})
@@ -456,7 +457,7 @@ function setStatus(recordid, status){
 			if(data.code == 0){
 				layer.closeAll();
 				layer.msg(status=='1'?'开启成功':'暂停成功', {icon: 1, time:500});
-				searchSubmit();
+				searchRefresh();
 			}else{
 				layer.alert(data.msg, {icon: 2});
 			}
@@ -478,7 +479,7 @@ function delItem(recordid) {
 			if(data.code == 0){
 				layer.closeAll();
 				layer.msg('删除成功', {icon: 1, time:800});
-				searchSubmit();
+				searchRefresh();
 			}else{
 				layer.alert(data.msg, {icon: 2});
 			}
@@ -510,7 +511,7 @@ function setRemark(recordid) {
 					if(data.code == 0){
 						layer.closeAll();
 						layer.msg('保存成功', {icon: 1, time:800});
-						searchSubmit();
+						searchRefresh();
 					}else{
 						layer.alert(data.msg, {icon:2});
 					}
@@ -570,7 +571,7 @@ function operation(action){
 			if(data.code == 0){
 				layer.closeAll();
 				layer.alert(data.msg, {icon: 1});
-				searchSubmit();
+				searchRefresh();
 			}else{
 				layer.alert(data.msg, {icon: 2});
 			}
@@ -612,7 +613,7 @@ function batch_save(){
 				}, function(){
 					layer.closeAll();
 					$("#modal-store2").modal('hide');
-					searchSubmit();
+					searchRefresh();
 				});
 			}else{
 				layer.alert(data.msg, {icon: 2})
@@ -642,7 +643,7 @@ function batch_save_line(){
 				}, function(){
 					layer.closeAll();
 					$("#modal-store3").modal('hide');
-					searchSubmit();
+					searchRefresh();
 				});
 			}else{
 				layer.alert(data.msg, {icon: 2})
@@ -673,7 +674,7 @@ function batch_edit_remark(recordids) {
 						closeBtn: false
 					}, function(){
 						layer.closeAll();
-						searchSubmit();
+						searchRefresh();
 					});
 				},
 				error:function(data){

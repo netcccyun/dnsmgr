@@ -13,6 +13,8 @@ class OptimizeService
         'huawei' => ['DEF'=>'default_view', 'CT'=>'Dianxin', 'CU'=>'Liantong', 'CM'=>'Yidong', 'AB'=>'Abroad'],
         'west' => ['DEF'=>'', 'CT'=>'LTEL', 'CU'=>'LCNC', 'CM'=>'LMOB', 'AB'=>'LFOR'],
         'dnsla' => ['DEF'=>'', 'CT'=>'84613316902921216', 'CU'=>'84613316923892736', 'CM'=>'84613316953252864', 'AB'=>''],
+        'huoshan' => ['DEF'=>'default', 'CT'=>'telecom', 'CU'=>'unicom', 'CM'=>'mobile', 'AB'=>'oversea'],
+        'baidu' => ['DEF'=>'default', 'CT'=>'ct', 'CU'=>'cnc', 'CM'=>'cmnet', 'AB'=>''],
     ];
 
     private $ip_address = [];

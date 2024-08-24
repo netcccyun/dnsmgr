@@ -362,6 +362,10 @@ class Domain extends BaseController
             $row['LineName'] = isset($recordLine[$row['Line']]) ? $recordLine[$row['Line']]['name'] : $row['Line'];
         }
 
+        if($dns->type == 'baidu'){
+            return json($domainRecords['list']);
+        }
+
         return json(['total'=>$domainRecords['total'], 'rows'=>$domainRecords['list']]);
     }
 

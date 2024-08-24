@@ -14,8 +14,16 @@ if (parameter_str !== undefined) {
     window.$_GET = [];
 }
 
+function searchRefresh(){
+	$('#listTable').bootstrapTable('refresh');
+	return false;
+}
 function searchSubmit(){
-	$('#listTable').bootstrapTable('selectPage', 1);
+	if(typeof sidePagination != 'undefined' && sidePagination == 'client'){
+		$('#listTable').bootstrapTable('refresh');
+	}else{
+		$('#listTable').bootstrapTable('selectPage', 1);
+	}
 	return false;
 }
 function searchClear(){
@@ -25,7 +33,11 @@ function searchClear(){
 	$('#searchToolbar').find('select[name]').each(function() {
 		$(this).find('option:first').prop("selected", 'selected');
 	});
-	$('#listTable').bootstrapTable('selectPage', 1);
+	if(typeof sidePagination != 'undefined' && sidePagination == 'client'){
+		$('#listTable').bootstrapTable('refresh');
+	}else{
+		$('#listTable').bootstrapTable('selectPage', 1);
+	}
 }
 function updateToolbar(){
     $('#searchToolbar').find(':input[name]').each(function() {
