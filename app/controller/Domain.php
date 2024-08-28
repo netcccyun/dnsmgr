@@ -362,7 +362,8 @@ class Domain extends BaseController
             $row['LineName'] = isset($recordLine[$row['Line']]) ? $recordLine[$row['Line']]['name'] : $row['Line'];
         }
 
-        if($dns->type == 'baidu'){
+        $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+        if($dnstype == 'baidu'){
             return json($domainRecords['list']);
         }
 

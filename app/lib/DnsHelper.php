@@ -117,7 +117,6 @@ class DnsHelper
             $config['domain'] = $domain;
             $config['domainid'] = $domainid;
             $model = new $class($config);
-            $model->type = $dnstype;
             return $model;
         }
         return false;
@@ -131,7 +130,6 @@ class DnsHelper
             $config['domain'] = $config['name'];
             $config['domainid'] = $config['thirdid'];
             $model = new $class($config);
-            $model->type = $dnstype;
             return $model;
         }
         return false;
