@@ -138,7 +138,7 @@ class aliyun implements DnsInterface {
 	public function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = null, $Remark = null){
 		$param = ['Action' => 'AddDomainRecord', 'DomainName' => $this->domain, 'RR' => $Name, 'Type' => $Type, 'Value' => $Value, 'Line' => $this->convertLineCode($Line), 'TTL' => intval($TTL)];
 		if($MX){
-			$params['Priority'] = intval($MX);
+			$param['Priority'] = intval($MX);
 		}
 		$data = $this->request($param, true);
 		if($data){
@@ -151,7 +151,7 @@ class aliyun implements DnsInterface {
 	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = null, $Remark = null){
 		$param = ['Action' => 'UpdateDomainRecord', 'RecordId' => $RecordId, 'RR' => $Name, 'Type' => $Type, 'Value' => $Value, 'Line' => $this->convertLineCode($Line), 'TTL' => intval($TTL)];
 		if($MX){
-			$params['Priority'] = intval($MX);
+			$param['Priority'] = intval($MX);
 		}
 		return $this->request($param);
 	}
