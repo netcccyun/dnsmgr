@@ -28,7 +28,7 @@ class OptimizeService
         }elseif($api == 1){
             $url = 'https://api.hostmonit.com/get_license?license='.$key;
         }else{
-            $url = 'https://monitor.gacjie.cn/api/client/get_account_integral?license='.$key;
+            $url = 'https://www.182682.xyz/api/cf2dns/get_license?license='.$key;
         }
         $response = get_curl($url);
         $arr = json_decode($response, true);
@@ -43,20 +43,24 @@ class OptimizeService
 
     public function get_ip_address($cdn_type = 1, $ip_type = 'v4'){
         $api = config_get('optimize_ip_api', 0);
-        if($api == 1){
+        if($api == 2){
             $url = 'https://api.345673.xyz/get_data';
         }elseif($api == 1){
             $url = 'https://api.hostmonit.com/get_optimization_ip';
         }else{
-            $url = 'https://monitor.gacjie.cn/api/client/get_ip_address';
+            $url = 'https://www.182682.xyz/api/cf2dns/';
+            if($cdn_type == 1){
+                $url .= 'get_cloudflare_ip';
+            }elseif($cdn_type == 2){
+                $url .= 'get_cloudfront_ip';
+            }elseif($cdn_type == 3){
+                $url .= 'get_gcore_ip';
+            }
         }
         $params = [
             'key' => config_get('optimize_ip_key', 'o1zrmHAF'),
             'type' => $ip_type,
         ];
-        if($api == 0){
-            $params['cdn_server'] = $cdn_type;
-        }
         $response = get_curl($url, json_encode($params), 0, 0, 0, 0, 0, ['Content-Type: application/json; charset=UTF-8']);
         $arr = json_decode($response, true);
         if(isset($arr['code']) && $arr['code'] == 200){
