@@ -73,6 +73,7 @@ class huoshan implements DnsInterface {
 		if($data){
 			$list = [];
 			foreach($data['Records'] as $row){
+				if($row['Type'] == 'MX') list($row['MX'], $row['Value']) = explode(' ', $row['Value']);
 				$list[] = [
 					'RecordId' => $row['RecordID'],
 					'Domain' => $this->domain,
@@ -81,7 +82,7 @@ class huoshan implements DnsInterface {
 					'Value' => $row['Value'],
 					'Line' => $row['Line'],
 					'TTL' => $row['TTL'],
-					'MX' => $row['Weight'],
+					'MX' => isset($row['MX']) ? $row['MX'] : null,
 					'Status' => $row['Enable'] ? '1' : '0',
 					'Weight' => $row['Weight'],
 					'Remark' => $row['Remark'],
@@ -103,6 +104,7 @@ class huoshan implements DnsInterface {
 		$data = $this->send_reuqest('GET', 'QueryRecord', ['RecordID' => $RecordId]);
 		if($data){
 			if($data['name'] == $data['zone_name']) $data['name'] = '@';
+			if($data['Type'] == 'MX') list($data['MX'], $data['Value']) = explode(' ', $data['Value']);
 			return [
 				'RecordId' => $data['RecordID'],
 				'Domain' => $this->domain,
@@ -111,7 +113,7 @@ class huoshan implements DnsInterface {
 				'Value' => $data['Value'],
 				'Line' => $data['Line'],
 				'TTL' => $data['TTL'],
-				'MX' => $data['Weight'],
+				'MX' => isset($data['MX']) ? $data['MX'] : null,
 				'Status' => $data['Enable'] ? '1' : '0',
 				'Weight' => $data['Weight'],
 				'Remark' => $data['Remark'],
@@ -122,17 +124,19 @@ class huoshan implements DnsInterface {
 	}
 
 	//添加解析记录
-	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$params = ['ZID' => intval($this->domainid), 'Host' => $Name, 'Type' => $this->convertType($Type), 'Value' => $Value, 'Line'=>$Line, 'TTL' => intval($TTL), 'Remark' => $Remark];
-		if($Type == 'MX')$param['Weight'] = intval($MX);
+		if($Type == 'MX') $params['Value'] = intval($MX) . ' ' . $Value;
+		if($Weight > 0) $params['Weight'] = $Weight;
 		$data = $this->send_reuqest('POST', 'CreateRecord', $params);
 		return is_array($data) ? $data['RecordID'] : false;
 	}
 
 	//修改解析记录
-	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$params = ['RecordID' => $RecordId, 'Host' => $Name, 'Type' => $this->convertType($Type), 'Value' => $Value, 'Line'=>$Line, 'TTL' => intval($TTL), 'Remark' => $Remark];
-		if($Type == 'MX')$param['Weight'] = intval($MX);
+		if($Type == 'MX') $params['Value'] = intval($MX) . ' ' . $Value;
+		if($Weight > 0) $params['Weight'] = $Weight;
 		$data = $this->send_reuqest('POST', 'UpdateRecord', $params);
 		return is_array($data);
 	}

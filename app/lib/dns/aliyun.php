@@ -135,7 +135,7 @@ class aliyun implements DnsInterface {
 	}
 
 	//添加解析记录
-	public function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = null, $Remark = null){
+	public function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = null, $Weight = null, $Remark = null){
 		$param = ['Action' => 'AddDomainRecord', 'DomainName' => $this->domain, 'RR' => $Name, 'Type' => $Type, 'Value' => $Value, 'Line' => $this->convertLineCode($Line), 'TTL' => intval($TTL)];
 		if($MX){
 			$param['Priority'] = intval($MX);
@@ -148,7 +148,7 @@ class aliyun implements DnsInterface {
 	}
 
 	//修改解析记录
-	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = null, $Remark = null){
+	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = null, $Weight = null, $Remark = null){
 		$param = ['Action' => 'UpdateDomainRecord', 'RecordId' => $RecordId, 'RR' => $Name, 'Type' => $Type, 'Value' => $Value, 'Line' => $this->convertLineCode($Line), 'TTL' => intval($TTL)];
 		if($MX){
 			$param['Priority'] = intval($MX);

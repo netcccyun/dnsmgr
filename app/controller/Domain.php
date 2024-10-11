@@ -407,6 +407,7 @@ class Domain extends BaseController
         $value = input('post.value', null, 'trim');
         $line = input('post.line', null, 'trim');
         $ttl = input('post.ttl/d', 600);
+        $weight = input('post.weight/d', 0);
         $mx = input('post.mx/d', 1);
         $remark = input('post.remark', null, 'trim');
 
@@ -415,7 +416,7 @@ class Domain extends BaseController
         }
         
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-        $recordid = $dns->addDomainRecord($name, $type, $value, $line, $ttl, $mx, $remark);
+        $recordid = $dns->addDomainRecord($name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if($recordid){
             $this->add_log($drow['name'], '添加解析', $type.'记录 '.$name.' '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
             return json(['code'=>0, 'msg'=>'添加解析记录成功！']);
@@ -438,6 +439,7 @@ class Domain extends BaseController
         $value = input('post.value', null, 'trim');
         $line = input('post.line', null, 'trim');
         $ttl = input('post.ttl/d', 600);
+        $weight = input('post.weight/d', 0);
         $mx = input('post.mx/d', 1);
         $remark = input('post.remark', null, 'trim');
 
@@ -446,7 +448,7 @@ class Domain extends BaseController
         }
 
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-        $recordid = $dns->updateDomainRecord($recordid, $name, $type, $value, $line, $ttl, $mx, $remark);
+        $recordid = $dns->updateDomainRecord($recordid, $name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if($recordid){
             $this->add_log($drow['name'], '修改解析', $type.'记录 '.$name.' '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
             return json(['code'=>0, 'msg'=>'修改解析记录成功！']);
@@ -608,7 +610,7 @@ class Domain extends BaseController
     
             $success = 0; $fail = 0;
             foreach($recordinfo as $record){
-                $recordid = $dns->updateDomainRecord($record['recordid'], $record['name'], $type, $value, $record['line'], $record['ttl'], $record['mx'], $record['remark']);
+                $recordid = $dns->updateDomainRecord($record['recordid'], $record['name'], $type, $value, $record['line'], $record['ttl'], $record['mx'], $record['weight'], $record['remark']);
                 if($recordid){
                     $this->add_log($drow['name'], '修改解析', $type.'记录 '.$record['name'].' '.$value.' (线路:'.$record['line'].' TTL:'.$record['ttl'].')');
                     $success++;
@@ -629,7 +631,7 @@ class Domain extends BaseController
     
             $success = 0; $fail = 0;
             foreach($recordinfo as $record){
-                $recordid = $dns->updateDomainRecord($record['recordid'], $record['name'], $record['type'], $record['value'], $line, $record['ttl'], $record['mx'], $record['remark']);
+                $recordid = $dns->updateDomainRecord($record['recordid'], $record['name'], $record['type'], $record['value'], $line, $record['ttl'], $record['mx'], $record['weight'], $record['remark']);
                 if($recordid){
                     $this->add_log($drow['name'], '修改解析', $record['type'].'记录 '.$record['name'].' '.$record['value'].' (线路:'.$line.' TTL:'.$record['ttl'].')');
                     $success++;

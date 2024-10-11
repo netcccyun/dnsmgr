@@ -128,18 +128,18 @@ class dnspod implements DnsInterface {
 	}
 
 	//添加解析记录
-	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$action = 'CreateRecord';
-		$param = ['Domain' => $this->domain, 'SubDomain' => $Name, 'RecordType' => $this->convertType($Type), 'Value' => $Value, 'RecordLine'=>$Line, 'RecordLineId' => $this->convertLineCode($Line), 'TTL' => intval($TTL)];
+		$param = ['Domain' => $this->domain, 'SubDomain' => $Name, 'RecordType' => $this->convertType($Type), 'Value' => $Value, 'RecordLine'=>$Line, 'RecordLineId' => $this->convertLineCode($Line), 'TTL' => intval($TTL), 'Weight' => $Weight];
 		if($Type == 'MX')$param['MX'] = intval($MX);
 		$data = $this->send_reuqest($action, $param);
 		return is_array($data) ? $data['RecordId'] : false;
 	}
 
 	//修改解析记录
-	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$action = 'ModifyRecord';
-		$param = ['Domain' => $this->domain, 'RecordId' => intval($RecordId), 'SubDomain' => $Name, 'RecordType' => $this->convertType($Type), 'Value' => $Value, 'RecordLine'=>$Line, 'RecordLineId' => $this->convertLineCode($Line), 'TTL' => intval($TTL)];
+		$param = ['Domain' => $this->domain, 'RecordId' => intval($RecordId), 'SubDomain' => $Name, 'RecordType' => $this->convertType($Type), 'Value' => $Value, 'RecordLine'=>$Line, 'RecordLineId' => $this->convertLineCode($Line), 'TTL' => intval($TTL), 'Weight' => $Weight];
 		if($Type == 'MX')$param['MX'] = intval($MX);
 		$data = $this->send_reuqest($action, $param);
 		return is_array($data);

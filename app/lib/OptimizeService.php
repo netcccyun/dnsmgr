@@ -28,7 +28,7 @@ class OptimizeService
         }elseif($api == 1){
             $url = 'https://api.hostmonit.com/get_license?license='.$key;
         }else{
-            $url = 'https://www.182682.xyz/api/cf2dns/get_license?license='.$key;
+            $url = 'https://www.wetest.vip/api/cf2dns/get_license?license='.$key;
         }
         $response = get_curl($url);
         $arr = json_decode($response, true);
@@ -48,7 +48,7 @@ class OptimizeService
         }elseif($api == 1){
             $url = 'https://api.hostmonit.com/get_optimization_ip';
         }else{
-            $url = 'https://www.182682.xyz/api/cf2dns/';
+            $url = 'https://www.wetest.vip/api/cf2dns/';
             if($cdn_type == 1){
                 $url .= 'get_cloudflare_ip';
             }elseif($cdn_type == 2){

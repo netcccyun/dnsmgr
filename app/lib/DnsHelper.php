@@ -16,6 +16,7 @@ class DnsHelper
             'status' => true, //是否支持启用暂停
             'redirect' => true, //是否支持域名转发
             'log' => true, //是否支持查看日志
+            'weight' => false, //是否支持权重
         ],
         'dnspod' => [
             'name' => '腾讯云',
@@ -27,6 +28,7 @@ class DnsHelper
             'status' => true,
             'redirect' => true,
             'log' => true,
+            'weight' => true,
         ],
         'huawei' => [
             'name' => '华为云',
@@ -38,6 +40,7 @@ class DnsHelper
             'status' => true,
             'redirect' => false,
             'log' => false,
+            'weight' => true,
         ],
         'baidu' => [
             'name' => '百度云',
@@ -49,6 +52,7 @@ class DnsHelper
             'status' => false,
             'redirect' => false,
             'log' => false,
+            'weight' => false,
         ],
         'west' => [
             'name' => '西部数码',
@@ -60,6 +64,7 @@ class DnsHelper
             'status' => true,
             'redirect' => false,
             'log' => false,
+            'weight' => false,
         ],
         'huoshan' => [
             'name' => '火山引擎',
@@ -71,6 +76,7 @@ class DnsHelper
             'status' => true,
             'redirect' => false,
             'log' => false,
+            'weight' => true,
         ],
         'dnsla' => [
             'name' => 'DNSLA',
@@ -82,6 +88,7 @@ class DnsHelper
             'status' => true,
             'redirect' => true,
             'log' => false,
+            'weight' => true,
         ],
         'cloudflare' => [
             'name' => 'Cloudflare',
@@ -93,6 +100,7 @@ class DnsHelper
             'status' => false,
             'redirect' => false,
             'log' => false,
+            'weight' => false,
         ],
     ];
 

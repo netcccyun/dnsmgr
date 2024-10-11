@@ -63,6 +63,12 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 							<input type="text" class="form-control" name="ttl" value="600" placeholder="指解析结果在DNS服务器中的缓存时间" required min="{$minTTL}">
 						</div>
 					</div>
+					{if $dnsconfig.weight}<div class="form-group" style="display:none" id="weight">
+						<label class="col-sm-3 control-label no-padding-right">权重</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="weight" value="" placeholder="留空则不使用权重">
+						</div>
+					</div>{/if}
 					{if $dnsconfig.remark == 2}<div class="form-group">
 						<label class="col-sm-3 control-label no-padding-right">备注</label>
 						<div class="col-sm-9">
@@ -231,6 +237,7 @@ var recordLine = {$recordLine|json_encode|raw};
 var dnsconfig = {$dnsconfig|json_encode|raw};
 var defaultLine = recordLine[0].id;
 var sidePagination = dnsconfig.type == 'baidu' ? 'client' : 'server';
+var showWeight = dnsconfig.weight;
 $(document).ready(function(){
 	updateToolbar();
 	let defaultPageSize = getCookie('record_pagesize') ? getCookie('record_pagesize') : 15;
@@ -284,6 +291,11 @@ $(document).ready(function(){
 				title: 'TTL'
 			},
 			{
+				field: 'Weight',
+				visible: showWeight,
+				title: '权重'
+			},
+			{
 				field: 'Remark',
 				visible: dnsconfig.remark > 0,
 				title: '备注'
@@ -333,13 +345,23 @@ $(document).ready(function(){
 		},
 	});
 
-	$("select[name=type]").change(function(){
+	var typeChange = function(){
 		if($(this).val() == 'MX'){
 			$("#mx_type").show();
 		}else{
 			$("#mx_type").hide();
 		}
-	});
+		if(showWeight){
+			if($(this).val() == 'A' || $(this).val() == 'CNAME' || $(this).val() == 'AAAA'){
+				$("#weight").show();
+			}else{
+				$("#weight").hide();
+			}
+		}
+	};
+
+	$("#form-store select[name=type]").change(typeChange);
+	$("#form-store2 select[name=type]").change(typeChange);
 
 	$("#form-store").bootstrapValidator();
 	$("#form-store2").bootstrapValidator();
@@ -387,10 +409,11 @@ function addframe(){
 	$("#form-store input[name=recordid]").val('');
 	$("#form-store input[name=name]").val('');
 	$("#form-store select[name=type]").val('A');
-	$("select[name=type]").change();
+	$("#form-store select[name=type]").change();
 	initLine();
 	$("#form-store input[name=value]").val('');
 	$("#form-store input[name=ttl]").val('600');
+	$("#form-store input[name=weight]").val('');
 	$("#form-store input[name=remark]").val('');
 	$("#form-store").data("bootstrapValidator").resetForm();
 }
@@ -402,7 +425,7 @@ function editframe(recordid){
 	$("#form-store input[name=recordid]").val(recordid);
 	$("#form-store input[name=name]").val(row.Name);
 	$("#form-store select[name=type]").val(row.Type);
-	$("select[name=type]").change();
+	$("#form-store select[name=type]").change();
 	initLine();
 	if($('#form-store select[name=line] option[value="'+row.Line+'"]').length > 0){
 		$("#form-store select[name=line]").val(row.Line);
@@ -413,6 +436,7 @@ function editframe(recordid){
 	$("#form-store input[name=value]").val(row.Value);
 	$("#form-store input[name=mx]").val(row.MX);
 	$("#form-store input[name=ttl]").val(row.TTL);
+	$("#form-store input[name=weight]").val(row.Weight);
 	$("#form-store input[name=remark]").val(row.Remark);
 	$("#form-store").data("bootstrapValidator").resetForm();
 }
@@ -533,14 +557,14 @@ function operation(action){
 	if(action == 'edit'){
 		var records = [];
 		$.each(rows, function(index, item){
-			records.push({recordid:item.RecordId, name:item.Name, line:item.Line, mx:item.MX, ttl:item.TTL, remark:item.Remark});
+			records.push({recordid:item.RecordId, name:item.Name, line:item.Line, mx:item.MX, ttl:item.TTL, weight:item.Weight, remark:item.Remark});
 		})
 		batch_edit(records)
 		return;
 	}else if(action == 'editline'){
 		var records = [];
 		$.each(rows, function(index, item){
-			records.push({recordid:item.RecordId, name:item.Name, type:item.Type, value:item.Value, mx:item.MX, ttl:item.TTL, remark:item.Remark});
+			records.push({recordid:item.RecordId, name:item.Name, type:item.Type, value:item.Value, mx:item.MX, ttl:item.TTL, weight:item.Weight, remark:item.Remark});
 		})
 		batch_edit_line(records)
 		return;
@@ -589,7 +613,7 @@ function batch_edit(records){
 	$("#form-store2 input[name=recordid]").val(row.RecordId);
 	$("#form-store2 input[name=name]").val(row.Name);
 	$("#form-store2 select[name=type]").val(row.Type);
-	$("select[name=type]").change();
+	$("#form-store2 select[name=type]").change();
 	$("#form-store2 input[name=value]").val(row.Value);
 	$("#form-store2").data("bootstrapValidator").resetForm();
 }

@@ -66,6 +66,7 @@ class huawei implements DnsInterface {
 			$list = [];
 			foreach($data['recordsets'] as $row){
 				if($row['name'] == $row['zone_name']) $row['name'] = '@';
+				if($row['type'] == 'MX') list($row['mx'], $row['records']) = explode(' ', $row['records'][0]);
 				$list[] = [
 					'RecordId' => $row['id'],
 					'Domain' => rtrim($row['zone_name'], '.'),
@@ -74,7 +75,7 @@ class huawei implements DnsInterface {
 					'Value' => $row['records'],
 					'Line' => $row['line'],
 					'TTL' => $row['ttl'],
-					'MX' => $row['weight'],
+					'MX' => isset($row['mx']) ? $row['mx'] : null,
 					'Status' => $row['status'] == 'ACTIVE' ? '1' : '0',
 					'Weight' => $row['weight'],
 					'Remark' => $row['description'],
@@ -96,6 +97,7 @@ class huawei implements DnsInterface {
 		$data = $this->send_reuqest('GET', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId);
 		if($data){
 			if($data['name'] == $data['zone_name']) $data['name'] = '@';
+			if($data['type'] == 'MX') list($data['mx'], $data['records']) = explode(' ', $data['records'][0]);
 			return [
 				'RecordId' => $data['id'],
 				'Domain' => rtrim($data['zone_name'], '.'),
@@ -104,7 +106,7 @@ class huawei implements DnsInterface {
 				'Value' => $data['records'],
 				'Line' => $data['line'],
 				'TTL' => $data['ttl'],
-				'MX' => $data['weight'],
+				'MX' => isset($data['mx']) ? $data['mx'] : null,
 				'Status' => $data['status'] == 'ACTIVE' ? '1' : '0',
 				'Weight' => $data['weight'],
 				'Remark' => $data['description'],
@@ -115,23 +117,25 @@ class huawei implements DnsInterface {
 	}
 
 	//添加解析记录
-	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$Name = $this->getHost($Name);
 		if($Type == 'TXT' && substr($Value, 0, 1) != '"') $Value = '"'.$Value.'"';
 		$records = explode(',', $Value);
 		$params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => $records, 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
-		if($Type == 'MX')$param['weight'] = intval($MX);
+		if($Type == 'MX') $params['records'][0] = intval($MX) . ' ' . $Value;
+		if($Weight > 0) $params['weight'] = intval($Weight);
 		$data = $this->send_reuqest('POST', '/v2.1/zones/'.$this->domainid.'/recordsets', null, $params);
 		return is_array($data) ? $data['id'] : false;
 	}
 
 	//修改解析记录
-	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$Name = $this->getHost($Name);
 		if($Type == 'TXT' && substr($Value, 0, 1) != '"') $Value = '"'.$Value.'"';
 		$records = explode(',', $Value);
 		$params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => $records, 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
-		if($Type == 'MX')$param['weight'] = intval($MX);
+		if($Type == 'MX') $params['records'][0] = intval($MX) . ' ' . $Value;
+		if($Weight > 0) $params['weight'] = intval($Weight);
 		$data = $this->send_reuqest('PUT', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId, null, $params);
 		return is_array($data);
 	}

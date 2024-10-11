@@ -112,17 +112,25 @@ class cloudflare implements DnsInterface {
 	}
 
 	//添加解析记录
-	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $Weight = null, $MX = 1, $Remark = null){
 		$param = ['name' => $Name, 'type' => $this->convertType($Type), 'content' => $Value, 'proxied' => $Line=='1', 'ttl' => intval($TTL), 'comment' => $Remark];
 		if($Type == 'MX')$param['priority'] = intval($MX);
+		if($Type == 'CAA' || $Type == 'SRV'){
+			unset($param['content']);
+			$param['data'] = $this->convertValue($Value, $Type);
+		}
 		$data = $this->send_reuqest('POST', '/zones/'.$this->domainid.'/dns_records', $param);
 		return is_array($data) ? $data['result']['id'] : false;
 	}
 
 	//修改解析记录
-	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $Weight = null, $MX = 1, $Remark = null){
 		$param = ['name' => $Name, 'type' => $this->convertType($Type), 'content' => $Value, 'proxied' => $Line=='1', 'ttl' => intval($TTL), 'comment' => $Remark];
 		if($Type == 'MX')$param['priority'] = intval($MX);
+		if($Type == 'CAA' || $Type == 'SRV'){
+			unset($param['content']);
+			$param['data'] = $this->convertValue($Value, $Type);
+		}
 		$data = $this->send_reuqest('PATCH', '/zones/'.$this->domainid.'/dns_records/'.$RecordId, $param);
 		return is_array($data);
 	}
@@ -173,6 +181,34 @@ class cloudflare implements DnsInterface {
 			return $convert_dict[$type];
 		}
 		return $type;
+	}
+
+	private function convertValue($value, $type){
+		if($type == 'SRV'){
+			$arr = explode(' ', $value);
+			if(count($arr) > 3){
+				$data = [
+					'priority' => intval($arr[0]),
+					'weight' => intval($arr[1]),
+					'port' => intval($arr[2]),
+					'target' => $arr[3],
+				];
+			}else{
+				$data = [
+					'weight' => intval($arr[0]),
+					'port' => intval($arr[1]),
+					'target' => $arr[2],
+				];
+			}
+		}elseif($type == 'CAA'){
+			$arr = explode(' ', $value);
+			$data = [
+				'flags' => intval($arr[0]),
+				'tag' => $arr[1],
+				'value' => trim($arr[2], '"'),
+			];
+		}
+		return $data;
 	}
 
 	private function send_reuqest($method, $path, $params = null){

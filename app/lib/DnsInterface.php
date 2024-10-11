@@ -16,9 +16,9 @@ interface DnsInterface
 
     function getDomainRecordInfo($RecordId);
 
-    function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Remark = null);
+    function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null);
 
-    function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Remark = null);
+    function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null);
 
     function updateDomainRecordRemark($RecordId, $Remark);
 

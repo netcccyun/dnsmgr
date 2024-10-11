@@ -91,14 +91,14 @@ class west implements DnsInterface {
 	}
 
 	//添加解析记录
-	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$param = ['act' => 'adddnsrecord', 'domain' => $this->domain, 'host' => $Name, 'type' => $this->convertType($Type), 'value' => $Value, 'level' => $MX, 'ttl' => intval($TTL), 'line' => $Line];
 		$data = $this->execute('/domain/', $param);
 		return is_array($data) ? $data['id'] : false;
 	}
 
 	//修改解析记录
-	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$param = ['act' => 'moddnsrecord', 'domain' => $this->domain, 'id' => $RecordId, 'type' => $this->convertType($Type), 'value' => $Value, 'level' => $MX, 'ttl' => intval($TTL), 'line' => $Line];
 		$data = $this->execute('/domain/', $param);
 		return is_array($data);

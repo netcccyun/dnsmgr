@@ -102,21 +102,23 @@ class dnsla implements DnsInterface {
 	}
 
 	//添加解析记录
-	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$param = ['domainId' => $this->domainid, 'type' => $this->convertType($Type), 'host' => $Name, 'data' => $Value, 'ttl' => intval($TTL), 'lineId' => $Line];
 		if($Type == 'MX')$param['preference'] = intval($MX);
 		if($Type == 'REDIRECT_URL'){$param['type'] = 256;$param['dominant'] = true;}
 		elseif($Type == 'FORWARD_URL'){$param['type'] = 256;$param['dominant'] = false;}
+		if($Weight > 0) $param['weight'] = $Weight;
 		$data = $this->execute('POST', '/api/record', $param);
 		return is_array($data) ? $data['id'] : false;
 	}
 
 	//修改解析记录
-	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$param = ['id' => $RecordId, 'type' => $this->convertType($Type), 'host' => $Name, 'data' => $Value, 'ttl' => intval($TTL), 'lineId' => $Line];
 		if($Type == 'MX')$param['preference'] = intval($MX);
 		if($Type == 'REDIRECT_URL'){$param['type'] = 256;$param['dominant'] = true;}
 		elseif($Type == 'FORWARD_URL'){$param['type'] = 256;$param['dominant'] = false;}
+		if($Weight > 0) $param['weight'] = $Weight;
 		$data = $this->execute('PUT', '/api/record', $param);
 		return $data!==false;
 	}

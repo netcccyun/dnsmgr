@@ -85,38 +85,40 @@ class baidu implements DnsInterface {
 
 	//获取解析记录详细信息
 	public function getDomainRecordInfo($RecordId){
-		$data = $this->send_reuqest('GET', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId);
-		if($data){
+		$query = ['id' => $RecordId];
+		$data = $this->send_reuqest('GET', '/v1/dns/zone/'.$this->domain.'/record', $query);
+		if($data && !empty($data['records'])){
+			$data = $data['records'][0];
 			return [
 				'RecordId' => $data['id'],
 				'Domain' => rtrim($data['zone_name'], '.'),
 				'Name' => str_replace('.'.$data['zone_name'], '', $data['name']),
 				'Type' => $data['type'],
-				'Value' => $data['records'],
+				'Value' => $data['value'],
 				'Line' => $data['line'],
 				'TTL' => $data['ttl'],
-				'MX' => $data['weight'],
-				'Status' => $data['status'] == 'ACTIVE' ? '1' : '0',
-				'Weight' => $data['weight'],
+				'MX' => $data['priority'],
+				'Status' => $data['status'] == 'running' ? '1' : '0',
+				'Weight' => null,
 				'Remark' => $data['description'],
-				'UpdateTime' => $data['updated_at'],
+				'UpdateTime' => null,
 			];
 		}
 		return false;
 	}
 
 	//添加解析记录
-	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$params = ['rr' => $Name, 'type' => $this->convertType($Type), 'value' => $Value, 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
-		if($Type == 'MX')$param['priority'] = intval($MX);
+		if($Type == 'MX')$params['priority'] = intval($MX);
 		$query = ['clientToken' => getSid()];
 		return $this->send_reuqest('POST', '/v1/dns/zone/'.$this->domain.'/record', $query, $params);
 	}
 
 	//修改解析记录
-	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Remark = null){
+	public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null){
 		$params = ['rr' => $Name, 'type' => $this->convertType($Type), 'value' => $Value, 'line'=>$Line, 'ttl' => intval($TTL), 'description' => $Remark];
-		if($Type == 'MX')$param['priority'] = intval($MX);
+		if($Type == 'MX')$params['priority'] = intval($MX);
 		$query = ['clientToken' => getSid()];
 		return $this->send_reuqest('PUT', '/v1/dns/zone/'.$this->domain.'/record/'.$RecordId, $query, $params);
 	}
