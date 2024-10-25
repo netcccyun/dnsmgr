@@ -97,6 +97,67 @@ docker run --name dnsmgr -dit -p 8081:80 -v /var/dnsmgr:/app/www netcccyun/dnsmg
 docker restart dnsmgr
 ```
 
+### docker-compose部署方法
+
+```
+version: '3'
+services:
+  dnsmgr-web:
+    container_name: dnsmgr-web
+    stdin_open: true
+    tty: true
+    ports:
+      - 8081:80
+    volumes:
+      - /volume1/docker/dnsmgr/web:/app/www
+    image: netcccyun/dnsmgr
+    depends_on:
+      - dnsmgr-mysql
+    networks:
+      - dnsmgr-network
+
+  dnsmgr-mysql:
+    container_name: dnsmgr-mysql
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mysql/conf/my.cnf:/etc/mysql/my.cnf
+      - ./mysql/logs:/logs
+      - ./mysql/data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - TZ=Asia/Shanghai
+    image: mysql:5.7
+    networks:
+      - dnsmgr-network
+
+networks:
+  dnsmgr-network:
+    driver: bridge
+```
+
+在运行之前请创建好目录
+```
+mkdir -p ./web
+mkdir -p ./mysql/conf
+mkdir -p ./mysql/logs
+mkdir -p ./mysql/data
+
+vim mysql/conf/my.cnf
+[mysqld]
+sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+```
+
+登陆mysql容器创建数据库
+```
+docker exec -it dnsmgr-mysql /bin/bash
+mysql -uroot -p123456
+create database dnsmgr;
+```
+
+在install界面链接IP填写dnsmgr-mysql
+
 ### 版权信息
 
 版权所有Copyright © 2023~2024 by 消失的彩虹海(https://blog.cccyun.cn)
