@@ -21,6 +21,7 @@
     ],
     "require": {
         "php": ">=8.0.0",
+        "ext-pdo": "*",
         "topthink/framework": "^8.0",
         "topthink/think-orm": "^3.0",
         "topthink/think-filesystem": "^2.0",
@@ -48,5 +49,11 @@
             "@php think service:discover",
             "@php think vendor:publish"
         ]
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://mirrors.aliyun.com/composer/"
+        }
     }
 }
