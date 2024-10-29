@@ -40,9 +40,9 @@ CF优选IP功能，添加优选IP任务
 
 ### 部署方法
 
-* 从[Release](https://github.com/netcccyun/dnsmgr/releases)页面下载安装包
+* 从[GitHub](https://github.com/coolxitech/dnsmgr)页面下载源码
 
-* 运行环境要求PHP7.4+，MySQL5.6+
+* 运行环境要求PHP8.0+，MySQL5.6+
 
 * 设置网站运行目录为`public`
 
@@ -84,86 +84,17 @@ location / {
 ```
 
 ### Docker部署方法
+非原仓镜像，仅运行网站服务，数据库服务需要自行创建。
 
-首先需要安装Docker，然后执行以下命令拉取镜像并启动（启动后监听8081端口）：
+容器使用本地数据库需要获取Docker网络主机IP地址且不能使用`127.0.0.1`和`localhost`，一般默认是`172.17.0.1`。
 
-```
-docker run --name dnsmgr -dit -p 8081:80 -v /var/dnsmgr:/app/www netcccyun/dnsmgr
-```
-
-访问并安装好后如果容灾切换未自动启动，重启容器即可：
+首先需要安装Docker，然后执行以下命令拉取镜像并启动（启动后监听8000端口）：
 
 ```
-docker restart dnsmgr
+docker run --name dnsmgr -dit -p 8000:8000 -v /var/dnsmgr:/app kpxyyyy/dnsmgr
 ```
-
-### docker-compose部署方法
-
-```
-version: '3'
-services:
-  dnsmgr-web:
-    container_name: dnsmgr-web
-    stdin_open: true
-    tty: true
-    ports:
-      - 8081:80
-    volumes:
-      - /volume1/docker/dnsmgr/web:/app/www
-    image: netcccyun/dnsmgr
-    depends_on:
-      - dnsmgr-mysql
-    networks:
-      - dnsmgr-network
-
-  dnsmgr-mysql:
-    container_name: dnsmgr-mysql
-    restart: always
-    ports:
-      - 3306:3306
-    volumes:
-      - ./mysql/conf/my.cnf:/etc/mysql/my.cnf
-      - ./mysql/logs:/logs
-      - ./mysql/data:/var/lib/mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=123456
-      - TZ=Asia/Shanghai
-    image: mysql:5.7
-    networks:
-      - dnsmgr-network
-
-networks:
-  dnsmgr-network:
-    driver: bridge
-```
-
-在运行之前请创建好目录
-```
-mkdir -p ./web
-mkdir -p ./mysql/conf
-mkdir -p ./mysql/logs
-mkdir -p ./mysql/data
-
-vim mysql/conf/my.cnf
-[mysqld]
-sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
-```
-
-登陆mysql容器创建数据库
-```
-docker exec -it dnsmgr-mysql /bin/bash
-mysql -uroot -p123456
-create database dnsmgr;
-```
-
-在install界面链接IP填写dnsmgr-mysql
-
+推荐使用Nginx进行反向代理.
 ### 版权信息
 
 版权所有Copyright © 2023~2024 by 消失的彩虹海(https://blog.cccyun.cn)
-
-### 其他推荐
-
-- [彩虹云主机 - 免备案CDN/虚拟主机](https://www.cccyun.net/)
-- [小白云高防云服务器](https://www.xiaobaiyun.cn/aff/GMLPMFOV)
 
