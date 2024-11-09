@@ -38,8 +38,8 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: "v${{ env.VERSION }}"           # 使用 composer.json 中的版本号
-          release_name: "发布 v${{ env.VERSION }}"  # Release 名称
+          tag_name: "${{ env.VERSION }}"           # 使用 composer.json 中的版本号
+          release_name: "${{ env.VERSION }}"  # Release 名称
           draft: false
           prerelease: false
         env:
