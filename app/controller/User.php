@@ -3,6 +3,9 @@
 namespace app\controller;
 
 use app\BaseController;
+use app\model\Log;
+use app\model\Permission;
+use app\model\User as UserModel;
 use think\facade\Db;
 use think\facade\View;
 use think\facade\Request;
@@ -28,11 +31,11 @@ class User extends BaseController
         if (!checkPermission(2)) {
             return json(['total' => 0, 'rows' => []]);
         }
-        $kw = input('post.kw', null, 'trim');
-        $offset = input('post.offset/d');
-        $limit = input('post.limit/d');
+        $kw = $this->request->post('kw', null, 'trim');
+        $offset = $this->request->post('offset');
+        $limit = $this->request->post('limit');
 
-        $select = Db::name('user');
+        $select = new UserModel();
         if (!empty($kw)) {
             $select->whereLike('id|username', $kw);
         }
@@ -47,31 +50,31 @@ class User extends BaseController
         if (!checkPermission(2)) {
             return $this->alert('error', '无权限');
         }
-        $act = input('param.act');
+        $act = $this->request->param('act');
         if ($act == 'get') {
-            $id = input('post.id/d');
-            $row = Db::name('user')->where('id', $id)->find();
+            $id = $this->request->post('id');
+            $row = UserModel::where('id', $id)->find();
             if (!$row) {
                 return json(['code' => -1, 'msg' => '用户不存在']);
             }
-            $row['permission'] = Db::name('permission')->where('uid', $id)->column('domain');
+            $row['permission'] = Permission::where('uid', $id)->column('domain');
             return json(['code' => 0, 'data' => $row]);
         } elseif ($act == 'add') {
-            $username = input('post.username', null, 'trim');
-            $password = input('post.password', null, 'trim');
-            $is_api = input('post.is_api/d');
-            $apikey = input('post.apikey', null, 'trim');
-            $level = input('post.level/d');
+            $username = $this->request->post('username', null, 'trim');
+            $password = $this->request->post('password', null, 'trim');
+            $is_api = $this->request->post('is_api');
+            $apikey = $this->request->post('apikey', null, 'trim');
+            $level = $this->request->post('level');
             if (empty($username) || empty($password)) {
                 return json(['code' => -1, 'msg' => '用户名或密码不能为空']);
             }
             if ($is_api == 1 && empty($apikey)) {
                 return json(['code' => -1, 'msg' => 'API密钥不能为空']);
             }
-            if (Db::name('user')->where('username', $username)->find()) {
+            if (UserModel::where('username', $username)->find()) {
                 return json(['code' => -1, 'msg' => '用户名已存在']);
             }
-            $uid = Db::name('user')->insertGetId([
+            $uid = UserModel::insertGetId([
                 'username' => $username,
                 'password' => password_hash($password, PASSWORD_DEFAULT),
                 'is_api' => $is_api,
@@ -81,80 +84,80 @@ class User extends BaseController
                 'status' => 1,
             ]);
             if ($level == 1) {
-                $permission = input('post.permission/a');
+                $permission = $this->request->post('permission');
                 if (!empty($permission)) {
                     $data = [];
                     foreach ($permission as $domain) {
                         $data[] = ['uid' => $uid, 'domain' => $domain];
                     }
-                    Db::name('permission')->insertAll($data);
+                    Permission::insertAll($data);
                 }
             }
             return json(['code' => 0, 'msg' => '添加用户成功！']);
         } elseif ($act == 'edit') {
-            $id = input('post.id/d');
-            $row = Db::name('user')->where('id', $id)->find();
+            $id = $this->request->post('id');
+            $row = UserModel::where('id', $id)->find();
             if (!$row) {
                 return json(['code' => -1, 'msg' => '用户不存在']);
             }
-            $username = input('post.username', null, 'trim');
-            $is_api = input('post.is_api/d');
-            $apikey = input('post.apikey', null, 'trim');
-            $level = input('post.level/d');
-            $repwd = input('post.repwd', null, 'trim');
+            $username = $this->request->post('username', null, 'trim');
+            $is_api = $this->request->post('is_api');
+            $apikey = $this->request->post('apikey', null, 'trim');
+            $level = $this->request->post('level');
+            $repwd = $this->request->post('repwd', null, 'trim');
             if (empty($username)) {
                 return json(['code' => -1, 'msg' => '用户名不能为空']);
             }
             if ($is_api == 1 && empty($apikey)) {
                 return json(['code' => -1, 'msg' => 'API密钥不能为空']);
             }
-            if (Db::name('user')->where('username', $username)->where('id', '<>', $id)->find()) {
+            if (UserModel::where('username', $username)->where('id', '<>', $id)->find()) {
                 return json(['code' => -1, 'msg' => '用户名已存在']);
             }
             if ($level == 1 && ($id == 1000 || $id == $this->request->user['id'])) {
                 $level = 2;
             }
-            Db::name('user')->where('id', $id)->update([
+            UserModel::where('id', $id)->update([
                 'username' => $username,
                 'is_api' => $is_api,
                 'apikey' => $apikey,
                 'level' => $level,
             ]);
-            Db::name('permission')->where(['uid' => $id])->delete();
+            Permission::where(['uid' => $id])->delete();
             if ($level == 1) {
-                $permission = input('post.permission/a');
+                $permission = $this->request->post('permission');
                 if (!empty($permission)) {
                     $data = [];
                     foreach ($permission as $domain) {
                         $data[] = ['uid' => $id, 'domain' => $domain];
                     }
-                    Db::name('permission')->insertAll($data);
+                    Permission::insertAll($data);
                 }
             }
             if (!empty($repwd)) {
-                Db::name('user')->where('id', $id)->update(['password' => password_hash($repwd, PASSWORD_DEFAULT)]);
+                UserModel::where('id', $id)->update(['password' => password_hash($repwd, PASSWORD_DEFAULT)]);
             }
             return json(['code' => 0, 'msg' => '修改用户成功！']);
         } elseif ($act == 'set') {
-            $id = input('post.id/d');
-            $status = input('post.status/d');
+            $id = $this->request->post('id');
+            $status = $this->request->post('status');
             if ($id == 1000) {
                 return json(['code' => -1, 'msg' => '此用户无法修改状态']);
             }
             if ($id == $this->request->user['id']) {
                 return json(['code' => -1, 'msg' => '当前登录用户无法修改状态']);
             }
-            Db::name('user')->where('id', $id)->update(['status' => $status]);
+            UserModel::where('id', $id)->update(['status' => $status]);
             return json(['code' => 0]);
         } elseif ($act == 'del') {
-            $id = input('post.id/d');
+            $id = $this->request->post('id');
             if ($id == 1000) {
                 return json(['code' => -1, 'msg' => '此用户无法删除']);
             }
             if ($id == $this->request->user['id']) {
                 return json(['code' => -1, 'msg' => '当前登录用户无法删除']);
             }
-            Db::name('user')->where('id', $id)->delete();
+            UserModel::where('id', $id)->delete();
             return json(['code' => 0]);
         }
         return json(['code' => -3]);
@@ -167,13 +170,13 @@ class User extends BaseController
 
     public function log_data()
     {
-        $uid = input('post.uid', null, 'trim');
-        $kw = input('post.kw', null, 'trim');
-        $domain = input('post.domain', null, 'trim');
-        $offset = input('post.offset/d');
-        $limit = input('post.limit/d');
+        $uid = $this->request->post('uid', null, 'trim');
+        $kw = $this->request->post('kw', null, 'trim');
+        $domain = $this->request->post('domain', null, 'trim');
+        $offset = $this->request->post('offset');
+        $limit = $this->request->post('limit');
 
-        $select = Db::name('log');
+        $select = new Log();
         if ($this->request->user['type'] == 'domain') {
             $select->where('domain', $this->request->user['name']);
         } elseif ($this->request->user['level'] == 1) {
