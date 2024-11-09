@@ -22,16 +22,21 @@
     "require": {
         "php": ">=8.0.0",
         "ext-pdo": "*",
+        "ext-gd": "*",
+        "ext-curl": "*",
         "topthink/framework": "^8.0",
         "topthink/think-orm": "^3.0",
         "topthink/think-filesystem": "^2.0",
         "topthink/think-view": "^2.0",
-        "cccyun/think-captcha": "^3.0"
+        "topthink/think-captcha": "^3.0",
+        "guzzlehttp/guzzle": "^7.9",
+        "coolxitech/cloudflare-sdk": "dev-master"
     },
     "require-dev": {
         "symfony/var-dumper": "^4.2",
         "topthink/think-trace":"^1.0",
-        "swoole/ide-helper": "^5.1"
+        "swoole/ide-helper": "^5.1",
+        "friendsofphp/php-cs-fixer": "^3.64.0"
     },
     "autoload": {
         "psr-4": {
@@ -50,10 +55,12 @@
             "@php think vendor:publish"
         ]
     },
-    "repositories": {
-        "packagist": {
+    "repositories": [
+        {
+            "description": "阿里云镜像",
             "type": "composer",
-            "url": "https://mirrors.aliyun.com/composer/"
+            "url": "https://mirrors.aliyun.com/composer/",
+            "canonical": false
         }
-    }
+    ]
 }

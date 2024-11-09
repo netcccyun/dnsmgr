@@ -1,6 +1,7 @@
 <?php
 
 namespace app\lib;
+
 use think\facade\Db;
 
 class DnsHelper
@@ -109,19 +110,24 @@ class DnsHelper
         return self::$dns_config;
     }
 
-    private static function getConfig($aid){
+    private static function getConfig($aid)
+    {
         $account = Db::name('account')->where('id', $aid)->find();
-        if(!$account) return false;
+        if (!$account) {
+            return false;
+        }
         return $account;
     }
 
-    public static function getModel($aid, $domain = null, $domainid = null)
+    public static function getModel($aid, $domain = null, $domainid = null): DnsInterface|bool
     {
         $config = self::getConfig($aid);
-        if(!$config) return false;
+        if (!$config) {
+            return false;
+        }
         $dnstype = $config['type'];
-        $class = "\\app\\lib\\dns\\{$dnstype}";
-        if(class_exists($class)){
+        $class = "\\app\\lib\\dns\\$dnstype";
+        if (class_exists($class)) {
             $config['domain'] = $domain;
             $config['domainid'] = $domainid;
             $model = new $class($config);
@@ -134,7 +140,7 @@ class DnsHelper
     {
         $dnstype = $config['type'];
         $class = "\\app\\lib\\dns\\{$dnstype}";
-        if(class_exists($class)){
+        if (class_exists($class)) {
             $config['domain'] = $config['name'];
             $config['domainid'] = $config['thirdid'];
             $model = new $class($config);

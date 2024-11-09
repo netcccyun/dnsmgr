@@ -1,5 +1,6 @@
 <?php
-declare (strict_types = 1);
+
+declare (strict_types=1);
 
 namespace app\middleware;
 
@@ -19,27 +20,27 @@ class LoadConfig
      */
     public function handle($request, \Closure $next)
     {
-        if (!file_exists(app()->getRootPath().'.env')){
-            if(strpos(request()->url(),'/install')===false){
+        if (!file_exists(app()->getRootPath().'.env')) {
+            if (strpos($this->request->url(), '/install') === false) {
                 return redirect((string)url('/install'))->header([
                     'Cache-Control' => 'no-store, no-cache, must-revalidate',
                     'Pragma' => 'no-cache',
                 ]);
-            }else{
+            } else {
                 return $next($request);
             }
         }
-        
-        try{
-            $res = Db::name('config')->cache('configs',0)->column('value','key');
-            if(empty($res['sys_key']) && !empty(env('app.sys_key'))){
+
+        try {
+            $res = Db::name('config')->cache('configs', 0)->column('value', 'key');
+            if (empty($res['sys_key']) && !empty(env('app.sys_key'))) {
                 config_set('sys_key', env('app.sys_key'));
                 Cache::delete('configs');
                 $res['sys_key'] = env('app.sys_key');
             }
             Config::set($res, 'sys');
-        }catch(Exception $e){
-            if(!strpos($e->getMessage(), 'doesn\'t exist')){
+        } catch (Exception $e) {
+            if (!strpos($e->getMessage(), 'doesn\'t exist')) {
                 throw $e;
             }
         }
