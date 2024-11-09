@@ -138,7 +138,7 @@ class Index extends BaseController
     {
 
     }
-    private function clearDirectory($dir)
+    private function clearDirectory($dir): bool
     {
         // 确保路径是目录
         if (!is_dir($dir)) {
