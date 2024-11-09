@@ -102,15 +102,17 @@ abstract class BaseController
         if ($url) {
             $url = (strpos($url, '://') || 0 === strpos($url, '/')) ? $url : (string)$this->app->route->buildUrl($url);
         }
-        if(empty($msg)) $msg = '未知错误';
+        if (empty($msg)) {
+            $msg = '未知错误';
+        }
 
-        if (request()->isApi) {
-            return json(['code'=>$code=='success'?0:-1, 'msg'=>$msg]);
+        if ($this->request->isApi) {
+            return json(['code' => $code == 'success' ? 0 : -1, 'msg' => $msg]);
         }
-        if (request()->isAjax()) {
-            return json(['code'=>$code=='success'?0:-1, 'msg'=>$msg, 'url'=>$url]);
+        if ($this->request->isAjax()) {
+            return json(['code' => $code == 'success' ? 0 : -1, 'msg' => $msg, 'url' => $url]);
         }
-        
+
         View::assign([
             'code' => $code,
             'msg' => $msg,

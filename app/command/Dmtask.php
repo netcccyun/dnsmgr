@@ -1,5 +1,6 @@
 <?php
-declare (strict_types = 1);
+
+declare(strict_types=1);
 
 namespace app\command;
 
@@ -24,45 +25,46 @@ class Dmtask extends Command
 
     protected function execute(Input $input, Output $output)
     {
-        $res = Db::name('config')->cache('configs',0)->column('value','key');
+        $res = Db::name('config')->cache('configs', 0)->column('value', 'key');
         Config::set($res, 'sys');
 
         config_set('run_error', '');
-        if(!extension_loaded('swoole')){
+        if (!extension_loaded('swoole')) {
             $output->writeln('[Error] 未安装Swoole扩展');
             config_set('run_error', '未安装Swoole扩展');
             return;
         }
-        try{
+        try {
             $output->writeln('进程启动成功.');
             $this->runtask();
-        }catch(Exception $e){
-            $output->writeln('[Error] '.$e->getMessage());
+        } catch (Exception $e) {
+            $output->writeln('[Error] ' . $e->getMessage());
             config_set('run_error', $e->getMessage());
         }
     }
 
-    private function runtask(){
-        \Co::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
-        \Co\run(function() {
+    private function runtask()
+    {
+        \Co::set(['hook_flags' => SWOOLE_HOOK_ALL]);
+        \Co\run(function () {
             $date = date("Ymd");
             $count = config_get('run_count', null, true) ?? 0;
-            while(true){
+            while (true) {
                 sleep(1);
-                if($date != date("Ymd")){
+                if ($date != date("Ymd")) {
                     $count = 0;
                     $date = date("Ymd");
                 }
 
                 $rows = Db::name('dmtask')->where('checknexttime', '<=', time())->where('active', 1)->order('id', 'ASC')->select();
-                foreach($rows as $row){
-                    \go(function () use($row) {
-                        try{
+                foreach ($rows as $row) {
+                    \go(function () use ($row) {
+                        try {
                             (new TaskRunner())->execute($row);
                         } catch (\Swoole\ExitException $e) {
-                            echo $e->getStatus()."\n";
+                            echo $e->getStatus() . "\n";
                         } catch (Exception $e) {
-                            echo $e->__toString()."\n";
+                            echo $e->__toString() . "\n";
                         }
                     });
                     Db::name('dmtask')->where('id', $row['id'])->update([

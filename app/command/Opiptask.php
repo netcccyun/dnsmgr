@@ -1,5 +1,6 @@
 <?php
-declare (strict_types = 1);
+
+declare(strict_types=1);
 
 namespace app\command;
 
@@ -24,9 +25,9 @@ class Opiptask extends Command
 
     protected function execute(Input $input, Output $output)
     {
-        $res = Db::name('config')->cache('configs',0)->column('value','key');
+        $res = Db::name('config')->cache('configs', 0)->column('value', 'key');
         Config::set($res, 'sys');
-        
+
         (new OptimizeService())->execute();
     }
 }

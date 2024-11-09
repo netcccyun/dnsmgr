@@ -33,7 +33,8 @@
 	  </select></div>
 	</div><br/>
 	<div class="form-group">
-	  <div class="col-sm-offset-3 col-sm-9"><input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/></div>
+	  <div class="col-sm-offset-3 col-sm-9"><input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/><br/>
+		<a href="javascript:proxytest()" class="btn btn-default btn-block">测试连通性</a></div>
 	</div>
   </form>
 </div>
@@ -48,16 +49,6 @@ var items = $("select[default]");
 for (i = 0; i < items.length; i++) {
 	$(items[i]).val($(items[i]).attr("default")||0);
 }
-$("select[name='mail_type']").change(function(){
-	if($(this).val() == 0){
-		$("#frame_set1").show();
-		$("#frame_set2").hide();
-	}else{
-		$("#frame_set1").hide();
-		$("#frame_set2").show();
-	}
-});
-$("select[name='mail_type']").change();
 function saveSetting(obj){
 	var ii = layer.load(2, {shade:[0.1,'#fff']});
 	$.ajax({
@@ -85,42 +76,32 @@ function saveSetting(obj){
 	});
 	return false;
 }
-function mailtest(){
+function proxytest(){
+	var proxy_server = $("input[name='proxy_server']").val();
+	var proxy_port = $("input[name='proxy_port']").val();
+	var proxy_user = $("input[name='proxy_user']").val();
+	var proxy_pwd = $("input[name='proxy_pwd']").val();
+	var proxy_type = $("select[name='proxy_type']").val();
+	if(proxy_server=='' || proxy_port==''){
+		layer.alert('代理服务器和端口不能为空！');
+		return false;
+	}
 	var ii = layer.load(2, {shade:[0.1,'#fff']});
 	$.ajax({
-		type : 'GET',
-		url : '/dmonitor/mailtest',
+		type : 'POST',
+		url : '/dmonitor/proxytest',
+		data : {proxy_server:proxy_server, proxy_port:proxy_port, proxy_user:proxy_user, proxy_pwd:proxy_pwd, proxy_type:proxy_type},
 		dataType : 'json',
 		success : function(data) {
 			layer.close(ii);
 			if(data.code == 0){
-				layer.alert(data.msg, {icon: 1});
+				layer.alert('连通性测试成功！', {icon: 1})
 			}else{
-				layer.alert(data.msg, {icon: 2})
+				layer.alert('连通性测试失败：'+data.msg, {icon: 2})
 			}
 		},
 		error:function(data){
-            layer.close(ii);
-			layer.msg('服务器错误');
-		}
-	});
-}
-function tgbottest(){
-	var ii = layer.load(2, {shade:[0.1,'#fff']});
-	$.ajax({
-		type : 'GET',
-		url : '/dmonitor/tgbottest',
-		dataType : 'json',
-		success : function(data) {
 			layer.close(ii);
-			if(data.code == 0){
-				layer.alert(data.msg, {icon: 1});
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
-		},
-		error:function(data){
-            layer.close(ii);
 			layer.msg('服务器错误');
 		}
 	});

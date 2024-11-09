@@ -1,4 +1,5 @@
 <?php
+
 declare (strict_types=1);
 
 namespace app\middleware;
@@ -16,7 +17,7 @@ class RefererCheck
      */
     public function handle($request, \Closure $next)
     {
-        if(!checkRefererHost()){
+        if (!checkRefererHost()) {
             return response('Access Denied', 403);
         }
         return $next($request);

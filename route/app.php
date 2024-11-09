@@ -8,19 +8,23 @@
 // +----------------------------------------------------------------------
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
+use app\middleware\AuthApi;
+use app\middleware\CheckLogin;
+use app\middleware\ViewOutput;
 use think\facade\Route;
+use think\middleware\SessionInit;
 
 Route::pattern([
     'id'   => '\d+',
 ]);
 
 Route::any('/install', 'install/index')
-->middleware(\app\middleware\ViewOutput::class);
+->middleware(ViewOutput::class);
 
-Route::get('/verifycode', 'auth/verifycode')->middleware(\think\middleware\SessionInit::class)
-->middleware(\app\middleware\ViewOutput::class);
-Route::any('/login', 'auth/login')->middleware(\think\middleware\SessionInit::class)
-->middleware(\app\middleware\ViewOutput::class);
+Route::get('/verifycode', 'auth/verifycode')->middleware(SessionInit::class)
+->middleware(ViewOutput::class);
+Route::any('/login', 'auth/login')->middleware(SessionInit::class)
+->middleware(ViewOutput::class);
 Route::get('/logout', 'auth/logout');
 Route::any('/quicklogin', 'auth/quicklogin');
 Route::any('/dmtask/status', 'dmonitor/status');
@@ -72,6 +76,7 @@ Route::group(function () {
     Route::any('/dmonitor/proxyset', 'dmonitor/proxyset');
     Route::get('/dmonitor/mailtest', 'dmonitor/mailtest');
     Route::get('/dmonitor/tgbottest', 'dmonitor/tgbottest');
+    Route::post('/dmonitor/proxytest', 'dmonitor/proxytest');
     Route::post('/dmonitor/clean', 'dmonitor/clean');
 
     Route::any('/optimizeip/opipset', 'optimizeip/opipset');
@@ -80,8 +85,8 @@ Route::group(function () {
     Route::get('/optimizeip/opiplist', 'optimizeip/opiplist');
     Route::any('/optimizeip/opipform/:action', 'optimizeip/opipform');
 
-})->middleware(\app\middleware\CheckLogin::class)
-->middleware(\app\middleware\ViewOutput::class);
+})->middleware(CheckLogin::class)
+->middleware(ViewOutput::class);
 
 Route::group('api', function () {
     Route::post('/domain/:id', 'domain/domain_info');
@@ -95,7 +100,7 @@ Route::group('api', function () {
     Route::post('/record/remark/:id', 'domain/record_remark');
     Route::post('/record/batch/:id', 'domain/record_batch');
 
-})->middleware(\app\middleware\AuthApi::class);
+})->middleware(AuthApi::class);
 
 Route::miss(function() {
     return response('404 Not Found')->code(404);

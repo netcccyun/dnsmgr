@@ -1,6 +1,7 @@
 <?php
 
 namespace app\lib;
+
 use think\facade\Db;
 
 class DnsHelper
@@ -10,7 +11,7 @@ class DnsHelper
             'name' => '阿里云',
             'config' => [
                 'ak' => 'AccessKeyId',
-                'sk' => 'AccessKeySecret'
+                'sk' => 'AccessKeySecret',
             ],
             'remark' => 1, //是否支持备注，1单独设置备注，2和记录一起设置
             'status' => true, //是否支持启用暂停
@@ -22,7 +23,7 @@ class DnsHelper
             'name' => '腾讯云',
             'config' => [
                 'ak' => 'SecretId',
-                'sk' => 'SecretKey'
+                'sk' => 'SecretKey',
             ],
             'remark' => 1,
             'status' => true,
@@ -34,7 +35,7 @@ class DnsHelper
             'name' => '华为云',
             'config' => [
                 'ak' => 'AccessKeyId',
-                'sk' => 'SecretAccessKey'
+                'sk' => 'SecretAccessKey',
             ],
             'remark' => 2,
             'status' => true,
@@ -46,7 +47,7 @@ class DnsHelper
             'name' => '百度云',
             'config' => [
                 'ak' => 'AccessKey',
-                'sk' => 'SecretKey'
+                'sk' => 'SecretKey',
             ],
             'remark' => 2,
             'status' => false,
@@ -58,7 +59,7 @@ class DnsHelper
             'name' => '西部数码',
             'config' => [
                 'ak' => '用户名',
-                'sk' => 'API密码'
+                'sk' => 'API密码',
             ],
             'remark' => 0,
             'status' => true,
@@ -70,7 +71,7 @@ class DnsHelper
             'name' => '火山引擎',
             'config' => [
                 'ak' => 'AccessKeyId',
-                'sk' => 'SecretAccessKey'
+                'sk' => 'SecretAccessKey',
             ],
             'remark' => 2,
             'status' => true,
@@ -82,7 +83,7 @@ class DnsHelper
             'name' => 'DNSLA',
             'config' => [
                 'ak' => 'APIID',
-                'sk' => 'API密钥'
+                'sk' => 'API密钥',
             ],
             'remark' => 0,
             'status' => true,
@@ -94,7 +95,7 @@ class DnsHelper
             'name' => 'Cloudflare',
             'config' => [
                 'ak' => '邮箱地址',
-                'sk' => 'API密钥/令牌'
+                'sk' => 'API密钥/令牌',
             ],
             'remark' => 2,
             'status' => false,
@@ -104,24 +105,39 @@ class DnsHelper
         ],
     ];
 
+    public static $line_name = [
+        'aliyun' => ['DEF' => 'default', 'CT' => 'telecom', 'CU' => 'unicom', 'CM' => 'mobile', 'AB' => 'oversea'],
+        'dnspod' => ['DEF' => '0', 'CT' => '10=0', 'CU' => '10=1', 'CM' => '10=3', 'AB' => '3=0'],
+        'huawei' => ['DEF' => 'default_view', 'CT' => 'Dianxin', 'CU' => 'Liantong', 'CM' => 'Yidong', 'AB' => 'Abroad'],
+        'west' => ['DEF' => '', 'CT' => 'LTEL', 'CU' => 'LCNC', 'CM' => 'LMOB', 'AB' => 'LFOR'],
+        'dnsla' => ['DEF' => '', 'CT' => '84613316902921216', 'CU' => '84613316923892736', 'CM' => '84613316953252864', 'AB' => ''],
+        'huoshan' => ['DEF' => 'default', 'CT' => 'telecom', 'CU' => 'unicom', 'CM' => 'mobile', 'AB' => 'oversea'],
+        'baidu' => ['DEF' => 'default', 'CT' => 'ct', 'CU' => 'cnc', 'CM' => 'cmnet', 'AB' => ''],
+        'cloudflare' => ['DEF' => '0'],
+    ];
+
     public static function getList()
     {
         return self::$dns_config;
     }
 
-    private static function getConfig($aid){
+    private static function getConfig($aid)
+    {
         $account = Db::name('account')->where('id', $aid)->find();
-        if(!$account) return false;
+        if (!$account) return false;
         return $account;
     }
 
+    /**
+     * @return DnsInterface|false
+     */
     public static function getModel($aid, $domain = null, $domainid = null)
     {
         $config = self::getConfig($aid);
-        if(!$config) return false;
+        if (!$config) return false;
         $dnstype = $config['type'];
         $class = "\\app\\lib\\dns\\{$dnstype}";
-        if(class_exists($class)){
+        if (class_exists($class)) {
             $config['domain'] = $domain;
             $config['domainid'] = $domainid;
             $model = new $class($config);
@@ -130,11 +146,14 @@ class DnsHelper
         return false;
     }
 
+    /**
+     * @return DnsInterface|false
+     */
     public static function getModel2($config)
     {
         $dnstype = $config['type'];
         $class = "\\app\\lib\\dns\\{$dnstype}";
-        if(class_exists($class)){
+        if (class_exists($class)) {
             $config['domain'] = $config['name'];
             $config['domainid'] = $config['thirdid'];
             $model = new $class($config);

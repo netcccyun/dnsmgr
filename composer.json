@@ -1,26 +1,43 @@
 {
-    "name": "topthink/think",
-    "description": "the new thinkphp framework",
+    "name": "netcccyun/dnsmgr",
+    "description": "聚合DNS管理系统",
     "type": "project",
     "keywords": [
-        "framework",
         "thinkphp",
-        "ORM"
+        "dns",
+        "dnsmanager",
+        "cccyun"
     ],
-    "homepage": "https://www.thinkphp.cn/",
+    "homepage": "https://blog.cccyun.cn/post-526.html",
     "license": "Apache-2.0",
     "authors": [
         {
             "name": "liu21st",
-            "email": "liu21st@gmail.com"
+            "email": "liu21st@gmail.com",
+            "role": "Framework Developer"
         },
         {
             "name": "yunwuxin",
-            "email": "448901948@qq.com"
-        }        
+            "email": "448901948@qq.com",
+            "role": "Framework Developer"
+        },
+        {
+            "name": "netcccyun",
+            "homepage": "https://blog.cccyun.cn",
+            "role": "Project Owner"
+        },
+        {
+            "name": "coolxitech",
+            "email": "admin@kuxi.tech",
+            "homepage": "https://www.kuxi.tech",
+            "role": "Project Developer"
+        }
     ],
     "require": {
-        "php": ">=7.2.5",
+        "php": ">=7.4.0",
+        "ext-pdo": "*",
+        "ext-gd": "*",
+        "ext-curl": "*",
         "topthink/framework": "^6.0.0",
         "topthink/think-orm": "^2.0",
         "topthink/think-view": "^1.0",

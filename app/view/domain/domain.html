@@ -145,7 +145,7 @@ $(document).ready(function(){
 				field: 'typename',
 				title: '平台账户',
 				formatter: function(value, row, index) {
-					return '<span title="'+row.aremark+'" data-toggle="tooltip" data-placement="right" title="Tooltip on right"><img src="/static/images/'+row.type+'.ico" class="type-logo"></img>'+value+'('+row.aid+')</span>';
+					return '<img src="/static/images/'+row.type+'.ico" class="type-logo"></img>'+(row.aremark?row.aremark:value+'('+row.aid+')');
 				}
 			},
             {
@@ -193,10 +193,7 @@ $(document).ready(function(){
 					return html;
 				}
 			},
-		],
-		onLoadSuccess: function(data) {
-			$('[data-toggle="tooltip"]').tooltip()
-		}
+		]
 	})
 
 	$("#form-store select[name=aid]").change(function(){

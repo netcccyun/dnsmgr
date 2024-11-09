@@ -30,7 +30,8 @@ return [
     'imageH'   => 0,
     // 验证码图片宽度
     'imageW'   => 0,
-
+    // 验证成功后是否重置
+    'reset' => true,
     // 添加额外的验证码设置
     // verify => [
     //     'length'=>4,
