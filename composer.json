@@ -34,8 +34,7 @@
     ],
     "support": {
         "issues": "https://github.com/coolxitech/dnsmgr/issues",
-        "source": "https://github.com/coolxitech/dnsmgr",
-        "irc": "https://github.com/coolxitech/dnsmgr/discussions"
+        "source": "https://github.com/coolxitech/dnsmgr"
     },
     "require": {
         "php": ">=8.0.0",
