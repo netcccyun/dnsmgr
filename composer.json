@@ -4,9 +4,10 @@
     "version": "1.7.2",
     "type": "project",
     "keywords": [
-        "framework",
         "thinkphp",
-        "ORM"
+        "dns",
+        "dnsmanager",
+        "cccyun"
     ],
     "homepage": "https://blog.cccyun.cn/post-526.html",
     "license": "MIT",
