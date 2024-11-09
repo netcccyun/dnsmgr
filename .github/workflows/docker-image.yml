@@ -1,0 +1,37 @@
+name: Docker镜像构建推送
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 步骤 1: 登录 Docker Hub
+      - name: 登录到 Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # 步骤 2: 登录到 GitHub 包容器注册表
+      - name: 登录到 GitHub 包容器注册表
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # 步骤 3: 构建 Docker 镜像
+      - name: 构建 Docker 镜像
+        run: |
+          docker build . --file Dockerfile --tag kpxyyyy/dnsmgr:latest
+          docker tag kpxyyyy/dnsmgr:latest ghcr.io/${{ github.repository_owner }}/dnsmgr:latest
+
+      # 步骤 4: 推送到 Docker Hub
+      - name: 推送 Docker 镜像到 Docker Hub
+        run: docker push kpxyyyy/dnsmgr:latest
+
+      # 步骤 5: 推送到 GitHub Packages
+      - name: 推送 Docker 镜像到 GitHub 包
+        run: docker push ghcr.io/${{ github.repository_owner }}/dnsmgr:latest

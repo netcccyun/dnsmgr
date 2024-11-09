@@ -56,7 +56,7 @@ a{color:#444}
                             <div class="input-group-addon"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span></div>
                             <input type="text" class="form-control input-lg" placeholder="验证码" name="code" autocomplete="off" required="required"/>
                             <span class="input-group-addon" style="padding: 0">
-                              <img id="verifycode" src="/verifycode" height="45" onclick="this.src='/verifycode?r='+Math.random();" title="点击更换验证码">
+                              <img id="verifycode" src="{:captcha_src()}" height="45" onclick="this.src='{:captcha_src()}?r='+Math.random();" title="点击更换验证码">
                             </span>
                         </div>
                         <div class="form-group">

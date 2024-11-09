@@ -4,32 +4,32 @@ namespace app\lib;
 
 interface DnsInterface
 {
-    function getError();
+    public function getError();
 
-    function check();
+    public function check();
 
-    function getDomainList($KeyWord=null, $PageNumber=1, $PageSize=20);
+    public function getDomainList($KeyWord = null, $PageNumber = 1, $PageSize = 20);
 
-    function getDomainRecords($PageNumber=1, $PageSize=20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null);
+    public function getDomainRecords($PageNumber = 1, $PageSize = 20, $KeyWord = '', $SubDomain = '', $Value = '', $Type = '', $Line = '', $Status = '');
 
-    function getSubDomainRecords($SubDomain, $PageNumber=1, $PageSize=20, $Type = null, $Line = null);
+    public function getSubDomainRecords($SubDomain, $PageNumber = 1, $PageSize = 20, $Type = '', $Line = '');
 
-    function getDomainRecordInfo($RecordId);
+    public function getDomainRecordInfo($RecordId);
 
-    function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null);
+    public function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null);
 
-    function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null);
+    public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null);
 
-    function updateDomainRecordRemark($RecordId, $Remark);
+    public function updateDomainRecordRemark($RecordId, $Remark);
 
-    function deleteDomainRecord($RecordId);
+    public function deleteDomainRecord($RecordId);
 
-    function setDomainRecordStatus($RecordId, $Status);
+    public function setDomainRecordStatus($RecordId, $Status);
 
-    function getDomainRecordLog($PageNumber = 1, $PageSize = 20, $KeyWord = null, $StartDate = null, $endDate = null);
+    public function getDomainRecordLog($PageNumber = 1, $PageSize = 20, $KeyWord = null, $StartDate = null, $endDate = null);
 
-    function getRecordLine();
+    public function getRecordLine();
 
-    function getMinTTL();
+    public function getMinTTL();
 
 }

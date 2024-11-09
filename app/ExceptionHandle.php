@@ -1,4 +1,5 @@
 <?php
+
 namespace app;
 
 use think\db\exception\DataNotFoundException;

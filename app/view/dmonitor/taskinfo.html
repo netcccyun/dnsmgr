@@ -34,8 +34,8 @@ tbody tr>td:nth-child(4){overflow: hidden;text-overflow: ellipsis;white-space: n
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
-var action_name = {$info.action_name|json_encode|raw};
-$(document).ready(function(){
+    const action_name = {$info.action_name | json_encode | raw};
+    $(document).ready(function(){
 	updateToolbar();
 	const defaultPageSize = 15;
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
