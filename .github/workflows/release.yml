@@ -50,8 +50,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-${{ env.VERSION }}.tar.gz
-          asset_name: release-${{ env.VERSION }}.tar.gz
-          asset_content_type: application/gzip
+          asset_path: ./release-${{ env.VERSION }}.zip
+          asset_name: release-${{ env.VERSION }}.zip
+          asset_content_type: application/zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
