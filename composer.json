@@ -1,24 +1,42 @@
 {
-    "name": "topthink/think",
-    "description": "the new thinkphp framework",
+    "name": "coolxitech/dnsmgr",
+    "description": "聚合DNS管理系统",
+    "version": "1.7.2",
     "type": "project",
     "keywords": [
         "framework",
         "thinkphp",
         "ORM"
     ],
-    "homepage": "https://www.thinkphp.cn/",
-    "license": "Apache-2.0",
+    "homepage": "https://blog.cccyun.cn/post-526.html",
+    "license": "MIT",
     "authors": [
         {
             "name": "liu21st",
-            "email": "liu21st@gmail.com"
+            "email": "liu21st@gmail.com",
+            "role": "Developer"
         },
         {
             "name": "yunwuxin",
-            "email": "448901948@qq.com"
+            "email": "448901948@qq.com",
+            "role": "Developer"
+        },
+        {
+            "name": "netcccyun",
+            "homepage": "https://blog.cccyun.cn",
+            "role": "Owner"
+        },
+        {
+            "name": "coolxitech",
+            "homepage": "https://www.kuxi.tech",
+            "role": "Developer"
         }
     ],
+    "support": {
+        "issues": "https://github.com/coolxitech/dnsmgr/issues",
+        "source": "https://github.com/coolxitech/dnsmgr",
+        "irc": "https://github.com/coolxitech/dnsmgr/discussions"
+    },
     "require": {
         "php": ">=8.0.0",
         "ext-pdo": "*",
