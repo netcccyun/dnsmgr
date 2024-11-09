@@ -1,9 +1,9 @@
-name: PHP Release Package CI
+name: 项目构建包发布
 
 on:
   push:
-    tags:
-      - 'v*.*.*'  # 监听类似 "v1.0.0" 的标签来触发发布
+    branches:
+      - 'main'  # 监听推送到 main 分支的变化
 
 jobs:
   release:
@@ -33,13 +33,13 @@ jobs:
         run: |
           tar -czvf release-$VERSION.tar.gz ./*
 
-      # 创建 GitHub Release
-      - name: 创建 GitHub Release
+      # 创建或更新 GitHub Release
+      - name: 创建或更新 GitHub Release
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: ${{ env.VERSION }}
-          release_name: ${{ env.VERSION }}
+          tag_name: "v${{ env.VERSION }}"           # 使用 composer.json 中的版本号
+          release_name: "发布 v${{ env.VERSION }}"  # Release 名称
           draft: false
           prerelease: false
         env:
