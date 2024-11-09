@@ -31,7 +31,7 @@ jobs:
       # 压缩 PHP 项目文件
       - name: 压缩项目文件
         run: |
-          tar -czvf release-$VERSION.tar.gz ./*
+          zip -r release-$VERSION.zip ./*
 
       # 创建或更新 GitHub Release
       - name: 创建或更新 GitHub Release
