@@ -1,0 +1,55 @@
+name: PHP Release Package CI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 监听类似 "v1.0.0" 的标签来触发发布
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 可选：安装 PHP 依赖（如使用 Composer）
+      - name: 安装 PHP 依赖
+        run: |
+          if [ -f "composer.json" ]; then
+            composer install --no-dev --optimize-autoloader
+          fi
+
+      # 读取 composer.json 中的 version 字段
+      - name: 获取版本号
+        id: get_version
+        run: |
+          VERSION=$(jq -r '.version' composer.json)
+          echo "版本号：$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      # 压缩 PHP 项目文件
+      - name: 压缩项目文件
+        run: |
+          tar -czvf release-$VERSION.tar.gz ./*
+
+      # 创建 GitHub Release
+      - name: 创建 GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ env.VERSION }}
+          release_name: ${{ env.VERSION }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 上传发布文件
+      - name: 上传发布文件
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release-${{ env.VERSION }}.tar.gz
+          asset_name: release-${{ env.VERSION }}.tar.gz
+          asset_content_type: application/gzip
