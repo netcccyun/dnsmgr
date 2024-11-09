@@ -1,4 +1,4 @@
-name: PHP Release Package CI
+name: 项目构建包发布
 
 on:
   push:
