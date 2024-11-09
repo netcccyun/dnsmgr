@@ -16,15 +16,15 @@ class Install extends BaseController
         if (file_exists(app()->getRootPath() . '.env')) {
             return '当前已经安装成功，如果需要重新安装，请手动删除根目录.env文件';
         }
-        if (Request::isPost()) {
-            $mysql_host = Request::post('mysql_host');
-            $mysql_port = intval(Request::post('mysql_port', '3306'));
-            $mysql_user = Request::post('mysql_user', null, 'trim');
-            $mysql_pwd = Request::post('mysql_pwd', null, 'trim');
-            $mysql_name = Request::post('mysql_name', null, 'trim');
-            $mysql_prefix = Request::post('mysql_prefix', 'cloud_', 'trim');
-            $admin_username = Request::post('admin_username', null, 'trim');
-            $admin_password = Request::post('admin_password', null, 'trim');
+        if ($this->request->isPost()) {
+            $mysql_host = $this->request->post('mysql_host');
+            $mysql_port = intval($this->request->post('mysql_port', '3306'));
+            $mysql_user = $this->request->post('mysql_user', null, 'trim');
+            $mysql_pwd = $this->request->post('mysql_pwd', null, 'trim');
+            $mysql_name = $this->request->post('mysql_name', null, 'trim');
+            $mysql_prefix = $this->request->post('mysql_prefix', 'cloud_', 'trim');
+            $admin_username = $this->request->post('admin_username', null, 'trim');
+            $admin_password = $this->request->post('admin_password', null, 'trim');
 
             if (!$mysql_host || !$mysql_user || !$mysql_pwd || !$mysql_name || !$admin_username || !$admin_password) {
                 return json(['code' => 0, 'msg' => '必填项不能为空']);

@@ -30,7 +30,7 @@ function get_curl(string $url, $post = 0, $referer = 0, $cookie = 0, $header = 0
         $response = $client->post($url, [
             'form_params' => $post,
             'headers' => $header,
-            'verify' => false
+            'verify' => false,
         ]);
     }
 
@@ -83,7 +83,7 @@ function dstrpos($string, $arr)
 function checkmobile()
 {
     $useragent = strtolower($_SERVER['HTTP_USER_AGENT']);
-    $ualist = array('android', 'midp', 'nokia', 'mobile', 'iphone', 'ipod', 'blackberry', 'windows phone');
+    $ualist = ['android', 'midp', 'nokia', 'mobile', 'iphone', 'ipod', 'blackberry', 'windows phone'];
     if ((dstrpos($useragent, $ualist) || strexists($_SERVER['HTTP_ACCEPT'], "VND.WAP") || strexists($_SERVER['HTTP_VIA'], "wap"))) {
         return true;
     } else {
@@ -104,7 +104,7 @@ function authcode($string, $operation = 'DECODE', $key = '', $expiry = 0)
     $string_length = strlen($string);
     $result = '';
     $box = range(0, 255);
-    $rndkey = array();
+    $rndkey = [];
     for ($i = 0; $i <= 255; $i++) {
         $rndkey[$i] = ord($cryptkey[$i % $key_length]);
     }
@@ -256,7 +256,7 @@ function config_set($key, $value)
 
 function getMillisecond()
 {
-    list($s1, $s2) = explode(' ', microtime());
+    [$s1, $s2] = explode(' ', microtime());
     return (int)sprintf('%.0f', (floatval($s1) + floatval($s2)) * 1000);
 }
 
@@ -285,5 +285,44 @@ function convert_second($s)
             $m = $m % 60;
             return $h.'小时'.$m.'分钟'.$s.'秒';
         }
+    }
+}
+
+function check_proxy($url, $proxy_server, $proxy_port, $type, $proxy_user, $proxy_pwd)
+{
+    if ($type == 'https') {
+        $proxy_type = CURLPROXY_HTTPS;
+    } elseif ($type == 'sock4') {
+        $proxy_type = CURLPROXY_SOCKS4;
+    } elseif ($type == 'sock5') {
+        $proxy_type = CURLPROXY_SOCKS5;
+    } else {
+        $proxy_type = CURLPROXY_HTTP;
+    }
+    $options = [
+        CURLOPT_PROXYTYPE => $proxy_type,
+        CURLOPT_PROXYAUTH => CURLAUTH_BASIC,
+        CURLOPT_PROXY => $proxy_server,
+        CURLOPT_PROXYUSERPWD => !empty($proxy_user) && !empty($proxy_pwd) ? $proxy_user . ':' . $proxy_pwd : '',
+        CURLOPT_PROXYPORT => $proxy_port,
+    ];
+    $client = new Client([
+        'curl' => $options,
+        'timeout' => 3,
+        'verify' => false,
+        'headers' => [
+            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
+        ],
+    ]);
+    try {
+        $response = $client->request('GET', $url);
+    } catch (\GuzzleHttp\Exception\RequestException $e) {
+        throw new Exception($e->getMessage());
+    }
+    $httpCode = $response->getStatusCode();
+    if ($httpCode >= 200 && $httpCode < 400) {
+        return true;
+    } else {
+        throw new Exception('HTTP状态码异常：' . $httpCode);
     }
 }

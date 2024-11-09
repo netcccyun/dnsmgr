@@ -284,6 +284,26 @@ class Dmonitor extends BaseController
         }
     }
 
+    public function proxytest()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        $proxy_server = $this->request->post('proxy_server');
+        $proxy_port = $this->request->post('proxy_port');
+        $proxy_user = $this->request->post('proxy_user');
+        $proxy_pwd = $this->request->post('proxy_pwd');
+        $proxy_type = $this->request->post('proxy_type');
+        try {
+            check_proxy('https://dl.amh.sh/ip.htm', $proxy_server, $proxy_port, $proxy_type, $proxy_user, $proxy_pwd);
+        } catch (Exception $e) {
+            try {
+                check_proxy('https://myip.ipip.net/', $proxy_server, $proxy_port, $proxy_type, $proxy_user, $proxy_pwd);
+            } catch (Exception $e) {
+                return json(['code' => -1, 'msg' => $e->getMessage()]);
+            }
+        }
+        return json(['code' => 0]);
+    }
+
     public function clean()
     {
         if (!checkPermission(2)) {

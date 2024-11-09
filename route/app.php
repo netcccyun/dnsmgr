@@ -19,12 +19,12 @@ Route::pattern([
 ]);
 
 Route::any('/install', 'install/index')
-->middleware(ViewOutput::class);
+    ->middleware(ViewOutput::class);
 
 Route::get('/verifycode', 'auth/verifycode')->middleware(SessionInit::class)
-->middleware(ViewOutput::class);
+    ->middleware(ViewOutput::class);
 Route::any('/login', 'auth/login')->middleware(SessionInit::class)
-->middleware(ViewOutput::class);
+    ->middleware(ViewOutput::class);
 Route::get('/logout', 'auth/logout');
 Route::any('/quicklogin', 'auth/quicklogin');
 Route::any('/dmtask/status', 'dmonitor/status');
@@ -40,7 +40,7 @@ Route::group(function () {
     Route::post('/user/data', 'user/user_data');
     Route::post('/user/op', 'user/user_op');
     Route::get('/user', 'user/user');
-    
+
     Route::post('/log/data', 'user/log_data');
     Route::get('/log', 'user/log');
 
@@ -76,6 +76,7 @@ Route::group(function () {
     Route::any('/dmonitor/proxyset', 'dmonitor/proxyset');
     Route::get('/dmonitor/mailtest', 'dmonitor/mailtest');
     Route::get('/dmonitor/tgbottest', 'dmonitor/tgbottest');
+    Route::post('/dmonitor/proxytest', 'dmonitor/proxytest');
     Route::post('/dmonitor/clean', 'dmonitor/clean');
 
     Route::any('/optimizeip/opipset', 'optimizeip/opipset');
@@ -85,12 +86,12 @@ Route::group(function () {
     Route::any('/optimizeip/opipform/:action', 'optimizeip/opipform');
 
 })->middleware(CheckLogin::class)
-->middleware(ViewOutput::class);
+    ->middleware(ViewOutput::class);
 
 Route::group('api', function () {
     Route::post('/domain/:id', 'domain/domain_info');
     Route::post('/domain', 'domain/domain_data');
-    
+
     Route::post('/record/data/:id', 'domain/record_data');
     Route::post('/record/add/:id', 'domain/record_add');
     Route::post('/record/update/:id', 'domain/record_update');
