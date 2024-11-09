@@ -7,12 +7,11 @@ use Cloudflare\API\Auth\APIKey;
 use Cloudflare\API\Adapter\Guzzle;
 use Cloudflare\API\Endpoints\DNS;
 use Cloudflare\API\Endpoints\Zones;
+use Guzzlehttp\Exception\BadResponseException;
 
 class cloudflare implements DnsInterface
 {
-    private $Email;
     private $ApiKey;
-    private $baseUrl = 'https://api.cloudflare.com/client/v4';
     private $error;
     private $domain;
     private $domainid;
@@ -23,7 +22,6 @@ class cloudflare implements DnsInterface
 
     public function __construct($config)
     {
-        $this->Email = $config['ak'];
         $this->ApiKey = $config['sk'];
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];
@@ -115,7 +113,6 @@ class cloudflare implements DnsInterface
     {
         $data = $this->send_reuqest('GET', '/zones/'.$this->domainid.'/dns_records/'.$RecordId);
         if ($data) {
-            $name = $data['result']['zone_name'] == $data['result']['name'] ? '@' : str_replace('.'.$data['result']['zone_name'], '', $data['result']['name']);
             return [
                 'RecordId' => $data['result']['id'],
                 'Domain' => $data['result']['zone_name'],
@@ -137,7 +134,13 @@ class cloudflare implements DnsInterface
     //添加解析记录
     public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
     {
-        $response = $this->dns->addRecord($this->domainid, $this->convertType($Type), $Name, $Type == 'CAA' || $Type == 'SRV' ? '' : $Value, $TTL, $Line == '1', $Type == 'MX' ? $MX : '', $Type == 'CAA' || $Type == 'SRV' ? $this->convertValue($Value, $Type) : [], $Remark != null ? $Remark : '');
+        try {
+            $response = $this->dns->addRecord($this->domainid, $this->convertType($Type), $Name, $Type == 'CAA' || $Type == 'SRV' ? '' : $Value, $TTL, $Line == '1', $Type == 'MX' ? $MX : '', $Type == 'CAA' || $Type == 'SRV' ? $this->convertValue($Value, $Type) : [], $Remark != null ? $Remark : '');
+        } catch (\Cloudflare\API\Adapter\ResponseException $e) {
+            $this->setError($e->getMessage());
+            return false;
+        }
+
         $data = $this->objectToArray($response);
         return is_array($data) ? $data['result']['id'] : false;
     }
@@ -153,7 +156,13 @@ class cloudflare implements DnsInterface
             unset($param['content']);
             $param['data'] = $this->convertValue($Value, $Type);
         }
-        $data = $this->objectToArray($this->dns->updateRecord($this->domainid, $RecordId, $param));
+        try {
+            $data = $this->objectToArray($this->dns->updateRecord($this->domainid, $RecordId, $param));
+        } catch (\Cloudflare\API\Adapter\ResponseException $e) {
+            $this->setError($e->getMessage());
+            return false;
+        }
+
         return is_array($data);
     }
 
@@ -166,11 +175,17 @@ class cloudflare implements DnsInterface
     //删除解析记录
     public function deleteDomainRecord($RecordId)
     {
-        $data = $this->objectToArray($this->dns->deleteRecord($this->domainid, $RecordId));
+        try {
+            $data = $this->objectToArray($this->dns->deleteRecord($this->domainid, $RecordId));
+        } catch (\Cloudflare\API\Adapter\ResponseException $e) {
+            $this->setError($e->getMessage());
+            return false;
+        }
+
         return is_array($data);
     }
 
-    //设置解析记录状态
+    // Cloudflare不支持设置解析记录状态
     public function setDomainRecordStatus($RecordId, $Status)
     {
         return false;
@@ -191,7 +206,7 @@ class cloudflare implements DnsInterface
     //获取域名信息
     public function getDomainInfo()
     {
-        $data = $this->send_reuqest('GET', '/zones/'.$this->domainid);
+        $data = $this->objectToArray($this->zone->listZones($this->domainid));
         if ($data) {
             return $data['result'];
         }
@@ -204,7 +219,7 @@ class cloudflare implements DnsInterface
         return false;
     }
 
-    private function convertType($type)
+    private function convertType($type): string
     {
         $convert_dict = ['REDIRECT_URL' => 'URI', 'FORWARD_URL' => 'URI'];
         if (array_key_exists($type, $convert_dict)) {
@@ -213,7 +228,7 @@ class cloudflare implements DnsInterface
         return $type;
     }
 
-    private function convertValue($value, $type)
+    private function convertValue($value, $type): array
     {
         if ($type == 'SRV') {
             $arr = explode(' ', $value);
@@ -240,73 +255,6 @@ class cloudflare implements DnsInterface
             ];
         }
         return $data;
-    }
-
-    private function send_reuqest($method, $path, $params = null)
-    {
-        $url = $this->baseUrl . $path;
-
-        if (preg_match('/^[0-9a-z]+$/i', $this->ApiKey)) {
-            $headers = [
-                'X-Auth-Email: '.$this->Email,
-                'X-Auth-Key: '.$this->ApiKey,
-            ];
-        } else {
-            $headers = [
-                'Authorization: Bearer '.$this->ApiKey,
-            ];
-        }
-
-        $body = '';
-        if ($method == 'GET' || $method == 'DELETE') {
-            if ($params) {
-                $url .= '?' . http_build_query($params);
-            }
-        } else {
-            $body = json_encode($params);
-            $headers[] = 'Content-Type: application/json';
-        }
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        if ($method == 'POST') {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        } elseif ($method == 'PUT') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        } elseif ($method == 'PATCH') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        } elseif ($method == 'DELETE') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-        }
-        $response = curl_exec($ch);
-        $errno = curl_errno($ch);
-        if ($errno) {
-            $this->setError('Curl error: ' . curl_error($ch));
-        }
-        curl_close($ch);
-        if ($errno) {
-            return false;
-        }
-
-        $arr = json_decode($response, true);
-        if ($arr) {
-            if ($arr['success']) {
-                return $arr;
-            } else {
-                $this->setError(isset($arr['errors'][0]) ? $arr['errors'][0]['message'] : '未知错误');
-                return false;
-            }
-        } else {
-            $this->setError('返回数据解析失败');
-            return false;
-        }
     }
 
     private function setError($message)
