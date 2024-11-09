@@ -2,8 +2,10 @@
 
 namespace app\lib;
 
+use app\model\Domain;
+use app\model\Optimizeip;
 use Exception;
-use think\facade\Db;
+use GuzzleHttp\Client;
 
 class OptimizeService
 {
@@ -31,7 +33,7 @@ class OptimizeService
         } else {
             $url = 'https://www.wetest.vip/api/cf2dns/get_license?license='.$key;
         }
-        $response = (new \GuzzleHttp\Client())->get($url)->getBody()->getContents();
+        $response = (new Client())->get($url)->getBody()->getContents();
         $arr = json_decode($response, true);
         if (isset($arr['code']) && $arr['code'] == 200 && isset($arr['count'])) {
             return $arr['count'];
@@ -63,7 +65,7 @@ class OptimizeService
             'key' => config_get('optimize_ip_key', 'o1zrmHAF'),
             'type' => $ip_type,
         ];
-        $response = (new \GuzzleHttp\Client())->post($url, ['json' => $params])->getBody()->getContents();
+        $response = (new Client())->post($url, ['json' => $params])->getBody()->getContents();
         $arr = json_decode($response, true);
         if (isset($arr['code']) && $arr['code'] == 200) {
             return $arr['info'];
@@ -102,15 +104,15 @@ class OptimizeService
     //批量执行优选任务
     public function execute()
     {
-        $list = Db::name('optimizeip')->where('active', 1)->select();
+        $list = Optimizeip::where('active', 1)->select();
         echo '开始执行IP优选任务，共获取到'.count($list).'个待执行任务'."\n";
         foreach ($list as $row) {
             try {
                 $result = $this->execute_one($row);
-                Db::name('optimizeip')->where('id', $row['id'])->update(['status' => 1, 'errmsg' => null, 'updatetime' => date('Y-m-d H:i:s')]);
+                Optimizeip::where('id', $row['id'])->update(['status' => 1, 'errmsg' => null, 'updatetime' => date('Y-m-d H:i:s')]);
                 echo '优选任务'.$row['id'].'执行成功：'.$result."\n";
             } catch (Exception $e) {
-                Db::name('optimizeip')->where('id', $row['id'])->update(['status' => 2, 'errmsg' => $e->getMessage(), 'updatetime' => date('Y-m-d H:i:s')]);
+                Optimizeip::where('id', $row['id'])->update(['status' => 2, 'errmsg' => $e->getMessage(), 'updatetime' => date('Y-m-d H:i:s')]);
                 echo '优选任务'.$row['id'].'执行失败：'.$e->getMessage()."\n";
             }
         }
@@ -128,7 +130,7 @@ class OptimizeService
                 continue;
             }
 
-            $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.id', $row['did'])->field('A.*,B.type,B.ak,B.sk,B.ext')->find();
+            $drow = Domain::alias('A')->join('account B', 'A.aid = B.id')->where('A.id', $row['did'])->field('A.*,B.type,B.ak,B.sk,B.ext')->find();
             if (!$drow) {
                 throw new Exception('域名不存在（ID：'.$row['did'].'）');
             }
