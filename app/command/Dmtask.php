@@ -4,15 +4,21 @@ declare (strict_types=1);
 
 namespace app\command;
 
+use Co;
 use Exception;
+use Swoole\ExitException;
 use think\console\Command;
 use think\console\Input;
 use think\console\input\Argument;
 use think\console\input\Option;
 use think\console\Output;
 use think\facade\Db;
+use app\model\Config as ConfigModel;
+use app\model\Dmtask as DmtaskModel;
 use think\facade\Config;
 use app\lib\TaskRunner;
+use function Co\run;
+use function go;
 
 class Dmtask extends Command
 {
@@ -25,7 +31,7 @@ class Dmtask extends Command
 
     protected function execute(Input $input, Output $output)
     {
-        $res = Db::name('config')->cache('configs', 0)->column('value', 'key');
+        $res = ConfigModel::cache('configs', 0)->column('value', 'key');
         Config::set($res, 'sys');
 
         config_set('run_error', '');
@@ -45,8 +51,8 @@ class Dmtask extends Command
 
     private function runtask()
     {
-        \Co::set(['hook_flags' => SWOOLE_HOOK_ALL]);
-        \Co\run(function () {
+        Co::set(['hook_flags' => SWOOLE_HOOK_ALL]);
+        run(function () {
             $date = date("Ymd");
             $count = config_get('run_count', null, true) ?? 0;
             while (true) {
@@ -56,20 +62,20 @@ class Dmtask extends Command
                     $date = date("Ymd");
                 }
 
-                $rows = Db::name('dmtask')->where('checknexttime', '<=', time())->where('active', 1)->order('id', 'ASC')->select();
+                $rows = DmtaskModel::where('checknexttime', '<=', time())->where('active', 1)->order('id', 'ASC')->select();
                 foreach ($rows as $row) {
-                    \go(function () use ($row) {
+                    go(function () use ($row) {
                         try {
                             (new TaskRunner())->execute($row);
-                        } catch (\Swoole\ExitException $e) {
+                        } catch (ExitException $e) {
                             echo $e->getStatus()."\n";
                         } catch (Exception $e) {
                             echo $e->__toString()."\n";
                         }
                     });
-                    Db::name('dmtask')->where('id', $row['id'])->update([
+                    DmtaskModel::where('id', $row['id'])->update([
                         'checktime' => time(),
-                        'checknexttime' => time() + $row['frequency']
+                        'checknexttime' => time() + $row['frequency'],
                     ]);
                     $count++;
                 }
