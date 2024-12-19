@@ -83,7 +83,7 @@ class aliyun implements DnsInterface
                     'Status' => $row['Status'] == 'ENABLE' ? '1' : '0',
                     'Weight' => isset($row['Weight']) ? $row['Weight'] : null,
                     'Remark' => isset($row['Remark']) ? $row['Remark'] : null,
-                    'UpdateTime' => isset($row['UpdateTimestamp']) ? date('Y-m-d H:i:s', $row['UpdateTimestamp'] / 1000) : null,
+                    'UpdateTime' => isset($row['UpdateTimestamp']) ? date('Y-m-d H:i:s', intval($row['UpdateTimestamp'] / 1000)) : null,
                 ];
             }
             return ['total' => $data['TotalCount'], 'list' => $list];
@@ -111,7 +111,7 @@ class aliyun implements DnsInterface
                     'Status' => $row['Status'] == 'ENABLE' ? '1' : '0',
                     'Weight' => isset($row['Weight']) ? $row['Weight'] : null,
                     'Remark' => isset($row['Remark']) ? $row['Remark'] : null,
-                    'UpdateTime' => isset($row['UpdateTimestamp']) ? date('Y-m-d H:i:s', $row['UpdateTimestamp'] / 1000) : null,
+                    'UpdateTime' => isset($row['UpdateTimestamp']) ? date('Y-m-d H:i:s', intval($row['UpdateTimestamp'] / 1000)) : null,
                 ];
             }
             return ['total' => $data['TotalCount'], 'list' => $list];
@@ -137,7 +137,7 @@ class aliyun implements DnsInterface
                 'Status' => $data['Status'] == 'ENABLE' ? '1' : '0',
                 'Weight' => isset($data['Weight']) ? $data['Weight'] : null,
                 'Remark' => isset($data['Remark']) ? $data['Remark'] : null,
-                'UpdateTime' => isset($row['UpdateTimestamp']) ? date('Y-m-d H:i:s', $data['UpdateTimestamp'] / 1000) : null,
+                'UpdateTime' => isset($row['UpdateTimestamp']) ? date('Y-m-d H:i:s', intval($data['UpdateTimestamp'] / 1000)) : null,
             ];
         }
         return false;

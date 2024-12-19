@@ -362,7 +362,7 @@ class Domain extends BaseController
         $domainRecords = $dns->getDomainRecords($page, $limit, $keyword, $subdomain, $value, $type, $line, $status);
         if (!$domainRecords) return json(['total' => 0, 'rows' => []]);
 
-        if (empty($keyword) && empty($subdomain) && empty($type) && empty($line) && empty($status) && empty($value) && $domainRecords['total'] != $drow['recordcount']) {
+        if (empty($keyword) && empty($subdomain) && empty($type) && isNullOrEmpty($line) && empty($status) && empty($value) && $domainRecords['total'] != $drow['recordcount']) {
             Db::name('domain')->where('id', $id)->update(['recordcount' => $domainRecords['total']]);
         }
 
@@ -373,7 +373,7 @@ class Domain extends BaseController
         }
 
         $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
-        if ($dnstype == 'baidu') {
+        if ($dnstype == 'baidu' || $dnstype == 'namesilo') {
             return json($domainRecords['list']);
         }
 
@@ -641,7 +641,7 @@ class Domain extends BaseController
         } else if ($action == 'line') {
             $line = input('post.line', null, 'trim');
 
-            if (empty($recordinfo) || empty($line)) {
+            if (empty($recordinfo) || isNullOrEmpty($line)) {
                 return json(['code' => -1, 'msg' => '参数不能为空']);
             }
 

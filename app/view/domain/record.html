@@ -236,7 +236,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 var recordLine = {$recordLine|json_encode|raw};
 var dnsconfig = {$dnsconfig|json_encode|raw};
 var defaultLine = recordLine[0].id;
-var sidePagination = dnsconfig.type == 'baidu' ? 'client' : 'server';
+var sidePagination = dnsconfig.type == 'baidu' || dnsconfig.type == 'namesilo' ? 'client' : 'server';
 var showWeight = dnsconfig.weight;
 $(document).ready(function(){
 	updateToolbar();

@@ -103,6 +103,18 @@ class DnsHelper
             'log' => false,
             'weight' => false,
         ],
+        'namesilo' => [
+            'name' => 'NameSilo',
+            'config' => [
+                'ak' => '账户名',
+                'sk' => 'API Key',
+            ],
+            'remark' => 0,
+            'status' => false,
+            'redirect' => false,
+            'log' => false,
+            'weight' => false,
+        ],
     ];
 
     public static $line_name = [
@@ -129,7 +141,7 @@ class DnsHelper
     }
 
     /**
-     * @return DnsInterface|false
+     * @return DnsInterface|bool
      */
     public static function getModel($aid, $domain = null, $domainid = null)
     {
@@ -147,7 +159,7 @@ class DnsHelper
     }
 
     /**
-     * @return DnsInterface|false
+     * @return DnsInterface|bool
      */
     public static function getModel2($config)
     {
