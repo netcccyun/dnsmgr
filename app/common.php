@@ -285,6 +285,21 @@ function convert_second($s)
     }
 }
 
+function getMainDomain($host)
+{
+    if (filter_var($host, FILTER_VALIDATE_IP)) return $host;
+    $domain_root = file_get_contents(app()->getBasePath() . 'data' . DIRECTORY_SEPARATOR . 'domain_root.txt');
+    $domain_root = explode("\r\n", $domain_root);
+    $data = explode('.', $host);
+    $co_ta = count($data);
+    if ($co_ta <= 2) return $host;
+    $domain_name = $data[$co_ta - 2] . '.' . $data[$co_ta - 1];
+    if (in_array($domain_name, $domain_root) && $co_ta > 2) {
+        $domain_name = $data[$co_ta - 3] . '.' . $domain_name;
+    }
+    return $domain_name;
+}
+
 function check_proxy($url, $proxy_server, $proxy_port, $type, $proxy_user, $proxy_pwd)
 {
     $ch = curl_init($url);
@@ -358,4 +373,73 @@ function clearDirectory($dir): bool
         }
     }
     return true;
+}
+
+function curl_client($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 5)
+{
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $httpheader[] = "Accept: */*";
+    $httpheader[] = "Accept-Language: zh-CN,zh;q=0.8";
+    $httpheader[] = "Connection: close";
+    if ($headers) {
+        $httpheader = array_merge($httpheader, $headers);
+    }
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $httpheader);
+    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36");
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    if ($data) {
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    }
+    if ($cookie) {
+        curl_setopt($ch, CURLOPT_COOKIE, $cookie);
+    }
+    if ($referer) {
+        curl_setopt($ch, CURLOPT_REFERER, $referer);
+    }
+    if ($method) {
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+    }
+
+    if ($proxy) {
+        $proxy_server = config_get('proxy_server');
+        $proxy_port = intval(config_get('proxy_port'));
+        $proxy_userpwd = config_get('proxy_user') . ':' . config_get('proxy_pwd');
+        $proxy_type = config_get('proxy_type');
+        if ($proxy_type == 'https') {
+            $proxy_type = CURLPROXY_HTTPS;
+        } elseif ($proxy_type == 'sock4') {
+            $proxy_type = CURLPROXY_SOCKS4;
+        } elseif ($proxy_type == 'sock5') {
+            $proxy_type = CURLPROXY_SOCKS5;
+        } else {
+            $proxy_type = CURLPROXY_HTTP;
+        }
+        curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
+        curl_setopt($ch, CURLOPT_PROXY, $proxy_server);
+        curl_setopt($ch, CURLOPT_PROXYPORT, $proxy_port);
+        if ($proxy_userpwd != ':') {
+            curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxy_userpwd);
+        }
+        curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy_type);
+    }
+
+    $ret = curl_exec($ch);
+    $errno = curl_errno($ch);
+    if ($errno) {
+        curl_close($ch);
+        throw new Exception('Curl error: ' . curl_error($ch));
+    }
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $redirect_url = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+    curl_close($ch);
+    $header = substr($ret, 0, $headerSize);
+    $body = substr($ret, $headerSize);
+    return ['code' => $httpCode, 'redirect_url' => $redirect_url, 'header' => $header, 'body' => $body];
 }
