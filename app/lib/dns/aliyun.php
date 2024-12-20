@@ -137,7 +137,7 @@ class aliyun implements DnsInterface
                 'Status' => $data['Status'] == 'ENABLE' ? '1' : '0',
                 'Weight' => isset($data['Weight']) ? $data['Weight'] : null,
                 'Remark' => isset($data['Remark']) ? $data['Remark'] : null,
-                'UpdateTime' => isset($row['UpdateTimestamp']) ? date('Y-m-d H:i:s', intval($data['UpdateTimestamp'] / 1000)) : null,
+                'UpdateTime' => isset($row['UpdateTimestamp']) ? date('Y-m-d H:i:s', intval($data['UpdateTimestamp'] * 1000 / 1000)) : null,
             ];
         }
         return false;
