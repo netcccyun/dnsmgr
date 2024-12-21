@@ -5,3 +5,9 @@
 .form-inline .form-control{display:inline-block;width:auto;vertical-align:middle}
 .form-inline .form-group{display:inline-block;margin-bottom:0;vertical-align:middle}
 .bv-form .help-block{margin-bottom:0}.bv-form .tooltip-inner{text-align:left}.nav-tabs li.bv-tab-success>a{color:#3c763d}.nav-tabs li.bv-tab-error>a{color:#a94442}.bv-form .bv-icon-no-label{top:0}.bv-form .bv-icon-input-group{top:0;z-index:100}
+.material-switch>input[type=checkbox]{display:none}
+.material-switch>label{cursor:pointer;height:0;position:relative;width:36px;margin-left:4px}
+.material-switch>label::before{background:#000;box-shadow:inset 0 0 10px rgba(0,0,0,.5);border-radius:8px;content:'';height:16px;margin-top:-7px;position:absolute;opacity:.3;transition:all .4s ease-in-out;width:36px}
+.material-switch>label::after{background:#fff;border-radius:16px;box-shadow:0 0 5px rgba(0,0,0,.3);content:'';height:20px;left:-2px;margin-top:-5px;position:absolute;top:-4px;transition:all .3s ease-in-out;width:20px}
+.material-switch>input[type=checkbox]:checked+label::before{background:inherit;opacity:.5}
+.material-switch>input[type=checkbox]:checked+label::after{background:inherit;left:20px}

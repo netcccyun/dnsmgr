@@ -7,7 +7,7 @@ use Exception;
 use think\facade\Db;
 use think\facade\View;
 use think\facade\Cache;
-use app\lib\OptimizeService;
+use app\service\OptimizeService;
 
 class Optimizeip extends BaseController
 {

@@ -3,6 +3,8 @@
 namespace app\lib\dns;
 
 use app\lib\DnsInterface;
+use app\lib\client\Volcengine;
+use Exception;
 
 class huoshan implements DnsInterface
 {
@@ -16,6 +18,7 @@ class huoshan implements DnsInterface
     private $domain;
     private $domainid;
     private $domainInfo;
+    private Volcengine $client;
 
     private static $trade_code_list = [
         'free_inner' => ['level' => 1, 'name' => '免费版', 'ttl' => 600],
@@ -29,6 +32,7 @@ class huoshan implements DnsInterface
     {
         $this->AccessKeyId = $config['ak'];
         $this->SecretAccessKey = $config['sk'];
+        $this->client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, $this->endpoint, $this->service, $this->version, $this->region);
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];
     }
@@ -50,7 +54,7 @@ class huoshan implements DnsInterface
     public function getDomainList($KeyWord = null, $PageNumber = 1, $PageSize = 20)
     {
         $query = ['PageNumber' => $PageNumber, 'PageSize' => $PageSize, 'Key' => $KeyWord];
-        $data = $this->send_reuqest('GET', 'ListZones', $query);
+        $data = $this->send_request('GET', 'ListZones', $query);
         if ($data) {
             $list = [];
             if (!empty($data['Zones'])) {
@@ -76,7 +80,7 @@ class huoshan implements DnsInterface
         } elseif (!empty($KeyWord)) {
             $query += ['Host' => $KeyWord];
         }
-        $data = $this->send_reuqest('GET', 'ListRecords', $query);
+        $data = $this->send_request('GET', 'ListRecords', $query);
         if ($data) {
             $list = [];
             foreach ($data['Records'] as $row) {
@@ -110,7 +114,7 @@ class huoshan implements DnsInterface
     //获取解析记录详细信息
     public function getDomainRecordInfo($RecordId)
     {
-        $data = $this->send_reuqest('GET', 'QueryRecord', ['RecordID' => $RecordId]);
+        $data = $this->send_request('GET', 'QueryRecord', ['RecordID' => $RecordId]);
         if ($data) {
             if ($data['name'] == $data['zone_name']) $data['name'] = '@';
             if ($data['Type'] == 'MX') list($data['MX'], $data['Value']) = explode(' ', $data['Value']);
@@ -138,7 +142,7 @@ class huoshan implements DnsInterface
         $params = ['ZID' => intval($this->domainid), 'Host' => $Name, 'Type' => $this->convertType($Type), 'Value' => $Value, 'Line' => $Line, 'TTL' => intval($TTL), 'Remark' => $Remark];
         if ($Type == 'MX') $params['Value'] = intval($MX) . ' ' . $Value;
         if ($Weight > 0) $params['Weight'] = $Weight;
-        $data = $this->send_reuqest('POST', 'CreateRecord', $params);
+        $data = $this->send_request('POST', 'CreateRecord', $params);
         return is_array($data) ? $data['RecordID'] : false;
     }
 
@@ -148,7 +152,7 @@ class huoshan implements DnsInterface
         $params = ['RecordID' => $RecordId, 'Host' => $Name, 'Type' => $this->convertType($Type), 'Value' => $Value, 'Line' => $Line, 'TTL' => intval($TTL), 'Remark' => $Remark];
         if ($Type == 'MX') $params['Value'] = intval($MX) . ' ' . $Value;
         if ($Weight > 0) $params['Weight'] = $Weight;
-        $data = $this->send_reuqest('POST', 'UpdateRecord', $params);
+        $data = $this->send_request('POST', 'UpdateRecord', $params);
         return is_array($data);
     }
 
@@ -161,7 +165,7 @@ class huoshan implements DnsInterface
     //删除解析记录
     public function deleteDomainRecord($RecordId)
     {
-        $data = $this->send_reuqest('POST', 'DeleteRecord', ['RecordID' => $RecordId]);
+        $data = $this->send_request('POST', 'DeleteRecord', ['RecordID' => $RecordId]);
         return $data;
     }
 
@@ -169,7 +173,7 @@ class huoshan implements DnsInterface
     public function setDomainRecordStatus($RecordId, $Status)
     {
         $params = ['RecordID' => $RecordId, 'Enable' => $Status == '1'];
-        $data = $this->send_reuqest('POST', 'UpdateRecordStatus', $params);
+        $data = $this->send_request('POST', 'UpdateRecordStatus', $params);
         return is_array($data);
     }
 
@@ -185,7 +189,7 @@ class huoshan implements DnsInterface
         $domainInfo = $this->getDomainInfo();
         if (!$domainInfo) return false;
         $level = $this->getTradeInfo($domainInfo['TradeCode'])['level'];
-        $data = $this->send_reuqest('GET', 'ListLines', []);
+        $data = $this->send_request('GET', 'ListLines', []);
         if ($data) {
             $list = [];
             $list['default'] = ['name' => '默认', 'parent' => null];
@@ -195,7 +199,7 @@ class huoshan implements DnsInterface
                 $list[$row['Value']] = ['name' => $row['Name'], 'parent' => isset($row['FatherValue']) ? $row['FatherValue'] : null];
             }
 
-            $data = $this->send_reuqest('GET', 'ListCustomLines', []);
+            $data = $this->send_request('GET', 'ListCustomLines', []);
             if ($data && $data['TotalCount'] > 0) {
                 $list['N.customer_lines'] = ['name' => '自定义线路', 'parent' => null];
                 foreach ($data['CustomerLines'] as $row) {
@@ -213,7 +217,7 @@ class huoshan implements DnsInterface
     {
         if (!empty($this->domainInfo)) return $this->domainInfo;
         $query = ['ZID' => intval($this->domainid)];
-        $data = $this->send_reuqest('GET', 'QueryZone', $query);
+        $data = $this->send_request('GET', 'QueryZone', $query);
         if ($data) {
             $this->domainInfo = $data;
             return $data;
@@ -247,159 +251,12 @@ class huoshan implements DnsInterface
         return self::$trade_code_list[$trade_code];
     }
 
-    private function send_reuqest($method, $action, $params = [])
+    private function send_request($method, $action, $params = [])
     {
-        if (!empty($params)) {
-            $params = array_filter($params, function ($a) { return $a !== null;});
-        }
-
-        $query = [
-            'Action' => $action,
-            'Version' => $this->version,
-        ];
-
-        $body = '';
-        if ($method == 'GET') {
-            $query = array_merge($query, $params);
-        } else {
-            $body = !empty($params) ? json_encode($params) : '';
-        }
-
-        $time = time();
-        $headers = [
-            'Host' => $this->endpoint,
-            'X-Date' => gmdate("Ymd\THis\Z", $time),
-            //'X-Content-Sha256' => hash("sha256", $body),
-        ];
-        if ($body) {
-            $headers['Content-Type'] = 'application/json';
-        }
-        $path = '/';
-
-        $authorization = $this->generateSign($method, $path, $query, $headers, $body, $time);
-        $headers['Authorization'] = $authorization;
-
-        $url = 'https://'.$this->endpoint.$path.'?'.http_build_query($query);
-        $header = [];
-        foreach ($headers as $key => $value) {
-            $header[] = $key.': '.$value;
-        }
-        return $this->curl($method, $url, $body, $header);
-    }
-
-    private function generateSign($method, $path, $query, $headers, $body, $time)
-    {
-        $algorithm = "HMAC-SHA256";
-
-        // step 1: build canonical request string
-        $httpRequestMethod = $method;
-        $canonicalUri = $path;
-        if (substr($canonicalUri, -1) != "/") $canonicalUri .= "/";
-        $canonicalQueryString = $this->getCanonicalQueryString($query);
-        [$canonicalHeaders, $signedHeaders] = $this->getCanonicalHeaders($headers);
-        $hashedRequestPayload = hash("sha256", $body);
-        $canonicalRequest = $httpRequestMethod."\n"
-            .$canonicalUri."\n"
-            .$canonicalQueryString."\n"
-            .$canonicalHeaders."\n"
-            .$signedHeaders."\n"
-            .$hashedRequestPayload;
-
-        // step 2: build string to sign
-        $date = gmdate("Ymd\THis\Z", $time);
-        $shortDate = substr($date, 0, 8);
-        $credentialScope = $shortDate . '/' .$this->region . '/' . $this->service . '/request';
-        $hashedCanonicalRequest = hash("sha256", $canonicalRequest);
-        $stringToSign = $algorithm."\n"
-            .$date."\n"
-            .$credentialScope."\n"
-            .$hashedCanonicalRequest;
-
-        // step 3: sign string
-        $kDate = hash_hmac("sha256", $shortDate, $this->SecretAccessKey, true);
-        $kRegion = hash_hmac("sha256", $this->region, $kDate, true);
-        $kService = hash_hmac("sha256", $this->service, $kRegion, true);
-        $kSigning = hash_hmac("sha256", "request", $kService, true);
-        $signature = hash_hmac("sha256", $stringToSign, $kSigning);
-
-        // step 4: build authorization
-        $credential = $this->AccessKeyId . '/' . $shortDate . '/' . $this->region . '/' . $this->service . '/request';
-        $authorization = $algorithm . ' Credential=' . $credential . ", SignedHeaders=" . $signedHeaders . ", Signature=" . $signature;
-
-        return $authorization;
-    }
-
-    private function escape($str)
-    {
-        $search = ['+', '*', '%7E'];
-        $replace = ['%20', '%2A', '~'];
-        return str_replace($search, $replace, urlencode($str));
-    }
-
-    private function getCanonicalQueryString($parameters)
-    {
-        if (empty($parameters)) return '';
-        ksort($parameters);
-        $canonicalQueryString = '';
-        foreach ($parameters as $key => $value) {
-            $canonicalQueryString .= '&' . $this->escape($key). '=' . $this->escape($value);
-        }
-        return substr($canonicalQueryString, 1);
-    }
-
-    private function getCanonicalHeaders($oldheaders)
-    {
-        $headers = array();
-        foreach ($oldheaders as $key => $value) {
-            $headers[strtolower($key)] = trim($value);
-        }
-        ksort($headers);
-
-        $canonicalHeaders = '';
-        $signedHeaders = '';
-        foreach ($headers as $key => $value) {
-            $canonicalHeaders .= $key . ':' . $value . "\n";
-            $signedHeaders .= $key . ';';
-        }
-        $signedHeaders = substr($signedHeaders, 0, -1);
-        return [$canonicalHeaders, $signedHeaders];
-    }
-
-    private function curl($method, $url, $body, $header)
-    {
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-        if (!empty($body)) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        }
-        $response = curl_exec($ch);
-        $errno = curl_errno($ch);
-        if ($errno) {
-            $this->setError('Curl error: ' . curl_error($ch));
-        }
-        curl_close($ch);
-        if ($errno) return false;
-
-        $arr = json_decode($response, true);
-        if ($arr) {
-            if (isset($arr['ResponseMetadata']['Error']['MessageCN'])) {
-                $this->setError($arr['ResponseMetadata']['Error']['MessageCN']);
-                return false;
-            } elseif (isset($arr['ResponseMetadata']['Error']['Message'])) {
-                $this->setError($arr['ResponseMetadata']['Error']['Message']);
-                return false;
-            } elseif (isset($arr['Result'])) {
-                return $arr['Result'];
-            } else {
-                return true;
-            }
-        } else {
-            $this->setError('返回数据解析失败');
+        try{
+            return $this->client->request($method, $action, $params);
+        }catch(Exception $e){
+            $this->setError($e->getMessage());
             return false;
         }
     }

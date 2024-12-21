@@ -15,6 +15,7 @@
 - 提供API接口，可获取域名单独的登录链接，方便各种IDC系统对接
 - 容灾切换功能，支持ping、tcp、http(s)检测协议并自动暂停/修改域名解析，并支持邮件、微信公众号通知
 - CF优选IP功能，支持获取最新的Cloudflare优选IP，并自动更新到解析记录
+- SSL证书申请与自动部署功能，支持从Let's Encrypt等渠道申请SSL证书，并自动部署到各种面板、云服务商、服务器等
 
 ### 演示截图
 
@@ -37,6 +38,18 @@
 CF优选IP功能，添加优选IP任务
 
 ![](https://p1.meituan.net/csc/da70c76753aee4bce044d16fadd56e5f217660.png)
+
+SSL证书申请功能
+
+![](https://blog.cccyun.cn/content/uploadfile/202412/QQ%E6%88%AA%E5%9B%BE20241221154857.png)
+
+![](https://blog.cccyun.cn/content/uploadfile/202412/QQ%E6%88%AA%E5%9B%BE20241221154652.png)
+
+SSL证书自动部署功能
+
+![](https://blog.cccyun.cn/content/uploadfile/202412/QQ%E6%88%AA%E5%9B%BE20241221154702.png)
+
+![](https://blog.cccyun.cn/content/uploadfile/202412/QQ%E6%88%AA%E5%9B%BE20241221154804.png)
 
 ### 部署方法
 
@@ -158,9 +171,9 @@ create database dnsmgr;
 
 在install界面链接IP填写dnsmgr-mysql
 
-### 版权信息
+### 作者信息
 
-版权所有Copyright © 2023~2024 by 消失的彩虹海(https://blog.cccyun.cn)
+消失的彩虹海(https://blog.cccyun.cn)
 
 ### 其他推荐
 

@@ -12,7 +12,7 @@ use think\console\input\Option;
 use think\console\Output;
 use think\facade\Db;
 use think\facade\Config;
-use app\lib\TaskRunner;
+use app\service\TaskRunner;
 
 class Dmtask extends Command
 {

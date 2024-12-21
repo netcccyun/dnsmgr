@@ -5,7 +5,7 @@ CREATE TABLE `dnsmgr_config` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `dnsmgr_config` VALUES ('version', '1011');
+INSERT INTO `dnsmgr_config` VALUES ('version', '1021');
 INSERT INTO `dnsmgr_config` VALUES ('notice_mail', '0');
 INSERT INTO `dnsmgr_config` VALUES ('notice_wxtpl', '0');
 INSERT INTO `dnsmgr_config` VALUES ('mail_smtp', 'smtp.qq.com');
@@ -48,6 +48,8 @@ CREATE TABLE `dnsmgr_user` (
   `level` int(11) NOT NULL DEFAULT '0',
   `regtime` datetime DEFAULT NULL,
   `lasttime` datetime DEFAULT NULL,
+  `totp_open` tinyint(1) NOT NULL DEFAULT '0',
+  `totp_secret` varchar(100) DEFAULT NULL,
   `status` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `username` (`username`)
@@ -135,4 +137,89 @@ CREATE TABLE `dnsmgr_optimizeip` (
   `errmsg` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `did` (`did`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_cert_account`;
+CREATE TABLE `dnsmgr_cert_account` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `type` varchar(20) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `config` text DEFAULT NULL,
+  `ext` text DEFAULT NULL,
+  `remark` varchar(100) DEFAULT NULL,
+  `deploy` tinyint(1) NOT NULL DEFAULT '0',
+  `addtime` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_cert_order`;
+CREATE TABLE `dnsmgr_cert_order` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `aid` int(11) unsigned NOT NULL,
+  `keytype` varchar(20) DEFAULT NULL,
+  `keysize` varchar(20) DEFAULT NULL,
+  `addtime` datetime DEFAULT NULL,
+  `updatetime` datetime DEFAULT NULL,
+  `processid` varchar(32) DEFAULT NULL,
+  `issuetime` datetime DEFAULT NULL,
+  `expiretime` datetime DEFAULT NULL,
+  `issuer` varchar(100) NOT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT '0',
+  `error` varchar(300) DEFAULT NULL,
+  `isauto` tinyint(1) NOT NULL DEFAULT '0',
+  `retry` tinyint(4) NOT NULL DEFAULT '0',
+  `retry2` tinyint(4) NOT NULL DEFAULT '0',
+  `retrytime` datetime DEFAULT NULL,
+  `islock` tinyint(1) NOT NULL DEFAULT '0',
+  `locktime` datetime DEFAULT NULL,
+  `issend` tinyint(1) NOT NULL DEFAULT '0',
+  `info` text DEFAULT NULL,
+  `dns` text DEFAULT NULL,
+  `fullchain` text DEFAULT NULL,
+  `privatekey` text DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_cert_domain`;
+CREATE TABLE `dnsmgr_cert_domain` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `oid` int(11) unsigned NOT NULL,
+  `domain` varchar(255) NOT NULL,
+  `sort` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `oid` (`oid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_cert_deploy`;
+CREATE TABLE `dnsmgr_cert_deploy` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `aid` int(11) unsigned NOT NULL,
+  `oid` int(11) unsigned NOT NULL,
+  `issuetime` datetime DEFAULT NULL,
+  `config` text DEFAULT NULL,
+  `remark` varchar(100) DEFAULT NULL,
+  `addtime` datetime DEFAULT NULL,
+  `lasttime` datetime DEFAULT NULL,
+  `processid` varchar(32) DEFAULT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT 0,
+  `error` varchar(300) DEFAULT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 0,
+  `retry` tinyint(4) NOT NULL DEFAULT '0',
+  `retrytime` datetime DEFAULT NULL,
+  `islock` tinyint(1) NOT NULL DEFAULT '0',
+  `locktime` datetime DEFAULT NULL,
+  `issend` tinyint(1) NOT NULL DEFAULT '0',
+  `info` text DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_cert_cname`;
+CREATE TABLE `dnsmgr_cert_cname` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `domain` varchar(255) NOT NULL,
+  `did` int(11) unsigned NOT NULL,
+  `rr` varchar(128) NOT NULL,
+  `addtime` datetime DEFAULT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -3,6 +3,7 @@
 namespace app\controller;
 
 use app\BaseController;
+use Exception;
 use think\facade\Db;
 
 class Auth extends BaseController
@@ -37,12 +38,14 @@ class Auth extends BaseController
             $user = Db::name('user')->where('username', $username)->find();
             if ($user && password_verify($password, $user['password'])) {
                 if ($user['status'] == 0) return json(['code' => -1, 'msg' => '此用户已被封禁', 'vcode' => 1]);
-                Db::name('log')->insert(['uid' => $user['id'], 'action' => '登录后台', 'data' => 'IP:' . $this->clientip, 'addtime' => date("Y-m-d H:i:s")]);
-                DB::name('user')->where('id', $user['id'])->update(['lasttime' => date("Y-m-d H:i:s")]);
-                $session = md5($user['id'] . $user['password']);
-                $expiretime = time() + 2562000;
-                $token = authcode("user\t{$user['id']}\t{$session}\t{$expiretime}", 'ENCODE', config_get('sys_key'));
-                cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true]);
+                if ($user['totp_open'] == 1 && !empty($user['totp_secret'])) {
+                    session('pre_login_user', $user['id']);
+                    if (file_exists($login_limit_file)) {
+                        unlink($login_limit_file);
+                    }
+                    return json(['code' => -1, 'msg' => '需要验证动态口令', 'vcode' => 2]);
+                }
+                $this->loginUser($user);
                 if (file_exists($login_limit_file)) {
                     unlink($login_limit_file);
                 }
@@ -50,6 +53,7 @@ class Auth extends BaseController
             } else {
                 if ($user) {
                     Db::name('log')->insert(['uid' => $user['id'], 'action' => '登录失败', 'data' => 'IP:' . $this->clientip, 'addtime' => date("Y-m-d H:i:s")]);
+                    if ($user['totp_open'] == 1 && !empty($user['totp_secret'])) $login_limit_count = 10;
                 }
                 if (!file_exists($login_limit_file)) {
                     $login_limit = ['count' => 0, 'time' => 0];
@@ -67,6 +71,28 @@ class Auth extends BaseController
         }
 
         return view();
+    }
+
+    public function totp()
+    {
+        $uid = session('pre_login_user');
+        if (empty($uid)) return json(['code' => -1, 'msg' => '请重新登录']);
+        $code = input('post.code');
+        if (empty($code)) return json(['code' => -1, 'msg' => '请输入动态口令']);
+        $user = Db::name('user')->where('id', $uid)->find();
+        if (!$user) return json(['code' => -1, 'msg' => '用户不存在']);
+        if ($user['totp_open'] == 0 || empty($user['totp_secret'])) return json(['code' => -1, 'msg' => '未开启TOTP二次验证']);
+        try {
+            $totp = \app\lib\TOTP::create($user['totp_secret']);
+            if (!$totp->verify($code)) {
+                return json(['code' => -1, 'msg' => '动态口令错误']);
+            }
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+        $this->loginUser($user);
+        session('pre_login_user', null);
+        return json(['code' => 0]);
     }
 
     public function logout()
@@ -101,13 +127,27 @@ class Auth extends BaseController
             return $this->alert('error', '该域名不支持快捷登录');
         }
 
-        Db::name('log')->insert(['uid' => 0, 'action' => '域名快捷登录', 'data' => 'IP:' . $this->clientip, 'addtime' => date("Y-m-d H:i:s"), 'domain' => $domain]);
+        $this->loginDomain($row);
+        return redirect('/record/' . $row['id']);
+    }
 
+    private function loginUser($user)
+    {
+        Db::name('log')->insert(['uid' => $user['id'], 'action' => '登录后台', 'data' => 'IP:' . $this->clientip, 'addtime' => date("Y-m-d H:i:s")]);
+        DB::name('user')->where('id', $user['id'])->update(['lasttime' => date("Y-m-d H:i:s")]);
+        $session = md5($user['id'] . $user['password']);
+        $expiretime = time() + 2562000;
+        $token = authcode("user\t{$user['id']}\t{$session}\t{$expiretime}", 'ENCODE', config_get('sys_key'));
+        cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true]);
+    }
+
+    private function loginDomain($row)
+    {
+        Db::name('log')->insert(['uid' => 0, 'action' => '域名快捷登录', 'data' => 'IP:' . $this->clientip, 'addtime' => date("Y-m-d H:i:s"), 'domain' => $row['name']]);
         $session = md5($row['id'] . $row['name']);
         $expiretime = time() + 2562000;
         $token = authcode("domain\t{$row['id']}\t{$session}\t{$expiretime}", 'ENCODE', config_get('sys_key'));
         cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true]);
-        return redirect('/record/' . $row['id']);
     }
 
     public function verifycode()

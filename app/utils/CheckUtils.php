@@ -1,6 +1,6 @@
 <?php
 
-namespace app\lib;
+namespace app\utils;
 
 class CheckUtils
 {

@@ -3,6 +3,8 @@
 namespace app\lib\dns;
 
 use app\lib\DnsInterface;
+use app\lib\client\Aliyun as AliyunClient;
+use Exception;
 
 class aliyun implements DnsInterface
 {
@@ -14,11 +16,13 @@ class aliyun implements DnsInterface
     private $domain;
     private $domainid;
     private $domainInfo;
+    private AliyunClient $client;
 
     public function __construct($config)
     {
         $this->AccessKeyId = $config['ak'];
         $this->AccessKeySecret = $config['sk'];
+        $this->client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $this->Endpoint, $this->Version);
         $this->domain = $config['domain'];
     }
 
@@ -257,77 +261,21 @@ class aliyun implements DnsInterface
         return $line;
     }
 
-
-    private function aliyunSignature($parameters, $accessKeySecret, $method)
-    {
-        ksort($parameters);
-        $canonicalizedQueryString = '';
-        foreach ($parameters as $key => $value) {
-            if ($value === null) continue;
-            $canonicalizedQueryString .= '&' . $this->percentEncode($key) . '=' . $this->percentEncode($value);
-        }
-        $stringToSign = $method . '&%2F&' . $this->percentEncode(substr($canonicalizedQueryString, 1));
-        $signature = base64_encode(hash_hmac("sha1", $stringToSign, $accessKeySecret . "&", true));
-
-        return $signature;
-    }
-    private function percentEncode($str)
-    {
-        $search = ['+', '*', '%7E'];
-        $replace = ['%20', '%2A', '~'];
-        return str_replace($search, $replace, urlencode($str));
-    }
     private function request($param, $returnData = false)
     {
         if (empty($this->AccessKeyId) || empty($this->AccessKeySecret)) return false;
-        $result = $this->request_do($param, $returnData);
-        if (!$returnData && $result !== true) {
-            usleep(50000);
-            $result = $this->request_do($param, $returnData);
+        try{
+            $result = $this->client->request($param);
+        }catch(Exception $e){
+            try{
+                usleep(50000);
+                $result = $this->client->request($param);
+            }catch(Exception $e){
+                $this->setError($e->getMessage());
+                return false;
+            }
         }
-        return $result;
-    }
-    private function request_do($param, $returnData = false)
-    {
-        if (empty($this->AccessKeyId) || empty($this->AccessKeySecret)) return false;
-        $url = 'https://' . $this->Endpoint . '/';
-        $data = array(
-            'Format' => 'JSON',
-            'Version' => $this->Version,
-            'AccessKeyId' => $this->AccessKeyId,
-            'SignatureMethod' => 'HMAC-SHA1',
-            'Timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
-            'SignatureVersion' => '1.0',
-            'SignatureNonce' => random(8)
-        );
-        $data = array_merge($data, $param);
-        $data['Signature'] = $this->aliyunSignature($data, $this->AccessKeySecret, 'POST');
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-        $response = curl_exec($ch);
-        $errno = curl_errno($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if ($errno) {
-            $this->setError('Curl error: ' . curl_error($ch));
-        }
-        curl_close($ch);
-        if ($errno) return false;
-
-        $arr = json_decode($response, true);
-        if ($httpCode == 200) {
-            return $returnData ? $arr : true;
-        } elseif ($arr) {
-            $this->setError($arr['Message']);
-            return false;
-        } else {
-            $this->setError('返回数据解析失败');
-            return false;
-        }
+        return $returnData ? $result : true;
     }
 
     private function setError($message)

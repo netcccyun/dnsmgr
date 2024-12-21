@@ -1,10 +1,14 @@
 <?php
 
-namespace app\lib;
+namespace app\service;
 
 use Exception;
 use think\facade\Db;
+use app\lib\DnsHelper;
 
+/**
+ * CF优选IP
+ */
 class OptimizeService
 {
     private $ip_address = [];

@@ -1,0 +1,200 @@
+{extend name="common/layout" /}
+{block name="title"}通知设置{/block}
+{block name="main"}
+<div class="row">
+<div class="col-xs-12 col-sm-8 col-lg-6 center-block" style="float: none;">
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">发信邮箱设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">发信模式</label>
+	  <div class="col-sm-9"><select class="form-control" name="mail_type" default="{:config_get('mail_type')}"><option value="0">SMTP发信</option><option value="1">搜狐Sendcloud</option><option value="2">阿里云邮件推送</option></select></div>
+	</div>
+	<div id="frame_set1">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">SMTP服务器</label>
+	  <div class="col-sm-9"><input type="text" name="mail_smtp" value="{:config_get('mail_smtp')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">SMTP端口</label>
+	  <div class="col-sm-9"><input type="text" name="mail_port" value="{:config_get('mail_port')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">邮箱账号</label>
+	  <div class="col-sm-9"><input type="text" name="mail_name" value="{:config_get('mail_name')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">邮箱密码</label>
+	  <div class="col-sm-9"><input type="text" name="mail_pwd" value="{:config_get('mail_pwd')}" class="form-control"/></div>
+	</div>
+	</div>
+	<div id="frame_set2">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">API_USER</label>
+	  <div class="col-sm-9"><input type="text" name="mail_apiuser" value="{:config_get('mail_apiuser')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">API_KEY</label>
+	  <div class="col-sm-9"><input type="text" name="mail_apikey" value="{:config_get('mail_apikey')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">发信邮箱</label>
+	  <div class="col-sm-9"><input type="text" name="mail_name2" value="{:config_get('mail_name')}" class="form-control"/></div>
+	</div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">收信邮箱</label>
+	  <div class="col-sm-9"><input type="text" name="mail_recv" value="{:config_get('mail_recv')}" class="form-control" placeholder="不填默认为发信邮箱"/></div>
+	</div>
+	<div class="form-group">
+	  <div class="col-sm-offset-3 col-sm-9">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+		<a href="javascript:mailtest()" class="btn btn-default btn-block">发送测试邮件</a>
+	  </div>
+	</div>
+  </form>
+</div>
+<div class="panel-footer">
+<span class="glyphicon glyphicon-info-sign"></span>
+使用普通模式发信时，建议使用QQ邮箱，SMTP服务器smtp.qq.com，端口465或587，密码是QQ邮箱设置界面生成的<a href="https://service.mail.qq.com/detail/0/75"  target="_blank" rel="noreferrer">授权码</a>。<br/>阿里云邮件推送：<a href="https://www.aliyun.com/product/directmail" target="_blank" rel="noreferrer">点此进入</a>｜<a href="https://usercenter.console.aliyun.com/#/manage/ak" target="_blank" rel="noreferrer">获取AK/SK</a>
+</div>
+</div>
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">微信公众号消息接口设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">appToken</label>
+	  <div class="col-sm-9"><input type="text" name="wechat_apptoken" value="{:config_get('wechat_apptoken')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">用户UID</label>
+	  <div class="col-sm-9"><input type="text" name="wechat_appuid" value="{:config_get('wechat_appuid')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <div class="col-sm-offset-3 col-sm-9"><input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/></div>
+	</div>
+  </form>
+</div>
+<div class="panel-footer">
+<b>WxPusher：</b><a href="https://wxpusher.zjiecode.com/admin/" target="_blank" rel="noopener noreferrer">点此进入</a> ，注册并且创建应用 -> 将appToken填写到上方输入框 -> 扫码关注应用 -> 在用户列表查看自己的UID填写到上方输入框<br/>
+</div>
+</div>
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">Telegram机器人接口设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">Token</label>
+	  <div class="col-sm-9"><input type="text" name="tgbot_token" value="{:config_get('tgbot_token')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">Chat Id</label>
+	  <div class="col-sm-9"><input type="text" name="tgbot_chatid" value="{:config_get('tgbot_chatid')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+		<label class="col-sm-3 control-label">使用代理服务器</label>
+		<div class="col-sm-9"><select class="form-control" name="tgbot_proxy" default="{:config_get('tgbot_proxy')}"><option value="0">否</option><option value="1">是</option></select></div>
+	  </div>
+	<div class="form-group">
+	  <div class="col-sm-offset-3 col-sm-9">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+		<a href="javascript:tgbottest()" class="btn btn-default btn-block">发送测试消息</a>
+	</div>
+	</div>
+  </form>
+</div>
+<div class="panel-footer">
+与<a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">@BotFather</a>对话，使用/newbot命令创建一个新的机器人，根据提示输入机器人的名称和用户名，可得到Token，或使用/mybots命令查看已创建的机器人；与<a href="https://t.me/getmyid_bot" target="_blank" rel="noopener noreferrer">@getmyid_bot</a>对话，可得到Chat Id<br/>
+</div>
+</div>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script>
+var items = $("select[default]");
+for (i = 0; i < items.length; i++) {
+	$(items[i]).val($(items[i]).attr("default")||0);
+}
+$("select[name='mail_type']").change(function(){
+	if($(this).val() == 0){
+		$("#frame_set1").show();
+		$("#frame_set2").hide();
+	}else{
+		$("#frame_set1").hide();
+		$("#frame_set2").show();
+	}
+});
+$("select[name='mail_type']").change();
+function saveSetting(obj){
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'POST',
+		url : '',
+		data : $(obj).serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert('设置保存成功！<br/>重启检测进程或容器后生效', {
+					icon: 1,
+					closeBtn: false
+				}, function(){
+				  window.location.reload()
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+	return false;
+}
+function mailtest(){
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'GET',
+		url : '/system/mailtest',
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert(data.msg, {icon: 1});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+}
+function tgbottest(){
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'GET',
+		url : '/system/tgbottest',
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert(data.msg, {icon: 1});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+}
+</script>
+{/block}

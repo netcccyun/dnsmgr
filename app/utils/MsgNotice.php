@@ -1,6 +1,9 @@
 <?php
 
-namespace app\lib;
+namespace app\utils;
+use think\facade\Db;
+use app\lib\CertHelper;
+use app\lib\DeployHelper;
 
 class MsgNotice
 {
@@ -53,6 +56,80 @@ class MsgNotice
             $content = "<strong>".$mail_title."</strong>\n".$content;
             self::send_telegram_bot($content);
         }
+    }
+
+    public static function cert_send($id, $result)
+    {
+        $row = Db::name('cert_order')->field('id,aid,issuetime,expiretime,issuer,status,error')->where('id', $id)->find();
+        if (!$row) return;
+        $type = Db::name('cert_account')->where('id', $row['aid'])->value('type');
+        $domainList = Db::name('cert_domain')->where('oid', $id)->column('domain');
+        if (empty($domainList)) return;
+        if ($result) {
+            if (count($domainList) > 1) {
+                $mail_title = $domainList[0] . '等' . count($domainList) . '个域名SSL证书签发成功通知';
+            } else {
+                $mail_title = $domainList[0] . '域名SSL证书签发成功通知';
+            }
+            $mail_content = '尊敬的用户，您好：您的SSL证书已签发成功！<br/>证书账户：'.CertHelper::$cert_config[$type]['name'].'('.$row['aid'].')<br/>证书域名：'.implode('、', $domainList).'<br/>签发时间：'.$row['issuetime'].'<br/>到期时间：'.$row['expiretime'].'<br/>颁发机构：'.$row['issuer'];
+        } else {
+            $status_arr = [0 => '失败', -1 => '购买证书失败', -2 => '创建订单失败', -3 => '添加DNS失败', -4 => '验证DNS失败', -5 => '验证订单失败', -6 => '订单验证未通过', -7 => '签发证书失败'];
+            if(count($domainList) > 1){
+                $mail_title = $domainList[0].'等'.count($domainList).'个域名SSL证书'.$status_arr[$row['status']].'通知';
+            }else{
+                $mail_title = $domainList[0].'域名SSL证书'.$status_arr[$row['status']].'通知';
+            }
+            $mail_content = '尊敬的用户，您好：您的SSL证书'.$status_arr[$row['status']].'！<br/>证书账户：'.CertHelper::$cert_config[$type]['name'].'('.$row['aid'].')<br/>证书域名：'.implode('、', $domainList).'<br/>失败时间：'.date('Y-m-d H:i:s').'<br/>失败原因：'.$row['error'];
+        }
+        $mail_content .= '<br/>'.self::$sitename.'<br/>'.date('Y-m-d H:i:s');
+
+        if (config_get('cert_notice_mail') == 1 || config_get('cert_notice_mail') == 2 && !$result) {
+            $mail_name = config_get('mail_recv') ? config_get('mail_recv') : config_get('mail_name');
+            self::send_mail($mail_name, $mail_title, $mail_content);
+        }
+        if (config_get('cert_notice_wxtpl') == 1 || config_get('cert_notice_wxtpl') == 2 && !$result) {
+            $content = str_replace(['<br/>', '<b>', '</b>'], ["\n\n", '**', '**'], $mail_content);
+            self::send_wechat_tplmsg($mail_title, $content);
+        }
+        if (config_get('cert_notice_tgbot') == 1 || config_get('cert_notice_tgbot') == 2 && !$result) {
+            $content = str_replace('<br/>', "\n", $mail_content);
+            $content = "<strong>" . $mail_title . "</strong>\n" . $content;
+            self::send_telegram_bot($content);
+        }
+        Db::name('cert_order')->where('id', $id)->update(['issend' => 1]);
+    }
+
+    public static function deploy_send($id, $result)
+    {
+        $row = Db::name('cert_deploy')->field('id,aid,oid,remark,status,error')->where('id', $id)->find();
+        if (!$row) return;
+        $account = Db::name('cert_account')->field('id,type,name,remark')->where('id', $row['aid'])->find();
+        $domainList = Db::name('cert_domain')->where('oid', $row['oid'])->column('domain');
+        $typename = DeployHelper::$deploy_config[$account['type']]['name'];
+        $mail_title = $typename;
+        if(!empty($row['remark'])) $mail_title .= '('.$row['remark'].')';
+        $mail_title .= '证书部署'.($result?'成功':'失败').'通知';
+        if ($result) {
+            $mail_content = '尊敬的用户，您好：您的SSL证书已成功部署到'.$typename.'！<br/>自动部署账户：['.$account['id'].']'.$typename.'('.($account['remark']?$account['remark']:$account['name']).')<br/>关联SSL证书：['.$row['oid'].']'.implode('、', $domainList).'<br/>任务备注：'.($row['remark']?$row['remark']:'无');
+        } else {
+            $mail_content = '尊敬的用户，您好：您的SSL证书部署失败！<br/>失败原因：'.$row['error'].'<br/>自动部署账户：['.$account['id'].']'.$typename.'('.($account['remark']?$account['remark']:$account['name']).')<br/>关联SSL证书：['.$row['oid'].']'.implode('、', $domainList).'<br/>任务备注：'.($row['remark']?$row['remark']:'无');
+        }
+        $mail_content .= '<br/>'.self::$sitename.'<br/>'.date('Y-m-d H:i:s');
+
+        if (config_get('cert_notice_mail') == 1 || config_get('cert_notice_mail') == 2 && !$result) {
+            $mail_name = config_get('mail_recv') ? config_get('mail_recv') : config_get('mail_name');
+            self::send_mail($mail_name, $mail_title, $mail_content);
+        }
+        if (config_get('cert_notice_wxtpl') == 1 || config_get('cert_notice_wxtpl') == 2 && !$result) {
+            $content = str_replace(['<br/>', '<b>', '</b>'], ["\n\n", '**', '**'], $mail_content);
+            self::send_wechat_tplmsg($mail_title, $content);
+        }
+        if (config_get('cert_notice_tgbot') == 1 || config_get('cert_notice_tgbot') == 2 && !$result) {
+            $content = str_replace('<br/>', "\n", $mail_content);
+            $content = "<strong>" . $mail_title . "</strong>\n" . $content;
+            self::send_telegram_bot($content);
+        }
+        Db::name('cert_deploy')->where('id', $id)->update(['issend' => 1]);
     }
 
     public static function send_mail($to, $sub, $msg)

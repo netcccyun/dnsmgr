@@ -1,0 +1,237 @@
+{extend name="common/layout" /}
+{block name="title"}{$title}{/block}
+{block name="main"}
+<style>
+.tips{color: #f6a838; padding-left: 5px;}
+.input-note{color: green;}
+.control-label[is-required]:before {
+    content: "*";
+    color: #f56c6c;
+    margin-right: 4px;
+}
+</style>
+<div class="row" id="app">
+<div class="col-xs-12 center-block" style="float: none;">
+<div class="panel panel-default">
+<div class="panel-heading"><h3 class="panel-title"><a href="javascript:window.history.back()" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{if $action=='edit'}编辑{else}添加{/if}{$title}</h3></div>
+<div class="panel-body">
+  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="accountform">
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right" is-required>账户类型</label>
+        <div class="col-sm-6">
+            <select name="type" v-model="set.type" class="form-control" required :disabled="action=='edit'">
+                <optgroup v-for="item in typeOption" :label="item.label"><option v-for="item2 in item.children" :value="item2.value">{{item2.label}}</option></optgroup>
+            </select>
+        </div>
+    </div>
+    <div v-for="(item,name) in inputs" v-show="isShow(item.show)">
+        <div class="form-group" v-if="item.type=='input'">
+            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+            <div class="col-sm-6">
+                <input type="text" class="form-control" :name="name" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled" :data-bv-id="item.validator=='id'" :data-bv-phone="item.validator=='phone'" :data-bv-numeric="item.validator=='numeric'" :data-bv-digits="item.validator=='digits'" :data-bv-integer="item.validator=='integer'" :data-bv-email="item.validator=='email'" :data-bv-uri="item.validator=='uri'" :min="item.min" :max="item.max"><span v-if="item.note" class="input-note" v-html="item.note"></span>
+            </div>
+        </div>
+        <div class="form-group" v-if="item.type=='textarea'">
+            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+            <div class="col-sm-6">
+                <textarea class="form-control" :name="name" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled"></textarea><span v-if="item.note" class="input-note" v-html="item.note"></span>
+            </div>
+        </div>
+        <div class="form-group" v-if="item.type=='select'">
+            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+            <div class="col-sm-6">
+                <select class="form-control" :name="name" v-model="config[name]" :required="item.required" :disabled="item.disabled" :placeholder="item.placeholder">
+                    <option v-for="option in item.options" :value="option.value">{{option.label}}</option>
+                </select><span v-if="item.note" class="input-note" v-html="item.note"></span>
+            </div>
+        </div>
+        <div class="form-group" v-if="item.type=='radio'">
+            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+            <div class="col-sm-6">
+                <label class="radio-inline" v-for="(optionname, optionvalue) in item.options">
+                    <input type="radio" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
+                </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
+            </div>
+        </div>
+        <div class="form-group" v-if="item.type=='checkbox'">
+            <div class="col-sm-offset-3 col-sm-7">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" :name="name" v-model="config[name]" :disabled="item.disabled"> {{item.name}}
+                    </label> 
+                </div>
+            </div>
+        </div>
+        <div class="form-group" v-if="item.type=='checkboxes'">
+            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+            <div class="col-sm-6">
+                <label class="checkbox-inline" v-for="(optionname, optionvalue) in item.options">
+                    <input type="checkbox" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
+                </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">备注</label>
+        <div class="col-sm-6">
+            <input type="text" name="remark" v-model="set.remark" placeholder="可留空" class="form-control">
+        </div>
+    </div>
+    <div class="form-group" v-show="note">
+        <div class="col-sm-offset-3 col-sm-6">
+            <div class="alert alert-dismissible alert-info">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <strong>提示：</strong><span v-html="note"></span>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
+    </div>
+  </form>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}vue/2.6.14/vue.min.js"></script>
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="/static/js/bootstrapValidator.min.js"></script>
+<script>
+var info = {$info|json_encode|raw};
+var typeList = {$typeList|json_encode|raw};
+var classList = {$classList|json_encode|raw};
+new Vue({
+    el: '#app',
+    data: {
+        action: '{$action}',
+        set: {
+            deploy: '{$deploy}',
+            id: '',
+            type: '',
+            name: '',
+            config : '',
+            remark: '',
+        },
+        inputs: {},
+        config: {},
+        typeList: typeList,
+        classList: classList,
+        note: '',
+        typeOption: [],
+    },
+    watch: {
+        'set.type': function(val){
+            if(this.action == 'add' && val && typeList[val]){
+                this.inputs = typeList[val].inputs;
+                this.note = typeList[val].note;
+                this.config = {};
+                $.each(this.inputs, (name, item) => {
+                    if(typeof item.value == 'undefined'){
+                        if(item.type == 'checkbox'){
+                            item.value = false; 
+                        }else if(item.type == 'checkboxes'){
+                            item.value = []; 
+                        }else{
+                            item.value = null;
+                        }
+                    }
+                    this.$set(this.config, name, item.value)
+                })
+            }
+        }
+    },
+    mounted() {
+        this.typeOption = Object.keys(classList).map((key) => {
+            var tempList = [];
+            Object.keys(typeList).forEach((key2) => {
+                if(typeList[key2].class == key){
+                    tempList.push({label: typeList[key2].name, value: key2})
+                }
+            })
+            return {label: classList[key], children: tempList}
+        })
+        console.log(this.typeOption);
+        if(this.action == 'edit'){
+            Object.keys(info).forEach((key) => {
+                this.set[key] = info[key]
+            })
+            var config = JSON.parse(info.config);
+            this.inputs = typeList[this.set.type].inputs;
+            this.note = typeList[this.set.type].note;
+            $.each(this.inputs, (name, item) => {
+                item.value = config[name];
+                if(typeof item.value == 'undefined'){
+                    if(item.type == 'checkbox'){
+                        item.value = false; 
+                    }else if(item.type == 'checkboxes'){
+                        item.value = []; 
+                    }else{
+                        item.value = null;
+                    }
+                }
+                this.$set(this.config, name, item.value)
+            })
+        }else{
+            this.set.type = Object.keys(typeList)[0]
+        }
+
+        this.$nextTick(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        })
+    },
+    methods: {
+        submit(){
+            var that=this;
+            Object.keys(this.config).forEach((key) => {
+                if(this.config[key] && typeof this.config[key] == 'string'){
+                    this.config[key] = this.trim(this.config[key]);
+                }
+            })
+            this.set.config = JSON.stringify(this.config);
+            this.set.name = this.config[Object.keys(this.config)[0]];
+            let loading = layer.msg('正在进行账户有效性检查', {icon: 16,shade: 0.1,time: 0});
+            $.ajax({
+                type: "POST",
+                url: "",
+                data: this.set,
+                dataType: 'json',
+                success: function(data) {
+                    layer.close(loading);
+                    if(data.code == 0){
+                        layer.alert(data.msg, {icon: 1}, function(){
+                            if(data.msg.indexOf('自动部署账户')>0){
+                                window.location.href = '/cert/deployaccount';
+                            }else{
+                                window.location.href = '/cert/certaccount';
+                            }
+                        });
+                    }else{
+                        layer.alert(data.msg, {icon: 2});
+                    }
+                },
+                error: function(data){
+                    layer.close(loading);
+                    layer.msg('服务器错误');
+                }
+            });
+        },
+        isShow(show){
+            if(typeof show == 'boolean' && show){
+                return show;
+            }else if(typeof show == 'string' && show){
+                var that=this;
+                Object.keys(this.config).forEach((key) => {
+                    show = show.replace(new RegExp(key, 'g'), 'that.config["'+key+'"]')
+                })
+                return eval(show);
+            }else{
+                return true;
+            }
+        },
+        trim(str){
+            return str.replace(/(^\s*)|(\s*$)/g, "");
+        }
+    },
+});
+</script>
+{/block}

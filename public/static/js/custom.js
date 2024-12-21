@@ -79,7 +79,7 @@ if (typeof $.fn.bootstrapTable !== "undefined") {
 		queryParamsType: '',
 		queryParams: function(params) {
 			$('#searchToolbar').find(':input[name]').each(function() {
-				if(!$(this).is(":visible")) return;
+				//if(!$(this).is(":visible")) return;
 				params[$(this).attr('name')] = $(this).val()
 			})
 			updateQueryStr(params);

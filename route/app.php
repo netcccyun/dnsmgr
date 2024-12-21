@@ -21,10 +21,10 @@ Route::pattern([
 Route::any('/install', 'install/index')
 ->middleware(ViewOutput::class);
 
-Route::get('/verifycode', 'auth/verifycode')->middleware(SessionInit::class)
-->middleware(ViewOutput::class);
 Route::any('/login', 'auth/login')->middleware(SessionInit::class)
 ->middleware(ViewOutput::class);
+Route::get('/verifycode', 'auth/verifycode')->middleware(SessionInit::class);
+Route::post('/auth/totp', 'auth/totp')->middleware(SessionInit::class);
 Route::get('/logout', 'auth/logout');
 Route::any('/quicklogin', 'auth/quicklogin');
 Route::any('/dmtask/status', 'dmonitor/status');
@@ -35,6 +35,7 @@ Route::group(function () {
     Route::post('/changeskin', 'index/changeskin');
     Route::get('/cleancache', 'index/cleancache');
     Route::any('/setpwd', 'index/setpwd');
+    Route::any('/totp/:action', 'index/totp');
     Route::get('/test', 'index/test');
 
     Route::post('/user/data', 'user/user_data');
@@ -72,11 +73,6 @@ Route::group(function () {
     Route::get('/dmonitor/task/info/:id', 'dmonitor/taskinfo');
     Route::any('/dmonitor/task/:action', 'dmonitor/taskform');
     Route::get('/dmonitor/task', 'dmonitor/task');
-    Route::any('/dmonitor/noticeset', 'dmonitor/noticeset');
-    Route::any('/dmonitor/proxyset', 'dmonitor/proxyset');
-    Route::get('/dmonitor/mailtest', 'dmonitor/mailtest');
-    Route::get('/dmonitor/tgbottest', 'dmonitor/tgbottest');
-    Route::post('/dmonitor/proxytest', 'dmonitor/proxytest');
     Route::post('/dmonitor/clean', 'dmonitor/clean');
 
     Route::any('/optimizeip/opipset', 'optimizeip/opipset');
@@ -84,6 +80,36 @@ Route::group(function () {
     Route::post('/optimizeip/opiplist/data', 'optimizeip/opiplist_data');
     Route::get('/optimizeip/opiplist', 'optimizeip/opiplist');
     Route::any('/optimizeip/opipform/:action', 'optimizeip/opipform');
+
+    Route::get('/cert/certaccount', 'cert/certaccount');
+    Route::get('/cert/deployaccount', 'cert/deployaccount');
+    Route::post('/cert/account/data', 'cert/account_data');
+    Route::post('/cert/account/:action', 'cert/account_op');
+    Route::get('/cert/account/:action', 'cert/account_form');
+
+    Route::get('/cert/certorder', 'cert/certorder');
+    Route::post('/cert/order/data', 'cert/order_data');
+    Route::post('/cert/order/process', 'cert/order_process');
+    Route::post('/cert/order/:action', 'cert/order_op');
+    Route::get('/cert/order/:action', 'cert/order_form');
+
+    Route::get('/cert/deploytask', 'cert/deploytask');
+    Route::post('/cert/deploy/data', 'cert/deploy_data');
+    Route::post('/cert/deploy/process', 'cert/deploy_process');
+    Route::post('/cert/deploy/:action', 'cert/deploy_op');
+    Route::get('/cert/deploy/:action', 'cert/deploy_form');
+
+    Route::get('/cert/cname', 'cert/cname');
+    Route::post('/cert/cname/data', 'cert/cname_data');
+    Route::post('/cert/cname/:action', 'cert/cname_op');
+    
+    Route::any('/cert/certset', 'cert/certset');
+
+    Route::any('/system/noticeset', 'system/noticeset');
+    Route::any('/system/proxyset', 'system/proxyset');
+    Route::get('/system/mailtest', 'system/mailtest');
+    Route::get('/system/tgbottest', 'system/tgbottest');
+    Route::post('/system/proxytest', 'system/proxytest');
 
 })->middleware(CheckLogin::class)
 ->middleware(ViewOutput::class);

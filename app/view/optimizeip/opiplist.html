@@ -57,7 +57,7 @@ $(document).ready(function(){
 				field: 'rr',
 				title: '域名',
 				formatter: function(value, row, index) {
-					return '<span title="'+row.remark+'" data-toggle="tooltip" data-placement="right" title="Tooltip on right">' + value + '.' + row.domain + '</span>';
+					return '<span title="'+row.remark+'" data-toggle="tooltip" data-placement="right">' + value + '.' + row.domain + '</span>';
 				}
 			},
 			{
@@ -98,13 +98,11 @@ $(document).ready(function(){
 				field: 'active',
 				title: '任务开关',
 				formatter: function(value, row, index) {
-					var html = '';
-					if(value == 1) {
-						html += '<span class="btn btn-success btn-xs" onclick="setActive('+row.id+', 0)">开启</span>';
-					} else {
-						html += '<span class="btn btn-warning btn-xs" onclick="setActive('+row.id+', 1)">关闭</span>';
+					if(value == 1){
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+					}else{
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}
-					return html;
 				}
 			},
 			{

@@ -8,6 +8,7 @@ use think\facade\Db;
 use think\facade\View;
 use think\facade\Cache;
 use app\lib\DnsHelper;
+use app\utils\MsgNotice;
 
 class Index extends BaseController
 {
@@ -120,16 +121,46 @@ class Index extends BaseController
             Db::name('user')->where('id', $this->request->user['id'])->update(['password' => password_hash($newpwd, PASSWORD_DEFAULT)]);
             return json(['code' => 0, 'msg' => 'succ']);
         }
+        View::assign('user', $this->request->user);
         return view();
+    }
+
+    public function totp()
+    {
+        if (!checkPermission(1)) return $this->alert('error', '无权限');
+        $action = input('param.action');
+        if ($action == 'generate') {
+            try {
+                $totp = \app\lib\TOTP::create();
+                $totp->setLabel($this->request->user['username']);
+                $totp->setIssuer('DNS Manager');
+                return json(['code' => 0, 'data' => ['secret' => $totp->getSecret(), 'qrcode' => $totp->getProvisioningUri()]]);
+            } catch (Exception $e) {
+                return json(['code' => -1, 'msg' => $e->getMessage()]);
+            }
+        } elseif ($action == 'bind') {
+            $secret = input('post.secret');
+            $code = input('post.code');
+            if (empty($secret)) return json(['code' => -1, 'msg' => '密钥不能为空']);
+            if (empty($code)) return json(['code' => -1, 'msg' => '请输入动态口令']);
+            try {
+                $totp = \app\lib\TOTP::create($secret);
+                if (!$totp->verify($code)) {
+                    return json(['code' => -1, 'msg' => '动态口令错误']);
+                }
+            } catch (Exception $e) {
+                return json(['code' => -1, 'msg' => $e->getMessage()]);
+            }
+            Db::name('user')->where('id', $this->request->user['id'])->update(['totp_open' => 1, 'totp_secret' => $secret]);
+            return json(['code' => 0, 'msg' => 'succ']);
+        } elseif ($action == 'close') {
+            Db::name('user')->where('id', $this->request->user['id'])->update(['totp_open' => 0, 'totp_secret' => null]);
+            return json(['code' => 0, 'msg' => 'succ']);
+        }
     }
 
     public function test()
     {
-        //$a = \app\lib\DnsQueryUtils::query_dns_doh('www.cccyun.cc', 'A');
-        //print_r($a);
-        $dnsList = json_decode('{"cccyun.net":[{"name":"@","type":"CAA","value":"0 issue \"letsencrypt.org\""},{"name":"verify","type":"TXT","value":"TXTTEST1"},{"name":"verify","type":"TXT","value":"TXTTEST2"}],"yuncname.com":[{"name":"@","type":"CAA","value":"0 issue \"letsencrypt.org\""},{"name":"verify.testhost1","type":"CNAME","value":"i.trust.com"},{"name":"verify.testhost2","type":"CNAME","value":"i.trust.com"}]}', true);
-        \app\lib\CertDnsUtils::addDns($dnsList, function ($txt) {
-            echo $txt . PHP_EOL;
-        });
+
     }
 }

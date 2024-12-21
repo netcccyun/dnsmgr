@@ -1,0 +1,286 @@
+{extend name="common/layout" /}
+{block name="title"}SSL证书自动部署任务{/block}
+{block name="main"}
+<style>
+tbody tr>td:nth-child(3){max-width:180px;}
+.tips{cursor:pointer;}
+pre.pre-log{height: 330px;overflow-y: auto;width: 100%;background-color: rgba(51, 51, 51, 1);white-space: pre-line;color: rgba(236, 236, 236, 1)}
+</style>
+<div class="row">
+	<div class="col-xs-12 center-block" style="float: none;">
+	<div class="panel panel-default panel-intro">
+	<div class="panel-body">
+	
+<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
+	<input type="hidden" name="oid" value="">
+  <div class="form-group">
+	<label>搜索</label>
+	<div class="form-group">
+		<input type="text" class="form-control" name="domain" placeholder="域名">
+	  </div>
+  </div>
+  <div class="form-group">
+	<div class="form-group">
+		<input type="text" class="form-control" name="remark" placeholder="备注">
+	  </div>
+  </div>
+  <div class="form-group">
+	<select name="type" class="form-control"><option value="">所有平台</option>{foreach $types as $k=>$v}
+		<option value="{$k}">{$v}</option>
+	{/foreach}</select>
+  </div>
+  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
+  <a href="javascript:searchClear()" class="btn btn-default" title="刷新任务列表"><i class="fa fa-refresh"></i> 刷新</a>
+  <a href="/cert/deploy/add" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
+</form>
+
+      <table id="listTable">
+	  </table>
+    </div>
+  </div>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
+<script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
+<script src="{$cdnpublic}FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="/static/js/custom.js"></script>
+<script>
+$(document).ready(function(){
+	updateToolbar();
+	const defaultPageSize = 10;
+	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+
+	$("#listTable").bootstrapTable({
+		url: '/cert/deploy/data',
+		pageNumber: pageNumber,
+		pageSize: pageSize,
+		classes: 'table table-striped table-hover table-bordered',
+		uniqueId: 'id',
+		columns: [
+			{
+				field: 'id',
+				title: 'ID'
+			},
+			{
+				field: 'typename',
+				title: '自动部署账户',
+				formatter: function(value, row, index) {
+					return '<span title="'+row.aname+'" data-toggle="tooltip" data-placement="right"><img src="/static/images/'+row.icon+'" class="type-logo">'+(row.aremark?row.aremark:value+'('+row.aid+')')+'</span>';
+				}
+			},
+			{
+				field: 'domains',
+				title: '关联SSL证书',
+				formatter: function(value, row, index) {
+					var html = '<a href="/cert/certorder?id='+row.oid+'" target="_blank">ID:'+row.oid+'（'+row.certtypename+'）</a><br/><span class="text-muted">';
+					html += value.length > 3 ? value.slice(0, 3).join('、') + ' 等'+value.length+'个域名' : value.join('、');
+					html += '</span>';
+					return html;
+				}
+			},
+			{
+				field: 'remark',
+				title: '备注'
+			},
+			{
+				field: 'active',
+				title: '任务开关',
+				formatter: function(value, row, index) {
+					if(value == 1){
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+					}else{
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+					}
+				}
+			},
+			{
+				field: 'lasttime',
+				title: '上次执行时间',
+				formatter: function(value, row, index) {
+					return value ? value : '暂未执行'
+				}
+			},
+			{
+				field: 'status',
+				title: '状态',
+				formatter: function(value, row, index) {
+					if(value == 1) {
+						return '<span class="label label-success">已完成</span>';
+					} else if(value == 0) {
+						if(row.islock == 1) return '<span class="label" style="background-color: #3e76fb;">正在处理</span>';
+						else return '<span class="label label-info">待处理</span>';
+					} else {
+						return '<span class="label label-danger">处理失败</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
+					}
+				}
+			},
+			{
+				field: '',
+				title: '操作',
+				formatter: function(value, row, index) {
+					var html = '';
+					if(row.status == 0) {
+						html += '<a href="javascript:doOrder(\''+row.id+'\')" class="btn btn-success btn-xs"><i class="fa fa-play-circle"></i> 手动执行</a>&nbsp;&nbsp;';
+					}else if(row.status == 1) {
+						html += '<a href="javascript:reDoOrder(\''+row.id+'\')" class="btn btn-success btn-xs"><i class="fa fa-play-circle"></i> 重新执行</a>&nbsp;&nbsp;';
+					}else{
+						html += '<a href="javascript:doOrder(\''+row.id+'\')" class="btn btn-success btn-xs"><i class="fa fa-repeat"></i> 重试</a>&nbsp;&nbsp;';
+					}
+					html += '<a href="/cert/deploy/edit?id='+row.id+'" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i> 修改</a>&nbsp;&nbsp;';
+					html += '<div class="btn-group dropdown-group" role="group"><button type="button" class="btn btn-info btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">更多 <span class="caret"></span></button><ul class="dropdown-menu">';
+					html += '<li><a href="javascript:showLog(\''+row.processid+'\')">查看日志</a></li>';
+					if(row.status < 0){
+						html += '<li><a href="javascript:resetOrder(\''+row.id+'\')">重置任务</a></li>';
+					}
+					html += '<li><a href="javascript:delItem('+row.id+','+row.status+')">删除</a></li>';
+					html += '</ul></div>';
+					return html;
+				}
+			},
+		],
+		onLoadSuccess: function(data) {
+			$('[data-toggle="tooltip"]').tooltip()
+			$('.dropdown-group').on('show.bs.dropdown', function (e) {
+				var btnPos = $(e.target)[0].getBoundingClientRect();
+				var screenWidth = $(window).width();
+				var screenHeight = $(window).height();
+				var childrenWidth = $(e.target).children('.dropdown-menu').width();
+				var childrenHeight = $(e.target).children('.dropdown-menu').height();
+				var top = btnPos.bottom;
+				if(top + childrenHeight + 12 > screenHeight){
+					top = btnPos.top - childrenHeight - 12;
+				}
+				var left = btnPos.left;
+				if(left + childrenWidth + 7 > screenWidth){
+					left = screenWidth - childrenWidth - 7;
+				}
+				$(e.target).children('.dropdown-menu').css({position:'fixed', top:top, left:left});
+			});
+		}
+	})
+})
+function showmsg(msg){
+	layer.alert(msg, {icon: 0, title: '失败原因'});
+}
+function setActive(id, active){
+	$.post('/cert/deploy/setactive', {id: id, active: active}, function(data){
+		if(data.code == 0) {
+			layer.msg('修改成功', {icon: 1, time:800});
+			$('#listTable').bootstrapTable('refresh');
+		} else {
+			layer.msg(data.msg, {icon: 2});
+		}
+	}, 'json');
+}
+function delItem(id,status){
+	layer.confirm('确定要删除此自动部署任务吗？', {
+		btn: ['确定','取消']
+	}, function(){
+		$.post('/cert/deploy/del', {id: id}, function(data){
+			if(data.code == 0) {
+				layer.msg('删除成功', {icon: 1, time:800});
+				$('#listTable').bootstrapTable('refresh');
+			} else {
+				layer.msg(data.msg, {icon: 2});
+			}
+		}, 'json');
+	});
+}
+function doOrder(id, reset){
+	reset = reset || 0;
+	var ii = layer.msg('正在执行SSL证书部署...', {icon: 16,shade: 0.1,time: 0});
+	$.ajax({
+		type: "POST",
+		url: "/cert/deploy/process",
+		data: {id: id, reset: reset},
+		dataType: 'json',
+		success: function(data) {
+			layer.close(ii);
+			if(data.code == 0) {
+				layer.alert(data.msg, {icon: 1});
+				$('#listTable').bootstrapTable('refresh');
+			} else {
+				if(data.msg == '部署任务处理中，请稍后再试'){
+					layer.alert(data.msg, {icon: 2}, function(){
+						layer.closeAll();
+						var row = $("#listTable").bootstrapTable('getRowByUniqueId', id);
+						showLog(row.processid)
+					});
+				}else{
+					layer.alert(data.msg, {icon: 2});
+					$('#listTable').bootstrapTable('refresh');
+				}
+			}
+		},
+		error: function(data){
+			layer.close(ii);
+			layer.msg('执行超时，请稍后刷新列表或查看日志', {icon:0});
+		}
+	});
+}
+function resetOrder(id){
+	layer.confirm('重置任务后，任务将变成待处理状态，是否确定？', {
+		btn: ['确定','取消'], title: '重置任务', icon: 0
+	}, function(){
+		$.post('/cert/deploy/reset', {id: id}, function(data){
+			if(data.code == 0) {
+				layer.msg('重置任务状态成功', {icon: 1, time:800});
+				$('#listTable').bootstrapTable('refresh');
+			} else {
+				layer.msg(data.msg, {icon: 2});
+			}
+		}, 'json');
+	});
+}
+function reDoOrder(id){
+	layer.confirm('是否确定重新部署该证书？', {
+		btn: ['确定','取消'], title: '重新执行', icon: 0
+	}, function(){
+		doOrder(id, 1);
+	});
+}
+var intverval;
+function showLog(processid){
+	if(processid == '' || processid == 'null'){
+		layer.msg('暂无日志', {time: 600});
+		return;
+	}
+	$.post('/cert/deploy/show_log', {processid: processid}, function(data){
+		if(data.code == 0) {
+			var filemtime = data.time;
+			layer.open({
+				type: 1,
+				title: '查看日志',
+				area: [$(window).width() > 768 ? '600px' : '100%', '400px'],
+				shadeClose: true,
+				resize: false,
+				content: '<div class="modal-log"><pre class="pre-log" id="execLog">'+data.data+'</pre></div>',
+				success: function(){
+					var exec_log = $('#execLog');
+					exec_log[0].scrollTop = exec_log[0].scrollHeight
+					intverval = setInterval(function(){
+						$.post('/cert/deploy/show_log', {processid: processid}, function(data){
+							if(data.code == 0 && data.time != filemtime) {
+								var exec_log = $('#execLog');
+								exec_log.html(data.data);
+								filemtime = data.time;
+								exec_log[0].scrollTop = exec_log[0].scrollHeight
+							}
+						}, 'json');
+					}, 1500)
+				},
+				end: function(){
+					clearInterval(intverval);
+				}
+			});
+		} else {
+			layer.msg(data.msg, {icon: 2, time: 600});
+		}
+	}, 'json');
+}
+</script>
+{/block}

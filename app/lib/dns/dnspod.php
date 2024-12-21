@@ -3,6 +3,8 @@
 namespace app\lib\dns;
 
 use app\lib\DnsInterface;
+use app\lib\client\TencentCloud;
+use Exception;
 
 class dnspod implements DnsInterface
 {
@@ -15,11 +17,13 @@ class dnspod implements DnsInterface
     private $domain;
     private $domainid;
     private $domainInfo;
+    private TencentCloud $client;
 
     public function __construct($config)
     {
         $this->SecretId = $config['ak'];
         $this->SecretKey = $config['sk'];
+        $this->client = new TencentCloud($this->SecretId, $this->SecretKey, $this->endpoint, $this->service, $this->version);
         $this->domain = $config['domain'];
     }
 
@@ -42,7 +46,7 @@ class dnspod implements DnsInterface
         $action = 'DescribeDomainList';
         $offset = ($PageNumber - 1) * $PageSize;
         $param = ['Offset' => $offset, 'Limit' => $PageSize, 'Keyword' => $KeyWord];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         if ($data) {
             $list = [];
             foreach ($data['DomainList'] as $row) {
@@ -77,7 +81,7 @@ class dnspod implements DnsInterface
             $action = 'DescribeRecordList';
             $param = ['Domain' => $this->domain, 'Subdomain' => $SubDomain, 'RecordType' => $this->convertType($Type), 'RecordLineId' => $Line, 'Keyword' => $KeyWord, 'Offset' => $offset, 'Limit' => $PageSize];
         }
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         if ($data) {
             $list = [];
             foreach ($data['RecordList'] as $row) {
@@ -116,7 +120,7 @@ class dnspod implements DnsInterface
     {
         $action = 'DescribeRecord';
         $param = ['Domain' => $this->domain, 'RecordId' => intval($RecordId)];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         if ($data) {
             return [
                 'RecordId' => $data['RecordInfo']['Id'],
@@ -142,7 +146,7 @@ class dnspod implements DnsInterface
         $action = 'CreateRecord';
         $param = ['Domain' => $this->domain, 'SubDomain' => $Name, 'RecordType' => $this->convertType($Type), 'Value' => $Value, 'RecordLine' => $Line, 'RecordLineId' => $this->convertLineCode($Line), 'TTL' => intval($TTL), 'Weight' => $Weight];
         if ($Type == 'MX') $param['MX'] = intval($MX);
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         return is_array($data) ? $data['RecordId'] : false;
     }
 
@@ -152,7 +156,7 @@ class dnspod implements DnsInterface
         $action = 'ModifyRecord';
         $param = ['Domain' => $this->domain, 'RecordId' => intval($RecordId), 'SubDomain' => $Name, 'RecordType' => $this->convertType($Type), 'Value' => $Value, 'RecordLine' => $Line, 'RecordLineId' => $this->convertLineCode($Line), 'TTL' => intval($TTL), 'Weight' => $Weight];
         if ($Type == 'MX') $param['MX'] = intval($MX);
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         return is_array($data);
     }
 
@@ -161,7 +165,7 @@ class dnspod implements DnsInterface
     {
         $action = 'ModifyRecordRemark';
         $param = ['Domain' => $this->domain, 'RecordId' => intval($RecordId), 'Remark' => $Remark];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         return is_array($data);
     }
 
@@ -170,7 +174,7 @@ class dnspod implements DnsInterface
     {
         $action = 'DeleteRecord';
         $param = ['Domain' => $this->domain, 'RecordId' => intval($RecordId)];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         return is_array($data);
     }
 
@@ -180,7 +184,7 @@ class dnspod implements DnsInterface
         $Status = $Status == '1' ? 'ENABLE' : 'DISABLE';
         $action = 'ModifyRecordStatus';
         $param = ['Domain' => $this->domain, 'RecordId' => intval($RecordId), 'Status' => $Status];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         return is_array($data);
     }
 
@@ -190,7 +194,7 @@ class dnspod implements DnsInterface
         $action = 'DescribeDomainLogList';
         $offset = ($PageNumber - 1) * $PageSize;
         $param = ['Domain' => $this->domain, 'Offset' => $offset, 'Limit' => $PageSize];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         if ($data) {
             $list = [];
             foreach ($data['LogList'] as $row) {
@@ -206,7 +210,7 @@ class dnspod implements DnsInterface
     {
         $action = 'DescribeRecordLineCategoryList';
         $param = ['Domain' => $this->domain];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         if ($data) {
             $list = [];
             $this->processLineList($list, $data['LineList'], null);
@@ -242,7 +246,7 @@ class dnspod implements DnsInterface
     {
         $action = 'DescribeDomain';
         $param = ['Domain' => $this->domain];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         if ($data) {
             $this->domainInfo = $data['DomainInfo'];
             return $data['DomainInfo'];
@@ -255,7 +259,7 @@ class dnspod implements DnsInterface
     {
         $action = 'DescribeDomainPurview';
         $param = ['Domain' => $this->domain];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         if ($data) {
             return $data['PurviewList'];
         }
@@ -284,7 +288,7 @@ class dnspod implements DnsInterface
     {
         $action = 'DescribeRecordLineList';
         $param = ['Domain' => $this->domain, 'DomainGrade' => ''];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         if ($data) {
             $line_list = $data['LineList'];
             if (!empty($data['LineGroupList'])) {
@@ -302,7 +306,7 @@ class dnspod implements DnsInterface
     {
         $action = 'DescribeUserDetail';
         $param = [];
-        $data = $this->send_reuqest($action, $param);
+        $data = $this->send_request($action, $param);
         if ($data) {
             return $data['UserInfo'];
         }
@@ -337,93 +341,12 @@ class dnspod implements DnsInterface
     }
 
 
-    private function send_reuqest($action, $param)
+    private function send_request($action, $param)
     {
-        $param = array_filter($param, function ($a) { return $a !== null;});
-        if (!$param) $param = (object)[];
-        $payload = json_encode($param);
-        $time = time();
-        $authorization = $this->generateSign($payload, $time);
-        $header = [
-            'Authorization: '.$authorization,
-            'Content-Type: application/json; charset=utf-8',
-            'X-TC-Action: '.$action,
-            'X-TC-Timestamp: '.$time,
-            'X-TC-Version: '.$this->version,
-        ];
-        return $this->curl_post($payload, $header);
-    }
-
-    private function generateSign($payload, $time)
-    {
-        $algorithm = "TC3-HMAC-SHA256";
-
-        // step 1: build canonical request string
-        $httpRequestMethod = "POST";
-        $canonicalUri = "/";
-        $canonicalQueryString = "";
-        $canonicalHeaders = "content-type:application/json; charset=utf-8\n"."host:".$this->endpoint."\n";
-        $signedHeaders = "content-type;host";
-        $hashedRequestPayload = hash("SHA256", $payload);
-        $canonicalRequest = $httpRequestMethod."\n"
-            .$canonicalUri."\n"
-            .$canonicalQueryString."\n"
-            .$canonicalHeaders."\n"
-            .$signedHeaders."\n"
-            .$hashedRequestPayload;
-
-        // step 2: build string to sign
-        $date = gmdate("Y-m-d", $time);
-        $credentialScope = $date."/".$this->service."/tc3_request";
-        $hashedCanonicalRequest = hash("SHA256", $canonicalRequest);
-        $stringToSign = $algorithm."\n"
-            .$time."\n"
-            .$credentialScope."\n"
-            .$hashedCanonicalRequest;
-
-        // step 3: sign string
-        $secretDate = hash_hmac("SHA256", $date, "TC3".$this->SecretKey, true);
-        $secretService = hash_hmac("SHA256", $this->service, $secretDate, true);
-        $secretSigning = hash_hmac("SHA256", "tc3_request", $secretService, true);
-        $signature = hash_hmac("SHA256", $stringToSign, $secretSigning);
-
-        // step 4: build authorization
-        $authorization = $algorithm
-            ." Credential=".$this->SecretId."/".$credentialScope
-            .", SignedHeaders=content-type;host, Signature=".$signature;
-
-        return $authorization;
-    }
-
-    private function curl_post($payload, $header)
-    {
-        $url = 'https://'.$this->endpoint.'/';
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-        $response = curl_exec($ch);
-        $errno = curl_errno($ch);
-        if ($errno) {
-            $this->setError('Curl error: ' . curl_error($ch));
-        }
-        curl_close($ch);
-        if ($errno) return false;
-
-        $arr = json_decode($response, true);
-        if ($arr) {
-            if (isset($arr['Response']['Error'])) {
-                $this->setError($arr['Response']['Error']['Message']);
-                return false;
-            } else {
-                return $arr['Response'];
-            }
-        } else {
-            $this->setError('返回数据解析失败');
+        try{
+            return $this->client->request($action, $param);
+        }catch(Exception $e){
+            $this->setError($e->getMessage());
             return false;
         }
     }

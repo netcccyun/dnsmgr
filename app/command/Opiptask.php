@@ -12,7 +12,7 @@ use think\console\input\Option;
 use think\console\Output;
 use think\facade\Db;
 use think\facade\Config;
-use app\lib\OptimizeService;
+use app\service\OptimizeService;
 
 class Opiptask extends Command
 {

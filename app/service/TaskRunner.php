@@ -1,12 +1,15 @@
 <?php
 
-namespace app\lib;
+namespace app\service;
 
 use app\lib\NewDb;
-use app\lib\CheckUtils;
 use app\lib\DnsHelper;
-use app\lib\MsgNotice;
+use app\utils\CheckUtils;
+use app\utils\MsgNotice;
 
+/**
+ * 容灾监控任务执行
+ */
 class TaskRunner
 {
     private $conn;

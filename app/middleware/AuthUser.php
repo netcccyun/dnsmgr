@@ -21,7 +21,7 @@ class AuthUser
                     $user = Db::name('user')->where('id', $uid)->find();
                     if ($user && $user['status'] == 1) {
                         $session = md5($user['id'].$user['password']);
-                        if ($session == $sid && $expiretime > time()) {
+                        if ($session === $sid && $expiretime > time()) {
                             $islogin = true;
                         }
                         $user['type'] = 'user';
@@ -34,7 +34,7 @@ class AuthUser
                     $user = Db::name('domain')->where('id', $uid)->find();
                     if ($user && $user['is_sso'] == 1) {
                         $session = md5($user['id'].$user['name']);
-                        if ($session == $sid && $expiretime > time()) {
+                        if ($session === $sid && $expiretime > time()) {
                             $islogin = true;
                         }
                         $user['username'] = $user['name'];
