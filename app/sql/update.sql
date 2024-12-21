@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_cert_order` (
   `processid` varchar(32) DEFAULT NULL,
   `issuetime` datetime DEFAULT NULL,
   `expiretime` datetime DEFAULT NULL,
-  `issuer` varchar(100) NOT NULL,
+  `issuer` varchar(100) DEFAULT NULL,
   `status` tinyint(1) NOT NULL DEFAULT '0',
   `error` varchar(300) DEFAULT NULL,
   `isauto` tinyint(1) NOT NULL DEFAULT '0',
