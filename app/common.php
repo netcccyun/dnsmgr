@@ -5,6 +5,10 @@ use app\model\Config;
 use think\facade\Db;
 use GuzzleHttp\Client;
 use think\facade\Request;
+use Pdp\Rules;
+use Pdp\Domain;
+
+use GuzzleHttp\Exception\RequestException;
 
 function get_curl(string $url, $post = 0, $referer = 0, $cookie = 0, $header = 0, $ua = 0, $nobody = 0)
 {
@@ -288,6 +292,16 @@ function convert_second($s)
     }
 }
 
+function getMainDomain($host)
+{
+    $publicSuffixList = Rules::fromPath(app()->getBasePath() . 'data' . DIRECTORY_SEPARATOR . 'public_suffix_list.dat');
+    if (filter_var($host, FILTER_VALIDATE_IP)) return $host;
+    $domain_check = Domain::fromIDNA2008($host);
+    $result = $publicSuffixList->resolve($domain_check);
+    $domain_parse = $result->suffix()->toString();
+    return $domain_parse ?: $host;
+}
+
 function check_proxy($url, $proxy_server, $proxy_port, $type, $proxy_user, $proxy_pwd)
 {
     if ($type == 'https') {
@@ -326,3 +340,88 @@ function check_proxy($url, $proxy_server, $proxy_port, $type, $proxy_user, $prox
         throw new Exception('HTTP状态码异常：' . $httpCode);
     }
 }
+
+
+
+function curl_client($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = 'GET', $timeout = 5): array
+{
+    $client = new Client([
+        'timeout' => $timeout,
+        'verify' => false, // 禁用 SSL 验证
+    ]);
+
+    $options = [
+        'headers' => [
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36',
+        ],
+        'curl' => [], // 用于设置额外的 cURL 配置
+    ];
+
+    if ($headers) {
+        $options['headers'] = array_merge($options['headers'], $headers);
+    }
+
+    if ($data) {
+        if (strtoupper($method) === 'POST') {
+            $options['form_params'] = $data; // 表单提交
+        } else {
+            $options['body'] = $data; // 其他方法用 body 提交
+        }
+    }
+
+    if ($cookie) {
+        $options['headers']['Cookie'] = $cookie;
+    }
+
+    if ($referer) {
+        $options['headers']['Referer'] = $referer;
+    }
+
+    if ($proxy) {
+        $proxy_server = config_get('proxy_server');
+        $proxy_port = intval(config_get('proxy_port'));
+        $proxy_user = config_get('proxy_user');
+        $proxy_pwd = config_get('proxy_pwd');
+        $proxy_type = strtolower(config_get('proxy_type'));
+
+        $proxy_url = "$proxy_server:$proxy_port";
+
+        $options['curl'][CURLOPT_PROXY] = $proxy_url;
+
+        // 设置代理类型
+        if ($proxy_type === 'socks4') {
+            $options['curl'][CURLOPT_PROXYTYPE] = CURLPROXY_SOCKS4;
+        } elseif ($proxy_type === 'socks5') {
+            $options['curl'][CURLOPT_PROXYTYPE] = CURLPROXY_SOCKS5;
+        } else {
+            $options['curl'][CURLOPT_PROXYTYPE] = CURLPROXY_HTTP;
+        }
+
+        // 设置代理认证
+        if ($proxy_user && $proxy_pwd) {
+            $options['curl'][CURLOPT_PROXYUSERPWD] = "$proxy_user:$proxy_pwd";
+        }
+    }
+
+    try {
+        $response = $client->request($method, $url, $options);
+
+        return [
+            'code' => $response->getStatusCode(),
+            'redirect_url' => $response->getHeaderLine('Location'),
+            'header' => $response->getHeaders(),
+            'body' => $response->getBody()->getContents(),
+        ];
+    } catch (RequestException $e) {
+        if ($e->hasResponse()) {
+            return [
+                'code' => $e->getResponse()->getStatusCode(),
+                'redirect_url' => $e->getResponse()->getHeaderLine('Location'),
+                'header' => $e->getResponse()->getHeaders(),
+                'body' => $e->getResponse()->getBody()->getContents(),
+            ];
+        }
+        throw new Exception('HttpClient error: ' . $e->getMessage());
+    }
+}
+

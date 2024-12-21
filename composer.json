@@ -1,7 +1,7 @@
 {
     "name": "coolxitech/dnsmgr",
     "description": "聚合DNS管理系统",
-    "version": "1.7.2",
+    "version": "1.7.3",
     "type": "project",
     "keywords": [
         "thinkphp",
@@ -49,7 +49,8 @@
         "topthink/think-view": "^2.0",
         "topthink/think-captcha": "^3.0",
         "guzzlehttp/guzzle": "^7.9",
-        "coolxitech/cloudflare-sdk": "dev-master"
+        "coolxitech/cloudflare-sdk": "dev-master",
+        "jeremykendall/php-domain-parser": "^6.0"
     },
     "require-dev": {
         "symfony/var-dumper": "^4.2",
