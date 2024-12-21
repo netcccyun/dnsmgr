@@ -43,6 +43,7 @@
         "ext-pdo": "*",
         "ext-gd": "*",
         "ext-curl": "*",
+        "ext-intl": "*",
         "topthink/framework": "^8.0",
         "topthink/think-orm": "^3.0",
         "topthink/think-filesystem": "^2.0",

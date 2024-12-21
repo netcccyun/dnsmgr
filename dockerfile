@@ -26,10 +26,8 @@ RUN sed -i 's|dl-cdn.alpinelinux.org|mirrors.aliyun.com|g' /etc/apk/repositories
         brotli-dev
 
 RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-xpm --with-avif --with-freetype=/usr/include/freetype2 --with-jpeg=/usr/include\
-        && docker-php-ext-install gd \
-        && docker-php-ext-install zip \
-        && docker-php-ext-install pdo pdo_mysql \
-        && docker-php-ext-enable opcache \
+        && docker-php-ext-install gd zip intl pdo pdo_mysql opcache \
+        && docker-php-ext-enable gd zip intl pdo pdo_mysql opcache \
         && pecl install swoole \
         && docker-php-ext-enable swoole \
         && rm -rf /var/cache/apk/*
