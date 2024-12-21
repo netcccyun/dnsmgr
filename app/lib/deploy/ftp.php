@@ -38,7 +38,7 @@ class ftp implements DeployInterface
             fclose($temp_stream);
 
             $temp_stream = fopen('php://temp', 'r+');
-            fwrite($temp_stream, $fullchain);
+            fwrite($temp_stream, $privatekey);
             rewind($temp_stream);
             if (ftp_fput($conn_id, $config['pem_key_file'], $temp_stream, FTP_BINARY)) {
                 $this->log('私钥文件上传成功：' . $config['pem_key_file']);

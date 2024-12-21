@@ -90,7 +90,7 @@ class opanel implements DeployInterface
     {
         $url = $this->url . $path;
 
-        $timestamp = getMillisecond();
+        $timestamp = time().'';
         $token = md5('1panel' . $this->key . $timestamp);
         $headers = [
             '1Panel-Token: '.$token,

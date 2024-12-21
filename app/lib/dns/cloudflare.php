@@ -59,12 +59,13 @@ class cloudflare implements DnsInterface
     //获取解析记录列表
     public function getDomainRecords($PageNumber = 1, $PageSize = 20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null)
     {
+        if (!isNullOrEmpty($Value)) $KeyWord = $Value;
+        $param = ['type' => $Type, 'search' => $KeyWord, 'page' => $PageNumber, 'per_page' => $PageSize];
         if (!isNullOrEmpty($SubDomain)) {
             if ($SubDomain == '@') $SubDomain = $this->domain;
             else $SubDomain .= '.' . $this->domain;
+            $param['name'] = $SubDomain;
         }
-        if (!isNullOrEmpty($Value)) $KeyWord = $Value;
-        $param = ['name' => $SubDomain, 'type' => $Type, 'search' => $KeyWord, 'page' => $PageNumber, 'per_page' => $PageSize];
         if (!isNullOrEmpty($Line)) {
             $param['proxied'] = $Line == '1' ? 'true' : 'false';
         }
