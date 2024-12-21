@@ -81,6 +81,12 @@
             "type": "composer",
             "url": "https://mirrors.aliyun.com/composer/",
             "canonical": false
+        },
+        {
+            "description": "Composer中文网镜像",
+            "type": "composer",
+            "url": "https://packagist.phpcomposer.com",
+            "canonical": false
         }
     ]
 }
