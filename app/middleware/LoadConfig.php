@@ -21,7 +21,7 @@ class LoadConfig
     public function handle($request, \Closure $next)
     {
         if (!file_exists(app()->getRootPath().'.env')) {
-            if (strpos($this->request->url(), '/install') === false) {
+            if (strpos($request->url(), '/install') === false) {
                 return redirect((string)url('/install'))->header([
                     'Cache-Control' => 'no-store, no-cache, must-revalidate',
                     'Pragma' => 'no-cache',
