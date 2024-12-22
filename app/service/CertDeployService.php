@@ -131,6 +131,7 @@ class CertDeployService
     private function saveLog($txt)
     {
         if (empty($this->task['processid'])) return;
+        if (!is_dir(app()->getRuntimePath() . 'log')) mkdir(app()->getRuntimePath() . 'log');
         $file_name = app()->getRuntimePath().'log/'.$this->task['processid'].'.log';
         file_put_contents($file_name, $txt . PHP_EOL, FILE_APPEND);
         if(php_sapi_name() == 'cli'){
