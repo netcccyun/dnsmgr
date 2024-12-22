@@ -42,6 +42,7 @@ class opanel implements DeployInterface
         $errmsg = null;
         foreach ($data['items'] as $row) {
             if (empty($row['primaryDomain'])) continue;
+            $cert_domains = [];
             $cert_domains[] = $row['primaryDomain'];
             if(!empty($row['domains'])) $cert_domains += explode(',', $row['domains']);
             $flag = false;
@@ -96,7 +97,7 @@ class opanel implements DeployInterface
             '1Panel-Token: '.$token,
             '1Panel-Timestamp: '.$timestamp
         ];
-        $body = $params ? json_encode($params) : null;
+        $body = $params ? json_encode($params) : '{}';
         if($body) $headers[] = 'Content-Type: application/json';
         $response = curl_client($url, $body, null, null, $headers, $this->proxy);
         $result = json_decode($response['body'], true);
