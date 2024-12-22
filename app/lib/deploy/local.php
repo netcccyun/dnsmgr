@@ -20,8 +20,8 @@ class local implements DeployInterface
         }
         if ($config['format'] == 'pem') {
             $dir = dirname($config['pem_cert_file']);
-            if (!is_dir($dir)) throw new Exception($dir.' 目录不存在');
-            if (!is_writable($dir)) throw new Exception($dir.' 目录不可写');
+            if (!is_dir($dir)) throw new Exception($dir . ' 目录不存在');
+            if (!is_writable($dir)) throw new Exception($dir . ' 目录不可写');
 
             if (file_put_contents($config['pem_cert_file'], $fullchain)) {
                 $this->log('证书已保存到：' . $config['pem_cert_file']);
@@ -35,8 +35,8 @@ class local implements DeployInterface
             }
         } elseif ($config['format'] == 'pfx') {
             $dir = dirname($config['pfx_file']);
-            if (!is_dir($dir)) throw new Exception($dir.' 目录不存在');
-            if (!is_writable($dir)) throw new Exception($dir.' 目录不可写');
+            if (!is_dir($dir)) throw new Exception($dir . ' 目录不存在');
+            if (!is_writable($dir)) throw new Exception($dir . ' 目录不可写');
 
             $pfx = \app\lib\CertHelper::getPfx($fullchain, $privatekey, $config['pfx_pass'] ? $config['pfx_pass'] : null);
             if (file_put_contents($config['pfx_file'], $pfx)) {
@@ -47,10 +47,10 @@ class local implements DeployInterface
         }
         if (!empty($config['cmd'])) {
             $cmds = explode("\n", $config['cmd']);
-            foreach($cmds as $cmd){
+            foreach ($cmds as $cmd) {
                 $cmd = trim($cmd);
-                if(empty($cmd)) continue;
-                $this->log('执行命令：'.$cmd);
+                if (empty($cmd)) continue;
+                $this->log('执行命令：' . $cmd);
                 $output = [];
                 $ret = 0;
                 exec($cmd, $output, $ret);

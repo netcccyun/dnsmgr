@@ -31,11 +31,11 @@ class huawei implements DeployInterface
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
         $config['cert_name'] = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
-        if($config['product'] == 'cdn'){
+        if ($config['product'] == 'cdn') {
             $this->deploy_cdn($fullchain, $privatekey, $config);
-        }elseif($config['product'] == 'elb'){
+        } elseif ($config['product'] == 'elb') {
             $this->deploy_elb($fullchain, $privatekey, $config);
-        }elseif($config['product'] == 'waf'){
+        } elseif ($config['product'] == 'waf') {
             $this->deploy_waf($fullchain, $privatekey, $config);
         }
     }
@@ -56,7 +56,7 @@ class huawei implements DeployInterface
                 ],
             ],
         ];
-        $client->request('PUT', '/v1.1/cdn/configuration/domains/'.$config['domain'].'/configs', null, $param);
+        $client->request('PUT', '/v1.1/cdn/configuration/domains/' . $config['domain'] . '/configs', null, $param);
         $this->log('CDN域名 ' . $config['domain'] . ' 部署证书成功！');
     }
 
@@ -65,15 +65,15 @@ class huawei implements DeployInterface
         if (empty($config['project_id'])) throw new Exception('项目ID不能为空');
         if (empty($config['region_id'])) throw new Exception('区域ID不能为空');
         if (empty($config['cert_id'])) throw new Exception('证书ID不能为空');
-        $endpoint = 'elb.'.$config['region_id'].'.myhuaweicloud.com';
+        $endpoint = 'elb.' . $config['region_id'] . '.myhuaweicloud.com';
         $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, $endpoint);
-        try{
-            $data = $client->request('GET', '/v3/'.$config['project_id'].'/elb/certificates/'.$config['cert_id']);
-        }catch(Exception $e){
-            throw new Exception('证书详情查询失败：'.$e->getMessage());
+        try {
+            $data = $client->request('GET', '/v3/' . $config['project_id'] . '/elb/certificates/' . $config['cert_id']);
+        } catch (Exception $e) {
+            throw new Exception('证书详情查询失败：' . $e->getMessage());
         }
-        if(isset($data['certificate']['certificate']) && trim($data['certificate']['certificate']) == trim($fullchain)){
-            $this->log('ELB证书ID '.$config['cert_id'].' 已存在，无需重复部署');
+        if (isset($data['certificate']['certificate']) && trim($data['certificate']['certificate']) == trim($fullchain)) {
+            $this->log('ELB证书ID ' . $config['cert_id'] . ' 已存在，无需重复部署');
             return;
         }
         $param = [
@@ -83,7 +83,7 @@ class huawei implements DeployInterface
                 'domain' => implode(',', $config['domainList']),
             ],
         ];
-        $client->request('PUT', '/v3/'.$config['project_id'].'/elb/certificates/'.$config['cert_id'], null, $param);
+        $client->request('PUT', '/v3/' . $config['project_id'] . '/elb/certificates/' . $config['cert_id'], null, $param);
         $this->log('ELB证书ID ' . $config['cert_id'] . ' 更新证书成功！');
     }
 
@@ -92,15 +92,15 @@ class huawei implements DeployInterface
         if (empty($config['project_id'])) throw new Exception('项目ID不能为空');
         if (empty($config['region_id'])) throw new Exception('区域ID不能为空');
         if (empty($config['cert_id'])) throw new Exception('证书ID不能为空');
-        $endpoint = 'waf.'.$config['region_id'].'.myhuaweicloud.com';
+        $endpoint = 'waf.' . $config['region_id'] . '.myhuaweicloud.com';
         $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, $endpoint);
-        try{
-            $data = $client->request('GET', '/v1/'.$config['project_id'].'/waf/certificates/'.$config['cert_id']);
-        }catch(Exception $e){
-            throw new Exception('证书详情查询失败：'.$e->getMessage());
+        try {
+            $data = $client->request('GET', '/v1/' . $config['project_id'] . '/waf/certificates/' . $config['cert_id']);
+        } catch (Exception $e) {
+            throw new Exception('证书详情查询失败：' . $e->getMessage());
         }
-        if(isset($data['content']) && trim($data['content']) == trim($fullchain)){
-            $this->log('WAF证书ID '.$config['cert_id'].' 已存在，无需重复部署');
+        if (isset($data['content']) && trim($data['content']) == trim($fullchain)) {
+            $this->log('WAF证书ID ' . $config['cert_id'] . ' 已存在，无需重复部署');
             return;
         }
         $param = [
@@ -108,7 +108,7 @@ class huawei implements DeployInterface
             'content' => $fullchain,
             'key' => $privatekey,
         ];
-        $client->request('PUT', '/v1/'.$config['project_id'].'/waf/certificates/'.$config['cert_id'], null, $param);
+        $client->request('PUT', '/v1/' . $config['project_id'] . '/waf/certificates/' . $config['cert_id'], null, $param);
         $this->log('WAF证书ID ' . $config['cert_id'] . ' 更新证书成功！');
     }
 

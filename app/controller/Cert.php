@@ -251,6 +251,7 @@ class Cert extends BaseController
                 'keytype' => input('post.keytype'),
                 'keysize' => input('post.keysize'),
                 'addtime' => date('Y-m-d H:i:s'),
+                'issuer' => '',
                 'status' => 0,
             ];
             $domains = array_map('trim', $domains);

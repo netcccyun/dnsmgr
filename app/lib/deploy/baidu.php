@@ -32,18 +32,18 @@ class baidu implements DeployInterface
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
         $config['cert_name'] = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
-        
+
         $client = new BaiduCloud($this->AccessKeyId, $this->SecretAccessKey, 'cdn.baidubce.com');
-        try{
-            $data = $client->request('GET', '/v2/'.$config['domain'].'/certificates');
-            if(isset($data['certName']) && $data['certName'] == $config['cert_name']){
+        try {
+            $data = $client->request('GET', '/v2/' . $config['domain'] . '/certificates');
+            if (isset($data['certName']) && $data['certName'] == $config['cert_name']) {
                 $this->log('CDN域名 ' . $config['domain'] . ' 证书已存在，无需重复部署');
                 return;
             }
-        }catch(Exception $e){
+        } catch (Exception $e) {
             $this->log($e->getMessage());
         }
-        
+
         $param = [
             'httpsEnable' => 'ON',
             'certificate' => [
@@ -52,7 +52,7 @@ class baidu implements DeployInterface
                 'certPrivateData' => $privatekey,
             ],
         ];
-        $data = $client->request('PUT', '/v2/'.$config['domain'].'/certificates', null, $param);
+        $data = $client->request('PUT', '/v2/' . $config['domain'] . '/certificates', null, $param);
         $info['cert_id'] = $data['certId'];
         $this->log('CDN域名 ' . $config['domain'] . ' 证书部署成功！');
     }

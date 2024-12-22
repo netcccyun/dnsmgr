@@ -81,12 +81,12 @@ class ftp implements DeployInterface
             throw new Exception('端口不合法');
         }
 
-        if($this->config['secure'] == '1'){
+        if ($this->config['secure'] == '1') {
             $conn_id = ftp_ssl_connect($this->config['host'], intval($this->config['port']), 10);
             if (!$conn_id) {
                 throw new Exception('FTP服务器无法连接(SSL)');
             }
-        }else{
+        } else {
             $conn_id = ftp_connect($this->config['host'], intval($this->config['port']), 10);
             if (!$conn_id) {
                 throw new Exception('FTP服务器无法连接');

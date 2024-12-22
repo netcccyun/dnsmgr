@@ -71,7 +71,7 @@ class huoshan implements DeployInterface
         try {
             $data = $client->request('POST', 'AddCertificate', $param);
         } catch (Exception $e) {
-            if(strpos($e->getMessage(), '证书已存在，ID为')!==false){
+            if (strpos($e->getMessage(), '证书已存在，ID为') !== false) {
                 $cert_id = trim(getSubstr($e->getMessage(), '证书已存在，ID为', '。'));
                 $this->log('证书已存在 CertId=' . $cert_id);
                 return $cert_id;

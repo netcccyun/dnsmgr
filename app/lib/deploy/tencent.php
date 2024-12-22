@@ -58,7 +58,7 @@ class tencent implements DeployInterface
             if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
             if ($config['product'] == 'waf') {
                 $this->client = new TencentCloud($this->SecretId, $this->SecretKey, 'ssl.tencentcloudapi.com', 'ssl', '2019-12-05', $config['region']);
-            } elseif (in_array($config['product'], ['tse','scf'])) {
+            } elseif (in_array($config['product'], ['tse', 'scf'])) {
                 if (empty($config['regionid'])) throw new Exception('所属地域ID不能为空');
                 $this->client = new TencentCloud($this->SecretId, $this->SecretKey, 'ssl.tencentcloudapi.com', 'ssl', '2019-12-05', $config['regionid']);
             }
@@ -219,12 +219,12 @@ class tencent implements DeployInterface
             throw new Exception('获取云函数自定义域名失败：' . $e->getMessage());
         }
 
-        if(isset($data['CertConfig']['CertificateId']) && $data['CertConfig']['CertificateId'] == $cert_id){
+        if (isset($data['CertConfig']['CertificateId']) && $data['CertConfig']['CertificateId'] == $cert_id) {
             $this->log('云函数自定义域名 ' . $config['domain'] . ' 已部署证书，无需重复部署');
             return;
         }
         $data['CertConfig']['CertificateId'] = $cert_id;
-        if($data['Protocol'] == 'HTTP') $data['Protocol'] = 'HTTP&HTTPS';
+        if ($data['Protocol'] == 'HTTP') $data['Protocol'] = 'HTTP&HTTPS';
 
         $param = [
             'Domain' => $config['domain'],

@@ -38,11 +38,11 @@ class qiniu implements DeployInterface
 
         $cert_id = $this->get_cert_id($fullchain, $privatekey, $certInfo['subject']['CN'], $cert_name);
 
-        if($config['product'] == 'cdn'){
+        if ($config['product'] == 'cdn') {
             $this->deploy_cdn($domain, $cert_id);
-        }elseif($config['product'] == 'oss'){
+        } elseif ($config['product'] == 'oss') {
             $this->deploy_oss($domain, $cert_id);
-        }else{
+        } else {
             throw new Exception('未知的产品类型');
         }
         $info['cert_id'] = $cert_id;
