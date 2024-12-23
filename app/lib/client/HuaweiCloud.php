@@ -150,6 +150,7 @@ class HuaweiCloud
             curl_close($ch);
             throw new Exception('Curl error: ' . curl_error($ch));
         }
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         $arr = json_decode($response, true);
@@ -164,7 +165,6 @@ class HuaweiCloud
                 return $arr;
             }
         } else {
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if ($httpCode >= 200 && $httpCode < 300) {
                 return null;
             } else {

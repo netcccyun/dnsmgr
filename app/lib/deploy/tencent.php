@@ -104,9 +104,14 @@ class tencent implements DeployInterface
 
     private function deploy_common($product, $cert_id, $instance_id)
     {
+        if (in_array($product, ['cdn', 'waf', 'teo', 'ddos', 'live', 'vod']) && strpos($instance_id, ',') !== false) {
+            $instance_ids = explode(',', $instance_id);
+        } else {
+            $instance_ids = [$instance_id];
+        }
         $param = [
             'CertificateId' => $cert_id,
-            'InstanceIdList' => [$instance_id],
+            'InstanceIdList' => $instance_ids,
             'ResourceType' => $product,
         ];
         $data = $this->client->request('DeployCertificateInstance', $param);

@@ -600,6 +600,7 @@ class DeployHelper
                     'type' => 'input',
                     'placeholder' => '',
                     'show' => 'product!=\'clb\'&&product!=\'tke\'',
+                    'note' => 'CDN、EO、WAF多个域名可用,隔开，其他只能填写1个域名',
                     'required' => true,
                 ],
             ],
@@ -813,7 +814,7 @@ class DeployHelper
                 'domain' => [
                     'name' => '绑定的域名',
                     'type' => 'input',
-                    'placeholder' => '多个域名可使用英文逗号分隔',
+                    'placeholder' => '多个域名可使用,分隔',
                     'required' => true,
                 ],
             ],
@@ -1266,7 +1267,7 @@ class DeployHelper
     ];
 
     public static $class_config = [
-        1 => '自建面板',
+        1 => '自建系统',
         2 => '云服务商',
         3 => '服务器',
     ];

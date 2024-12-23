@@ -38,7 +38,7 @@ class Auth extends BaseController
             $user = Db::name('user')->where('username', $username)->find();
             if ($user && password_verify($password, $user['password'])) {
                 if ($user['status'] == 0) return json(['code' => -1, 'msg' => '此用户已被封禁', 'vcode' => 1]);
-                if ($user['totp_open'] == 1 && !empty($user['totp_secret'])) {
+                if (isset($user['totp_open']) && $user['totp_open'] == 1 && !empty($user['totp_secret'])) {
                     session('pre_login_user', $user['id']);
                     if (file_exists($login_limit_file)) {
                         unlink($login_limit_file);
@@ -53,7 +53,7 @@ class Auth extends BaseController
             } else {
                 if ($user) {
                     Db::name('log')->insert(['uid' => $user['id'], 'action' => '登录失败', 'data' => 'IP:' . $this->clientip, 'addtime' => date("Y-m-d H:i:s")]);
-                    if ($user['totp_open'] == 1 && !empty($user['totp_secret'])) $login_limit_count = 10;
+                    if (isset($user['totp_open']) && $user['totp_open'] == 1 && !empty($user['totp_secret'])) $login_limit_count = 10;
                 }
                 if (!file_exists($login_limit_file)) {
                     $login_limit = ['count' => 0, 'time' => 0];

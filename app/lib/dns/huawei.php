@@ -78,6 +78,7 @@ class huawei implements DnsInterface
             foreach ($data['recordsets'] as $row) {
                 if ($row['name'] == $row['zone_name']) $row['name'] = '@';
                 if ($row['type'] == 'MX') list($row['mx'], $row['records']) = explode(' ', $row['records'][0]);
+                if ($row['type'] == 'TXT') $row['records'] = array_map(function($v){return trim($v, '"');}, $row['records']);
                 $list[] = [
                     'RecordId' => $row['id'],
                     'Domain' => rtrim($row['zone_name'], '.'),
@@ -111,6 +112,7 @@ class huawei implements DnsInterface
         if ($data) {
             if ($data['name'] == $data['zone_name']) $data['name'] = '@';
             if ($data['type'] == 'MX') list($data['mx'], $data['records']) = explode(' ', $data['records'][0]);
+            if ($data['type'] == 'TXT') $data['records'] = array_map(function($v){return trim($v, '"');}, $data['records']);
             return [
                 'RecordId' => $data['id'],
                 'Domain' => rtrim($data['zone_name'], '.'),
