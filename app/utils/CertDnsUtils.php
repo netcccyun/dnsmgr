@@ -39,6 +39,9 @@ class CertDnsUtils
             usort($list, function ($a, $b) {
                 return strcmp($a['name'], $b['name']);
             });
+            if ($drow['type'] == 'huawei') {
+                $list = self::getHuaweiDnsRecords($list);
+            }
             $records = [];
             foreach ($list as $row) {
                 $domain = $row['name'] . '.' . $mainDomain;
@@ -46,7 +49,8 @@ class CertDnsUtils
                 if (!$records[$row['name']]) throw new Exception('获取'.$domain.'记录列表失败，'.$dns->getError());
 
                 $filter_records = array_filter($records[$row['name']]['list'], function ($v) use ($row) {
-                    return $v['Type'] == $row['type'] && $v['Value'] == $row['value'];
+                    if (is_array($v['Value'])) $v['Value'] = implode(',', $v['Value']);
+                    return $v['Type'] == $row['type'] && ($v['Value'] == $row['value'] || rtrim($v['Value'], '.') == $row['value']);
                 });
                 if (!empty($filter_records)) {
                     foreach ($filter_records as $recordid => $record) {
@@ -74,6 +78,22 @@ class CertDnsUtils
         if (!empty($cnameDomainList)) {
             self::addDns($cnameDomainList, $log);
         }
+    }
+
+    private static function getHuaweiDnsRecords($list)
+    {
+        //将name相同的TXT记录合并
+        $txt_records = [];
+        foreach ($list as $key => $row) {
+            if ($row['type'] == 'TXT') {
+                $txt_records[$row['name']][] = $row['value'];
+                unset($list[$key]);
+            }
+        }
+        foreach ($txt_records as $name => $rows) {
+            $list[] = ['name' => $name, 'type' => 'TXT', 'value' => '"' . implode('","', $rows) . '"'];
+        }
+        return $list;
     }
 
     public static function delDns($dnsList, callable $log, $cname = false)
@@ -107,6 +127,9 @@ class CertDnsUtils
             usort($list, function ($a, $b) {
                 return strcmp($a['name'], $b['name']);
             });
+            if ($drow['type'] == 'huawei') {
+                $list = self::getHuaweiDnsRecords($list);
+            }
             $records = [];
             foreach ($list as $row) {
                 //if ($row['type'] == 'CAA') continue;
@@ -115,6 +138,7 @@ class CertDnsUtils
                 if (!$records[$row['name']]) throw new Exception('获取'.$domain.'记录列表失败，'.$dns->getError());
 
                 $filter_records = array_filter($records[$row['name']]['list'], function ($v) use ($row) {
+                    if (is_array($v['Value'])) $v['Value'] = implode(',', $v['Value']);
                     return $v['Type'] == $row['type'] && ($v['Value'] == $row['value'] || rtrim($v['Value'], '.') == $row['value']);
                 });
                 if (empty($filter_records)) continue;
