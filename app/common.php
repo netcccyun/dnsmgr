@@ -7,6 +7,7 @@ function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $header = 0, $ua =
 {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     $httpheader[] = "Accept: */*";

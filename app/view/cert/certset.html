@@ -64,6 +64,10 @@
 		<label class="col-sm-3 control-label">Telegram机器人通知</label>
 		<div class="col-sm-9"><select class="form-control" name="cert_notice_tgbot" default="{:config_get('cert_notice_tgbot')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
 	  </div>
+	  <div class="form-group">
+		<label class="col-sm-3 control-label">群机器人Webhook</label>
+		<div class="col-sm-9"><select class="form-control" name="cert_notice_webhook" default="{:config_get('cert_notice_webhook')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
+	  </div>
 	<div class="form-group">
 	  <div class="col-sm-offset-3 col-sm-9"><input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/></div>
 	</div>

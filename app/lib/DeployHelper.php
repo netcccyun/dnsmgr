@@ -342,6 +342,63 @@ class DeployHelper
             ],
             'taskinputs' => [],
         ],
+        'mwpanel' => [
+            'name' => 'mdserver-web',
+            'class' => 1,
+            'icon' => 'mwpanel.ico',
+            'note' => null,
+            'tasknote' => '',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'MW面板地址',
+                    'note' => '填写规则如：http://192.168.1.100:8888 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'appid' => [
+                    'name' => '应用ID',
+                    'type' => 'input',
+                    'placeholder' => 'MW面板设置->API接口',
+                    'required' => true,
+                ],
+                'appsecret' => [
+                    'name' => '应用密钥',
+                    'type' => 'input',
+                    'placeholder' => '面板设置->API接口',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'type' => [
+                    'name' => '部署类型',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => 'MW面板站点的证书',
+                        '1' => 'MW面板本身的证书',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
+                'sites' => [
+                    'name' => '网站名称列表',
+                    'type' => 'textarea',
+                    'placeholder' => '填写要部署证书的网站名称，每行一个',
+                    'note' => '网站名称，即为网站创建时绑定的第一个域名',
+                    'show' => 'type==0',
+                    'required' => true,
+                ],
+            ],
+        ],
         'aliyun' => [
             'name' => '阿里云',
             'class' => 2,

@@ -109,6 +109,26 @@
 与<a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">@BotFather</a>对话，使用/newbot命令创建一个新的机器人，根据提示输入机器人的名称和用户名，可得到Token，或使用/mybots命令查看已创建的机器人；与<a href="https://t.me/getmyid_bot" target="_blank" rel="noopener noreferrer">@getmyid_bot</a>对话，可得到Chat Id<br/>
 </div>
 </div>
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">群机器人Webhook</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">Webhook地址</label>
+	  <div class="col-sm-9"><input type="text" name="webhook_url" value="{:config_get('webhook_url')}" class="form-control"/></div>
+	</div>
+	<div class="form-group">
+	  <div class="col-sm-offset-3 col-sm-9">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+		<a href="javascript:webhooktest()" class="btn btn-default btn-block">发送测试消息</a>
+	</div>
+	</div>
+  </form>
+</div>
+<div class="panel-footer">
+仅支持填写企业微信、钉钉、飞书群机器人的Webhook地址
+</div>
+</div>
 </div>
 </div>
 {/block}
@@ -139,7 +159,7 @@ function saveSetting(obj){
 		success : function(data) {
 			layer.close(ii);
 			if(data.code == 0){
-				layer.alert('设置保存成功！<br/>重启检测进程或容器后生效', {
+				layer.alert('设置保存成功！<br/>如有使用容灾切换，重启检测进程后生效', {
 					icon: 1,
 					closeBtn: false
 				}, function(){
@@ -181,6 +201,26 @@ function tgbottest(){
 	$.ajax({
 		type : 'GET',
 		url : '/system/tgbottest',
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert(data.msg, {icon: 1});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+}
+function webhooktest(){
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'GET',
+		url : '/system/webhooktest',
 		dataType : 'json',
 		success : function(data) {
 			layer.close(ii);

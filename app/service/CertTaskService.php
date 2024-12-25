@@ -31,7 +31,7 @@ class CertTaskService
                 $retcode = $service->process();
                 if ($retcode == 3) {
                     echo 'ID:'.$row['id'].' 证书已签发成功！'.PHP_EOL;
-                    if($row['issend'] == 0) MsgNotice::cert_send($row['id'], true);
+                    if($row['issend'] == 0) MsgNotice::cert_order_send($row['id'], true);
                 } elseif ($retcode == 1) {
                     echo 'ID:'.$row['id'].' 添加DNS记录成功！'.PHP_EOL;
                 }
@@ -41,7 +41,7 @@ class CertTaskService
                 if ($e->getCode() == 102) {
                     break;
                 } elseif ($e->getCode() == 103) {
-                    if($row['issend'] == 0) MsgNotice::cert_send($row['id'], false);
+                    if($row['issend'] == 0) MsgNotice::cert_order_send($row['id'], false);
                 } else {
                     $failcount++;
                 }
@@ -74,14 +74,14 @@ class CertTaskService
                 $service = new CertDeployService($row['id']);
                 $service->process();
                 echo 'ID:'.$row['id'].' 部署任务执行成功！'.PHP_EOL;
-                if($row['issend'] == 0) MsgNotice::deploy_send($row['id'], true);
+                if($row['issend'] == 0) MsgNotice::cert_deploy_send($row['id'], true);
                 $count++;
             } catch (Exception $e) {
                 echo 'ID:'.$row['id'].' '.$e->getMessage().PHP_EOL;
                 if ($e->getCode() == 102) {
                     break;
                 } elseif ($e->getCode() == 103) {
-                    if($row['issend'] == 0) MsgNotice::deploy_send($row['id'], false);
+                    if($row['issend'] == 0) MsgNotice::cert_deploy_send($row['id'], false);
                 } else {
                     $count++;
                 }

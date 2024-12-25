@@ -110,6 +110,7 @@ Route::group(function () {
     Route::any('/system/proxyset', 'system/proxyset');
     Route::get('/system/mailtest', 'system/mailtest');
     Route::get('/system/tgbottest', 'system/tgbottest');
+    Route::get('/system/webhooktest', 'system/webhooktest');
     Route::post('/system/proxytest', 'system/proxytest');
 
 })->middleware(CheckLogin::class)

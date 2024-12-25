@@ -13,7 +13,7 @@ class MsgNotice
     {
         if ($action == 1) {
             $mail_title = 'DNS容灾切换-发生告警通知';
-            $mail_content = '尊敬的系统管理员，您好：<br/>您的域名 <b>'.$task['domain'].'</b> 的 <b>'.$task['main_value'].'</b> 记录发生了异常';
+            $mail_content = '尊敬的用户，您好：<br/>您的域名 <b>'.$task['domain'].'</b> 的 <b>'.$task['main_value'].'</b> 记录发生了异常';
             if ($task['type'] == 2) {
                 $mail_content .= '，已自动切换为备用解析记录 '.$task['backup_value'].' ';
             } elseif ($task['type'] == 1) {
@@ -22,11 +22,11 @@ class MsgNotice
                 $mail_content .= '，请及时处理';
             }
             if (!empty($result['errmsg'])) {
-                $mail_content .= '。<br/>异常信息：'.$result['errmsg'];
+                $mail_content .= '。<br/>异常信息：<font color="warning">'.$result['errmsg'].'</font>';
             }
         } else {
             $mail_title = 'DNS容灾切换-恢复正常通知';
-            $mail_content = '尊敬的系统管理员，您好：<br/>您的域名 <b>'.$task['domain'].'</b> 的 <b>'.$task['main_value'].'</b> 记录已恢复正常';
+            $mail_content = '尊敬的用户，您好：<br/>您的域名 <b>'.$task['domain'].'</b> 的 <b>'.$task['main_value'].'</b> 记录已恢复正常';
             if ($task['type'] == 2) {
                 $mail_content .= '，已自动切换回当前解析记录';
             } elseif ($task['type'] == 1) {
@@ -41,7 +41,7 @@ class MsgNotice
         if (!empty($task['remark'])) {
             $mail_content .= '<br/>备注：'.$task['remark'];
         }
-        $mail_content .= '<br/>'.self::$sitename.'<br/>'.date('Y-m-d H:i:s');
+        $mail_content .= '<br/><font color="grey">'.self::$sitename.'</font><br/><font color="grey">'.date('Y-m-d H:i:s').'</font>';
 
         if (config_get('notice_mail') == 1) {
             $mail_name = config_get('mail_recv') ? config_get('mail_recv') : config_get('mail_name');
@@ -49,16 +49,20 @@ class MsgNotice
         }
         if (config_get('notice_wxtpl') == 1) {
             $content = str_replace(['<br/>', '<b>', '</b>'], ["\n\n", '**', '**'], $mail_content);
-            self::send_wechat_tplmsg($mail_title, $content);
+            self::send_wechat_tplmsg($mail_title, strip_tags($content));
         }
         if (config_get('notice_tgbot') == 1) {
             $content = str_replace('<br/>', "\n", $mail_content);
-            $content = "<strong>".$mail_title."</strong>\n".$content;
+            $content = "<strong>".$mail_title."</strong>\n".strip_tags($content);
             self::send_telegram_bot($content);
+        }
+        if (config_get('notice_webhook') == 1) {
+            $content = str_replace(['<br/>', '<b>', '</b>'], ["\n", '**', '**'], $mail_content);
+            self::send_webhook($mail_title, $content);
         }
     }
 
-    public static function cert_send($id, $result)
+    public static function cert_order_send($id, $result)
     {
         $row = Db::name('cert_order')->field('id,aid,issuetime,expiretime,issuer,status,error')->where('id', $id)->find();
         if (!$row) return;
@@ -71,7 +75,7 @@ class MsgNotice
             } else {
                 $mail_title = $domainList[0] . '域名SSL证书签发成功通知';
             }
-            $mail_content = '尊敬的用户，您好：您的SSL证书已签发成功！<br/>证书账户：'.CertHelper::$cert_config[$type]['name'].'('.$row['aid'].')<br/>证书域名：'.implode('、', $domainList).'<br/>签发时间：'.$row['issuetime'].'<br/>到期时间：'.$row['expiretime'].'<br/>颁发机构：'.$row['issuer'];
+            $mail_content = '尊敬的用户，您好：您的SSL证书已签发成功！<br/><b>证书账户：</b> '.CertHelper::$cert_config[$type]['name'].'('.$row['aid'].')<br/><b>证书域名：</b> '.implode('、', $domainList).'<br/><b>签发时间：</b> '.$row['issuetime'].'<br/><b>到期时间：</b> '.$row['expiretime'].'<br/><b>颁发机构：</b> '.$row['issuer'];
         } else {
             $status_arr = [0 => '失败', -1 => '购买证书失败', -2 => '创建订单失败', -3 => '添加DNS失败', -4 => '验证DNS失败', -5 => '验证订单失败', -6 => '订单验证未通过', -7 => '签发证书失败'];
             if(count($domainList) > 1){
@@ -79,27 +83,15 @@ class MsgNotice
             }else{
                 $mail_title = $domainList[0].'域名SSL证书'.$status_arr[$row['status']].'通知';
             }
-            $mail_content = '尊敬的用户，您好：您的SSL证书'.$status_arr[$row['status']].'！<br/>证书账户：'.CertHelper::$cert_config[$type]['name'].'('.$row['aid'].')<br/>证书域名：'.implode('、', $domainList).'<br/>失败时间：'.date('Y-m-d H:i:s').'<br/>失败原因：'.$row['error'];
+            $mail_content = '尊敬的用户，您好：您的SSL证书'.$status_arr[$row['status']].'！<br/><b>证书账户：</b> '.CertHelper::$cert_config[$type]['name'].'('.$row['aid'].')<br/><b>证书域名：</b> '.implode('、', $domainList).'<br/><b>失败时间：</b> '.date('Y-m-d H:i:s').'<br/><b>失败原因：</b> <font color="warning">'.$row['error'].'</font>';
         }
-        $mail_content .= '<br/>'.self::$sitename.'<br/>'.date('Y-m-d H:i:s');
+        $mail_content .= '<br/><font color="grey">'.self::$sitename.'</font><br/><font color="grey">'.date('Y-m-d H:i:s').'</font>';
 
-        if (config_get('cert_notice_mail') == 1 || config_get('cert_notice_mail') == 2 && !$result) {
-            $mail_name = config_get('mail_recv') ? config_get('mail_recv') : config_get('mail_name');
-            self::send_mail($mail_name, $mail_title, $mail_content);
-        }
-        if (config_get('cert_notice_wxtpl') == 1 || config_get('cert_notice_wxtpl') == 2 && !$result) {
-            $content = str_replace(['<br/>', '<b>', '</b>'], ["\n\n", '**', '**'], $mail_content);
-            self::send_wechat_tplmsg($mail_title, $content);
-        }
-        if (config_get('cert_notice_tgbot') == 1 || config_get('cert_notice_tgbot') == 2 && !$result) {
-            $content = str_replace('<br/>', "\n", $mail_content);
-            $content = "<strong>" . $mail_title . "</strong>\n" . $content;
-            self::send_telegram_bot($content);
-        }
+        self::cert_send($mail_title, $mail_content, $result);
         Db::name('cert_order')->where('id', $id)->update(['issend' => 1]);
     }
 
-    public static function deploy_send($id, $result)
+    public static function cert_deploy_send($id, $result)
     {
         $row = Db::name('cert_deploy')->field('id,aid,oid,remark,status,error')->where('id', $id)->find();
         if (!$row) return;
@@ -108,28 +100,37 @@ class MsgNotice
         $typename = DeployHelper::$deploy_config[$account['type']]['name'];
         $mail_title = $typename;
         if(!empty($row['remark'])) $mail_title .= '('.$row['remark'].')';
-        $mail_title .= '证书部署'.($result?'成功':'失败').'通知';
+        $mail_title .= 'SSL证书部署'.($result?'成功':'失败').'通知';
         if ($result) {
-            $mail_content = '尊敬的用户，您好：您的SSL证书已成功部署到'.$typename.'！<br/>自动部署账户：['.$account['id'].']'.$typename.'('.($account['remark']?$account['remark']:$account['name']).')<br/>关联SSL证书：['.$row['oid'].']'.implode('、', $domainList).'<br/>任务备注：'.($row['remark']?$row['remark']:'无');
+            $mail_content = '尊敬的用户，您好：您的SSL证书已成功部署到'.$typename.'！<br/><b>自动部署账户：</b> ['.$account['id'].']'.$typename.'('.($account['remark']?$account['remark']:$account['name']).')<br/><b>关联SSL证书：</b> ['.$row['oid'].']'.implode('、', $domainList).'<br/><b>任务备注：</b> '.($row['remark']?$row['remark']:'无');
         } else {
-            $mail_content = '尊敬的用户，您好：您的SSL证书部署失败！<br/>失败原因：'.$row['error'].'<br/>自动部署账户：['.$account['id'].']'.$typename.'('.($account['remark']?$account['remark']:$account['name']).')<br/>关联SSL证书：['.$row['oid'].']'.implode('、', $domainList).'<br/>任务备注：'.($row['remark']?$row['remark']:'无');
+            $mail_content = '尊敬的用户，您好：您的SSL证书部署失败！<br/><b>失败原因：</b> <font color="warning">'.$row['error'].'</font><br/><b>自动部署账户：</b> ['.$account['id'].']'.$typename.'('.($account['remark']?$account['remark']:$account['name']).')<br/><b>关联SSL证书：</b> ['.$row['oid'].']'.implode('、', $domainList).'<br/><b>任务备注：</b> '.($row['remark']?$row['remark']:'无');
         }
-        $mail_content .= '<br/>'.self::$sitename.'<br/>'.date('Y-m-d H:i:s');
+        $mail_content .= '<br/><font color="grey">'.self::$sitename.'</font><br/><font color="grey">'.date('Y-m-d H:i:s').'</font>';
 
+        self::cert_send($mail_title, $mail_content, $result);
+        Db::name('cert_deploy')->where('id', $id)->update(['issend' => 1]);
+    }
+
+    private static function cert_send($mail_title, $mail_content, $result)
+    {
         if (config_get('cert_notice_mail') == 1 || config_get('cert_notice_mail') == 2 && !$result) {
             $mail_name = config_get('mail_recv') ? config_get('mail_recv') : config_get('mail_name');
             self::send_mail($mail_name, $mail_title, $mail_content);
         }
         if (config_get('cert_notice_wxtpl') == 1 || config_get('cert_notice_wxtpl') == 2 && !$result) {
             $content = str_replace(['<br/>', '<b>', '</b>'], ["\n\n", '**', '**'], $mail_content);
-            self::send_wechat_tplmsg($mail_title, $content);
+            self::send_wechat_tplmsg($mail_title, strip_tags($content));
         }
         if (config_get('cert_notice_tgbot') == 1 || config_get('cert_notice_tgbot') == 2 && !$result) {
             $content = str_replace('<br/>', "\n", $mail_content);
-            $content = "<strong>" . $mail_title . "</strong>\n" . $content;
+            $content = "<strong>".$mail_title."</strong>\n".strip_tags($content);
             self::send_telegram_bot($content);
         }
-        Db::name('cert_deploy')->where('id', $id)->update(['issend' => 1]);
+        if (config_get('cert_notice_webhook') == 1) {
+            $content = str_replace(['*', '<br/>', '<b>', '</b>'], ['\*', "\n", '**', '**'], $mail_content);
+            self::send_webhook($mail_title, $content);
+        }
     }
 
     public static function send_mail($to, $sub, $msg)
@@ -187,7 +188,7 @@ class MsgNotice
         if (isset($arr['success']) && $arr['success'] == true) {
             return true;
         } else {
-            return $arr['msg'];
+            return isset($arr['msg']) ? $arr['msg'] : '请求失败';
         }
     }
 
@@ -203,7 +204,48 @@ class MsgNotice
         if (isset($arr['ok']) && $arr['ok'] == true) {
             return true;
         } else {
-            return $arr['description'];
+            return isset($arr['description']) ? $arr['description'] : '请求失败';
+        }
+    }
+
+    public static function send_webhook($title, $content)
+    {
+        $url = config_get('webhook_url');
+        if (!$url || !parse_url($url)) return false;
+        if (strpos($url, 'oapi.dingtalk.com')) {
+            $content = '### '.$title."  \n ".str_replace("\n", "  \n ", $content);
+            $post = [
+                'msgtype' => 'markdown',
+                'markdown' => [
+                    'title' => $title,
+                    'text' => $content,
+                ],
+            ];
+        } elseif (strpos($url, 'qyapi.weixin.qq.com')) {
+            $content = '## '.$title."\n".$content;
+            $post = [
+                'msgtype' => 'markdown',
+                'markdown' => [
+                    'content' => $content,
+                ],
+            ];
+        } elseif (strpos($url, 'open.feishu.cn')) {
+            $content = str_replace(['\*', '**'], ['*', ''], strip_tags($content));
+            $post = [
+                'msg_type' => 'text',
+                'content' => [
+                    'text' => $content,
+                ],
+            ];
+        } else {
+            return '不支持的Webhook地址';
+        }
+        $result = get_curl($url, json_encode($post), 0, 0, 0, 0, 0, ['Content-Type: application/json; charset=UTF-8']);
+        $arr = json_decode($result, true);
+        if (isset($arr['errcode']) && $arr['errcode'] == 0 || isset($arr['code']) && $arr['code'] == 0) {
+            return true;
+        } else {
+            return isset($arr['errmsg']) ? $arr['errmsg'] : (isset($arr['msg']) ? $arr['msg'] : '请求失败');
         }
     }
 
@@ -233,6 +275,7 @@ class MsgNotice
             curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy_type);
         }
         curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         $httpheader[] = "Accept: */*";

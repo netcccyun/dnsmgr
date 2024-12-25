@@ -62,8 +62,8 @@ class lecdn implements DeployInterface
             'password' => $this->password,
         ];
         $result = $this->request($path, $params);
-        if (isset($result['access_token'])) {
-            $this->accessToken = $result['access_token'];
+        if (isset($result['token'])) {
+            $this->accessToken = $result['token'];
         } else {
             throw new Exception('登录成功，获取access_token失败');
         }
@@ -83,7 +83,7 @@ class lecdn implements DeployInterface
         }
         $response = curl_client($url, $body, null, null, $headers, $this->proxy, $method);
         $result = json_decode($response['body'], true);
-        if (isset($result['code']) && $result['code'] == 0) {
+        if (isset($result['code']) && $result['code'] == 200) {
             return isset($result['data']) ? $result['data'] : null;
         } elseif (isset($result['message'])) {
             throw new Exception($result['message']);

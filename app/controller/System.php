@@ -76,6 +76,20 @@ class System extends BaseController
         }
     }
 
+    public function webhooktest()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        $webhook_url = config_get('webhook_url');
+        if (empty($webhook_url)) return json(['code' => -1, 'msg' => '请先保存设置']);
+        $content = "这是一封测试消息！\n来自：" . $this->request->root(true);
+        $result = \app\utils\MsgNotice::send_webhook('消息发送测试', $content);
+        if ($result === true) {
+            return json(['code' => 0, 'msg' => '消息发送成功！']);
+        } else {
+            return json(['code' => -1, 'msg' => '消息发送失败！' . $result]);
+        }
+    }
+
     public function proxytest()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');
