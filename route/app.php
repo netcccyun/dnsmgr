@@ -73,6 +73,7 @@ Route::group(function () {
     Route::get('/dmonitor/task/info/:id', 'dmonitor/taskinfo');
     Route::any('/dmonitor/task/:action', 'dmonitor/taskform');
     Route::get('/dmonitor/task', 'dmonitor/task');
+    Route::post('/dmonitor/noticeset', 'dmonitor/noticeset');
     Route::post('/dmonitor/clean', 'dmonitor/clean');
 
     Route::any('/optimizeip/opipset', 'optimizeip/opipset');
