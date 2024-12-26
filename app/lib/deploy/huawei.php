@@ -11,17 +11,19 @@ class huawei implements DeployInterface
     private $logger;
     private $AccessKeyId;
     private $SecretAccessKey;
+    private $proxy;
 
     public function __construct($config)
     {
         $this->AccessKeyId = $config['AccessKeyId'];
         $this->SecretAccessKey = $config['SecretAccessKey'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function check()
     {
         if (empty($this->AccessKeyId) || empty($this->SecretAccessKey)) throw new Exception('必填参数不能为空');
-        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, 'scm.cn-north-4.myhuaweicloud.com');
+        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, 'scm.cn-north-4.myhuaweicloud.com', $this->proxy);
         $client->request('GET', '/v3/scm/certificates');
         return true;
     }
@@ -43,7 +45,7 @@ class huawei implements DeployInterface
     private function deploy_cdn($fullchain, $privatekey, $config)
     {
         if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
-        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, 'cdn.myhuaweicloud.com');
+        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, 'cdn.myhuaweicloud.com', $this->proxy);
         $param = [
             'configs' => [
                 'https' => [
@@ -66,7 +68,7 @@ class huawei implements DeployInterface
         if (empty($config['region_id'])) throw new Exception('区域ID不能为空');
         if (empty($config['cert_id'])) throw new Exception('证书ID不能为空');
         $endpoint = 'elb.' . $config['region_id'] . '.myhuaweicloud.com';
-        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, $endpoint);
+        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, $endpoint, $this->proxy);
         try {
             $data = $client->request('GET', '/v3/' . $config['project_id'] . '/elb/certificates/' . $config['cert_id']);
         } catch (Exception $e) {
@@ -93,7 +95,7 @@ class huawei implements DeployInterface
         if (empty($config['region_id'])) throw new Exception('区域ID不能为空');
         if (empty($config['cert_id'])) throw new Exception('证书ID不能为空');
         $endpoint = 'waf.' . $config['region_id'] . '.myhuaweicloud.com';
-        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, $endpoint);
+        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, $endpoint, $this->proxy);
         try {
             $data = $client->request('GET', '/v1/' . $config['project_id'] . '/waf/certificates/' . $config['cert_id']);
         } catch (Exception $e) {
@@ -118,7 +120,7 @@ class huawei implements DeployInterface
         if (!$certInfo) throw new Exception('证书解析失败');
         $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
-        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, 'scm.cn-north-4.myhuaweicloud.com');
+        $client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, 'scm.cn-north-4.myhuaweicloud.com', $this->proxy);
         $param = [
             'name' => $cert_name,
             'certificate' => $fullchain,

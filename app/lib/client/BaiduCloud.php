@@ -12,12 +12,14 @@ class BaiduCloud
     private $AccessKeyId;
     private $SecretAccessKey;
     private $endpoint;
+    private $proxy = false;
 
-    public function __construct($AccessKeyId, $SecretAccessKey, $endpoint)
+    public function __construct($AccessKeyId, $SecretAccessKey, $endpoint, $proxy = false)
     {
         $this->AccessKeyId = $AccessKeyId;
         $this->SecretAccessKey = $SecretAccessKey;
         $this->endpoint = $endpoint;
+        $this->proxy = $proxy;
     }
 
     /**
@@ -140,6 +142,9 @@ class BaiduCloud
     private function curl($method, $url, $body, $header)
     {
         $ch = curl_init($url);
+        if ($this->proxy) {
+            curl_set_proxy($ch);
+        }
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);

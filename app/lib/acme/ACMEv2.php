@@ -308,26 +308,7 @@ class ACMEv2
 		));
 		
 		if ($this->proxy) {
-            $proxy_server = config_get('proxy_server');
-            $proxy_port = intval(config_get('proxy_port'));
-            $proxy_userpwd = config_get('proxy_user').':'.config_get('proxy_pwd');
-            $proxy_type = config_get('proxy_type');
-            if ($proxy_type == 'https') {
-                $proxy_type = CURLPROXY_HTTPS;
-            } elseif ($proxy_type == 'sock4') {
-                $proxy_type = CURLPROXY_SOCKS4;
-            } elseif ($proxy_type == 'sock5') {
-                $proxy_type = CURLPROXY_SOCKS5;
-            } else {
-                $proxy_type = CURLPROXY_HTTP;
-            }
-            curl_setopt($this->ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
-            curl_setopt($this->ch, CURLOPT_PROXY, $proxy_server);
-            curl_setopt($this->ch, CURLOPT_PROXYPORT, $proxy_port);
-            if ($proxy_userpwd != ':') {
-                curl_setopt($this->ch, CURLOPT_PROXYUSERPWD, $proxy_userpwd);
-            }
-            curl_setopt($this->ch, CURLOPT_PROXYTYPE, $proxy_type);
+			curl_set_proxy($this->ch);
         }
 
 		$took = microtime(true);

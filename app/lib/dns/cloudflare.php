@@ -12,6 +12,7 @@ class cloudflare implements DnsInterface
     private $error;
     private $domain;
     private $domainid;
+    private $proxy;
 
     function __construct($config)
     {
@@ -19,6 +20,7 @@ class cloudflare implements DnsInterface
         $this->ApiKey = $config['sk'];
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function getError()
@@ -261,6 +263,9 @@ class cloudflare implements DnsInterface
         }
 
         $ch = curl_init($url);
+        if ($this->proxy) {
+            curl_set_proxy($ch);
+        }
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);

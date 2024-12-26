@@ -12,11 +12,13 @@ class namesilo implements DnsInterface
     private $version = '1';
     private $error;
     private $domain;
+    private $proxy;
 
     function __construct($config)
     {
         $this->apikey = $config['sk'];
         $this->domain = $config['domain'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function getError()
@@ -193,7 +195,7 @@ class namesilo implements DnsInterface
         $url .= '?' . http_build_query($params);
 
         try{
-            $response = curl_client($url);
+            $response = curl_client($url, null, null, null, null, $this->proxy);
         }catch(Exception $e){
             $this->setError($e->getMessage());
             return false;

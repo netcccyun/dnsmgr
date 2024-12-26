@@ -408,26 +408,7 @@ function curl_client($url, $data = null, $referer = null, $cookie = null, $heade
     }
 
     if ($proxy) {
-        $proxy_server = config_get('proxy_server');
-        $proxy_port = intval(config_get('proxy_port'));
-        $proxy_userpwd = config_get('proxy_user') . ':' . config_get('proxy_pwd');
-        $proxy_type = config_get('proxy_type');
-        if ($proxy_type == 'https') {
-            $proxy_type = CURLPROXY_HTTPS;
-        } elseif ($proxy_type == 'sock4') {
-            $proxy_type = CURLPROXY_SOCKS4;
-        } elseif ($proxy_type == 'sock5') {
-            $proxy_type = CURLPROXY_SOCKS5;
-        } else {
-            $proxy_type = CURLPROXY_HTTP;
-        }
-        curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
-        curl_setopt($ch, CURLOPT_PROXY, $proxy_server);
-        curl_setopt($ch, CURLOPT_PROXYPORT, $proxy_port);
-        if ($proxy_userpwd != ':') {
-            curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxy_userpwd);
-        }
-        curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy_type);
+        curl_set_proxy($ch);
     }
 
     $ret = curl_exec($ch);
@@ -443,4 +424,31 @@ function curl_client($url, $data = null, $referer = null, $cookie = null, $heade
     $header = substr($ret, 0, $headerSize);
     $body = substr($ret, $headerSize);
     return ['code' => $httpCode, 'redirect_url' => $redirect_url, 'header' => $header, 'body' => $body];
+}
+
+function curl_set_proxy(&$ch)
+{
+    $proxy_server = config_get('proxy_server');
+    $proxy_port = intval(config_get('proxy_port'));
+    $proxy_userpwd = config_get('proxy_user') . ':' . config_get('proxy_pwd');
+    $proxy_type = config_get('proxy_type');
+    if (empty($proxy_server) || empty($proxy_port)) {
+        return;
+    }
+    if ($proxy_type == 'https') {
+        $proxy_type = CURLPROXY_HTTPS;
+    } elseif ($proxy_type == 'sock4') {
+        $proxy_type = CURLPROXY_SOCKS4;
+    } elseif ($proxy_type == 'sock5') {
+        $proxy_type = CURLPROXY_SOCKS5;
+    } else {
+        $proxy_type = CURLPROXY_HTTP;
+    }
+    curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
+    curl_setopt($ch, CURLOPT_PROXY, $proxy_server);
+    curl_setopt($ch, CURLOPT_PROXYPORT, $proxy_port);
+    if ($proxy_userpwd != ':') {
+        curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxy_userpwd);
+    }
+    curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy_type);
 }

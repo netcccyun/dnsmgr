@@ -17,7 +17,7 @@ class qiniu implements DeployInterface
     {
         $this->AccessKey = $config['AccessKey'];
         $this->SecretKey = $config['SecretKey'];
-        $this->client = new QiniuClient($this->AccessKey, $this->SecretKey);
+        $this->client = new QiniuClient($this->AccessKey, $this->SecretKey, isset($config['proxy']) ? $config['proxy'] == 1 : false);
     }
 
     public function check()

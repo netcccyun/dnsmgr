@@ -36,10 +36,18 @@
 							<input type="text" class="form-control" name="sk" required>
 						</div>
 					</div>
-					<div class="form-group">
+					<div class="form-group" id="ext_name_div" style="display:none;">
 						<label class="col-sm-3 control-label no-padding-right" id="ext_name">扩展字段</label>
 						<div class="col-sm-9">
 							<input type="text" class="form-control" name="ext" placeholder="没有请勿填写">
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label no-padding-right" id="ext_name">使用代理</label>
+						<div class="col-sm-9">
+							<label class="radio-inline"><input type="radio" name="proxy" value="0"> 否
+							</label><label class="radio-inline"><input type="radio" name="proxy" value="1"> 是
+							</label>
 						</div>
 					</div>
 					<div class="form-group">
@@ -137,8 +145,12 @@ $(document).ready(function(){
 		if(dnsconfig[type] == undefined) return;
 		$("#ak_name").html(dnsconfig[type].config.ak);
 		$("#sk_name").html(dnsconfig[type].config.sk);
-		if(dnsconfig[type].config.ext == undefined) dnsconfig[type].config.ext = '扩展字段';
-		else $("#ext_name").html(dnsconfig[type].config.ext);
+		if(dnsconfig[type].config.ext == undefined){
+			$("#ext_name_div").hide();
+		}else{
+			$("#ext_name_div").show();
+			$("#ext_name").html(dnsconfig[type].config.ext);
+		}
 	});
 })
 function addframe(){
@@ -149,6 +161,7 @@ function addframe(){
 	$("#form-store input[name=ak]").val('');
 	$("#form-store input[name=sk]").val('');
 	$("#form-store input[name=ext]").val('');
+	$("#form-store input[name=proxy]").eq(0).prop('checked',true);
 	$("#form-store input[name=remark]").val('');
 	$("select[name=type]").change();
 }
@@ -170,6 +183,7 @@ function editframe(id){
 				$("#form-store input[name=ak]").val(data.data.ak);
 				$("#form-store input[name=sk]").val(data.data.sk);
 				$("#form-store input[name=ext]").val(data.data.ext);
+				$("#form-store input[name=proxy]").eq(data.data.proxy).prop('checked',true);
 				$("#form-store input[name=remark]").val(data.data.remark);
 				$("select[name=type]").change();
 			}else{

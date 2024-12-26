@@ -10,11 +10,13 @@ class doge implements DeployInterface
     private $logger;
     private $AccessKey;
     private $SecretKey;
+    private $proxy;
 
     public function __construct($config)
     {
         $this->AccessKey = $config['AccessKey'];
         $this->SecretKey = $config['SecretKey'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function check()
@@ -95,7 +97,7 @@ class doge implements DeployInterface
         $headers = ['Authorization: ' . $authorization];
         if($body && $json) $headers[] = 'Content-Type: application/json';
         $url = 'https://api.dogecloud.com'.$path;
-        $response = curl_client($url, $body, null, null, $headers);
+        $response = curl_client($url, $body, null, null, $headers, $this->proxy);
         $result = json_decode($response['body'], true);
         if(isset($result['code']) && $result['code'] == 200){
             return isset($result['data']) ? $result['data'] : true;

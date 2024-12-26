@@ -57,6 +57,7 @@ class Domain extends BaseController
             $sk = input('post.sk', null, 'trim');
             $ext = input('post.ext', null, 'trim');
             $remark = input('post.remark', null, 'trim');
+            $proxy = input('post.proxy/d', 0);
             if (empty($ak) || empty($sk)) return json(['code' => -1, 'msg' => 'AccessKey和SecretKey不能为空']);
             if (Db::name('account')->where('type', $type)->where('ak', $ak)->find()) {
                 return json(['code' => -1, 'msg' => '域名账户已存在']);
@@ -67,6 +68,7 @@ class Domain extends BaseController
                 'ak' => $ak,
                 'sk' => $sk,
                 'ext' => $ext,
+                'proxy' => $proxy,
                 'remark' => $remark,
                 'addtime' => date('Y-m-d H:i:s'),
             ]);
@@ -92,6 +94,7 @@ class Domain extends BaseController
             $sk = input('post.sk', null, 'trim');
             $ext = input('post.ext', null, 'trim');
             $remark = input('post.remark', null, 'trim');
+            $proxy = input('post.proxy/d', 0);
             if (empty($ak) || empty($sk)) return json(['code' => -1, 'msg' => 'AccessKey和SecretKey不能为空']);
             if (Db::name('account')->where('type', $type)->where('ak', $ak)->where('id', '<>', $id)->find()) {
                 return json(['code' => -1, 'msg' => '域名账户已存在']);
@@ -102,6 +105,7 @@ class Domain extends BaseController
                 'ak' => $ak,
                 'sk' => $sk,
                 'ext' => $ext,
+                'proxy' => $proxy,
                 'remark' => $remark,
             ]);
             $dns = DnsHelper::getModel($id);

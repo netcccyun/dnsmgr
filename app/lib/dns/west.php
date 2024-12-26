@@ -15,12 +15,14 @@ class west implements DnsInterface
     private $error;
     private $domain;
     private $domainid;
+    private $proxy;
 
     public function __construct($config)
     {
         $this->username = $config['ak'];
         $this->api_password = $config['sk'];
         $this->domain = $config['domain'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function getError()
@@ -179,8 +181,13 @@ class west implements DnsInterface
         $params['username'] = $this->username;
         $params['time'] = $this->getMillisecond();
         $params['token'] = md5($this->username.$this->api_password.$params['time']);
-        $response = $this->curl($path, $params);
-        $response = mb_convert_encoding($response, 'UTF-8', 'GBK');
+        try{
+            $response = curl_client($this->baseUrl . $path, http_build_query($params), null, null, null, $this->proxy);
+        }catch(\Exception $e){
+            $this->setError($e->getMessage());
+            return false;
+        }
+        $response = mb_convert_encoding($response['body'], 'UTF-8', 'GBK');
         $arr = json_decode($response, true);
         if ($arr) {
             if ($arr['result'] == 200) {
@@ -193,28 +200,6 @@ class west implements DnsInterface
             $this->setError('返回数据解析失败');
             return false;
         }
-    }
-
-    private function curl($path, $params = null)
-    {
-        $url = $this->baseUrl . $path;
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        if ($params) {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
-        }
-        $response = curl_exec($ch);
-        $errno = curl_errno($ch);
-        if ($errno) {
-            $this->setError('Curl error: ' . curl_error($ch));
-        }
-        curl_close($ch);
-        if ($errno) return false;
-        return $response;
     }
 
     private function getMillisecond()

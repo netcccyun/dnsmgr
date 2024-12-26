@@ -418,6 +418,15 @@ class DeployHelper
                     'placeholder' => '',
                     'required' => true,
                 ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'taskinputs' => [
                 'product' => [
@@ -556,6 +565,15 @@ class DeployHelper
                     'placeholder' => '',
                     'required' => true,
                 ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'taskinputs' => [
                 'product' => [
@@ -680,6 +698,15 @@ class DeployHelper
                     'placeholder' => '',
                     'required' => true,
                 ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'taskinputs' => [
                 'product' => [
@@ -772,6 +799,15 @@ class DeployHelper
                     'placeholder' => '',
                     'required' => true,
                 ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'taskinputs' => [
                 'product' => [
@@ -810,6 +846,15 @@ class DeployHelper
                     'placeholder' => '',
                     'required' => true,
                 ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'taskinputs' => [
                 'domain' => [
@@ -838,6 +883,15 @@ class DeployHelper
                     'placeholder' => '',
                     'required' => true,
                 ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'taskinputs' => [
                 'domain' => [
@@ -865,6 +919,15 @@ class DeployHelper
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
                 ],
             ],
             'taskinputs' => [
@@ -963,6 +1026,15 @@ class DeployHelper
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
                 ],
             ],
             'taskinputs' => [

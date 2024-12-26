@@ -150,7 +150,6 @@ new Vue({
             })
             return {label: classList[key], children: tempList}
         })
-        console.log(this.typeOption);
         if(this.action == 'edit'){
             Object.keys(info).forEach((key) => {
                 this.set[key] = info[key]
@@ -159,7 +158,9 @@ new Vue({
             this.inputs = typeList[this.set.type].inputs;
             this.note = typeList[this.set.type].note;
             $.each(this.inputs, (name, item) => {
-                item.value = config[name];
+                if(typeof config[name] != 'undefined'){
+                    item.value = config[name];
+                }
                 if(typeof item.value == 'undefined'){
                     if(item.type == 'checkbox'){
                         item.value = false; 

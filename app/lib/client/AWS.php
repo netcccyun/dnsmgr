@@ -16,8 +16,9 @@ class AWS
     private $version;
     private $region;
     private $etag;
+    private $proxy = false;
 
-    public function __construct($AccessKeyId, $SecretAccessKey, $endpoint, $service, $version, $region)
+    public function __construct($AccessKeyId, $SecretAccessKey, $endpoint, $service, $version, $region, $proxy = false)
     {
         $this->AccessKeyId = $AccessKeyId;
         $this->SecretAccessKey = $SecretAccessKey;
@@ -25,6 +26,7 @@ class AWS
         $this->service = $service;
         $this->version = $version;
         $this->region = $region;
+        $this->proxy = $proxy;
     }
 
     /**
@@ -252,6 +254,9 @@ class AWS
     private function curl($method, $url, $body, $header, $xml = false, $etag = false)
     {
         $ch = curl_init($url);
+        if ($this->proxy) {
+            curl_set_proxy($ch);
+        }
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);

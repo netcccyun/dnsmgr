@@ -154,6 +154,15 @@ class CertHelper
                     'placeholder' => '申请证书时填写的邮箱',
                     'required' => true,
                 ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ]
         ],
         'aliyun' => [
@@ -194,6 +203,15 @@ class CertHelper
                     'type' => 'input',
                     'placeholder' => '申请联系人的邮箱地址',
                     'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
                 ],
             ]
         ],

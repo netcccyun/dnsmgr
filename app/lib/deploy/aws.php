@@ -11,17 +11,19 @@ class aws implements DeployInterface
     private $logger;
     private $AccessKeyId;
     private $SecretAccessKey;
+    private $proxy;
 
     public function __construct($config)
     {
         $this->AccessKeyId = $config['AccessKeyId'];
         $this->SecretAccessKey = $config['SecretAccessKey'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function check()
     {
         if (empty($this->AccessKeyId) || empty($this->SecretAccessKey)) throw new Exception('必填参数不能为空');
-        $client = new AWSClient($this->AccessKeyId, $this->SecretAccessKey, 'iam.amazonaws.com', 'iam', '2010-05-08', 'us-east-1');
+        $client = new AWSClient($this->AccessKeyId, $this->SecretAccessKey, 'iam.amazonaws.com', 'iam', '2010-05-08', 'us-east-1', $this->proxy);
         $client->requestXml('GET', 'GetUser');
         return true;
     }
@@ -44,7 +46,7 @@ class aws implements DeployInterface
             usleep(500000);
         }
 
-        $client = new \app\lib\client\AWS($this->AccessKeyId, $this->SecretAccessKey, 'cloudfront.amazonaws.com', 'cloudfront', '2020-05-31', 'us-east-1');
+        $client = new AWSClient($this->AccessKeyId, $this->SecretAccessKey, 'cloudfront.amazonaws.com', 'cloudfront', '2020-05-31', 'us-east-1', $this->proxy);
         try {
             $data = $client->requestXmlN('GET', '/distribution/' . $config['distribution_id'] . '/config', [], null, true);
         } catch (Exception $e) {
@@ -66,7 +68,7 @@ class aws implements DeployInterface
             'PrivateKey' => base64_encode($privatekey),
         ];
 
-        $client = new \app\lib\client\AWS($this->AccessKeyId, $this->SecretAccessKey, 'acm.us-east-1.amazonaws.com', 'acm', '', 'us-east-1');
+        $client = new AWSClient($this->AccessKeyId, $this->SecretAccessKey, 'acm.us-east-1.amazonaws.com', 'acm', '', 'us-east-1', $this->proxy);
         try {
             $data = $client->request('POST', 'CertificateManager.ImportCertificate', $param);
             $cert_id = $data['CertificateArn'];

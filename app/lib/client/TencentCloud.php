@@ -15,8 +15,9 @@ class TencentCloud
     private $service;
     private $version;
     private $region;
+    private $proxy = false;
 
-    public function __construct($SecretId, $SecretKey, $endpoint, $service, $version, $region = null)
+    public function __construct($SecretId, $SecretKey, $endpoint, $service, $version, $region = null, $proxy = false)
     {
         $this->SecretId = $SecretId;
         $this->SecretKey = $SecretKey;
@@ -24,6 +25,7 @@ class TencentCloud
         $this->service = $service;
         $this->version = $version;
         $this->region = $region;
+        $this->proxy = $proxy;
     }
 
     /**
@@ -98,6 +100,9 @@ class TencentCloud
     {
         $url = 'https://'.$this->endpoint.'/';
         $ch = curl_init($url);
+        if ($this->proxy) {
+            curl_set_proxy($ch);
+        }
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);

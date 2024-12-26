@@ -11,17 +11,19 @@ class baidu implements DeployInterface
     private $logger;
     private $AccessKeyId;
     private $SecretAccessKey;
+    private $proxy;
 
     public function __construct($config)
     {
         $this->AccessKeyId = $config['AccessKeyId'];
         $this->SecretAccessKey = $config['SecretAccessKey'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function check()
     {
         if (empty($this->AccessKeyId) || empty($this->SecretAccessKey)) throw new Exception('必填参数不能为空');
-        $client = new BaiduCloud($this->AccessKeyId, $this->SecretAccessKey, 'cdn.baidubce.com');
+        $client = new BaiduCloud($this->AccessKeyId, $this->SecretAccessKey, 'cdn.baidubce.com', $this->proxy);
         $client->request('GET', '/v2/domain');
         return true;
     }
@@ -33,7 +35,7 @@ class baidu implements DeployInterface
         if (!$certInfo) throw new Exception('证书解析失败');
         $config['cert_name'] = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
-        $client = new BaiduCloud($this->AccessKeyId, $this->SecretAccessKey, 'cdn.baidubce.com');
+        $client = new BaiduCloud($this->AccessKeyId, $this->SecretAccessKey, 'cdn.baidubce.com', $this->proxy);
         try {
             $data = $client->request('GET', '/v2/' . $config['domain'] . '/certificates');
             if (isset($data['certName']) && $data['certName'] == $config['cert_name']) {

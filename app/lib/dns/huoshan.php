@@ -32,7 +32,8 @@ class huoshan implements DnsInterface
     {
         $this->AccessKeyId = $config['ak'];
         $this->SecretAccessKey = $config['sk'];
-        $this->client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, $this->endpoint, $this->service, $this->version, $this->region);
+        $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
+        $this->client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, $this->endpoint, $this->service, $this->version, $this->region, $proxy);
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];
     }

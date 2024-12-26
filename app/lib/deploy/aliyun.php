@@ -13,17 +13,19 @@ class aliyun implements DeployInterface
     private $logger;
     private $AccessKeyId;
     private $AccessKeySecret;
+    private $proxy;
 
     public function __construct($config)
     {
         $this->AccessKeyId = $config['AccessKeyId'];
         $this->AccessKeySecret = $config['AccessKeySecret'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function check()
     {
         if (empty($this->AccessKeyId) || empty($this->AccessKeySecret)) throw new Exception('必填参数不能为空');
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'cas.aliyuncs.com', '2020-04-07');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'cas.aliyuncs.com', '2020-04-07', $this->proxy);
         $param = ['Action' => 'ListUserCertificateOrder'];
         $client->request($param);
         return true;
@@ -79,7 +81,7 @@ class aliyun implements DeployInterface
         $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
         $serial_no = strtolower($certInfo['serialNumberHex']);
 
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'cas.aliyuncs.com', '2020-04-07');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'cas.aliyuncs.com', '2020-04-07', $this->proxy);
         $param = [
             'Action' => 'ListUserCertificateOrder',
             'Keyword' => $certInfo['subject']['CN'],
@@ -125,7 +127,7 @@ class aliyun implements DeployInterface
     {
         $domain = $config['domain'];
         if (empty($domain)) throw new Exception('CDN绑定域名不能为空');
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'cdn.aliyuncs.com', '2018-05-10');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'cdn.aliyuncs.com', '2018-05-10', $this->proxy);
         $param = [
             'Action' => 'SetCdnDomainSSLCertificate',
             'DomainName' => $domain,
@@ -142,7 +144,7 @@ class aliyun implements DeployInterface
     {
         $domain = $config['domain'];
         if (empty($domain)) throw new Exception('DCDN绑定域名不能为空');
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'dcdn.aliyuncs.com', '2018-01-15');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'dcdn.aliyuncs.com', '2018-01-15', $this->proxy);
         $param = [
             'Action' => 'SetDcdnDomainSSLCertificate',
             'DomainName' => $domain,
@@ -239,7 +241,7 @@ class aliyun implements DeployInterface
 
         $endpoint = 'wafopenapi.' . $config['region'] . '.aliyuncs.com';
 
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2021-10-01');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2021-10-01', $this->proxy);
 
         $param = [
             'Action' => 'DescribeInstance',
@@ -298,7 +300,7 @@ class aliyun implements DeployInterface
 
         $endpoint = 'wafopenapi.' . $config['region'] . '.aliyuncs.com';
 
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2019-09-10');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2019-09-10', $this->proxy);
 
         $param = [
             'Action' => 'DescribeInstanceInfo',
@@ -337,7 +339,7 @@ class aliyun implements DeployInterface
 
         $endpoint = 'apigateway.' . $config['regionid'] . '.aliyuncs.com';
 
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2016-07-14');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2016-07-14', $this->proxy);
 
         $param = [
             'Action' => 'SetDomainCertificate',
@@ -359,7 +361,7 @@ class aliyun implements DeployInterface
 
         $endpoint = 'ddoscoo.' . $config['region'] . '.aliyuncs.com';
 
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2020-01-01');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2020-01-01', $this->proxy);
 
         $param = [
             'Action' => 'AssociateWebCert',
@@ -375,7 +377,7 @@ class aliyun implements DeployInterface
     {
         $domain = $config['domain'];
         if (empty($domain)) throw new Exception('视频直播绑定域名不能为空');
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'live.aliyuncs.com', '2016-11-01');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'live.aliyuncs.com', '2016-11-01', $this->proxy);
         $param = [
             'Action' => 'SetLiveDomainCertificate',
             'DomainName' => $domain,
@@ -392,7 +394,7 @@ class aliyun implements DeployInterface
     {
         $domain = $config['domain'];
         if (empty($domain)) throw new Exception('视频点播绑定域名不能为空');
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'vod.cn-shanghai.aliyuncs.com', '2017-03-21');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'vod.cn-shanghai.aliyuncs.com', '2017-03-21', $this->proxy);
         $param = [
             'Action' => 'SetVodDomainCertificate',
             'DomainName' => $domain,
@@ -415,7 +417,7 @@ class aliyun implements DeployInterface
         if (!$certInfo) throw new Exception('证书解析失败');
         $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
-        $client = new AliyunNewClient($this->AccessKeyId, $this->AccessKeySecret, $fc_cname, '2023-03-30');
+        $client = new AliyunNewClient($this->AccessKeyId, $this->AccessKeySecret, $fc_cname, '2023-03-30', $this->proxy);
 
         try {
             $data = $client->request('GET', 'GetCustomDomain', '/2023-03-30/custom-domains/' . $domain);
@@ -458,7 +460,7 @@ class aliyun implements DeployInterface
         if (!$certInfo) throw new Exception('证书解析失败');
         $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
-        $client = new AliyunNewClient($this->AccessKeyId, $this->AccessKeySecret, $fc_cname, '2021-04-06');
+        $client = new AliyunNewClient($this->AccessKeyId, $this->AccessKeySecret, $fc_cname, '2021-04-06', $this->proxy);
 
         try {
             $data = $client->request('GET', 'GetCustomDomain', '/2021-04-06/custom-domains/' . $domain);
@@ -495,7 +497,7 @@ class aliyun implements DeployInterface
         if (empty($config['clb_port'])) throw new Exception('HTTPS监听端口不能为空');
 
         $endpoint = 'slb.' . $config['regionid'] . '.aliyuncs.com';
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2014-05-15');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2014-05-15', $this->proxy);
 
         $param = [
             'Action' => 'DescribeServerCertificates',
@@ -570,7 +572,7 @@ class aliyun implements DeployInterface
         if (empty($config['alb_listener_id'])) throw new Exception('负载均衡监听ID不能为空');
 
         $endpoint = 'alb.' . $config['regionid'] . '.aliyuncs.com';
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2020-06-16');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2020-06-16', $this->proxy);
 
         $param = [
             'Action' => 'ListListenerCertificates',
@@ -605,7 +607,7 @@ class aliyun implements DeployInterface
         if (empty($config['nlb_listener_id'])) throw new Exception('负载均衡监听ID不能为空');
 
         $endpoint = 'nlb.' . $config['regionid'] . '.aliyuncs.com';
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2022-04-30');
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2022-04-30', $this->proxy);
 
         $param = [
             'Action' => 'ListListenerCertificates',

@@ -21,7 +21,8 @@ class huoshan implements CertInterface
     {
         $this->AccessKeyId = $config['AccessKeyId'];
         $this->SecretAccessKey = $config['SecretAccessKey'];
-        $this->client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, $this->endpoint, $this->service, $this->version, $this->region);
+        $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
+        $this->client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, $this->endpoint, $this->service, $this->version, $this->region, $proxy);
     }
 
     public function register()

@@ -21,7 +21,8 @@ class tencent implements CertInterface
     {
         $this->SecretId = $config['SecretId'];
         $this->SecretKey = $config['SecretKey'];
-        $this->client = new TencentCloud($this->SecretId, $this->SecretKey, $this->endpoint, $this->service, $this->version);
+        $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
+        $this->client = new TencentCloud($this->SecretId, $this->SecretKey, $this->endpoint, $this->service, $this->version, null, $proxy);
         $this->email = $config['email'];
     }
 

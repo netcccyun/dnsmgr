@@ -13,6 +13,7 @@ class dnsla implements DnsInterface
     private $error;
     private $domain;
     private $domainid;
+    private $proxy;
 
     public function __construct($config)
     {
@@ -20,6 +21,7 @@ class dnsla implements DnsInterface
         $this->apisecret = $config['sk'];
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function getError()
@@ -249,10 +251,13 @@ class dnsla implements DnsInterface
         }
     }
 
-    private function curl($method, $path, $header, $body = null, $isPut = false)
+    private function curl($method, $path, $header, $body = null)
     {
         $url = $this->baseUrl . $path;
         $ch = curl_init($url);
+        if ($this->proxy) {
+            curl_set_proxy($ch);
+        }
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);

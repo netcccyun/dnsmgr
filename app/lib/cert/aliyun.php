@@ -20,7 +20,8 @@ class aliyun implements CertInterface
     {
         $this->AccessKeyId = $config['AccessKeyId'];
         $this->AccessKeySecret = $config['AccessKeySecret'];
-        $this->client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $this->Endpoint, $this->Version);
+        $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
+        $this->client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $this->Endpoint, $this->Version, $proxy);
         $this->config = $config;
     }
 

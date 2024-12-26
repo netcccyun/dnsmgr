@@ -18,6 +18,7 @@ CREATE TABLE `dnsmgr_account` (
   `ak` varchar(256) DEFAULT NULL,
   `sk` varchar(256) DEFAULT NULL,
   `ext` varchar(256) DEFAULT NULL,
+  `proxy` tinyint(1) NOT NULL DEFAULT '0',
   `remark` varchar(100) DEFAULT NULL,
   `addtime` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)

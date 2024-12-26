@@ -13,13 +13,15 @@ class Aliyun
     private $AccessKeySecret;
     private $Endpoint;
     private $Version;
+    private $proxy = false;
 
-    public function __construct($AccessKeyId, $AccessKeySecret, $Endpoint, $Version)
+    public function __construct($AccessKeyId, $AccessKeySecret, $Endpoint, $Version, $proxy = false)
     {
         $this->AccessKeyId = $AccessKeyId;
         $this->AccessKeySecret = $AccessKeySecret;
         $this->Endpoint = $Endpoint;
         $this->Version = $Version;
+        $this->proxy = $proxy;
     }
 
     /**
@@ -45,6 +47,9 @@ class Aliyun
             $url .= '?' . http_build_query($data);
         }
         $ch = curl_init($url);
+        if ($this->proxy) {
+            curl_set_proxy($ch);
+        }
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

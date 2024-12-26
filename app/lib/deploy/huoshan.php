@@ -11,17 +11,19 @@ class huoshan implements DeployInterface
     private $logger;
     private $AccessKeyId;
     private $SecretAccessKey;
+    private $proxy;
 
     public function __construct($config)
     {
         $this->AccessKeyId = $config['AccessKeyId'];
         $this->SecretAccessKey = $config['SecretAccessKey'];
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
 
     public function check()
     {
         if (empty($this->AccessKeyId) || empty($this->SecretAccessKey)) throw new Exception('必填参数不能为空');
-        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'cdn.volcengineapi.com', 'cdn', '2021-03-01', 'cn-north-1');
+        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'cdn.volcengineapi.com', 'cdn', '2021-03-01', 'cn-north-1', $this->proxy);
         $client->request('POST', 'ListCertInfo', ['Source' => 'volc_cert_center']);
         return true;
     }
@@ -38,7 +40,7 @@ class huoshan implements DeployInterface
     private function deploy_cdn($cert_id, $config)
     {
         if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
-        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'cdn.volcengineapi.com', 'cdn', '2021-03-01', 'cn-north-1');
+        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'cdn.volcengineapi.com', 'cdn', '2021-03-01', 'cn-north-1', $this->proxy);
         $param = [
             'CertId' => $cert_id,
             'Domain' => $config['domain'],
@@ -60,7 +62,7 @@ class huoshan implements DeployInterface
         if (!$certInfo) throw new Exception('证书解析失败');
         $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
-        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'cdn.volcengineapi.com', 'cdn', '2021-03-01', 'cn-north-1');
+        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'cdn.volcengineapi.com', 'cdn', '2021-03-01', 'cn-north-1', $this->proxy);
         $param = [
             'Source' => 'volc_cert_center',
             'Certificate' => $fullchain,

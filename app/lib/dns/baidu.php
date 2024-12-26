@@ -20,7 +20,8 @@ class baidu implements DnsInterface
     {
         $this->AccessKeyId = $config['ak'];
         $this->SecretAccessKey = $config['sk'];
-        $this->client = new BaiduCloud($this->AccessKeyId, $this->SecretAccessKey, $this->endpoint);
+        $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
+        $this->client = new BaiduCloud($this->AccessKeyId, $this->SecretAccessKey, $this->endpoint, $proxy);
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];
     }

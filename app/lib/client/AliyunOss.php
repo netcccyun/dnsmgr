@@ -9,12 +9,14 @@ class AliyunOSS
     private $AccessKeyId;
     private $AccessKeySecret;
     private $Endpoint;
+    private $proxy = false;
 
-    public function __construct($AccessKeyId, $AccessKeySecret, $Endpoint)
+    public function __construct($AccessKeyId, $AccessKeySecret, $Endpoint, $proxy = false)
     {
         $this->AccessKeyId = $AccessKeyId;
         $this->AccessKeySecret = $AccessKeySecret;
         $this->Endpoint = $Endpoint;
+        $this->proxy = $proxy;
     }
 
     public function addBucketCnameCert($bucket, $domain, $cert_id)
@@ -101,6 +103,9 @@ class AliyunOSS
     private function curl($method, $url, $body, $header)
     {
         $ch = curl_init($url);
+        if ($this->proxy) {
+            curl_set_proxy($ch);
+        }
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);

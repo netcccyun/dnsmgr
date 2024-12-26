@@ -12,11 +12,13 @@ class Qiniu
     private $ApiUrl = 'https://api.qiniu.com';
     private $AccessKey;
     private $SecretKey;
+    private $proxy = false;
 
-    public function __construct($AccessKey, $SecretKey)
+    public function __construct($AccessKey, $SecretKey, $proxy = false)
     {
         $this->AccessKey = $AccessKey;
         $this->SecretKey = $SecretKey;
+        $this->proxy = $proxy;
     }
 
     /**
@@ -69,6 +71,9 @@ class Qiniu
     private function curl($method, $url, $body, $header)
     {
         $ch = curl_init($url);
+        if ($this->proxy) {
+            curl_set_proxy($ch);
+        }
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
