@@ -69,6 +69,7 @@ class CertOrderService
         foreach($this->domainList as $domain){
             $mainDomain = getMainDomain($domain);
             if (!Db::name('domain')->where('name', $mainDomain)->find()) {
+                if (substr($domain, 0, 2) == '*.') $domain = substr($domain, 2);
                 $cname_row = Db::name('cert_cname')->where('domain', $domain)->where('status', 1)->find();
                 if (!$cname || !$cname_row) {
                     $errmsg = '域名'.$domain.'未在本系统添加';

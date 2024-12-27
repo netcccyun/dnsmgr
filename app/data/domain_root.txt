@@ -1923,3 +1923,4 @@ com.zw
 mil.cn
 edu.kg
 edu.cn
+eu.org
