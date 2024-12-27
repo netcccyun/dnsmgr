@@ -259,16 +259,6 @@ class DeployHelper
             'note' => '需要先<a href="https://goedge.cloud/docs/API/Settings.md" target="_blank" rel="noreferrer">开启HTTP API端口</a>',
             'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
             'inputs' => [
-                'systype' => [
-                    'name' => '系统类型',
-                    'type' => 'radio',
-                    'options' => [
-                        '0' => 'GoEdge',
-                        '1' => 'FlexCDN',
-                    ],
-                    'value' => '0',
-                    'required' => true,
-                ],
                 'url' => [
                     'name' => 'HTTP API地址',
                     'type' => 'input',
@@ -296,6 +286,16 @@ class DeployHelper
                         'admin' => '系统用户',
                     ],
                     'value' => 'user',
+                    'required' => true,
+                ],
+                'systype' => [
+                    'name' => '系统类型',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => 'GoEdge',
+                        '1' => 'FlexCDN',
+                    ],
+                    'value' => '0',
                     'required' => true,
                 ],
                 'proxy' => [
