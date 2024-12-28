@@ -179,7 +179,7 @@ class west implements DnsInterface
     private function execute($path, $params)
     {
         $params['username'] = $this->username;
-        $params['time'] = $this->getMillisecond();
+        $params['time'] = getMillisecond();
         $params['token'] = md5($this->username.$this->api_password.$params['time']);
         try{
             $response = curl_client($this->baseUrl . $path, http_build_query($params), null, null, null, $this->proxy);
@@ -200,12 +200,6 @@ class west implements DnsInterface
             $this->setError('返回数据解析失败');
             return false;
         }
-    }
-
-    private function getMillisecond()
-    {
-        list($s1, $s2) = explode(' ', microtime());
-        return (float)sprintf('%.0f', (floatval($s1) + floatval($s2)) * 1000);
     }
 
     private function setError($message)

@@ -154,6 +154,26 @@ class Domain extends BaseController
         return view();
     }
 
+    public function domain_add()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        $list = Db::name('account')->select();
+        $accounts = [];
+        $types = [];
+        foreach ($list as $row) {
+            $accounts[$row['id']] = $row['id'] . '_' . DnsHelper::$dns_config[$row['type']]['name'];
+            if (!array_key_exists($row['type'], $types)) {
+                $types[$row['type']] = DnsHelper::$dns_config[$row['type']]['name'];
+            }
+            if (!empty($row['remark'])) {
+                $accounts[$row['id']] .= '（' . $row['remark'] . '）';
+            }
+        }
+        View::assign('accounts', $accounts);
+        View::assign('types', $types);
+        return view();
+    }
+
     public function domain_data()
     {
         if (!checkPermission(1)) return json(['total' => 0, 'rows' => []]);
@@ -234,6 +254,25 @@ class Domain extends BaseController
             Db::name('dmtask')->where('did', $id)->delete();
             Db::name('optimizeip')->where('did', $id)->delete();
             return json(['code' => 0]);
+        } elseif ($act == 'batchadd') {
+            if (!checkPermission(2)) return $this->alert('error', '无权限');
+            $aid = input('post.aid/d');
+            $domains = input('post.domains');
+            if (empty($domains)) return json(['code' => -1, 'msg' => '参数不能为空']);
+            $data = [];
+            foreach ($domains as $row) {
+                $data[] = [
+                    'aid' => $aid,
+                    'name' => $row['name'],
+                    'thirdid' => $row['id'],
+                    'addtime' => date('Y-m-d H:i:s'),
+                    'is_hide' => 0,
+                    'is_sso' => 1,
+                    'recordcount' => $row['recordcount'],
+                ];
+            }
+            Db::name('domain')->insertAll($data);
+            return json(['code' => 0, 'msg' => '成功添加' . count($data) . '个域名！']);
         }
         return json(['code' => -3]);
     }
@@ -249,13 +288,10 @@ class Domain extends BaseController
         $result = $dns->getDomainList($kw, $page, $pagesize);
         if (!$result) return json(['code' => -1, 'msg' => '获取域名列表失败，' . $dns->getError()]);
 
-        $newlist = [];
-        foreach ($result['list'] as $row) {
-            if (!Db::name('domain')->where('aid', $aid)->where('name', $row['Domain'])->find()) {
-                $newlist[] = $row;
-            }
+        foreach ($result['list'] as &$row) {
+            $row['disabled'] = Db::name('domain')->where('aid', $aid)->where('name', $row['Domain'])->find() != null;
         }
-        return json(['code' => 0, 'data' => ['total' => $result['total'], 'list' => $newlist]]);
+        return json(['code' => 0, 'data' => ['total' => $result['total'], 'list' => $result['list']]]);
     }
 
     //获取解析线路和最小TTL

@@ -133,7 +133,11 @@ class CertDeployService
         if (empty($this->task['processid'])) return;
         if (!is_dir(app()->getRuntimePath() . 'log')) mkdir(app()->getRuntimePath() . 'log');
         $file_name = app()->getRuntimePath().'log/'.$this->task['processid'].'.log';
+        $file_exists = file_exists($file_name);
         file_put_contents($file_name, $txt . PHP_EOL, FILE_APPEND);
+        if (!$file_exists) {
+            @chmod($file_name, 0777);
+        }
         if(php_sapi_name() == 'cli'){
             echo $txt . PHP_EOL;
         }

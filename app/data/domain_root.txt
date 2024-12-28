@@ -1924,3 +1924,5 @@ mil.cn
 edu.kg
 edu.cn
 eu.org
+us.kg
+ggff.net

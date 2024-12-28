@@ -12,7 +12,6 @@
 			</div>
 			<div class="modal-body">
 				<form class="form-horizontal" id="form-store">
-					<input type="hidden" name="recordcount"/>
 					<div class="form-group">
 						<label class="col-sm-3 control-label">域名账户</label>
 						<div class="col-sm-9">
@@ -27,8 +26,10 @@
 						<label class="col-sm-3 control-label">选择域名</label>
 						<div class="col-sm-9">
 							<select name="domain" id="domainList" class="form-control"></select>
+							<span class="pull-right"><a href="/domain/add">批量添加</a></span>
 						</div>
 					</div>
+					
 				</form>
 			</div>
 			<div class="modal-footer">
@@ -200,11 +201,6 @@ $(document).ready(function(){
 		getDomainList()
 	})
 
-	$('#domainList').on('select2:select', function (e) {
-		var data = e.params.data;
-		$("#form-store input[name=recordcount]").val(data.recordcount);
-	});
-
 	$('[data-toggle="popover"]').popover()
 })
 function addframe(){
@@ -222,7 +218,7 @@ function saveAdd(){
 	}
 	var name = select[0].text;
 	var thirdid = select[0].id;
-	var recordcount = $("#form-store input[name=recordcount]").val();
+	var recordcount = select[0].recordcount;
 	if(aid=='' || thirdid==''){
 		layer.alert('请确保各项不能为空！');return false;
 	}
@@ -342,9 +338,9 @@ function getDomainList(){
 				params.page = params.page || 1
 				if(data.code == 0){
 					var resultData = [];
-					for (var i = 0; i < data.data.list.length; i++) {
-						resultData.push({'id': data.data.list[i].DomainId, 'text': data.data.list[i].Domain, 'recordcount': data.data.list[i].RecordCount});
-					}
+					$.each(data.data.list, function(index, item){
+						resultData.push({'id': item.DomainId, 'text': item.Domain + (item.disabled ? ' (已添加)' : ''), 'recordcount': item.RecordCount, disabled:item.disabled});
+					})
 					return {
 						results: resultData,
 						pagination: {

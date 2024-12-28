@@ -343,7 +343,7 @@ class DeployHelper
             'taskinputs' => [],
         ],
         'mwpanel' => [
-            'name' => 'mdserver-web',
+            'name' => 'MW面板',
             'class' => 1,
             'icon' => 'mwpanel.ico',
             'note' => null,
