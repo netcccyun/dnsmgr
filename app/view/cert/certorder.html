@@ -130,6 +130,16 @@ $(document).ready(function(){
 					} else if(value == 2) {
 						return '<span class="label" style="background-color: #3e76fb;">正在验证</span>';
 					} else if(value == 1) {
+						if(row.retrytime != null){
+							var now = new Date().getTime();
+							var retry = new Date(row.retrytime).getTime();
+							var diff = retry - now;
+							if(diff > 0){
+								var min = Math.floor(diff / 60000);
+								var sec = Math.floor((diff - min * 60000) / 1000);
+								return '<span title="'+min+'分'+sec+'秒后自动验证" data-toggle="tooltip" data-placement="top" class="label" style="background-color: #3e76fb;">待验证</span>';
+							}
+						}
 						return '<span class="label" style="background-color: #3e76fb;">待验证</span>';
 					} else if(value == 0) {
 						return '<span class="label label-info">待提交</span>';
@@ -142,6 +152,16 @@ $(document).ready(function(){
 						else if(value == -5) title = '验证订单失败';
 						else if(value == -6) title = '订单验证未通过';
 						else if(value == -7) title = '签发证书失败';
+						if(row.retrytime != null){
+							var now = new Date().getTime();
+							var retry = new Date(row.retrytime).getTime();
+							var diff = retry - now;
+							if(diff > 0){
+								var min = Math.floor(diff / 60000);
+								var sec = Math.floor((diff - min * 60000) / 1000);
+								return '<span title="'+min+'分'+sec+'秒后自动重试" data-toggle="tooltip" data-placement="top" class="label label-danger">'+title+'</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
+							}
+						}
 						return '<span class="label label-danger">'+title+'</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
 					}
 				}
