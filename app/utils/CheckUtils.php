@@ -76,7 +76,7 @@ class CheckUtils
     {
         if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
             $target = gethostbyname($target);
-            if (!$target) return ['status' => false, 'error' => 'DNS resolve failed', 'usetime' => 0];
+            if (!$target) return ['status' => false, 'errmsg' => 'DNS resolve failed', 'usetime' => 0];
         }
         $starttime = getMillisecond();
         $fp = @fsockopen($target, $port, $errCode, $errStr, $timeout);
@@ -93,13 +93,13 @@ class CheckUtils
 
     public static function ping($target)
     {
-        if (!function_exists('exec')) return ['status' => false, 'error' => 'exec函数不可用', 'usetime' => 0];
+        if (!function_exists('exec')) return ['status' => false, 'errmsg' => 'exec函数不可用', 'usetime' => 0];
         if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
             $target = gethostbyname($target);
-            if (!$target) return ['status' => false, 'error' => 'DNS resolve failed', 'usetime' => 0];
+            if (!$target) return ['status' => false, 'errmsg' => 'DNS resolve failed', 'usetime' => 0];
         }
         if (!filter_var($target, FILTER_VALIDATE_IP)) {
-            return ['status' => false, 'error' => 'Invalid IP address', 'usetime' => 0];
+            return ['status' => false, 'errmsg' => 'Invalid IP address', 'usetime' => 0];
         }
         $timeout = 1;
         exec('ping -c 1 -w '.$timeout.' '.$target.'', $output, $return_var);

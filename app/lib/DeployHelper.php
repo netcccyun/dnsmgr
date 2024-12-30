@@ -939,6 +939,43 @@ class DeployHelper
                 ],
             ],
         ],
+        'west' => [
+            'name' => '西部数码',
+            'class' => 2,
+            'icon' => 'west.ico',
+            'note' => '支持部署到西部数码虚拟主机',
+            'inputs' => [
+                'username' => [
+                    'name' => '用户名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'api_password' => [
+                    'name' => 'API密码',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'sitename' => [
+                    'name' => 'FTP账号',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+            ],
+        ],
         'baishan' => [
             'name' => '白山云',
             'class' => 2,
