@@ -76,7 +76,7 @@ class AliyunNew
 
         // step 1: build canonical request string
         $httpRequestMethod = $method;
-        $canonicalUri = $path;
+        $canonicalUri = $this->getCanonicalURI($path);
         $canonicalQueryString = $this->getCanonicalQueryString($query);
         [$canonicalHeaders, $signedHeaders] = $this->getCanonicalHeaders($headers);
         $hashedRequestPayload = hash("sha256", $body);
@@ -106,6 +106,17 @@ class AliyunNew
         $search = ['+', '*', '%7E'];
         $replace = ['%20', '%2A', '~'];
         return str_replace($search, $replace, urlencode($str));
+    }
+
+    private function getCanonicalURI($path)
+    {
+        if (empty($path)) return '/';
+        $pattens = explode('/', $path);
+        $pattens = array_map(function ($item) {
+            return $this->escape($item);
+        }, $pattens);
+        $canonicalURI = implode('/', $pattens);
+        return $canonicalURI;
     }
 
     private function getCanonicalQueryString($parameters)

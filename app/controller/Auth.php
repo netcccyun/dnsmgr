@@ -53,7 +53,9 @@ class Auth extends BaseController
             } else {
                 if ($user) {
                     Db::name('log')->insert(['uid' => $user['id'], 'action' => '登录失败', 'data' => 'IP:' . $this->clientip, 'addtime' => date("Y-m-d H:i:s")]);
-                    if (isset($user['totp_open']) && $user['totp_open'] == 1 && !empty($user['totp_secret'])) $login_limit_count = 10;
+                    if (isset($user['totp_open']) && $user['totp_open'] == 1 && !empty($user['totp_secret'])) {
+                        return json(['code' => -1, 'msg' => '用户名或密码错误', 'vcode' => 1]);
+                    }
                 }
                 if (!file_exists($login_limit_file)) {
                     $login_limit = ['count' => 0, 'time' => 0];

@@ -74,6 +74,7 @@ class CheckUtils
 
     public static function tcp($target, $port, $timeout)
     {
+        if (substr($target, -1) == '.') $target = substr($target, 0, -1);
         if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
             $target = gethostbyname($target);
             if (!$target) return ['status' => false, 'errmsg' => 'DNS resolve failed', 'usetime' => 0];
@@ -94,6 +95,7 @@ class CheckUtils
     public static function ping($target)
     {
         if (!function_exists('exec')) return ['status' => false, 'errmsg' => 'exec函数不可用', 'usetime' => 0];
+        if (substr($target, -1) == '.') $target = substr($target, 0, -1);
         if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
             $target = gethostbyname($target);
             if (!$target) return ['status' => false, 'errmsg' => 'DNS resolve failed', 'usetime' => 0];

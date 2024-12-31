@@ -70,8 +70,7 @@ class HuaweiCloud
 
         // step 1: build canonical request string
         $httpRequestMethod = $method;
-        $canonicalUri = $path;
-        if (substr($canonicalUri, -1) != "/") $canonicalUri .= "/";
+        $canonicalUri = $this->getCanonicalURI($path);
         $canonicalQueryString = $this->getCanonicalQueryString($query);
         [$canonicalHeaders, $signedHeaders] = $this->getCanonicalHeaders($headers);
         $hashedRequestPayload = hash("sha256", $body);
@@ -103,6 +102,18 @@ class HuaweiCloud
         $search = ['+', '*', '%7E'];
         $replace = ['%20', '%2A', '~'];
         return str_replace($search, $replace, urlencode($str));
+    }
+
+    private function getCanonicalURI($path)
+    {
+        if (empty($path)) return '/';
+        $pattens = explode('/', $path);
+        $pattens = array_map(function ($item) {
+            return $this->escape($item);
+        }, $pattens);
+        $canonicalURI = implode('/', $pattens);
+        if (substr($canonicalURI, -1) != '/') $canonicalURI .= '/';
+        return $canonicalURI;
     }
 
     private function getCanonicalQueryString($parameters)
