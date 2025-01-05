@@ -117,7 +117,9 @@ class CertOrderService
             $this->saveLog(date('Y-m-d H:i:s').' - 开始添加DNS记录');
             $this->addDns();
             $this->saveLog('添加DNS记录成功，请等待生效后进行验证...');
-            Db::name('cert_order')->where('id', $this->order['id'])->update(['retrytime' => date('Y-m-d H:i:s', time() + 300)]);
+            if (CertHelper::$cert_config[$this->atype]['cname']) {
+                Db::name('cert_order')->where('id', $this->order['id'])->update(['retrytime' => date('Y-m-d H:i:s', time() + 180)]);
+            }
             return 1;
         }
         // step4: 查询DNS
