@@ -29,7 +29,16 @@ pre.pre-log{height: 330px;overflow-y: auto;width: 100%;background-color: rgba(51
   </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新订单列表"><i class="fa fa-refresh"></i> 刷新</a>
-  <a href="/cert/order/add" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
+  <div class="btn-group">
+	<a href="/cert/order/add" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
+	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+		<span class="caret"></span>
+	  </button>
+	  <ul class="dropdown-menu">
+		<li><a href="/cert/order/import">导入已有证书</a></li>
+	  </ul>
+  </div>
+  
 </form>
 
       <table id="listTable">

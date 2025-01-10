@@ -229,7 +229,7 @@ class MsgNotice
                     'content' => $content,
                 ],
             ];
-        } elseif (strpos($url, 'open.feishu.cn')) {
+        } elseif (strpos($url, 'open.feishu.cn') || strpos($url, 'open.larksuite.com')) {
             $content = str_replace(['\*', '**'], ['*', ''], strip_tags($content));
             $post = [
                 'msg_type' => 'text',

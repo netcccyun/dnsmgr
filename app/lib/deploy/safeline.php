@@ -68,7 +68,15 @@ class safeline implements DeployInterface
             }
         }
         if ($success == 0) {
-            throw new Exception($errmsg ? $errmsg : '没有要更新的证书');
+            $params = [
+                'manual' => [
+                    'crt' => $fullchain,
+                    'key' => $privatekey,
+                ],
+                'type' => 2,
+            ];
+            $this->request('/api/open/cert', $params);
+            $this->log("证书上传成功！");
         }
     }
 

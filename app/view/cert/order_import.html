@@ -1,0 +1,167 @@
+{extend name="common/layout" /}
+{block name="title"}导入已有证书{/block}
+{block name="main"}
+<style>
+.tips{color: #f6a838; padding-left: 5px;}
+.control-label[is-required]:before {
+    content: "*";
+    color: #f56c6c;
+    margin-right: 4px;
+}
+.input-group-addon{padding: 6px 6px;}
+</style>
+<div class="row" id="app">
+<div class="col-xs-12 center-block" style="float: none;">
+<div class="panel panel-default">
+<div class="panel-heading"><h3 class="panel-title"><a href="/cert/certorder" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>导入已有证书</h3></div>
+<div class="panel-body">
+  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="taskform">
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right" is-required>证书内容</label>
+        <div class="col-sm-6">
+            <div class="input-group">
+                <textarea name="fullchain" v-model="set.fullchain" class="form-control" rows="5" placeholder="输入PEM格式证书链" required></textarea>
+                <a class="btn btn-default input-group-addon" @click="upload('fullchain')" title="上传证书文件"><i class="fa fa-upload"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right" is-required>私钥内容</label>
+        <div class="col-sm-6">
+            <div class="input-group">
+                <textarea name="privatekey" v-model="set.privatekey" class="form-control" rows="5" placeholder="输入PEM格式私钥" required></textarea>
+                <a class="btn btn-default input-group-addon" @click="upload('privatekey')" title="上传私钥文件"><i class="fa fa-upload"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 col-xs-12 control-label no-padding-right" is-required>证书续期账户</label>
+        <div class="col-sm-6"><select name="aid" v-model="set.aid" class="form-control" required>
+            <option value="">--选择证书账户--</option>
+            {foreach $accounts as $k=>$v}
+                <option value="{$k}" data-type="{$v.type}">{$v.name}</option>
+            {/foreach}
+        </select></div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right" is-required>签名算法</label>
+        <div class="col-sm-6">
+            <label class="radio-inline" v-for="item in keytypeList">
+                <input type="radio" name="keytype" :value="item" v-model="set.keytype"> {{item}}
+            </label>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right" is-required>密钥长度</label>
+        <div class="col-sm-6">
+            <label class="radio-inline" v-for="item in keysizeList">
+                <input type="radio" name="keysize" :value="item.value" v-model="set.keysize"> {{item.label}}
+            </label>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
+    </div>
+  </form>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}vue/2.6.14/vue.min.js"></script>
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="/static/js/bootstrapValidator.min.js"></script>
+<script>
+new Vue({
+    el: '#app',
+    data: {
+        type: '',
+        set: {
+            fullchain: '',
+            privatekey: '',
+            aid: '',
+            keytype: '',
+            keysize: '',
+        },
+        keytypeList: [
+            'RSA',
+            'ECC'
+        ],
+        keysizeMap: [
+            {label:'2048 bit',value:'2048',type:'RSA'},
+            {label:'3072 bit',value:'3072',type:'RSA'},
+            {label:'P-256',value:'256',type:'ECC'},
+            {label:'P-384',value:'384',type:'ECC'},
+        ],
+        keysizeList: [],
+    },
+    watch: {
+        'set.aid': function(val){
+            this.type = $('option:selected', 'select[name=aid]').data('type');
+        },
+        'set.keytype': function(val){
+            this.keysizeList = this.keysizeMap.filter((item) => {
+                return item.type == val;
+            })
+            if(!this.keysizeList.filter((item) => {return item.value == this.set.keysize}).length)
+                this.set.keysize = this.keysizeList[0].value;
+        },
+    },
+    mounted() {
+        this.set.keytype = 'RSA';
+        $("#taskform").bootstrapValidator({
+            live: 'submitted',
+        });
+        $('[data-toggle="tooltip"]').tooltip();
+    },
+    methods: {
+        submit(){
+            var that=this;
+            $("#taskform").data("bootstrapValidator").validate();
+            if(!$("#taskform").data("bootstrapValidator").isValid()){
+                return false;
+            }
+            var ii = layer.load(2, {shade:[0.1,'#fff']});
+            $.ajax({
+                type: "POST",
+                url: "",
+                data: this.set,
+                dataType: 'json',
+                success: function(data) {
+                    layer.close(ii);
+                    if(data.code == 0){
+                        layer.alert(data.msg, {icon: 1}, function(){
+                            if(document.referrer.indexOf('/cert/certorder?') > 0)
+                                window.location.href = document.referrer;
+                            else
+                                window.location.href = '/cert/certorder';
+                        });
+                    }else{
+                        layer.alert(data.msg, {icon: 2});
+                    }
+                },
+                error: function(data){
+                    layer.close(ii);
+                    layer.msg('服务器错误');
+                }
+            });
+        },
+        upload(name){
+            //读取上传文件并填充到表单
+            var file = document.createElement('input');
+            file.type = 'file';
+            file.accept = '.pem,.crt,.key';
+            file.style.display = 'none';
+            file.onchange = function(){
+                var reader = new FileReader();
+                reader.onload = function(e){
+                    this.set[name] = e.target.result;
+                }.bind(this);
+                reader.readAsText(file.files[0]);
+            }.bind(this);
+            document.body.appendChild(file);
+            file.click();
+        }
+    },
+});
+</script>
+{/block}

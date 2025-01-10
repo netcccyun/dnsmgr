@@ -317,6 +317,72 @@ class Cert extends BaseController
             Db::name('cert_domain')->insertAll($domainList);
             Db::commit();
             return json(['code' => 0, 'msg' => '修改证书订单成功！']);
+        } elseif ($action == 'import') {
+            $fullchain = input('post.fullchain', null, 'trim');
+            $privatekey = input('post.privatekey', null, 'trim');
+            if (!openssl_x509_read($fullchain)) return json(['code' => -1, 'msg' => '证书内容填写错误']);
+            if (!openssl_get_privatekey($privatekey)) return json(['code' => -1, 'msg' => '私钥内容填写错误']);
+            if (!openssl_x509_check_private_key($fullchain, $privatekey)) return json(['code' => -1, 'msg' => 'SSL证书与私钥不匹配']);
+            $certInfo = openssl_x509_parse($fullchain, true);
+            if (!$certInfo || !isset($certInfo['extensions']['subjectAltName'])) return json(['code' => -1, 'msg' => '证书内容解析失败']);
+
+            $domains = [];
+            $subjectAltName = explode(',', $certInfo['extensions']['subjectAltName']);
+            foreach ($subjectAltName as $domain) {
+                $domain = trim($domain);
+                if (strpos($domain, 'DNS:') === 0) $domain = substr($domain, 4);
+                if (!empty($domain)) {
+                    $domains[] = $domain;
+                }
+            }
+            $domains = array_unique($domains);
+            if (empty($domains)) return json(['code' => -1, 'msg' => '证书绑定域名不能为空']);
+            $issuetime = date('Y-m-d H:i:s', $certInfo['validFrom_time_t']);
+            $expiretime = date('Y-m-d H:i:s', $certInfo['validTo_time_t']);
+            $issuer = $certInfo['issuer']['CN'];
+
+            $order_ids = Db::name('cert_order')->where('issuetime', $issuetime)->column('id');
+            if (!empty($order_ids)) {
+                foreach ($order_ids as $order_id) {
+                    $domains2 = Db::name('cert_domain')->where('oid', $order_id)->column('domain');
+                    if (arrays_are_equal($domains2, $domains)) {
+                        return json(['code' => -1, 'msg' => '该证书已存在，无需重复添加']);
+                    }
+                }
+            }
+
+            $order = [
+                'aid' => input('post.aid/d'),
+                'keytype' => input('post.keytype'),
+                'keysize' => input('post.keysize'),
+                'addtime' => date('Y-m-d H:i:s'),
+                'updatetime' => date('Y-m-d H:i:s'),
+                'issuetime' => $issuetime,
+                'expiretime' => $expiretime,
+                'issuer' => $issuer,
+                'status' => 3,
+                'fullchain' => $fullchain,
+                'privatekey' => $privatekey,
+            ];
+            if (empty($order['aid']) || empty($order['keytype']) || empty($order['keysize'])) return json(['code' => -1, 'msg' => '必填参数不能为空']);
+
+            $res = $this->check_order($order, $domains);
+            if (is_array($res)) return json($res);
+
+            Db::startTrans();
+            $id = Db::name('cert_order')->insertGetId($order);
+            $domainList = [];
+            $i = 1;
+            foreach ($domains as $domain) {
+                $domainList[] = [
+                    'oid' => $id,
+                    'domain' => $domain,
+                    'sort' => $i++,
+                ];
+            }
+            Db::name('cert_domain')->insertAll($domainList);
+            Db::commit();
+            return json(['code' => 0, 'msg' => '导入证书成功！']);
         } elseif ($action == 'del') {
             $id = input('post.id/d');
             $dcount = DB::name('cert_deploy')->where('oid', $id)->count();
@@ -368,7 +434,11 @@ class Cert extends BaseController
         $max_domains = CertHelper::$cert_config[$account['type']]['max_domains'];
         $wildcard = CertHelper::$cert_config[$account['type']]['wildcard'];
         $cname = CertHelper::$cert_config[$account['type']]['cname'];
-        if (count($domains) > $max_domains) return ['code' => -1, 'msg' => '域名数量不能超过'.$max_domains.'个'];
+        if (count($domains) > $max_domains) {
+            if (!(count($domains) == 2 && $max_domains == 1 && ltrim($domains[0], 'www.') == ltrim($domains[1], 'www.'))) {
+                return ['code' => -1, 'msg' => '域名数量不能超过'.$max_domains.'个'];
+            }
+        }
 
         foreach($domains as $domain){
             if(!$wildcard && strpos($domain, '*') !== false) return ['code' => -1, 'msg' => '该证书账户类型不支持泛域名'];
@@ -435,6 +505,20 @@ class Cert extends BaseController
 
         View::assign('info', $order);
         View::assign('action', $action);
+        return View::fetch();
+    }
+
+    public function order_import()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        $accounts = [];
+        foreach (Db::name('cert_account')->where('deploy', 0)->select() as $row) {
+            $accounts[$row['id']] = ['name'=>$row['id'].'_'.CertHelper::$cert_config[$row['type']]['name'], 'type'=>$row['type']];
+            if (!empty($row['remark'])) {
+                $accounts[$row['id']]['name'] .= '（' . $row['remark'] . '）';
+            }
+        }
+        View::assign('accounts', $accounts);
         return View::fetch();
     }
 

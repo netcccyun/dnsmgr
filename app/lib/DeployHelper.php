@@ -1015,6 +1015,48 @@ class DeployHelper
                 ],
             ],
         ],
+        'ctyun' => [
+            'name' => '天翼云',
+            'class' => 2,
+            'icon' => 'ctyun.ico',
+            'note' => '支持部署到天翼云CDN',
+            'inputs' => [
+                'AccessKeyId' => [
+                    'name' => 'AccessKeyId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'SecretAccessKey' => [
+                    'name' => 'SecretAccessKey',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'product' => [
+                    'name' => '产品',
+                    'type' => 'hidden',
+                    'value' => 'cdn',
+                ],
+                'domain' => [
+                    'name' => 'CDN域名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+            ],
+        ],
         'allwaf' => [
             'name' => 'AllWAF',
             'class' => 2,

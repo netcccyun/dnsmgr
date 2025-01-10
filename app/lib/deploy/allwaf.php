@@ -52,14 +52,33 @@ class allwaf implements DeployInterface
         $this->log('获取证书列表成功(total=' . count($list) . ')');
 
         $certInfo = openssl_x509_parse($fullchain, true);
+        $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
-        foreach ($list as $row) {
+        if (!empty($list)) {
+            foreach ($list as $row) {
+                $params = [
+                    'sslCertId' => $row['id'],
+                    'isOn' => true,
+                    'name' => $row['name'],
+                    'description' => $row['description'],
+                    'serverName' => $row['serverName'],
+                    'isCA' => false,
+                    'certData' => base64_encode($fullchain),
+                    'keyData' => base64_encode($privatekey),
+                    'timeBeginAt' => $certInfo['validFrom_time_t'],
+                    'timeEndAt' => $certInfo['validTo_time_t'],
+                    'dnsNames' => $domains,
+                    'commonNames' => [$certInfo['issuer']['CN']],
+                ];
+                $this->request('/SSLCertService/updateSSLCert', $params);
+                $this->log('证书ID:' . $row['id'] . '更新成功！');
+            }
+        } else {
             $params = [
-                'sslCertId' => $row['id'],
                 'isOn' => true,
-                'name' => $row['name'],
-                'description' => $row['description'],
-                'serverName' => $row['serverName'],
+                'name' => $cert_name,
+                'description' => $cert_name,
+                'serverName' => $certInfo['subject']['CN'],
                 'isCA' => false,
                 'certData' => base64_encode($fullchain),
                 'keyData' => base64_encode($privatekey),
@@ -68,8 +87,8 @@ class allwaf implements DeployInterface
                 'dnsNames' => $domains,
                 'commonNames' => [$certInfo['issuer']['CN']],
             ];
-            $this->request('/SSLCertService/updateSSLCert', $params);
-            $this->log('证书ID:' . $row['id'] . '更新成功！');
+            $result = $this->request('/SSLCertService/createSSLCert', $params);
+            $this->log('证书ID:' . $result['sslCertId'] . '添加成功！');
         }
     }
 

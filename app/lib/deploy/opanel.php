@@ -40,33 +40,35 @@ class opanel implements DeployInterface
 
         $success = 0;
         $errmsg = null;
-        foreach ($data['items'] as $row) {
-            if (empty($row['primaryDomain'])) continue;
-            $cert_domains = [];
-            $cert_domains[] = $row['primaryDomain'];
-            if(!empty($row['domains'])) $cert_domains += explode(',', $row['domains']);
-            $flag = false;
-            foreach ($cert_domains as $domain) {
-                if (in_array($domain, $domains)) {
-                    $flag = true;
-                    break;
+        if (!empty($data['items'])) {
+            foreach ($data['items'] as $row) {
+                if (empty($row['primaryDomain'])) continue;
+                $cert_domains = [];
+                $cert_domains[] = $row['primaryDomain'];
+                if(!empty($row['domains'])) $cert_domains += explode(',', $row['domains']);
+                $flag = false;
+                foreach ($cert_domains as $domain) {
+                    if (in_array($domain, $domains)) {
+                        $flag = true;
+                        break;
+                    }
                 }
-            }
-            if ($flag) {
-                $params = [
-                    'sslID' => $row['id'],
-                    'type' => 'paste',
-                    'certificate' => $fullchain,
-                    'privateKey' => $privatekey,
-                    'description' => '',
-                ];
-                try {
-                    $this->request('/api/v1/websites/ssl/upload', $params);
-                    $this->log("证书ID:{$row['id']}更新成功！");
-                    $success++;
-                } catch (Exception $e) {
-                    $errmsg = $e->getMessage();
-                    $this->log("证书ID:{$row['id']}更新失败：" . $errmsg);
+                if ($flag) {
+                    $params = [
+                        'sslID' => $row['id'],
+                        'type' => 'paste',
+                        'certificate' => $fullchain,
+                        'privateKey' => $privatekey,
+                        'description' => '',
+                    ];
+                    try {
+                        $this->request('/api/v1/websites/ssl/upload', $params);
+                        $this->log("证书ID:{$row['id']}更新成功！");
+                        $success++;
+                    } catch (Exception $e) {
+                        $errmsg = $e->getMessage();
+                        $this->log("证书ID:{$row['id']}更新失败：" . $errmsg);
+                    }
                 }
             }
         }
