@@ -79,6 +79,9 @@ class CheckUtils
             $target = gethostbyname($target);
             if (!$target) return ['status' => false, 'errmsg' => 'DNS resolve failed', 'usetime' => 0];
         }
+        if (filter_var($target, FILTER_VALIDATE_IP) && strpos($target, ':') !== false) {
+            $target = '['.$target.']';
+        }
         $starttime = getMillisecond();
         $fp = @fsockopen($target, $port, $errCode, $errStr, $timeout);
         if ($fp) {

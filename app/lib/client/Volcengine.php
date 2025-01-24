@@ -38,7 +38,9 @@ class Volcengine
     public function request($method, $action, $params = [], $querys = [])
     {
         if (!empty($params)) {
-            $params = array_filter($params, function ($a) { return $a !== null;});
+            $params = array_filter($params, function ($a) {
+                return $a !== null;
+            });
         }
 
         $query = [
@@ -78,9 +80,51 @@ class Volcengine
         return $this->curl($method, $url, $body, $header);
     }
 
+    /**
+     * @param string $method 请求方法
+     * @param string $action 方法名称
+     * @param array $params 请求参数
+     * @return array
+     * @throws Exception
+     */
+    public function tos_request($method, $params = [], $query = [])
+    {
+        if (!empty($params)) {
+            $params = array_filter($params, function ($a) {
+                return $a !== null;
+            });
+        }
+
+        $body = '';
+        if ($method != 'GET') {
+            $body = !empty($params) ? json_encode($params) : '';
+        }
+
+        $time = time();
+        $headers = [
+            'Host' => $this->endpoint,
+            'X-Tos-Date' => gmdate("Ymd\THis\Z", $time),
+            'X-Tos-Content-Sha256' => hash("sha256", $body),
+        ];
+        if ($body) {
+            $headers['Content-Type'] = 'application/json';
+        }
+        $path = '/';
+
+        $authorization = $this->generateSign($method, $path, $query, $headers, $body, $time);
+        $headers['Authorization'] = $authorization;
+
+        $url = 'https://' . $this->endpoint . $path . '?' . http_build_query($query);
+        $header = [];
+        foreach ($headers as $key => $value) {
+            $header[] = $key . ': ' . $value;
+        }
+        return $this->curl($method, $url, $body, $header);
+    }
+
     private function generateSign($method, $path, $query, $headers, $body, $time)
     {
-        $algorithm = "HMAC-SHA256";
+        $algorithm = $this->service == 'tos' ? "TOS4-HMAC-SHA256" : "HMAC-SHA256";
 
         // step 1: build canonical request string
         $httpRequestMethod = $method;
@@ -177,21 +221,27 @@ class Volcengine
             curl_close($ch);
             throw new Exception('Curl error: ' . curl_error($ch));
         }
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         $arr = json_decode($response, true);
-        if ($arr) {
+        if ($httpCode == 200) {
+            if (isset($arr['Result'])) {
+                return $arr['Result'];
+            }
+            return true;
+        } else {
             if (isset($arr['ResponseMetadata']['Error']['MessageCN'])) {
                 throw new Exception($arr['ResponseMetadata']['Error']['MessageCN']);
             } elseif (isset($arr['ResponseMetadata']['Error']['Message'])) {
                 throw new Exception($arr['ResponseMetadata']['Error']['Message']);
-            } elseif (isset($arr['Result'])) {
-                return $arr['Result'];
+            } elseif (isset($arr['Message'])) {
+                throw new Exception($arr['Message']);
+            } elseif (isset($arr['message'])) {
+                throw new Exception($arr['message']);
             } else {
-                return true;
+                throw new Exception('返回数据解析失败(http_code=' . $httpCode . ')');
             }
-        } else {
-            throw new Exception('返回数据解析失败');
         }
     }
 }

@@ -227,7 +227,7 @@ class ACMECert extends ACMEv2
 
 	public function authOrder($order)
 	{
-		if ($order['status'] != 'ready' && empty($order['challenges'])) {
+		if ($order['status'] != 'pending' && $order['status'] != 'ready' && empty($order['challenges'])) {
 			throw new Exception('No challenges available');
 		}
 

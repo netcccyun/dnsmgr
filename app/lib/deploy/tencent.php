@@ -37,7 +37,7 @@ class tencent implements DeployInterface
             if (empty($config['regionid'])) throw new Exception('所属地域ID不能为空');
             if (empty($config['cos_bucket'])) throw new Exception('存储桶名称不能为空');
             if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
-            $instance_id = $config['regionid'] . '#' . $config['cos_bucket'] . '#' . $config['domain'];
+            $instance_id = $config['regionid'] . '|' . $config['cos_bucket'] . '|' . $config['domain'];
             $this->client = new TencentCloud($this->SecretId, $this->SecretKey, 'ssl.tencentcloudapi.com', 'ssl', '2019-12-05', $config['regionid'], $this->proxy);
         } elseif ($config['product'] == 'tke') {
             if (empty($config['regionid'])) throw new Exception('所属地域ID不能为空');
@@ -52,6 +52,10 @@ class tencent implements DeployInterface
             if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
             $instance_id = $config['regionid'] . '|' . $config['lighthouse_id'] . '|' . $config['domain'];
             $this->client = new TencentCloud($this->SecretId, $this->SecretKey, 'ssl.tencentcloudapi.com', 'ssl', '2019-12-05', $config['regionid'], $this->proxy);
+        } elseif ($config['product'] == 'ddos') {
+            if (empty($config['lighthouse_id'])) throw new Exception('实例ID不能为空');
+            if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
+            $instance_id = $config['lighthouse_id'] . '|' . $config['domain'] . '|443';
         } elseif ($config['product'] == 'clb') {
             return $this->deploy_clb($cert_id, $config);
         } elseif ($config['product'] == 'scf') {

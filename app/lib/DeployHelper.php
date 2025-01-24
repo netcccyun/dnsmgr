@@ -667,7 +667,7 @@ class DeployHelper
                     'name' => '实例ID',
                     'type' => 'input',
                     'placeholder' => '',
-                    'show' => 'product==\'lighthouse\'',
+                    'show' => 'product==\'lighthouse\'||product==\'ddos\'',
                     'required' => true,
                 ],
                 'domain' => [
@@ -816,8 +816,16 @@ class DeployHelper
                     'options' => [
                         ['value'=>'cdn', 'label'=>'CDN'],
                         ['value'=>'oss', 'label'=>'OSS'],
+                        ['value'=>'pili', 'label'=>'视频直播'],
                     ],
                     'value' => 'cdn',
+                    'required' => true,
+                ],
+                'pili_hub' => [
+                    'name' => '直播空间名称',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'show' => 'product==\'pili\'',
                     'required' => true,
                 ],
                 'domain' => [
@@ -931,10 +939,39 @@ class DeployHelper
                 ],
             ],
             'taskinputs' => [
+                'product' => [
+                    'name' => '要部署的产品',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'cdn', 'label'=>'内容分发网络CDN'],
+                        ['value'=>'dcdn', 'label'=>'全站加速DCDN'],
+                        ['value'=>'clb', 'label'=>'负载均衡CLB'],
+                        ['value'=>'tos', 'label'=>'对象存储TOS'],
+                        ['value'=>'live', 'label'=>'视频直播'],
+                        ['value'=>'imagex', 'label'=>'veImageX'],
+                    ],
+                    'value' => 'cdn',
+                    'required' => true,
+                ],
+                'bucket_domain' => [
+                    'name' => 'Bucket域名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'show' => 'product==\'tos\'',
+                    'required' => true,
+                ],
                 'domain' => [
                     'name' => '绑定的域名',
                     'type' => 'input',
                     'placeholder' => '多个域名可使用,分隔',
+                    'show' => 'product!=\'clb\'',
+                    'required' => true,
+                ],
+                'listener_id' => [
+                    'name' => '监听器ID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'show' => 'product==\'clb\'',
                     'required' => true,
                 ],
             ],

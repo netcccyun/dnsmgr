@@ -4,6 +4,7 @@
 <style>
 .copy-btn{color:#52c41a;cursor:pointer;margin-right: 5px;}
 .copy-btn:hover{color:#85ef79;}
+.btn-refresh{margin-left:5px;font-size:10px;background-color:#6896cf}
 tbody tr>td:nth-child(3){word-break:break-all;max-width:180px;}
 tbody tr>td:nth-child(4){word-break:break-all;max-width:260px;}
 </style>
@@ -120,7 +121,7 @@ $(document).ready(function(){
 					} else {
 						html += '<span class="label label-warning">未验证</span>';
 					}
-					html += '&nbsp;<a href="javascript:checkItem('+row.id+')" title="立即验证" class="btn btn-primary btn-xs"><i class="fa fa-refresh"></i></a>';
+					html += '<a href="javascript:checkItem('+row.id+')" title="立即验证" class="btn btn-primary btn-xs btn-refresh"><i class="fa fa-refresh"></i></a>';
 					return html;
 				}
 			},

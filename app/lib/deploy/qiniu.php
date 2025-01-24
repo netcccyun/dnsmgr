@@ -42,6 +42,8 @@ class qiniu implements DeployInterface
             $this->deploy_cdn($domain, $cert_id);
         } elseif ($config['product'] == 'oss') {
             $this->deploy_oss($domain, $cert_id);
+        } elseif ($config['product'] == 'pili') {
+            $this->deploy_pili($config['pili_hub'], $domain, $cert_name);
         } else {
             throw new Exception('未知的产品类型');
         }
@@ -85,6 +87,15 @@ class qiniu implements DeployInterface
         ];
         $this->client->request('POST', '/cert/bind', null, $param);
         $this->log('OSS域名 ' . $domain . ' 证书部署成功！');
+    }
+
+    private function deploy_pili($hub, $domain, $cert_name)
+    {
+        $param = [
+            'CertName' => $cert_name,
+        ];
+        $this->client->pili_request('POST', '/v2/hubs/'.$hub.'/domains/'.$domain.'/cert', null, $param);
+        $this->log('视频直播域名 ' . $domain . ' 证书部署成功！');
     }
 
     private function get_cert_id($fullchain, $privatekey, $common_name, $cert_name)
