@@ -75,10 +75,10 @@ class cloudflare implements DnsInterface
         if ($data) {
             $list = [];
             foreach ($data['result'] as $row) {
-                $name = $row['zone_name'] == $row['name'] ? '@' : str_replace('.'.$row['zone_name'], '', $row['name']);
+                $name = $this->domain == $row['name'] ? '@' : str_replace('.'.$this->domain, '', $row['name']);
                 $list[] = [
                     'RecordId' => $row['id'],
-                    'Domain' => $row['zone_name'],
+                    'Domain' => $this->domain,
                     'Name' => $name,
                     'Type' => $row['type'],
                     'Value' => $row['content'],
@@ -107,11 +107,11 @@ class cloudflare implements DnsInterface
     {
         $data = $this->send_reuqest('GET', '/zones/'.$this->domainid.'/dns_records/'.$RecordId);
         if ($data) {
-            $name = $data['result']['zone_name'] == $data['result']['name'] ? '@' : str_replace('.' . $data['result']['zone_name'], '', $data['result']['name']);
+            $name = $this->domain == $data['result']['name'] ? '@' : str_replace('.' . $this->domain, '', $data['result']['name']);
             return [
                 'RecordId' => $data['result']['id'],
-                'Domain' => $data['result']['zone_name'],
-                'Name' => str_replace('.'.$data['result']['zone_name'], '', $data['result']['name']),
+                'Domain' => $this->domain,
+                'Name' => $name,
                 'Type' => $data['result']['type'],
                 'Value' => $data['result']['content'],
                 'Line' => $data['result']['proxied'] ? '1' : '0',

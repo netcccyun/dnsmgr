@@ -26,7 +26,7 @@ class btpanel implements DeployInterface
         $path = '/config?action=get_config';
         $response = $this->request($path, []);
         $result = json_decode($response, true);
-        if (isset($result['status']) && $result['status'] == 1) {
+        if (isset($result['status']) && ($result['status']==1 || isset($result['sites_path']))) {
             return true;
         } else {
             throw new Exception(isset($result['msg']) ? $result['msg'] : '面板地址无法连接');
