@@ -140,7 +140,7 @@ $(document).ready(function(){
 				dataType: 'jsonp',
 				jsonpCallback: 'callback'
 			}).done(function(data){
-				$("#checkupdate").html(data.msg);
+				$("#checkupdate").html(data.msg+'<li class="list-group-item">Source & Issue: <a href="https://github.com/netcccyun/dnsmgr" target="_blank" rel="noopener noreferrer">github</a></li>');
 			})
         }
     })
