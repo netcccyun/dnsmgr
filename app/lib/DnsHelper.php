@@ -126,6 +126,7 @@ class DnsHelper
         'huoshan' => ['DEF' => 'default', 'CT' => 'telecom', 'CU' => 'unicom', 'CM' => 'mobile', 'AB' => 'oversea'],
         'baidu' => ['DEF' => 'default', 'CT' => 'ct', 'CU' => 'cnc', 'CM' => 'cmnet', 'AB' => ''],
         'cloudflare' => ['DEF' => '0'],
+        'namesilo' => ['DEF' => '0'],
     ];
 
     public static function getList()

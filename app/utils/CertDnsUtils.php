@@ -70,7 +70,8 @@ class CertDnsUtils
                     }
                 }
 
-                $res = $dns->addDomainRecord($row['name'], $row['type'], $row['value'], DnsHelper::$line_name[$drow['type']]['DEF'], 600);
+                $ttl = $drow['type'] == 'namesilo' ? 3600 : 600;
+                $res = $dns->addDomainRecord($row['name'], $row['type'], $row['value'], DnsHelper::$line_name[$drow['type']]['DEF'], $ttl);
                 if (!$res && $row['type'] != 'CAA') throw new Exception('添加'.$domain.'解析记录失败，' . $dns->getError());
                 $log('Add DNS Record: '.$domain.' '.$row['type'].' '.$row['value']);
             }
