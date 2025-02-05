@@ -19,15 +19,17 @@ class Index extends BaseController
         }
         if ($this->request->isAjax()) {
             if (input('post.do') == 'stat') {
-                $stat = ['domains' => 0, 'users' => 0, 'records' => 0, 'types' => count(DnsHelper::$dns_config)];
+                $stat = ['domains' => 0, 'tasks' => 0, 'certs' => 0, 'deploys' => 0];
                 if ($this->request->user['level'] == 2) {
                     $stat['domains'] = Db::name('domain')->count();
-                    $stat['users'] = Db::name('user')->count();
-                    $stat['records'] = Db::name('domain')->sum('recordcount');
+                    $stat['tasks'] = Db::name('dmtask')->count();
+                    $stat['certs'] = Db::name('cert_order')->count();
+                    $stat['deploys'] = Db::name('cert_deploy')->count();
                 } else {
                     $stat['domains'] = Db::name('domain')->where('name', 'in', $this->request->user['permission'])->count();
-                    $stat['users'] = 1;
-                    $stat['records'] = Db::name('domain')->where('name', 'in', $this->request->user['permission'])->sum('recordcount');
+                    $stat['tasks'] = Db::name('dmtask')->count();
+                    $stat['certs'] = Db::name('cert_order')->count();
+                    $stat['deploys'] = Db::name('cert_deploy')->count();
                 }
                 return json($stat);
             }

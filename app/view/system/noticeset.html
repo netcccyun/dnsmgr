@@ -94,9 +94,13 @@
 	  <div class="col-sm-9"><input type="text" name="tgbot_chatid" value="{:config_get('tgbot_chatid')}" class="form-control"/></div>
 	</div>
 	<div class="form-group">
-		<label class="col-sm-3 control-label">使用代理服务器</label>
-		<div class="col-sm-9"><select class="form-control" name="tgbot_proxy" default="{:config_get('tgbot_proxy')}"><option value="0">否</option><option value="1">是</option></select></div>
-	  </div>
+	  <label class="col-sm-3 control-label">使用代理服务器</label>
+	  <div class="col-sm-9"><select class="form-control" name="tgbot_proxy" default="{:config_get('tgbot_proxy')}"><option value="0">否</option><option value="1">是</option><option value="2">自定义反代URL</option></select></div>
+	</div>
+	<div class="form-group" id="tgbot_url_div" style="display:none;">
+	  <label class="col-sm-3 control-label">自定义反代URL</label>
+	  <div class="col-sm-9"><input type="text" name="tgbot_url" value="{:config_get('tgbot_url')}" class="form-control" placeholder="默认为：https://api.telegram.org"/></div>
+	</div>
 	<div class="form-group">
 	  <div class="col-sm-offset-3 col-sm-9">
 		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
@@ -148,7 +152,15 @@ $("select[name='mail_type']").change(function(){
 		$("#frame_set2").show();
 	}
 });
+$("select[name='tgbot_proxy']").change(function(){
+	if($(this).val() == 2){
+		$("#tgbot_url_div").show();
+	}else{
+		$("#tgbot_url_div").hide();
+	}
+});
 $("select[name='mail_type']").change();
+$("select[name='tgbot_proxy']").change();
 function saveSetting(obj){
 	var ii = layer.load(2, {shade:[0.1,'#fff']});
 	$.ajax({

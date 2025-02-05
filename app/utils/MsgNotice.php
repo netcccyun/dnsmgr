@@ -197,7 +197,14 @@ class MsgNotice
         $tgbot_token = config_get('tgbot_token');
         $tgbot_chatid = config_get('tgbot_chatid');
         if (!$tgbot_token || !$tgbot_chatid) return false;
-        $url = 'https://api.telegram.org/bot'.$tgbot_token.'/sendMessage';
+        $tgbot_url = 'https://api.telegram.org';
+        if (config_get('tgbot_proxy') == 2) {
+            $tgbot_url_n = config_get('tgbot_url');
+            if (!empty($tgbot_url_n)) {
+                $tgbot_url = rtrim($tgbot_url_n, '/');
+            }
+        }
+        $url = $tgbot_url.'/bot'.$tgbot_token.'/sendMessage';
         $post = ['chat_id' => $tgbot_chatid, 'text' => $content, 'parse_mode' => 'HTML'];
         $result = self::telegram_curl($url, http_build_query($post));
         $arr = json_decode($result, true);

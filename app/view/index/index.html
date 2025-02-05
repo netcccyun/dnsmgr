@@ -31,12 +31,12 @@
 		<div class="small-box bg-green">
 		<div class="inner">
 			<h3 id="count2">0</h3>
-			<p>用户数量</p>
+			<p>容灾切换策略</p>
 		</div>
 		<div class="icon">
-			<i class="fa fa-users"></i>
+			<i class="fa fa-heartbeat"></i>
 		</div>
-		<a href="/user" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
+		<a href="/dmonitor/task" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
 		</div>
 	</div>
 	<!-- ./col -->
@@ -45,12 +45,12 @@
 		<div class="small-box bg-yellow">
 		<div class="inner">
 			<h3 id="count3">0</h3>
-			<p>解析数量</p>
+			<p>SSL证书订单</p>
 		</div>
 		<div class="icon">
-			<i class="fa fa-globe"></i>
+			<i class="fa fa-expeditedssl"></i>
 		</div>
-		<a href="#" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
+		<a href="/cert/certorder" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
 		</div>
 	</div>
 	<!-- ./col -->
@@ -59,12 +59,12 @@
 		<div class="small-box bg-red">
 		<div class="inner">
 			<h3 id="count4">0</h3>
-			<p>DNS平台数量</p>
+			<p>SSL部署任务</p>
 		</div>
 		<div class="icon">
 			<i class="fa fa-connectdevelop"></i>
 		</div>
-		<a href="#" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
+		<a href="/cert/deploytask" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
 		</div>
 	</div>
 	<!-- ./col -->
@@ -131,9 +131,9 @@ $(document).ready(function(){
 		dataType : 'json',
 		success : function(data) {
             $('#count1').html(data.domains);
-			$('#count2').html(data.users);
-			$('#count3').html(data.records);
-            $('#count4').html(data.types);
+			$('#count2').html(data.tasks);
+			$('#count3').html(data.certs);
+            $('#count4').html(data.deploys);
             $.ajax({
 				url: '{$checkupdate}',
 				type: 'get',
