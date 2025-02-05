@@ -146,17 +146,19 @@ class OptimizeService
                 if (empty($iplist)) {
                     continue;
                 }
+                $record_num = $row['recordnum'];
                 $get_ips = array_column($iplist, 'ip');
                 if ($drow['type'] == 'huawei') {
                     sort($get_ips);
+                    $get_ips = array_slice($get_ips, 0, $row['recordnum']);
                     $get_ips = [implode(',', $get_ips)];
-                    $row['recordnum'] = 1;
+                    $record_num = 1;
                 }
                 if ($row['type'] == 1 && $line == 'CT') {
                     $line = 'DEF';
                 }
                 $line_name = DnsHelper::$line_name[$drow['type']][$line];
-                $this->process_dns_line($dns, $row, $domainRecords['list'], $get_ips, $line_name, $ip_type);
+                $this->process_dns_line($dns, $row, $domainRecords['list'], $record_num, $get_ips, $line_name, $ip_type);
             }
         }
 
@@ -164,9 +166,8 @@ class OptimizeService
     }
 
     //处理单个线路的解析记录
-    private function process_dns_line($dns, $row, $record_list, $get_ips, $line_name, $ip_type)
+    private function process_dns_line($dns, $row, $record_list, $record_num, $get_ips, $line_name, $ip_type)
     {
-        $record_num = $row['recordnum'];
         $records = array_filter($record_list, function ($v) use ($line_name) {
             return $v['Line'] == $line_name;
         });
