@@ -46,13 +46,24 @@ class btpanel implements DeployInterface
         foreach ($sites as $site) {
             $siteName = trim($site);
             if (empty($siteName)) continue;
-            try {
-                $this->deploySite($siteName, $fullchain, $privatekey);
-                $this->log("网站 {$siteName} 证书部署成功");
-                $success++;
-            } catch (Exception $e) {
-                $errmsg = $e->getMessage();
-                $this->log("网站 {$siteName} 证书部署失败：" . $errmsg);
+            if ($config['type'] == '2') {
+                try {
+                    $this->deployMailSys($siteName, $fullchain, $privatekey);
+                    $this->log("邮局域名 {$siteName} 证书部署成功");
+                    $success++;
+                } catch (Exception $e) {
+                    $errmsg = $e->getMessage();
+                    $this->log("邮局域名 {$siteName} 证书部署失败：" . $errmsg);
+                }
+            } else {
+                try {
+                    $this->deploySite($siteName, $fullchain, $privatekey);
+                    $this->log("网站 {$siteName} 证书部署成功");
+                    $success++;
+                } catch (Exception $e) {
+                    $errmsg = $e->getMessage();
+                    $this->log("网站 {$siteName} 证书部署失败：" . $errmsg);
+                }
             }
         }
         if ($success == 0) {
@@ -86,6 +97,26 @@ class btpanel implements DeployInterface
             'siteName' => $siteName,
             'key' => $privatekey,
             'csr' => $fullchain,
+        ];
+        $response = $this->request($path, $data);
+        $result = json_decode($response, true);
+        if (isset($result['status']) && $result['status']) {
+            return true;
+        } elseif (isset($result['msg'])) {
+            throw new Exception($result['msg']);
+        } else {
+            throw new Exception($response ? $response : '返回数据解析失败');
+        }
+    }
+
+    private function deployMailSys($domain, $fullchain, $privatekey)
+    {
+        $path = '/plugin?action=a&name=mail_sys&s=set_mail_certificate_multiple';
+        $data = [
+            'domain' => $domain,
+            'key' => $privatekey,
+            'csr' => $fullchain,
+            'act' => 'add',
         ];
         $response = $this->request($path, $data);
         $result = json_decode($response, true);

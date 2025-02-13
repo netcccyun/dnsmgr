@@ -79,7 +79,7 @@ class CertDeployService
     //重置任务
     public function reset()
     {
-        Db::name('cert_deploy')->where('id', $this->task['id'])->data(['status' => 0, 'retry' => 0, 'retrytime' => null, 'issend' => 0])->update();
+        Db::name('cert_deploy')->where('id', $this->task['id'])->data(['status' => 0, 'retry' => 0, 'retrytime' => null, 'issend' => 0, 'islock' => 0])->update();
         //$file_name = app()->getRuntimePath().'log/'.$this->task['processid'].'.log';
         //if (file_exists($file_name)) unlink($file_name);
         $this->task['status'] = 0;

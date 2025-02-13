@@ -205,7 +205,7 @@ class CertOrderService
     //重置订单
     public function reset()
     {
-        Db::name('cert_order')->where('id', $this->order['id'])->data(['status' => 0, 'retry' => 0, 'retry2' => 0, 'retrytime' => null, 'processid' => null, 'updatetime' => date('Y-m-d H:i:s'), 'issend' => 0])->update();
+        Db::name('cert_order')->where('id', $this->order['id'])->data(['status' => 0, 'retry' => 0, 'retry2' => 0, 'retrytime' => null, 'processid' => null, 'updatetime' => date('Y-m-d H:i:s'), 'issend' => 0, 'islock' => 0])->update();
         $file_name = app()->getRuntimePath().'log/'.$this->order['processid'].'.log';
         if (file_exists($file_name)) unlink($file_name);
         $this->order['status'] = 0;

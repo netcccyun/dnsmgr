@@ -43,6 +43,7 @@ class DeployHelper
                     'options' => [
                         '0' => '宝塔面板站点的证书',
                         '1' => '宝塔面板本身的证书',
+                        '2' => '宝塔邮局域名的证书',
                     ],
                     'value' => '0',
                     'required' => true,
@@ -51,8 +52,8 @@ class DeployHelper
                     'name' => '网站名称列表',
                     'type' => 'textarea',
                     'placeholder' => '填写要部署证书的网站名称，每行一个',
-                    'note' => 'PHP项目和反代项目填写创建时绑定的第一个域名，Java/Node/Go等其他项目填写项目名称',
-                    'show' => 'type==0',
+                    'note' => 'PHP项目和反代项目填写创建时绑定的第一个域名，Java/Node/Go等其他项目填写项目名称，邮局填写域名',
+                    'show' => 'type==0||type==2',
                     'required' => true,
                 ],
             ],
