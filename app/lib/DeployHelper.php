@@ -400,45 +400,6 @@ class DeployHelper
                 ],
             ],
         ],
-        'kuocai' => [
-            'name' => '括彩云',
-            'class' => 1,
-            'icon' => 'kuocai.jpg',
-            'note' => '填写控制台账号密码',
-            'inputs' => [
-                'username' => [
-                    'name' => '账号',
-                    'type' => 'input',
-                    'placeholder' => '控制台账号',
-                    'note' => '填写手机号或邮箱',
-                    'required' => true,
-                ],
-                'password' => [
-                    'name' => '密码',
-                    'type' => 'input',
-                    'placeholder' => '控制台密码',
-                    'required' => true,
-                ],
-                'proxy' => [
-                    'name' => '使用代理服务器',
-                    'type' => 'radio',
-                    'options' => [
-                        '0' => '否',
-                        '1' => '是',
-                    ],
-                    'value' => '0'
-                ],
-            ],
-            'taskinputs' => [
-                'id' => [
-                    'name' => '域名ID',
-                    'type' => 'input',
-                    'placeholder' => '',
-                    'note' => '在控制台->我的域名->配置复制浏览器地址栏显示的域名ID（19位数字），注意域名是否与证书匹配',
-                    'required' => true,
-                ],
-            ],
-        ],
         'aliyun' => [
             'name' => '阿里云',
             'class' => 2,
@@ -1130,6 +1091,45 @@ class DeployHelper
                     'name' => 'CDN域名',
                     'type' => 'input',
                     'placeholder' => '',
+                    'required' => true,
+                ],
+            ],
+        ],
+        'kuocai' => [
+            'name' => '括彩云',
+            'class' => 2,
+            'icon' => 'kuocai.jpg',
+            'note' => '填写控制台账号密码',
+            'inputs' => [
+                'username' => [
+                    'name' => '账号',
+                    'type' => 'input',
+                    'placeholder' => '控制台账号',
+                    'note' => '填写手机号或邮箱',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '密码',
+                    'type' => 'input',
+                    'placeholder' => '控制台密码',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'id' => [
+                    'name' => '域名ID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'note' => '在控制台->我的域名->配置复制浏览器地址栏显示的域名ID（19位数字），注意域名是否与证书匹配',
                     'required' => true,
                 ],
             ],

@@ -25,12 +25,11 @@ class kuocai implements DeployInterface
         if (empty($this->username) || empty($this->password)) {
             throw new Exception('请填写控制台账号和密码');
         }
-        $data = [
+        $this->request('/login/loginUser', [
             'userAccount' => $this->username,
             'userPwd' => $this->password,
             'remember' => 'true'
-        ];
-        $this->token = $this->request('/login/loginUser', $data);
+        ]);
     }
 
     public function deploy($fullchain, $privatekey, $config, &$info)
@@ -39,7 +38,12 @@ class kuocai implements DeployInterface
         if (empty($id)) {
             throw new Exception('域名ID不能为空');
         }
-        $data = [
+        $this->token = $this->request('/login/loginUser', [
+            'userAccount' => $this->username,
+            'userPwd' => $this->password,
+            'remember' => 'true'
+        ]);
+        $this->request('/CdnDomainHttps/httpsConfiguration', [
             'doMainId' => $id,
             'https' => [
                 'certificate_name' => uniqid('cert_'),
@@ -48,8 +52,7 @@ class kuocai implements DeployInterface
                 'https_status' => 'on',
                 'private_key' => $privatekey,
             ]
-        ];
-        $this->request('/CdnDomainHttps/httpsConfiguration', $data);
+        ], true);
         $this->log("域名ID:{$id}更新成功！");
     }
 
@@ -65,15 +68,18 @@ class kuocai implements DeployInterface
         }
     }
 
-    private function request($path, $body = null)
+    private function request($path, $params = null, $json = false)
     {
         $url = 'https://kuocai.cn' . $path;
+        $body = $json ? json_encode($params) : $params;
+        $headers = [];
+        if ($json) $headers[] = 'Content-Type: application/json';
         $response = curl_client(
             $url,
             $body,
             null,
             $this->token ? "kuocai_cdn_token={$this->token}" : null,
-            null,
+            $headers,
             $this->proxy
         );
         $result = json_decode($response['body'], true);
