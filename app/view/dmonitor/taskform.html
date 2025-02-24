@@ -20,9 +20,7 @@
         <div class="col-sm-3 col-xs-5"><input type="text" name="rr" v-model="set.rr" placeholder="主机记录" class="form-control" required></div>
         <div class="col-sm-3 col-xs-7 dselect"><select name="did" v-model="set.did" class="form-control" required>
             <option value="">--主域名--</option>
-            {foreach $domains as $k=>$v}
-                <option value="{$k}">{$v}</option>
-            {/foreach}
+            <option v-for="option in domainList" :value="option.id">{{option.name}}</option>
         </select></div>
     </div>
     <div class="form-group">
@@ -48,6 +46,15 @@
         <label class="col-sm-3 control-label no-padding-right">备用解析记录</label>
         <div class="col-sm-6">
             <input type="text" name="backup_value" v-model="set.backup_value" placeholder="支持填写IPv4或CNAME地址" class="form-control" required>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.type==2&&dnstype=='cloudflare'">
+        <div class="col-sm-offset-3 col-sm-7">
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="name" v-model="set.cdn"> 切换时同时开启Cloudflare代理模式
+                </label> 
+            </div>
         </div>
     </div>
     <div class="form-group" v-show="set.type<=2">
@@ -131,6 +138,7 @@
 <script>
 var action = '{$action}';
 var info = {$info|json_encode|raw};
+var domainList = {$domains|json_encode|raw};
 var support_ping = '{$support_ping}';
 new Vue({
     el: '#app',
@@ -153,7 +161,10 @@ new Vue({
             timeout: 2,
             cycle: 3,
             proxy: 0,
+            cdn: 0,
         },
+        dnstype: null,
+        domainList: domainList,
         recordList: [],
         typeList: [
             {value:0, label:'无操作'},
@@ -176,6 +187,10 @@ new Vue({
                 if(typeof record.Value == 'object') this.set.main_value = record.Value[0];
                 else this.set.main_value = record.Value;
             }
+        },
+        'set.did': function(val){
+            if(val == '') return;
+            this.dnstype = this.domainList.find(item => item.id == val).type;
         }
     },
     mounted() {

@@ -457,3 +457,18 @@ function curl_set_proxy(&$ch)
     }
     curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy_type);
 }
+
+function convertDomainToAscii($domain) {
+    if (preg_match('/[\x{4e00}-\x{9fa5}]/u', $domain)) {
+        return idn_to_ascii($domain);
+    } else {
+        return $domain;
+    }
+}
+function convertDomainToUtf8($domain) {
+    if (preg_match('/^xn--/', $domain)) {
+        return idn_to_utf8($domain);
+    } else {
+        return $domain;
+    }
+}

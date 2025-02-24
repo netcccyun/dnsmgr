@@ -87,6 +87,7 @@ class Dmonitor extends BaseController
                     'cycle' => input('post.cycle/d'),
                     'timeout' => input('post.timeout/d'),
                     'proxy' => input('post.proxy/d'),
+                    'cdn' => input('post.cdn') == 'true' || input('post.cdn') == '1' ? 1 : 0,
                     'remark' => input('post.remark', null, 'trim'),
                     'recordinfo' => input('post.recordinfo', null, 'trim'),
                     'addtime' => time(),
@@ -123,6 +124,7 @@ class Dmonitor extends BaseController
                     'cycle' => input('post.cycle/d'),
                     'timeout' => input('post.timeout/d'),
                     'proxy' => input('post.proxy/d'),
+                    'cdn' => input('post.cdn') == 'true' || input('post.cdn') == '1' ? 1 : 0,
                     'remark' => input('post.remark', null, 'trim'),
                     'recordinfo' => input('post.recordinfo', null, 'trim'),
                 ];
@@ -163,8 +165,9 @@ class Dmonitor extends BaseController
         }
 
         $domains = [];
-        foreach (Db::name('domain')->select() as $row) {
-            $domains[$row['id']] = $row['name'];
+        $domainList = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->field('A.id,A.name,B.type')->select();
+        foreach ($domainList as $row) {
+            $domains[] = ['id'=>$row['id'], 'name'=>$row['name'], 'type'=>$row['type']];
         }
         View::assign('domains', $domains);
 

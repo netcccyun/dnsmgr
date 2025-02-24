@@ -241,6 +241,7 @@ class Domain extends BaseController
             $is_hide = input('post.is_hide/d');
             $is_sso = input('post.is_sso/d');
             $remark = input('post.remark', null, 'trim');
+            if (empty($remark)) $remark = null;
             Db::name('domain')->where('id', $id)->update([
                 'is_hide' => $is_hide,
                 'is_sso' => $is_sso,
@@ -273,6 +274,22 @@ class Domain extends BaseController
             }
             Db::name('domain')->insertAll($data);
             return json(['code' => 0, 'msg' => '成功添加' . count($data) . '个域名！']);
+        } elseif ($act == 'batchedit') {
+            if (!checkPermission(2)) return $this->alert('error', '无权限');
+            $ids = input('post.ids');
+            if (empty($ids)) return json(['code' => -1, 'msg' => '参数不能为空']);
+            $remark = input('post.remark', null, 'trim');
+            if (empty($remark)) $remark = null;
+            Db::name('domain')->where('id', 'in', $ids)->update(['remark' => $remark]);
+            return json(['code' => 0, 'msg' => '成功修改' . count($ids) . '个域名！']);
+        } elseif ($act == 'batchdel') {
+            if (!checkPermission(2)) return $this->alert('error', '无权限');
+            $ids = input('post.ids');
+            if (empty($ids)) return json(['code' => -1, 'msg' => '参数不能为空']);
+            Db::name('domain')->where('id', 'in', $ids)->delete();
+            Db::name('dmtask')->where('did', 'in', $ids)->delete();
+            Db::name('optimizeip')->where('did', 'in', $ids)->delete();
+            return json(['code' => 0, 'msg' => '成功删除' . count($ids) . '个域名！']);
         }
         return json(['code' => -3]);
     }

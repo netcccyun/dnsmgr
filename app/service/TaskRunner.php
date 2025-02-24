@@ -83,6 +83,9 @@ class TaskRunner
             if ($row['type'] == 2) {
                 $dns = DnsHelper::getModel2($drow);
                 $recordinfo = json_decode($row['recordinfo'], true);
+                if ($drow['type'] == 'cloudflare' && $row['cdn'] == 1) {
+                    $recordinfo['Line'] = '1';
+                }
                 $res = $dns->updateDomainRecord($row['recordid'], $row['rr'], getDnsType($row['backup_value']), $row['backup_value'], $recordinfo['Line'], $recordinfo['TTL']);
                 if (!$res) {
                     $this->db()->name('log')->insert(['uid' => 0, 'domain' => $drow['name'], 'action' => '修改解析失败', 'data' => $dns->getError(), 'addtime' => date("Y-m-d H:i:s")]);
@@ -98,6 +101,9 @@ class TaskRunner
             if ($row['type'] == 2) {
                 $dns = DnsHelper::getModel2($drow);
                 $recordinfo = json_decode($row['recordinfo'], true);
+                if ($drow['type'] == 'cloudflare' && $row['cdn'] == 1) {
+                    $recordinfo['Line'] = '0';
+                }
                 $res = $dns->updateDomainRecord($row['recordid'], $row['rr'], getDnsType($row['main_value']), $row['main_value'], $recordinfo['Line'], $recordinfo['TTL']);
                 if (!$res) {
                     $this->db()->name('log')->insert(['uid' => 0, 'domain' => $drow['name'], 'action' => '修改解析失败', 'data' => $dns->getError(), 'addtime' => date("Y-m-d H:i:s")]);

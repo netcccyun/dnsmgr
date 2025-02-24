@@ -26,7 +26,6 @@
 						<label class="col-sm-3 control-label">选择域名</label>
 						<div class="col-sm-9">
 							<select name="domain" id="domainList" class="form-control"></select>
-							<span class="pull-right"><a href="/domain/add">批量添加</a></span>
 						</div>
 					</div>
 					
@@ -107,7 +106,11 @@
   </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名列表"><i class="fa fa-refresh"></i> 刷新</a>
-  {if request()->user['level'] eq 2}<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>{/if}
+  {if request()->user['level'] eq 2}<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
+  <div class="btn-group" role="group">
+	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
+	<ul class="dropdown-menu"><li><a href="/domain/add">添加</a></li><li><a href="javascript:operation('editremark')">修改备注</a></li><li><a href="javascript:operation('delete')">删除</a></li></ul>
+  </div>{/if}
 </form>
 
       <table id="listTable">
@@ -137,7 +140,12 @@ $(document).ready(function(){
 		pageNumber: pageNumber,
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
+		uniqueId: 'id',
 		columns: [
+			{
+				field: '',
+				checkbox: true
+			},
 			{
 				field: 'id',
 				title: 'ID'
@@ -246,25 +254,12 @@ function saveAdd(){
 	});
 }
 function editframe(id){
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'POST',
-		url : '/domain/op/act/get',
-		data : {id: id},
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				$("#modal-store2").modal('show');
-				$("#form-store2 input[name=id]").val(data.data.id);
-				$("#form-store2 select[name=is_hide]").val(data.data.is_hide);
-				$("#form-store2 select[name=is_sso]").val(data.data.is_sso);
-				$("#form-store2 input[name=remark]").val(data.data.remark);
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
-		}
-	});
+	var row = $("#listTable").bootstrapTable('getRowByUniqueId', id);
+	$("#modal-store2").modal('show');
+	$("#form-store2 input[name=id]").val(row.id);
+	$("#form-store2 select[name=is_hide]").val(row.is_hide);
+	$("#form-store2 select[name=is_sso]").val(row.is_sso);
+	$("#form-store2 input[name=remark]").val(row.remark);
 }
 function saveEdit(){
 	var ii = layer.load(2);
@@ -276,14 +271,9 @@ function saveEdit(){
 		success : function(data) {
 			layer.close(ii);
 			if(data.code == 0){
-				layer.alert(data.msg,{
-					icon: 1,
-					closeBtn: false
-				}, function(){
-					layer.closeAll();
-					$("#modal-store2").modal('hide');
-					searchRefresh();
-				});
+				layer.msg(data.msg, {icon:1, time:800});
+				$("#modal-store2").modal('hide');
+				searchRefresh();
 			}else{
 				layer.alert(data.msg, {icon: 2})
 			}
@@ -356,6 +346,78 @@ function getDomainList(){
 			}
 		},
 		cache:false
+	});
+}
+function operation(action){
+	var rows = $("#listTable").bootstrapTable('getSelections');
+	if(rows.length == 0){
+		layer.msg('请选择要操作的记录');
+		return;
+	}
+	var ids = [];
+	$.each(rows, function(index, item){
+		ids.push(item.id);
+	})
+	if(action == 'editremark'){
+		batch_edit_remark(ids)
+		return;
+	}
+	var confirmobj = layer.confirm('确定要删除所选记录吗？', {
+	  btn: ['确定','取消']
+	}, function(){
+	  var ii = layer.load(2);
+	  $.ajax({
+		type : 'POST',
+		url : '/domain/op/act/batchdel',
+		data : {ids: ids},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.closeAll();
+				layer.alert(data.msg, {icon: 1});
+				searchRefresh();
+			}else{
+				layer.alert(data.msg, {icon: 2});
+			}
+		}
+	  });
+	}, function(){
+	  layer.close(confirmobj);
+	});
+}
+function batch_edit_remark(ids) {
+	layer.open({
+		type: 1,
+		area: ['350px'],
+		closeBtn: 2,
+		title: '批量修改备注',
+		content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark2" value="" autocomplete="off" placeholder="备注信息"></div></div>',
+		btn: ['确认', '取消'],
+		yes: function(){
+			var remark = $("input[name='remark2']").val();
+			var ii = layer.load(2, {shade:[0.1,'#fff']});
+			$.ajax({
+				type : 'POST',
+				url : '/domain/op/act/batchedit',
+				data : {ids:ids, remark:remark},
+				dataType : 'json',
+				success : function(data) {
+					layer.close(ii);
+					layer.alert(data.msg,{
+						icon: 1,
+						closeBtn: false
+					}, function(){
+						layer.closeAll();
+						searchRefresh();
+					});
+				},
+				error:function(data){
+					layer.close(ii);
+					layer.msg('服务器错误');
+				}
+			});
+		}
 	});
 }
 function loading(){

@@ -68,7 +68,11 @@ class CertOrderService
         $cname = CertHelper::$cert_config[$this->atype]['cname'];
         foreach($this->domainList as $domain){
             $mainDomain = getMainDomain($domain);
-            if (!Db::name('domain')->where('name', $mainDomain)->find()) {
+            $drow = Db::name('domain')->where('name', $mainDomain)->find();
+            if (!$drow && preg_match('/^xn--/', $mainDomain)) {
+                $drow = Db::name('domain')->where('name', idn_to_utf8($mainDomain))->find();
+            }
+            if (!$drow) {
                 if (substr($domain, 0, 2) == '*.') $domain = substr($domain, 2);
                 $cname_row = Db::name('cert_cname')->where('domain', $domain)->where('status', 1)->find();
                 if (!$cname || !$cname_row) {

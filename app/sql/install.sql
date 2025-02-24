@@ -5,7 +5,7 @@ CREATE TABLE `dnsmgr_config` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `dnsmgr_config` VALUES ('version', '1021');
+INSERT INTO `dnsmgr_config` VALUES ('version', '1028');
 INSERT INTO `dnsmgr_config` VALUES ('notice_mail', '0');
 INSERT INTO `dnsmgr_config` VALUES ('notice_wxtpl', '0');
 INSERT INTO `dnsmgr_config` VALUES ('mail_smtp', 'smtp.qq.com');
@@ -96,6 +96,7 @@ CREATE TABLE `dnsmgr_dmtask` (
   `timeout` tinyint(5) NOT NULL DEFAULT 2,
   `remark` varchar(100) DEFAULT NULL,
   `proxy` tinyint(1) NOT NULL DEFAULT 0,
+  `cdn` tinyint(1) NOT NULL DEFAULT 0,
   `addtime` int(11) NOT NULL DEFAULT 0,
   `checktime` int(11) NOT NULL DEFAULT 0,
   `checknexttime` int(11) NOT NULL DEFAULT 0,

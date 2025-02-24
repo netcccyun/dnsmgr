@@ -13,6 +13,9 @@ class CertDnsUtils
         $cnameDomainList = [];
         foreach ($dnsList as $mainDomain => $list) {
             $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.name', $mainDomain)->field('A.*,B.type')->find();
+            if (!$drow && preg_match('/^xn--/', $mainDomain)) {
+                $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.name', idn_to_utf8($mainDomain))->field('A.*,B.type')->find();
+            }
             if (!$drow) {
                 if ($cname) {
                     foreach ($list as $key => $row) {
@@ -102,6 +105,9 @@ class CertDnsUtils
         $cnameDomainList = [];
         foreach ($dnsList as $mainDomain => $list) {
             $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.name', $mainDomain)->field('A.*,B.type')->find();
+            if (!$drow && preg_match('/^xn--/', $mainDomain)) {
+                $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.name', idn_to_utf8($mainDomain))->field('A.*,B.type')->find();
+            }
             if (!$drow) {
                 if ($cname) {
                     foreach ($list as $key => $row) {

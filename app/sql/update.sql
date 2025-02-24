@@ -153,3 +153,6 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_cert_cname` (
 
 ALTER TABLE `dnsmgr_account`
 ADD COLUMN `proxy` tinyint(1) NOT NULL DEFAULT '0';
+
+ALTER TABLE `dnsmgr_dmtask`
+ADD COLUMN `cdn` tinyint(1) NOT NULL DEFAULT 0;
