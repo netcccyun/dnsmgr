@@ -1099,7 +1099,7 @@ class DeployHelper
             'name' => '括彩云',
             'class' => 2,
             'icon' => 'kuocai.jpg',
-            'note' => '填写控制台账号密码',
+            'note' => '支持括彩云及其代理商，填写控制台登录账号及密码',
             'inputs' => [
                 'username' => [
                     'name' => '账号',
