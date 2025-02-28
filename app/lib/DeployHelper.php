@@ -59,7 +59,7 @@ class DeployHelper
             ],
         ],
         'kangle' => [
-            'name' => 'Kangle',
+            'name' => 'Kangle用户',
             'class' => 1,
             'icon' => 'host.png',
             'note' => '以上登录信息为Easypanel用户面板的，非管理员面板。如选网站密码认证类型，则用户面板登录不能开启验证码。',
@@ -112,6 +112,72 @@ class DeployHelper
                 ],
             ],
             'taskinputs' => [
+                'type' => [
+                    'name' => '部署类型',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '网站SSL证书',
+                        '1' => '单域名SSL证书（仅CDN支持）',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
+                'domains' => [
+                    'name' => 'CDN域名列表',
+                    'type' => 'textarea',
+                    'placeholder' => '填写要部署证书的域名，每行一个',
+                    'show' => 'type==1',
+                    'required' => true,
+                ],
+            ],
+        ],
+        'kangleadmin' => [
+            'name' => 'Kangle管理员',
+            'class' => 1,
+            'icon' => 'host.png',
+            'note' => '以上登录地址需填写Easypanel管理员面板地址，非用户面板。',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'Easypanel管理员面板地址',
+                    'note' => '填写规则如：http://192.168.1.100:3312 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'path' => [
+                    'name' => '管理员面板路径',
+                    'type' => 'input',
+                    'placeholder' => '留空默认为/admin',
+                ],
+                'username' => [
+                    'name' => '管理员用户名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'skey' => [
+                    'name' => '面板安全码',
+                    'type' => 'input',
+                    'placeholder' => '管理员面板->服务器设置->面板通信安全码',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'name' => [
+                    'name' => '网站用户名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
                 'type' => [
                     'name' => '部署类型',
                     'type' => 'radio',
@@ -397,6 +463,61 @@ class DeployHelper
                     'note' => '网站名称，即为网站创建时绑定的第一个域名',
                     'show' => 'type==0',
                     'required' => true,
+                ],
+            ],
+        ],
+        'synology' => [
+            'name' => '群辉面板',
+            'class' => 1,
+            'icon' => 'synology.png',
+            'note' => null,
+            'tasknote' => '',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => '群辉面板地址',
+                    'note' => '填写规则如：http://192.168.1.100:5000 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'username' => [
+                    'name' => '登录账号',
+                    'type' => 'input',
+                    'placeholder' => '必须是处于管理员用户组，不能开启双重认证',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '登录密码',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'version' => [
+                    'name' => '群辉版本',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '7.x',
+                        '1' => '6.x',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'desc' => [
+                    'name' => '群晖证书描述',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'note' => '根据证书描述匹配替换对应证书，留空则根据证书通用名匹配',
                 ],
             ],
         ],

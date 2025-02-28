@@ -203,6 +203,7 @@ class Cert extends BaseController
         $domain = $this->request->post('domain', null, 'trim');
         $id = input('post.id');
         $type = input('post.type', null, 'trim');
+        $status = input('post.status', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
 
@@ -215,6 +216,17 @@ class Cert extends BaseController
         }
         if (!empty($type)) {
             $select->where('B.type', $type);
+        }
+        if (!isNullOrEmpty($status)) {
+            if ($status == '5') {
+                $select->where('A.status', '<', 0);
+            } elseif ($status == '6') {
+                $select->where('A.expiretime', '<', date('Y-m-d H:i:s', time() + 86400 * 7))->where('A.expiretime', '>=', date('Y-m-d H:i:s'));
+            } elseif ($status == '7') {
+                $select->where('A.expiretime', '<', date('Y-m-d H:i:s'));
+            } else {
+                $select->where('A.status', $status);
+            }
         }
         $total = $select->count();
         $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->order('id', 'desc')->limit($offset, $limit)->select();
@@ -541,6 +553,7 @@ class Cert extends BaseController
         $domain = $this->request->post('domain', null, 'trim');
         $oid = input('post.oid');
         $type = input('post.type', null, 'trim');
+        $status = input('post.status', null, 'trim');
         $remark = input('post.remark', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
@@ -554,6 +567,9 @@ class Cert extends BaseController
         }
         if (!empty($type)) {
             $select->where('B.type', $type);
+        }
+        if (!isNullOrEmpty($status)) {
+            $select->where('A.status', $status);
         }
         if (!empty($remark)) {
             $select->where('A.remark', $remark);

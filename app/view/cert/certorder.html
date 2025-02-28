@@ -27,6 +27,9 @@ pre.pre-log{height: 330px;overflow-y: auto;width: 100%;background-color: rgba(51
 		<option value="{$k}">{$v}</option>
 	{/foreach}</select>
   </div>
+  <div class="form-group">
+	<select name="status" class="form-control"><option value="">所有状态</option><option value="0">待提交</option><option value="1">待验证</option><option value="2">正在验证</option><option value="5">失败</option><option value="3">已签发</option><option value="4">已吊销</option><option value="6">即将过期</option><option value="7">已过期</option></select>
+  </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新订单列表"><i class="fa fa-refresh"></i> 刷新</a>
   <div class="btn-group">
@@ -137,6 +140,16 @@ $(document).ready(function(){
 					} else if(value == 3) {
 						return '<span class="label label-success">已签发</span>';
 					} else if(value == 2) {
+						if(row.retrytime != null){
+							var now = new Date().getTime();
+							var retry = new Date(row.retrytime).getTime();
+							var diff = retry - now;
+							if(diff > 0){
+								var min = Math.floor(diff / 60000);
+								var sec = Math.floor((diff - min * 60000) / 1000);
+								return '<span title="'+min+'分'+sec+'秒后自动验证" data-toggle="tooltip" data-placement="top" class="label" style="background-color: #3e76fb;">正在验证</span>';
+							}
+						}
 						return '<span class="label" style="background-color: #3e76fb;">正在验证</span>';
 					} else if(value == 1) {
 						if(row.retrytime != null){
