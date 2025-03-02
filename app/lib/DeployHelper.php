@@ -521,6 +521,51 @@ class DeployHelper
                 ],
             ],
         ],
+        'proxmox' => [
+            'name' => 'Proxmox VE',
+            'class' => 1,
+            'icon' => 'proxmox.ico',
+            'note' => '在“权限->API令牌”添加令牌，不要选特权分离',
+            'tasknote' => '',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'Proxmox VE 面板地址',
+                    'note' => '填写规则如：https://192.168.1.100:8006 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'api_user' => [
+                    'name' => 'API令牌ID',
+                    'type' => 'input',
+                    'placeholder' => '用户!令牌名称',
+                    'required' => true,
+                ],
+                'api_key' => [
+                    'name' => 'API令牌密钥',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'node' => [
+                    'name' => '节点名称',
+                    'type' => 'input',
+                    'placeholder' => '要部署证书的节点',
+                    'required' => true,
+                ],
+            ],
+        ],
         'aliyun' => [
             'name' => '阿里云',
             'class' => 2,

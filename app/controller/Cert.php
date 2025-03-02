@@ -490,7 +490,7 @@ class Cert extends BaseController
                 return json(['code' => 0, 'msg' => '添加DNS记录成功！请等待DNS生效后点击验证']);
             }
         }catch(Exception $e){
-            return json(['code' => -1, 'msg' => $e->getMessage()]);
+            return json(['code' => -1, 'msg' => $e->getMessage(), 'trace' => $e->getTrace()]);
         }
     }
 
@@ -668,7 +668,7 @@ class Cert extends BaseController
             $service->process(true);
             return json(['code' => 0, 'msg' => 'SSL证书部署任务执行成功！']);
         }catch(Exception $e){
-            return json(['code' => -1, 'msg' => $e->getMessage()]);
+            return json(['code' => -1, 'msg' => $e->getMessage(), 'trace' => $e->getTrace()]);
         }
     }
 

@@ -37,6 +37,7 @@ class synology implements DeployInterface
             'api' => 'SYNO.API.Auth',
             'version' => 6,
             'method' => 'login',
+            'session' => 'webui',
             'account' => $this->username,
             'passwd' => $this->password,
             'format' => 'sid',
@@ -55,6 +56,7 @@ class synology implements DeployInterface
 
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
+        $this->login();
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
 
@@ -66,12 +68,12 @@ class synology implements DeployInterface
             '_sid' => $this->token['sid'],
             'SynoToken' => $this->token['synotoken'],
         ];
-        $response = curl_client($url, http_build_query($params), null, null, null, $this->proxy);
+        $response = curl_client($url . '?' . http_build_query($params), null, null, $this->proxy);
         $result = json_decode($response['body'], true);
         if (isset($result['success']) && $result['success']) {
             $this->log('获取证书列表成功');
         } elseif(isset($result['error'])) {
-            throw new Exception('获取证书列表失败：' . $result['error']);
+            throw new Exception('获取证书列表失败：' . json_encode($result['error']));
         } else {
             throw new Exception('获取证书列表失败(httpCode=' . $response['code'] . ')');
         }
@@ -118,7 +120,7 @@ class synology implements DeployInterface
             if (isset($result['success']) && $result['success']) {
                 $this->log('证书ID:'.$id.'更新成功！');
             } elseif(isset($result['error'])) {
-                throw new Exception('证书ID:'.$id.'更新失败：' . $result['error']);
+                throw new Exception('证书ID:'.$id.'更新失败：' . json_encode($result['error']));
             } else {
                 throw new Exception('证书ID:'.$id.'更新失败(httpCode=' . $response['code'] . ')');
             }
@@ -126,7 +128,7 @@ class synology implements DeployInterface
             if (isset($result['success']) && $result['success']) {
                 $this->log('证书上传成功！');
             } elseif(isset($result['error'])) {
-                throw new Exception('证书上传失败：' . $result['error']);
+                throw new Exception('证书上传失败：' . json_encode($result['error']));
             } else {
                 throw new Exception('证书上传失败(httpCode=' . $response['code'] . ')');
             }
