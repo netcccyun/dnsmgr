@@ -79,22 +79,22 @@ class namesilo implements DnsInterface
                     'UpdateTime' => null,
                 ];
             }
-            if(!empty($SubDomain)){
+            if(!isNullOrEmpty($SubDomain)){
                 $list = array_values(array_filter($list, function($v) use ($SubDomain){
                     return $v['Name'] == $SubDomain;
                 }));
             }else{
-                if(!empty($KeyWord)){
+                if(!isNullOrEmpty($KeyWord)){
                     $list = array_values(array_filter($list, function($v) use ($KeyWord){
                         return strpos($v['Name'], $KeyWord) !== false || strpos($v['Value'], $KeyWord) !== false;
                     }));
                 }
-                if(!empty($Value)){
+                if(!isNullOrEmpty($Value)){
                     $list = array_values(array_filter($list, function($v) use ($Value){
                         return $v['Value'] == $Value;
                     }));
                 }
-                if(!empty($Type)){
+                if(!isNullOrEmpty($Type)){
                     $list = array_values(array_filter($list, function($v) use ($Type){
                         return $v['Type'] == $Type;
                     }));
@@ -118,7 +118,7 @@ class namesilo implements DnsInterface
     }
 
     //添加解析记录
-    public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
+    public function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
     {
         $param = ['domain' => $this->domain, 'rrtype' => $Type, 'rrhost' => $Name, 'rrvalue' => $Value, 'rrttl' => $TTL];
         if ($Type == 'MX') $param['rrdistance'] = intval($MX);
@@ -127,7 +127,7 @@ class namesilo implements DnsInterface
     }
 
     //修改解析记录
-    public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
+    public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
     {
         $param = ['domain' => $this->domain, 'rrid' => $RecordId, 'rrtype' => $Type, 'rrhost' => $Name, 'rrvalue' => $Value, 'rrttl' => $TTL];
         if ($Type == 'MX') $param['rrdistance'] = intval($MX);

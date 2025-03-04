@@ -18,6 +18,7 @@ class DnsHelper
             'redirect' => true, //是否支持域名转发
             'log' => true, //是否支持查看日志
             'weight' => false, //是否支持权重
+            'page' => false, //是否客户端分页
         ],
         'dnspod' => [
             'name' => '腾讯云',
@@ -30,6 +31,7 @@ class DnsHelper
             'redirect' => true,
             'log' => true,
             'weight' => true,
+            'page' => false,
         ],
         'huawei' => [
             'name' => '华为云',
@@ -42,6 +44,7 @@ class DnsHelper
             'redirect' => false,
             'log' => false,
             'weight' => true,
+            'page' => false,
         ],
         'baidu' => [
             'name' => '百度云',
@@ -54,6 +57,7 @@ class DnsHelper
             'redirect' => false,
             'log' => false,
             'weight' => false,
+            'page' => true,
         ],
         'west' => [
             'name' => '西部数码',
@@ -66,6 +70,7 @@ class DnsHelper
             'redirect' => false,
             'log' => false,
             'weight' => false,
+            'page' => false,
         ],
         'huoshan' => [
             'name' => '火山引擎',
@@ -78,6 +83,7 @@ class DnsHelper
             'redirect' => false,
             'log' => false,
             'weight' => true,
+            'page' => false,
         ],
         'dnsla' => [
             'name' => 'DNSLA',
@@ -90,6 +96,7 @@ class DnsHelper
             'redirect' => true,
             'log' => false,
             'weight' => true,
+            'page' => false,
         ],
         'cloudflare' => [
             'name' => 'Cloudflare',
@@ -102,6 +109,7 @@ class DnsHelper
             'redirect' => false,
             'log' => false,
             'weight' => false,
+            'page' => false,
         ],
         'namesilo' => [
             'name' => 'NameSilo',
@@ -114,6 +122,21 @@ class DnsHelper
             'redirect' => false,
             'log' => false,
             'weight' => false,
+            'page' => true,
+        ],
+        'powerdns' => [
+            'name' => 'PowerDNS',
+            'config' => [
+                'ak' => 'IP地址',
+                'sk' => '端口',
+                'ext' => 'API KEY',
+            ],
+            'remark' => 2,
+            'status' => true,
+            'redirect' => false,
+            'log' => false,
+            'weight' => false,
+            'page' => true,
         ],
     ];
 

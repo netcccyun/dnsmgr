@@ -12,20 +12,19 @@ class ctyun implements DeployInterface
     private $AccessKeyId;
     private $SecretAccessKey;
     private $proxy;
-    private $client;
 
     public function __construct($config)
     {
         $this->AccessKeyId = $config['AccessKeyId'];
         $this->SecretAccessKey = $config['SecretAccessKey'];
         $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
-        $this->client = new CtyunClient($this->AccessKeyId, $this->SecretAccessKey, 'ctcdn-global.ctapi.ctyun.cn', $this->proxy);
     }
 
     public function check()
     {
         if (empty($this->AccessKeyId) || empty($this->SecretAccessKey)) throw new Exception('必填参数不能为空');
-        $this->client->request('GET', '/v1/cert/query-cert-list');
+        $client = new CtyunClient($this->AccessKeyId, $this->SecretAccessKey, 'ctcdn-global.ctapi.ctyun.cn', $this->proxy);
+        $client->request('GET', '/v1/cert/query-cert-list');
         return true;
     }
 
@@ -33,31 +32,42 @@ class ctyun implements DeployInterface
     {
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
-        $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
+        $config['cert_name'] = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
+        if ($config['product'] == 'cdn') {
+            $this->deploy_cdn($fullchain, $privatekey, $config);
+        } elseif ($config['product'] == 'icdn') {
+            $this->deploy_icdn($fullchain, $privatekey, $config);
+        } elseif ($config['product'] == 'accessone') {
+            $this->deploy_accessone($fullchain, $privatekey, $config);
+        }
+    }
 
+    private function deploy_cdn($fullchain, $privatekey, $config)
+    {
+        $client = new CtyunClient($this->AccessKeyId, $this->SecretAccessKey, 'ctcdn-global.ctapi.ctyun.cn', $this->proxy);
         $param = [
-            'name' => $cert_name,
+            'name' => $config['cert_name'],
             'key' => $privatekey,
             'certs' => $fullchain,
         ];
         try {
-            $this->client->request('POST', '/v1/cert/creat-cert', null, $param);
+            $client->request('POST', '/v1/cert/creat-cert', null, $param);
         } catch (Exception $e) {
             if (strpos($e->getMessage(), '已存在重名的证书') !== false) {
-                $this->log('已存在重名的证书 cert_name=' . $cert_name);
+                $this->log('已存在重名的证书 cert_name=' . $config['cert_name']);
             } else {
                 throw new Exception('上传证书失败：' . $e->getMessage());
             }
         }
-        $this->log('上传证书成功 cert_name=' . $cert_name);
+        $this->log('上传证书成功 cert_name=' . $config['cert_name']);
 
         $param = [
             'domain' => $config['domain'],
             'https_status' => 'on',
-            'cert_name' => $cert_name,
+            'cert_name' => $config['cert_name'],
         ];
         try {
-            $this->client->request('POST', '/v1/domain/update-domain', null, $param);
+            $client->request('POST', '/v1/domain/update-domain', null, $param);
         } catch (Exception $e) {
             if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
                 throw new Exception($e->getMessage());
@@ -65,6 +75,99 @@ class ctyun implements DeployInterface
         }
 
         $this->log('CDN域名 ' . $config['domain'] . ' 部署证书成功！');
+    }
+
+    private function deploy_icdn($fullchain, $privatekey, $config)
+    {
+        $client = new CtyunClient($this->AccessKeyId, $this->SecretAccessKey, 'icdn-global.ctapi.ctyun.cn', $this->proxy);
+        $param = [
+            'name' => $config['cert_name'],
+            'key' => $privatekey,
+            'certs' => $fullchain,
+        ];
+        try {
+            $client->request('POST', '/v1/cert/creat-cert', null, $param);
+        } catch (Exception $e) {
+            if (strpos($e->getMessage(), '已存在重名的证书') !== false) {
+                $this->log('已存在重名的证书 cert_name=' . $config['cert_name']);
+            } else {
+                throw new Exception('上传证书失败：' . $e->getMessage());
+            }
+        }
+        $this->log('上传证书成功 cert_name=' . $config['cert_name']);
+
+        $param = [
+            'domain' => $config['domain'],
+            'https_status' => 'on',
+            'cert_name' => $config['cert_name'],
+        ];
+        try {
+            $client->request('POST', '/v1/domain/update-domain', null, $param);
+        } catch (Exception $e) {
+            if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
+                throw new Exception($e->getMessage());
+            }
+        }
+
+        $this->log('CDN域名 ' . $config['domain'] . ' 部署证书成功！');
+    }
+
+    private function deploy_accessone($fullchain, $privatekey, $config)
+    {
+        $client = new CtyunClient($this->AccessKeyId, $this->SecretAccessKey, 'accessone-global.ctapi.ctyun.cn', $this->proxy);
+        $param = [
+            'name' => $config['cert_name'],
+            'key' => $privatekey,
+            'certs' => $fullchain,
+        ];
+        try {
+            $client->request('POST', '/ctapi/v1/accessone/cert/create', null, $param);
+        } catch (Exception $e) {
+            if (strpos($e->getMessage(), '已存在重名的证书') !== false) {
+                $this->log('已存在重名的证书 cert_name=' . $config['cert_name']);
+            } else {
+                throw new Exception('上传证书失败：' . $e->getMessage());
+            }
+        }
+        $this->log('上传证书成功 cert_name=' . $config['cert_name']);
+
+        $param = [
+            'domain' => $config['domain'],
+            'product_code' => '020',
+        ];
+        try {
+            $result = $client->request('POST', '/ctapi/v1/accessone/domain/config', null, $param);
+        } catch (Exception $e) {
+            throw new Exception('查询域名配置失败：' . $e->getMessage());
+        }
+
+        if ($result['https_status'] == 'on' && $result['cert_name'] == $config['cert_name']) {
+            $this->log('边缘安全加速域名 ' . $config['domain'] . ' 证书已部署，无需重复操作！');
+            return;
+        }
+
+        $result['https_status'] = 'on';
+        $result['cert_name'] = $config['cert_name'];
+        $exclude_keys = ['status', 'area_scope', 'cname', 'insert_date', 'status_date', 'record_status', 'record_num', 'customer_name', 'outlink_replace_filter', 'website_ipv6_access_mark', 'websocket_speed', 'dynamic_config', 'dynamic_ability'];
+        foreach ($result as $key => $value) {
+            if (in_array($key, $exclude_keys) || is_array($value) && empty($value)) {
+                unset($result[$key]);
+            }
+        }
+        if (isset($result['origin'])) {
+            foreach ($result['origin'] as &$origin) {
+                $origin['weight'] = strval($origin['weight']);
+            }
+        }
+        try {
+            $client->request('POST', '/ctapi/v1/accessone/domain/modify_config', null, $result);
+        } catch (Exception $e) {
+            if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
+                throw new Exception($e->getMessage());
+            }
+        }
+
+        $this->log('边缘安全加速域名 ' . $config['domain'] . ' 部署证书成功！');
     }
 
     public function setLogger($func)

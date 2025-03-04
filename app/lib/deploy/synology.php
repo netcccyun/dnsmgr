@@ -47,7 +47,7 @@ class synology implements DeployInterface
         $result = json_decode($response['body'], true);
         if (isset($result['success']) && $result['success']) {
             $this->token = $result['data'];
-        } elseif(isset($result['error'])) {
+        } elseif (isset($result['error'])) {
             throw new Exception('登录失败：' . $result['error']);
         } else {
             throw new Exception('请求失败(httpCode=' . $response['code'] . ')');
@@ -58,6 +58,7 @@ class synology implements DeployInterface
     {
         $this->login();
         $certInfo = openssl_x509_parse($fullchain, true);
+        $certInfo['validFrom_time_t'];
         if (!$certInfo) throw new Exception('证书解析失败');
 
         $url = $this->url . '/webapi/entry.cgi';
@@ -72,20 +73,26 @@ class synology implements DeployInterface
         $result = json_decode($response['body'], true);
         if (isset($result['success']) && $result['success']) {
             $this->log('获取证书列表成功');
-        } elseif(isset($result['error'])) {
+        } elseif (isset($result['error'])) {
             throw new Exception('获取证书列表失败：' . json_encode($result['error']));
         } else {
             throw new Exception('获取证书列表失败(httpCode=' . $response['code'] . ')');
         }
 
         $id = null;
+        $validFrom = 0;
         foreach ($result['data']['certificates'] as $certificate) {
             if ($certificate['subject']['common_name'] == $certInfo['subject']['CN'] || $certificate['desc'] == $config['desc']) {
                 $id = $certificate['id'];
+                $validFrom = \DateTime::createFromFormat('M d H:i:s Y T', $certificate['valid_from'])->getTimestamp();
                 break;
             }
         }
         if ($id) {
+            if ($validFrom == $certInfo['validFrom_time_t']) {
+                $this->log('证书ID:' . $id . '已存在，无需更新');
+                return;
+            }
             $this->import($fullchain, $privatekey, $config, $id);
         } else {
             $this->import($fullchain, $privatekey, $config);
@@ -112,22 +119,22 @@ class synology implements DeployInterface
             'id' => $id,
             'desc' => $config['desc'],
         ];
-        $response = curl_client($url . '?' . http_build_query($params), $post, null, null, null, $this->proxy);
+        $response = curl_client($url . '?' . http_build_query($params), $post, null, null, null, $this->proxy, null, 15);
         unlink($privatekey_file);
         unlink($fullchain_file);
         $result = json_decode($response['body'], true);
         if ($id) {
             if (isset($result['success']) && $result['success']) {
-                $this->log('证书ID:'.$id.'更新成功！');
-            } elseif(isset($result['error'])) {
-                throw new Exception('证书ID:'.$id.'更新失败：' . json_encode($result['error']));
+                $this->log('证书ID:' . $id . '更新成功！');
+            } elseif (isset($result['error'])) {
+                throw new Exception('证书ID:' . $id . '更新失败：' . json_encode($result['error']));
             } else {
-                throw new Exception('证书ID:'.$id.'更新失败(httpCode=' . $response['code'] . ')');
+                throw new Exception('证书ID:' . $id . '更新失败(httpCode=' . $response['code'] . ')');
             }
         } else {
             if (isset($result['success']) && $result['success']) {
                 $this->log('证书上传成功！');
-            } elseif(isset($result['error'])) {
+            } elseif (isset($result['error'])) {
                 throw new Exception('证书上传失败：' . json_encode($result['error']));
             } else {
                 throw new Exception('证书上传失败(httpCode=' . $response['code'] . ')');

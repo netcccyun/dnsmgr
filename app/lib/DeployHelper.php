@@ -1249,12 +1249,18 @@ class DeployHelper
             ],
             'taskinputs' => [
                 'product' => [
-                    'name' => '产品',
-                    'type' => 'hidden',
+                    'name' => '要部署的产品',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'cdn', 'label'=>'CDN加速'],
+                        ['value'=>'icdn', 'label'=>'全站加速'],
+                        ['value'=>'accessone', 'label'=>'边缘安全加速平台'],
+                    ],
                     'value' => 'cdn',
+                    'required' => true,
                 ],
                 'domain' => [
-                    'name' => 'CDN域名',
+                    'name' => '绑定的域名',
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,

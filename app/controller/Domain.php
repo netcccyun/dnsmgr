@@ -430,7 +430,7 @@ class Domain extends BaseController
         }
 
         $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
-        if ($dnstype == 'baidu' || $dnstype == 'namesilo') {
+        if (DnsHelper::$dns_config[$dnstype]['page']) {
             return json($domainRecords['list']);
         }
 
@@ -487,7 +487,7 @@ class Domain extends BaseController
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         $recordid = $dns->addDomainRecord($name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if ($recordid) {
-            $this->add_log($drow['name'], '添加解析', $type . '记录 ' . $name . ' ' . $value . ' (线路:' . $line . ' TTL:' . $ttl . ')');
+            $this->add_log($drow['name'], '添加解析', $name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
             return json(['code' => 0, 'msg' => '添加解析记录成功！']);
         } else {
             return json(['code' => -1, 'msg' => '添加解析记录失败，' . $dns->getError()]);
@@ -513,6 +513,9 @@ class Domain extends BaseController
         $mx = input('post.mx/d', 1);
         $remark = input('post.remark', null, 'trim');
 
+        $recordinfo = input('post.recordinfo', null, 'trim');
+        $recordinfo = json_decode($recordinfo, true);
+
         if (empty($recordid) || empty($name) || empty($type) || empty($value)) {
             return json(['code' => -1, 'msg' => '参数不能为空']);
         }
@@ -520,7 +523,11 @@ class Domain extends BaseController
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         $recordid = $dns->updateDomainRecord($recordid, $name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if ($recordid) {
-            $this->add_log($drow['name'], '修改解析', $type . '记录 ' . $name . ' ' . $value . ' (线路:' . $line . ' TTL:' . $ttl . ')');
+            if ($recordinfo['Name'] != $name || $recordinfo['Type'] != $type || $recordinfo['Value'] != $value) {
+                $this->add_log($drow['name'], '修改解析', $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' → '.$name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
+            } elseif($recordinfo['Line'] != $line || $recordinfo['TTL'] != $ttl) {
+                $this->add_log($drow['name'], '修改解析', $name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
+            }
             return json(['code' => 0, 'msg' => '修改解析记录成功！']);
         } else {
             return json(['code' => -1, 'msg' => '修改解析记录失败，' . $dns->getError()]);
@@ -537,6 +544,8 @@ class Domain extends BaseController
         if (!checkPermission(0, $drow['name'])) return $this->alert('error', '无权限');
 
         $recordid = input('post.recordid', null, 'trim');
+        $recordinfo = input('post.recordinfo', null, 'trim');
+        $recordinfo = json_decode($recordinfo, true);
 
         if (empty($recordid)) {
             return json(['code' => -1, 'msg' => '参数不能为空']);
@@ -544,7 +553,11 @@ class Domain extends BaseController
 
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         if ($dns->deleteDomainRecord($recordid)) {
-            $this->add_log($drow['name'], '删除解析', '记录ID:' . $recordid);
+            if ($recordinfo) {
+                $this->add_log($drow['name'], '删除解析', $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' (线路:'.$recordinfo['Line'].' TTL:'.$recordinfo['TTL'].')');
+            } else {
+                $this->add_log($drow['name'], '删除解析', '记录ID:'.$recordid);
+            }
             return json(['code' => 0, 'msg' => '删除解析记录成功！']);
         } else {
             return json(['code' => -1, 'msg' => '删除解析记录失败，' . $dns->getError()]);
@@ -562,6 +575,8 @@ class Domain extends BaseController
 
         $recordid = input('post.recordid', null, 'trim');
         $status = input('post.status', null, 'trim');
+        $recordinfo = input('post.recordinfo', null, 'trim');
+        $recordinfo = json_decode($recordinfo, true);
 
         if (empty($recordid)) {
             return json(['code' => -1, 'msg' => '参数不能为空']);
@@ -570,7 +585,11 @@ class Domain extends BaseController
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         if ($dns->setDomainRecordStatus($recordid, $status)) {
             $action = $status == '1' ? '启用解析' : '暂停解析';
-            $this->add_log($drow['name'], $action, '记录ID:' . $recordid);
+            if ($recordinfo) {
+                $this->add_log($drow['name'], $action, $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' (线路:'.$recordinfo['Line'].' TTL:'.$recordinfo['TTL'].')');
+            } else {
+                $this->add_log($drow['name'], $action, '记录ID:'.$recordid);
+            }
             return json(['code' => 0, 'msg' => '操作成功！']);
         } else {
             return json(['code' => -1, 'msg' => '操作失败，' . $dns->getError()]);
@@ -611,10 +630,11 @@ class Domain extends BaseController
         }
         if (!checkPermission(0, $drow['name'])) return $this->alert('error', '无权限');
 
-        $recordids = input('post.recordids', null, 'trim');
         $action = input('post.action', null, 'trim');
+        $recordinfo = input('post.recordinfo', null, 'trim');
+        $recordinfo = json_decode($recordinfo, true);
 
-        if (empty($recordids) || empty($action)) {
+        if (empty($recordinfo) || empty($action)) {
             return json(['code' => -1, 'msg' => '参数不能为空']);
         }
 
@@ -622,25 +642,25 @@ class Domain extends BaseController
         $fail = 0;
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         if ($action == 'open') {
-            foreach ($recordids as $recordid) {
-                if ($dns->setDomainRecordStatus($recordid, '1')) {
-                    $this->add_log($drow['name'], '启用解析', '记录ID:' . $recordid);
+            foreach ($recordinfo as $record) {
+                if ($dns->setDomainRecordStatus($record['RecordId'], '1')) {
+                    $this->add_log($drow['name'], '启用解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' (线路:'.$record['Line'].' TTL:'.$record['TTL'].')');
                     $success++;
                 }
             }
             $msg = '成功启用' . $success . '条解析记录';
         } else if ($action == 'pause') {
-            foreach ($recordids as $recordid) {
-                if ($dns->setDomainRecordStatus($recordid, '0')) {
-                    $this->add_log($drow['name'], '暂停解析', '记录ID:' . $recordid);
+            foreach ($recordinfo as $record) {
+                if ($dns->setDomainRecordStatus($record['RecordId'], '0')) {
+                    $this->add_log($drow['name'], '暂停解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' (线路:'.$record['Line'].' TTL:'.$record['TTL'].')');
                     $success++;
                 }
             }
             $msg = '成功暂停' . $success . '条解析记录';
         } else if ($action == 'delete') {
-            foreach ($recordids as $recordid) {
-                if ($dns->deleteDomainRecord($recordid)) {
-                    $this->add_log($drow['name'], '删除解析', '记录ID:' . $recordid);
+            foreach ($recordinfo as $record) {
+                if ($dns->deleteDomainRecord($record['RecordId'])) {
+                    $this->add_log($drow['name'], '删除解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' (线路:'.$record['Line'].' TTL:'.$record['TTL'].')');
                     $success++;
                 }
             }
@@ -648,8 +668,8 @@ class Domain extends BaseController
         } else if ($action == 'remark') {
             $remark = input('post.remark', null, 'trim');
             if (empty($remark)) $remark = null;
-            foreach ($recordids as $recordid) {
-                if ($dns->updateDomainRecordRemark($recordid, $remark)) {
+            foreach ($recordinfo as $record) {
+                if ($dns->updateDomainRecordRemark($record['RecordId'], $remark)) {
                     $success++;
                 } else {
                     $fail++;
@@ -686,9 +706,9 @@ class Domain extends BaseController
             $success = 0;
             $fail = 0;
             foreach ($recordinfo as $record) {
-                $recordid = $dns->updateDomainRecord($record['recordid'], $record['name'], $type, $value, $record['line'], $record['ttl'], $record['mx'], $record['weight'], $record['remark']);
+                $recordid = $dns->updateDomainRecord($record['RecordId'], $record['Name'], $type, $value, $record['Line'], $record['TTL'], $record['MX'], $record['Weight'], $record['Remark']);
                 if ($recordid) {
-                    $this->add_log($drow['name'], '修改解析', $type . '记录 ' . $record['name'] . ' ' . $value . ' (线路:' . $record['line'] . ' TTL:' . $record['ttl'] . ')');
+                    $this->add_log($drow['name'], '修改解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' → '.$record['Name'].' ['.$type.'] '.$value.' (线路:'.$record['Line'].' TTL:'.$record['TTL'].')');
                     $success++;
                 } else {
                     $fail++;
@@ -707,9 +727,9 @@ class Domain extends BaseController
             $success = 0;
             $fail = 0;
             foreach ($recordinfo as $record) {
-                $recordid = $dns->updateDomainRecord($record['recordid'], $record['name'], $record['type'], $record['value'], $line, $record['ttl'], $record['mx'], $record['weight'], $record['remark']);
+                $recordid = $dns->updateDomainRecord($record['RecordId'], $record['Name'], $record['Type'], $record['Value'], $line, $record['TTL'], $record['MX'], $record['Weight'], $record['Remark']);
                 if ($recordid) {
-                    $this->add_log($drow['name'], '修改解析', $record['type'] . '记录 ' . $record['name'] . ' ' . $record['value'] . ' (线路:' . $line . ' TTL:' . $record['ttl'] . ')');
+                    $this->add_log($drow['name'], '修改解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' (线路:'.$line.' TTL:'.$record['TTL'].')');
                     $success++;
                 } else {
                     $fail++;
@@ -752,7 +772,7 @@ class Domain extends BaseController
                 $thistype = empty($type) ? getDnsType($arr[1]) : $type;
                 $recordid = $dns->addDomainRecord($arr[0], $thistype, $arr[1], $line, $ttl, $mx);
                 if ($recordid) {
-                    $this->add_log($drow['name'], '添加解析', $thistype . '记录 ' . $arr[0] . ' ' . $arr[1] . ' (线路:' . $line . ' TTL:' . $ttl . ')');
+                    $this->add_log($drow['name'], '添加解析', $arr[0].' ['.$thistype.'] '.$arr[1].' (线路:'.$line.' TTL:'.$ttl.')');
                     $success++;
                 } else {
                     $fail++;

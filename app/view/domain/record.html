@@ -17,6 +17,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 				<form class="form-horizontal" id="form-store">
 					<input type="hidden" name="action"/>
 					<input type="hidden" name="recordid"/>
+					<input type="hidden" name="recordinfo"/>
 					<div class="form-group">
 						<label class="col-sm-3 control-label no-padding-right">主机记录</label>
 						<div class="col-sm-9">
@@ -210,9 +211,6 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   <div class="form-group">
     <input type="text" class="form-control" name="value" placeholder="输入记录值">
   </div>
-  <div class="form-group">
-	<select name="status" class="form-control"><option value="">所有状态</option><option value="1">启用</option><option value="0">暂停</option></select>
-  </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新解析记录列表"><i class="fa fa-refresh"></i> 刷新</a>
   <a href="javascript:advanceSearch()" class="btn"><i class="fa fa-angle-up"></i> 收起</a>
@@ -236,7 +234,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 var recordLine = {$recordLine|json_encode|raw};
 var dnsconfig = {$dnsconfig|json_encode|raw};
 var defaultLine = recordLine[0].id;
-var sidePagination = dnsconfig.type == 'baidu' || dnsconfig.type == 'namesilo' ? 'client' : 'server';
+var sidePagination = dnsconfig.page ? 'client' : 'server';
 var showWeight = dnsconfig.weight;
 $(document).ready(function(){
 	updateToolbar();
@@ -423,6 +421,7 @@ function editframe(recordid){
 	$("#modal-title").html("修改记录");
 	$("#form-store input[name=action]").val("update");
 	$("#form-store input[name=recordid]").val(recordid);
+	$("#form-store input[name=recordinfo]").val(JSON.stringify(row));
 	$("#form-store input[name=name]").val(row.Name);
 	$("#form-store select[name=type]").val(row.Type);
 	$("#form-store select[name=type]").change();
@@ -470,11 +469,12 @@ function save(){
 	});
 }
 function setStatus(recordid, status){
+	var row = $("#listTable").bootstrapTable('getRowByUniqueId', recordid);
 	var ii = layer.load(2);
 	$.ajax({
 		type : 'POST',
 		url : '/record/status/{$domainId}',
-		data : {recordid: recordid, status: status},
+		data : {recordid: recordid, status: status, recordinfo: JSON.stringify(row)},
 		dataType : 'json',
 		success : function(data) {
 			layer.close(ii);
@@ -489,6 +489,7 @@ function setStatus(recordid, status){
 	});
 }
 function delItem(recordid) {
+	var row = $("#listTable").bootstrapTable('getRowByUniqueId', recordid);
 	var confirmobj = layer.confirm('确定要删除此解析记录吗？', {
 	  btn: ['确定','取消']
 	}, function(){
@@ -496,7 +497,7 @@ function delItem(recordid) {
 	  $.ajax({
 		type : 'POST',
 		url : '/record/delete/{$domainId}',
-		data : {recordid: recordid},
+		data : {recordid: recordid, recordinfo: JSON.stringify(row)},
 		dataType : 'json',
 		success : function(data) {
 			layer.close(ii);
@@ -555,32 +556,16 @@ function operation(action){
 		return;
 	}
 	if(action == 'edit'){
-		var records = [];
-		$.each(rows, function(index, item){
-			records.push({recordid:item.RecordId, name:item.Name, line:item.Line, mx:item.MX, ttl:item.TTL, weight:item.Weight, remark:item.Remark});
-		})
-		batch_edit(records)
+		batch_edit(rows)
 		return;
 	}else if(action == 'editline'){
-		var records = [];
-		$.each(rows, function(index, item){
-			records.push({recordid:item.RecordId, name:item.Name, type:item.Type, value:item.Value, mx:item.MX, ttl:item.TTL, weight:item.Weight, remark:item.Remark});
-		})
-		batch_edit_line(records)
+		batch_edit_line(rows)
 		return;
 	}else if(action == 'editremark'){
-		var ids = [];
-		$.each(rows, function(index, item){
-			ids.push(item.RecordId);
-		})
-		batch_edit_remark(ids)
+		batch_edit_remark(rows)
 		return;
 	}
 
-	var ids = [];
-	$.each(rows, function(index, item){
-		ids.push(item.RecordId);
-	})
 	var confirmobj = layer.confirm('确定要'+(action=='open'?'启用':(action=='pause'?'暂停':'删除'))+'所选记录吗？', {
 	  btn: ['确定','取消']
 	}, function(){
@@ -588,7 +573,7 @@ function operation(action){
 	  $.ajax({
 		type : 'POST',
 		url : '/record/batch/{$domainId}',
-		data : {action: action, recordids: ids},
+		data : {action: action, recordinfo: JSON.stringify(rows)},
 		dataType : 'json',
 		success : function(data) {
 			layer.close(ii);
@@ -645,10 +630,10 @@ function batch_save(){
 		}
 	});
 }
-function batch_edit_line(records){
-	$("#batch_num").text(records.length);
+function batch_edit_line(rows){
+	$("#batch_num").text(rows.length);
 	$("#modal-store3").modal('show');
-	$("#form-store3 input[name=recordinfo]").val(JSON.stringify(records));
+	$("#form-store3 input[name=recordinfo]").val(JSON.stringify(rows));
 	initLine('', 'line_list3');
 }
 function batch_save_line(){
@@ -675,7 +660,7 @@ function batch_save_line(){
 		}
 	});
 }
-function batch_edit_remark(recordids) {
+function batch_edit_remark(rows) {
 	layer.open({
 		type: 1,
 		area: ['350px'],
@@ -689,7 +674,7 @@ function batch_edit_remark(recordids) {
 			$.ajax({
 				type : 'POST',
 				url : '/record/batch/{$domainId}',
-				data : {action:'remark', recordids:recordids, remark:remark},
+				data : {action:'remark', recordinfo: JSON.stringify(rows), remark:remark},
 				dataType : 'json',
 				success : function(data) {
 					layer.close(ii);
