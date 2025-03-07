@@ -825,6 +825,7 @@ class Domain extends BaseController
 
     private function add_log($domain, $action, $data)
     {
+        if (strlen($data) > 500) $data = substr($data, 0, 500);
         Db::name('log')->insert(['uid' => request()->user['id'], 'domain' => $domain, 'action' => $action, 'data' => $data, 'addtime' => date("Y-m-d H:i:s")]);
     }
 }

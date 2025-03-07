@@ -467,7 +467,7 @@ class DeployHelper
             ],
         ],
         'synology' => [
-            'name' => '群辉面板',
+            'name' => '群晖面板',
             'class' => 1,
             'icon' => 'synology.png',
             'note' => null,
@@ -476,7 +476,7 @@ class DeployHelper
                 'url' => [
                     'name' => '面板地址',
                     'type' => 'input',
-                    'placeholder' => '群辉面板地址',
+                    'placeholder' => '群晖面板地址',
                     'note' => '填写规则如：http://192.168.1.100:5000 ，不要带其他后缀',
                     'required' => true,
                 ],
@@ -493,7 +493,7 @@ class DeployHelper
                     'required' => true,
                 ],
                 'version' => [
-                    'name' => '群辉版本',
+                    'name' => '群晖版本',
                     'type' => 'radio',
                     'options' => [
                         '0' => '7.x',
@@ -1037,6 +1037,35 @@ class DeployHelper
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                ],
+            ],
+        ],
+        'upyun' => [
+            'name' => '又拍云',
+            'class' => 2,
+            'icon' => 'upyun.ico',
+            'tasknote' => '系统会根据关联SSL证书的域名，进行证书的迁移操作',
+            'inputs' => [
+                'username' => [
+                    'name' => '用户名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '密码',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
                 ],
             ],
         ],

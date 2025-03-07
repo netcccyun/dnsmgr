@@ -138,7 +138,7 @@ class powerdns implements DnsInterface
     public function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
     {
         if ($Type == 'TXT' && substr($Value, 0, 1) != '"') $Value = '"' . $Value . '"';
-        if ($Type == 'CNAME' && substr($Value, -1) != '.') $Value .= '.';
+        if (($Type == 'CNAME' || $Type == 'MX') && substr($Value, -1) != '.') $Value .= '.';
         if ($Type == 'MX') $Value = intval($MX) . ' ' . $Value;
         $records = [];
         $rrsets = cache('powerdns_' . $this->domainid);
@@ -166,7 +166,7 @@ class powerdns implements DnsInterface
     public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
     {
         if ($Type == 'TXT' && substr($Value, 0, 1) != '"') $Value = '"' . $Value . '"';
-        if ($Type == 'CNAME' && substr($Value, -1) != '.') $Value .= '.';
+        if (($Type == 'CNAME' || $Type == 'MX') && substr($Value, -1) != '.') $Value .= '.';
         if ($Type == 'MX') $Value = intval($MX) . ' ' . $Value;
         $rrsets = cache('powerdns_' . $this->domainid);
         $add = false;

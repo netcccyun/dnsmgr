@@ -36,7 +36,7 @@ class Cert extends BaseController
 
         $select = Db::name('cert_account')->where('deploy', $deploy);
         if (!empty($kw)) {
-            $select->whereLike('name|remark', '%' . $kw . '%');
+            $select->whereLike('name|remark', '%' . $kw . '%')->whereOr('id', $kw);
         }
         $total = $select->count();
         $rows = $select->order('id', 'desc')->limit($offset, $limit)->select();
