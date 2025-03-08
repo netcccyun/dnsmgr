@@ -523,6 +523,7 @@ class Domain extends BaseController
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         $recordid = $dns->updateDomainRecord($recordid, $name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if ($recordid) {
+            if (is_array($recordinfo['Value'])) $recordinfo['Value'] = implode(',', $recordinfo['Value']);
             if ($recordinfo['Name'] != $name || $recordinfo['Type'] != $type || $recordinfo['Value'] != $value) {
                 $this->add_log($drow['name'], '修改解析', $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' → '.$name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
             } elseif($recordinfo['Line'] != $line || $recordinfo['TTL'] != $ttl) {
@@ -554,6 +555,7 @@ class Domain extends BaseController
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         if ($dns->deleteDomainRecord($recordid)) {
             if ($recordinfo) {
+                if (is_array($recordinfo['Value'])) $recordinfo['Value'] = implode(',', $recordinfo['Value']);
                 $this->add_log($drow['name'], '删除解析', $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' (线路:'.$recordinfo['Line'].' TTL:'.$recordinfo['TTL'].')');
             } else {
                 $this->add_log($drow['name'], '删除解析', '记录ID:'.$recordid);
@@ -586,6 +588,7 @@ class Domain extends BaseController
         if ($dns->setDomainRecordStatus($recordid, $status)) {
             $action = $status == '1' ? '启用解析' : '暂停解析';
             if ($recordinfo) {
+                if (is_array($recordinfo['Value'])) $recordinfo['Value'] = implode(',', $recordinfo['Value']);
                 $this->add_log($drow['name'], $action, $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' (线路:'.$recordinfo['Line'].' TTL:'.$recordinfo['TTL'].')');
             } else {
                 $this->add_log($drow['name'], $action, '记录ID:'.$recordid);
@@ -644,6 +647,7 @@ class Domain extends BaseController
         if ($action == 'open') {
             foreach ($recordinfo as $record) {
                 if ($dns->setDomainRecordStatus($record['RecordId'], '1')) {
+                    if (is_array($record['Value'])) $record['Value'] = implode(',', $record['Value']);
                     $this->add_log($drow['name'], '启用解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' (线路:'.$record['Line'].' TTL:'.$record['TTL'].')');
                     $success++;
                 }
@@ -652,6 +656,7 @@ class Domain extends BaseController
         } else if ($action == 'pause') {
             foreach ($recordinfo as $record) {
                 if ($dns->setDomainRecordStatus($record['RecordId'], '0')) {
+                    if (is_array($record['Value'])) $record['Value'] = implode(',', $record['Value']);
                     $this->add_log($drow['name'], '暂停解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' (线路:'.$record['Line'].' TTL:'.$record['TTL'].')');
                     $success++;
                 }
@@ -660,6 +665,7 @@ class Domain extends BaseController
         } else if ($action == 'delete') {
             foreach ($recordinfo as $record) {
                 if ($dns->deleteDomainRecord($record['RecordId'])) {
+                    if (is_array($record['Value'])) $record['Value'] = implode(',', $record['Value']);
                     $this->add_log($drow['name'], '删除解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' (线路:'.$record['Line'].' TTL:'.$record['TTL'].')');
                     $success++;
                 }
@@ -708,6 +714,7 @@ class Domain extends BaseController
             foreach ($recordinfo as $record) {
                 $recordid = $dns->updateDomainRecord($record['RecordId'], $record['Name'], $type, $value, $record['Line'], $record['TTL'], $record['MX'], $record['Weight'], $record['Remark']);
                 if ($recordid) {
+                    if (is_array($record['Value'])) $record['Value'] = implode(',', $record['Value']);
                     $this->add_log($drow['name'], '修改解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' → '.$record['Name'].' ['.$type.'] '.$value.' (线路:'.$record['Line'].' TTL:'.$record['TTL'].')');
                     $success++;
                 } else {
@@ -729,6 +736,7 @@ class Domain extends BaseController
             foreach ($recordinfo as $record) {
                 $recordid = $dns->updateDomainRecord($record['RecordId'], $record['Name'], $record['Type'], $record['Value'], $line, $record['TTL'], $record['MX'], $record['Weight'], $record['Remark']);
                 if ($recordid) {
+                    if (is_array($record['Value'])) $record['Value'] = implode(',', $record['Value']);
                     $this->add_log($drow['name'], '修改解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' (线路:'.$line.' TTL:'.$record['TTL'].')');
                     $success++;
                 } else {
