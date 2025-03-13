@@ -103,66 +103,47 @@ docker run --name dnsmgr -dit -p 8081:80 -v /var/dnsmgr:/app/www netcccyun/dnsmg
 docker restart dnsmgr
 ```
 
-### docker-compose部署方法
+### Docker-compose部署方法
 
+创建`my.cnf`数据库配置并写入一下内容：
 ```
-version: '3'
-services:
-  dnsmgr-web:
-    container_name: dnsmgr-web
-    stdin_open: true
-    tty: true
-    ports:
-      - 8081:80
-    volumes:
-      - /volume1/docker/dnsmgr/web:/app/www
-    image: netcccyun/dnsmgr
-    depends_on:
-      - dnsmgr-mysql
-    networks:
-      - dnsmgr-network
-
-  dnsmgr-mysql:
-    container_name: dnsmgr-mysql
-    restart: always
-    ports:
-      - 3306:3306
-    volumes:
-      - ./mysql/conf/my.cnf:/etc/mysql/my.cnf
-      - ./mysql/logs:/logs
-      - ./mysql/data:/var/lib/mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=123456
-      - TZ=Asia/Shanghai
-    image: mysql:5.7
-    networks:
-      - dnsmgr-network
-
-networks:
-  dnsmgr-network:
-    driver: bridge
-```
-
-在运行之前请创建好目录
-```
-mkdir -p ./web
-mkdir -p ./mysql/conf
-mkdir -p ./mysql/logs
-mkdir -p ./mysql/data
-
-vim mysql/conf/my.cnf
 [mysqld]
 sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
 ```
 
-登陆mysql容器创建数据库
+`docker-compose.yml`配置
 ```
-docker exec -it dnsmgr-mysql /bin/bash
-mysql -uroot -p123456
-create database dnsmgr;
+services:
+  dnsmgr:
+    image: netcccyun/dnsmgr
+    container_name: dnsmgr
+    ports:
+      - 8081:80
+    volumes:
+      - ./dnsmgr/web:/app/www
+    depends_on:
+      - dnsmgr-mysql
+
+  dnsmgr-mysql:
+    image: mysql:5.7
+    restart: always
+    volumes:
+      - ./my.cnf:/etc/mysql/my.cnf  # 数据库配置
+      - ./mysql:/var/lib/mysql      # 数据库持久化存储
+    environment:
+      - MYSQL_DATABASE=dnsmgr       		# 数据库名称
+      - MYSQL_USER=dnsmgr           		# 数据库用户
+      - MYSQL_PASSWORD=dnsmgr123456		# 数据库密码
+      - MYSQL_ROOT_PASSWORD=dnsmgr123456	# 数据库root密码
+      - TZ=Asia/Shanghai
 ```
 
-在install界面链接IP填写dnsmgr-mysql
+启动：`docker compose up -d`
+
+面板端口：`8081`
+
+面板初始化界面数据库地址填写：`dnsmgr-mysql`
+
 
 ### 作者信息
 
