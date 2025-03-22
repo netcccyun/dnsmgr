@@ -2,7 +2,7 @@
 {block name="title"}SSL证书订单列表{/block}
 {block name="main"}
 <style>
-tbody tr>td:nth-child(4){overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:180px;}
+tbody tr>td:nth-child(5){overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:180px;}
 .tips{cursor:pointer;}
 textarea.form-control{margin-bottom: 3px;}
 hr{margin-top: 10px;margin-bottom: 15px;border-top: 1px solid #eee;}
@@ -41,6 +41,10 @@ pre.pre-log{height: 330px;overflow-y: auto;width: 100%;background-color: rgba(51
 		<li><a href="/cert/order/import">导入已有证书</a></li>
 	  </ul>
   </div>
+  <div class="btn-group" role="group">
+	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
+	<ul class="dropdown-menu"><li><a href="javascript:operation('delete')">删除</a></li><li><a href="javascript:operation('reset')">重置订单</a></li><li><a href="javascript:operation('open')">开启续签</a></li><li><a href="javascript:operation('close')">关闭续签</a></li></ul>
+  </div>
   
 </form>
 
@@ -71,6 +75,10 @@ $(document).ready(function(){
 		classes: 'table table-striped table-hover table-bordered',
 		uniqueId: 'id',
 		columns: [
+			{
+				field: '',
+				checkbox: true
+			},
 			{
 				field: 'id',
 				title: 'ID'
@@ -422,6 +430,40 @@ function showLog(processid){
 			layer.msg(data.msg, {icon: 2, time: 600});
 		}
 	}, 'json');
+}
+function operation(action){
+	var rows = $("#listTable").bootstrapTable('getSelections');
+	if(rows.length == 0){
+		layer.msg('请选择要操作的订单');
+		return;
+	}
+	var ids = [];
+	for(var i in rows){
+		ids.push(rows[i].id);
+	}
+	if(action == 'delete'){
+		if(!confirm('确定要删除所选证书吗？删除后将无法再次下载')) return;
+	}else if(action == 'reset'){
+		if(!confirm('重置订单后，订单将变成待提交状态，是否确定重置？')) return;
+	}
+
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/cert/order/operation',
+		data : {action: action, ids: ids},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.closeAll();
+				layer.alert(data.msg, {icon: 1});
+				searchRefresh();
+			}else{
+				layer.alert(data.msg, {icon: 2});
+			}
+		}
+	});
 }
 </script>
 {/block}

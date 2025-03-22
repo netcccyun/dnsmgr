@@ -435,6 +435,35 @@ class Cert extends BaseController
             $file = app()->getRuntimePath().'log/'.$processid.'.log';
             if(!file_exists($file)) return json(['code' => -1, 'msg' => '日志文件不存在']);
             return json(['code' => 0, 'data' => file_get_contents($file), 'time'=>filemtime($file)]);
+        } elseif ($action == 'operation') {
+            $ids = input('post.ids');
+            $success = 0;
+            foreach ($ids as $id) {
+                if (input('post.action') == 'delete') {
+                    $dcount = DB::name('cert_deploy')->where('oid', $id)->count();
+                    if ($dcount > 0) continue;
+                    try {
+                        (new CertOrderService($id))->cancel();
+                    } catch (Exception $e) {
+                    }
+                    Db::name('cert_order')->where('id', $id)->delete();
+                    Db::name('cert_domain')->where('oid', $id)->delete();
+                    $success++;
+                } elseif (input('post.action') == 'reset') {
+                    try {
+                        $service = new CertOrderService($id);
+                        $service->cancel();
+                        $service->reset();
+                        $success++;
+                    } catch (Exception $e) {
+                    }
+                } elseif (input('post.action') == 'open' || input('post.action') == 'close') {
+                    $isauto = input('post.action') == 'open' ? 1 : 0;
+                    Db::name('cert_order')->where('id', $id)->update(['isauto' => $isauto]);
+                    $success++;
+                }
+            }
+            return json(['code' => 0, 'msg' => '成功操作' . $success . '个证书订单']);
         }
         return json(['code' => -3]);
     }
@@ -645,6 +674,27 @@ class Cert extends BaseController
             $file = app()->getRuntimePath().'log/'.$processid.'.log';
             if(!file_exists($file)) return json(['code' => -1, 'msg' => '日志文件不存在']);
             return json(['code' => 0, 'data' => file_get_contents($file), 'time'=>filemtime($file)]);
+        } elseif ($action == 'operation') {
+            $ids = input('post.ids');
+            $success = 0;
+            foreach ($ids as $id) {
+                if (input('post.action') == 'delete') {
+                    Db::name('cert_deploy')->where('id', $id)->delete();
+                    $success++;
+                } elseif (input('post.action') == 'reset') {
+                    try {
+                        $service = new CertDeployService($id);
+                        $service->reset();
+                        $success++;
+                    } catch (Exception $e) {
+                    }
+                } elseif (input('post.action') == 'open' || input('post.action') == 'close') {
+                    $active = input('post.action') == 'open' ? 1 : 0;
+                    Db::name('cert_deploy')->where('id', $id)->update(['active' => $active]);
+                    $success++;
+                }
+            }
+            return json(['code' => 0, 'msg' => '成功操作' . $success . '个任务']);
         }
         return json(['code' => -3]);
     }

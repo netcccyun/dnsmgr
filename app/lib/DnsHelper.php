@@ -85,6 +85,19 @@ class DnsHelper
             'weight' => true,
             'page' => false,
         ],
+        'jdcloud' => [
+            'name' => '京东云',
+            'config' => [
+                'ak' => 'AccessKeyId',
+                'sk' => 'AccessKeySecret',
+            ],
+            'remark' => 0,
+            'status' => true,
+            'redirect' => true,
+            'log' => false,
+            'weight' => true,
+            'page' => false,
+        ],
         'dnsla' => [
             'name' => 'DNSLA',
             'config' => [

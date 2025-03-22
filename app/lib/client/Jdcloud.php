@@ -5,33 +5,36 @@ namespace app\lib\client;
 use Exception;
 
 /**
- * 阿里云V3
+ * 京东云
  */
-class AliyunNew
+class Jdcloud
 {
+    private static $algorithm = 'JDCLOUD2-HMAC-SHA256';
     private $AccessKeyId;
     private $AccessKeySecret;
-    private $Endpoint;
-    private $Version;
+    private $endpoint;
+    private $service;
+    private $region;
     private $proxy = false;
 
-    public function __construct($AccessKeyId, $AccessKeySecret, $Endpoint, $Version, $proxy = false)
+    public function __construct($AccessKeyId, $AccessKeySecret, $endpoint, $service, $region, $proxy = false)
     {
         $this->AccessKeyId = $AccessKeyId;
         $this->AccessKeySecret = $AccessKeySecret;
-        $this->Endpoint = $Endpoint;
-        $this->Version = $Version;
+        $this->endpoint = $endpoint;
+        $this->service = $service;
+        $this->region = $region;
         $this->proxy = $proxy;
     }
 
     /**
      * @param string $method 请求方法
-     * @param string $action 操作名称
-     * @param array|null $params 请求参数
+     * @param string $path 请求路径
+     * @param array $params 请求参数
      * @return array
      * @throws Exception
      */
-    public function request($method, $action, $path = '/', $params = null)
+    public function request($method, $path, $params = [])
     {
         if (!empty($params)) {
             $params = array_filter($params, function ($a) {
@@ -46,22 +49,22 @@ class AliyunNew
             $query = [];
             $body = !empty($params) ? json_encode($params) : '';
         }
+
+        $date = gmdate("Ymd\THis\Z");
         $headers = [
-            'x-acs-action' => $action,
-            'x-acs-version' => $this->Version,
-            'x-acs-signature-nonce' => md5(uniqid(mt_rand(), true) . microtime()),
-            'x-acs-date' => gmdate('Y-m-d\TH:i:s\Z'),
-            'x-acs-content-sha256' => hash("sha256", $body),
-            'Host' => $this->Endpoint,
+            'Host' => $this->endpoint,
+            'x-jdcloud-algorithm' => self::$algorithm,
+            'x-jdcloud-date' => $date,
+            'x-jdcloud-nonce' => uniqid('php', true),
         ];
         if ($body) {
-            $headers['Content-Type'] = 'application/json; charset=utf-8';
+            $headers['Content-Type'] = 'application/json';
         }
 
-        $authorization = $this->generateSign($method, $path, $query, $headers, $body);
-        $headers['Authorization'] = $authorization;
+        $authorization = $this->generateSign($method, $path, $query, $headers, $body, $date);
+        $headers['authorization'] = $authorization;
 
-        $url = 'https://' . $this->Endpoint . $path;
+        $url = 'https://' . $this->endpoint . $path;
         if (!empty($query)) {
             $url .= '?' . http_build_query($query);
         }
@@ -72,13 +75,11 @@ class AliyunNew
         return $this->curl($method, $url, $body, $header);
     }
 
-    private function generateSign($method, $path, $query, $headers, $body)
+    private function generateSign($method, $path, $query, $headers, $body, $date)
     {
-        $algorithm = "ACS3-HMAC-SHA256";
-
         // step 1: build canonical request string
         $httpRequestMethod = $method;
-        $canonicalUri = $this->getCanonicalURI($path);
+        $canonicalUri = $path;
         $canonicalQueryString = $this->getCanonicalQueryString($query);
         [$canonicalHeaders, $signedHeaders] = $this->getCanonicalHeaders($headers);
         $hashedRequestPayload = hash("sha256", $body);
@@ -90,15 +91,24 @@ class AliyunNew
             . $hashedRequestPayload;
 
         // step 2: build string to sign
+        $shortDate = substr($date, 0, 8);
+        $credentialScope = $shortDate . '/' . $this->region . '/' . $this->service . '/jdcloud2_request';
         $hashedCanonicalRequest = hash("sha256", $canonicalRequest);
-        $stringToSign = $algorithm . "\n"
+        $stringToSign = self::$algorithm . "\n"
+            . $date . "\n"
+            . $credentialScope . "\n"
             . $hashedCanonicalRequest;
 
         // step 3: sign string
-        $signature = hash_hmac("sha256", $stringToSign, $this->AccessKeySecret);
+        $kDate = hash_hmac("sha256", $shortDate, 'JDCLOUD2' . $this->AccessKeySecret, true);
+        $kRegion = hash_hmac("sha256", $this->region, $kDate, true);
+        $kService = hash_hmac("sha256", $this->service, $kRegion, true);
+        $kSigning = hash_hmac("sha256", "jdcloud2_request", $kService, true);
+        $signature = hash_hmac("sha256", $stringToSign, $kSigning);
 
         // step 4: build authorization
-        $authorization = $algorithm . ' Credential=' . $this->AccessKeyId . ',SignedHeaders=' . $signedHeaders . ',Signature=' . $signature;
+        $credential = $this->AccessKeyId . '/' . $credentialScope;
+        $authorization = self::$algorithm . ' Credential=' . $credential . ", SignedHeaders=" . $signedHeaders . ", Signature=" . $signature;
 
         return $authorization;
     }
@@ -108,17 +118,6 @@ class AliyunNew
         $search = ['+', '*', '%7E'];
         $replace = ['%20', '%2A', '~'];
         return str_replace($search, $replace, urlencode($str));
-    }
-
-    private function getCanonicalURI($path)
-    {
-        if (empty($path)) return '/';
-        $pattens = explode('/', $path);
-        $pattens = array_map(function ($item) {
-            return $this->escape($item);
-        }, $pattens);
-        $canonicalURI = implode('/', $pattens);
-        return $canonicalURI;
     }
 
     private function getCanonicalQueryString($parameters)
@@ -176,12 +175,16 @@ class AliyunNew
 
         $arr = json_decode($response, true);
         if ($httpCode == 200) {
+            if (isset($arr['result'])) {
+                return $arr['result'];
+            }
             return $arr;
-        } elseif ($arr) {
-            if (strpos($arr['Message'], '.') > 0) $arr['Message'] = substr($arr['Message'], 0, strpos($arr['Message'], '.') + 1);
-            throw new Exception($arr['Message']);
         } else {
-            throw new Exception('返回数据解析失败');
+            if (isset($arr['error']['message'])) {
+                throw new Exception($arr['error']['message']);
+            } else {
+                throw new Exception('返回数据解析失败(http_code=' . $httpCode . ')');
+            }
         }
     }
 }
