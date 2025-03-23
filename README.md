@@ -86,6 +86,12 @@ docker run --name dnsmgr -dit -p 8081:80 -v /var/dnsmgr:/app/www netcccyun/dnsmg
 docker restart dnsmgr
 ```
 
+从国内镜像地址拉取：
+
+```
+docker pull swr.cn-east-3.myhuaweicloud.com/netcccyun/dnsmgr:latest
+```
+
 ### docker-compose 部署
 
 ```
