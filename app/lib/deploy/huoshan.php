@@ -133,7 +133,6 @@ class huoshan implements DeployInterface
 
     private function deploy_imagex($cert_id, $config)
     {
-        if (empty($config['bucket_domain'])) throw new Exception('Bucket域名不能为空');
         if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
         $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'imagex.volcengineapi.com', 'imagex', '2018-08-01', 'cn-north-1', $this->proxy);
         foreach (explode(',', $config['domain']) as $domain) {
