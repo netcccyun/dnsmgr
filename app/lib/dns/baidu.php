@@ -61,8 +61,9 @@ class baidu implements DnsInterface
     //获取解析记录列表
     public function getDomainRecords($PageNumber = 1, $PageSize = 20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null)
     {
-        $query = ['rr' => $KeyWord];
+        $query = [];
         if (!isNullOrEmpty($SubDomain)) {
+            $SubDomain = strtolower($SubDomain);
             $query['rr'] = $SubDomain;
         }
         $data = $this->send_reuqest('GET', '/v1/dns/zone/'.$this->domain.'/record', $query);
@@ -83,6 +84,32 @@ class baidu implements DnsInterface
                     'Remark' => $row['description'],
                     'UpdateTime' => null,
                 ];
+            }
+            if (!isNullOrEmpty($SubDomain)) {
+                $list = array_values(array_filter($list, function ($v) use ($SubDomain) {
+                    return $v['Name'] == $SubDomain;
+                }));
+            } else {
+                if (!isNullOrEmpty($KeyWord)) {
+                    $list = array_values(array_filter($list, function ($v) use ($KeyWord) {
+                        return strpos($v['Name'], $KeyWord) !== false || strpos($v['Value'], $KeyWord) !== false;
+                    }));
+                }
+                if (!isNullOrEmpty($Value)) {
+                    $list = array_values(array_filter($list, function ($v) use ($Value) {
+                        return $v['Value'] == $Value;
+                    }));
+                }
+                if (!isNullOrEmpty($Type)) {
+                    $list = array_values(array_filter($list, function ($v) use ($Type) {
+                        return $v['Type'] == $Type;
+                    }));
+                }
+                if (!isNullOrEmpty($Status)) {
+                    $list = array_values(array_filter($list, function ($v) use ($Status) {
+                        return $v['Status'] == $Status;
+                    }));
+                }
             }
             return ['total' => count($list), 'list' => $list];
         }

@@ -85,7 +85,7 @@ class aliyun implements DeployInterface
         $param = [
             'Action' => 'ListUserCertificateOrder',
             'Keyword' => $certInfo['subject']['CN'],
-            'OrderType' => 'UPLOAD',
+            'OrderType' => 'CERT',
         ];
         try {
             $data = $client->request($param);

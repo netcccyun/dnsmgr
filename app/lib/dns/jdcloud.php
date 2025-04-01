@@ -69,9 +69,10 @@ class jdcloud implements DnsInterface
     public function getDomainRecords($PageNumber = 1, $PageSize = 20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null)
     {
         $query = ['pageNumber' => $PageNumber, 'pageSize' => $PageSize];
-        if (!empty($SubDomain)) {
+        if (!isNullOrEmpty($SubDomain)) {
+            $SubDomain = strtolower($SubDomain);
             $query += ['search' => $SubDomain];
-        } elseif (!empty($KeyWord)) {
+        } elseif (!isNullOrEmpty($KeyWord)) {
             $query += ['search' => $KeyWord];
         }
         $data = $this->send_request('GET', '/domain/'.$this->domainid.'/ResourceRecord', $query);
@@ -95,6 +96,11 @@ class jdcloud implements DnsInterface
                     'Remark' => null,
                     'UpdateTime' => date('Y-m-d H:i:s', $row['updateTime']),
                 ];
+            }
+            if (!isNullOrEmpty($SubDomain) && !empty($list)) {
+                $list = array_values(array_filter($list, function ($v) use ($SubDomain) {
+                    return $v['Name'] == $SubDomain;
+                }));
             }
             return ['total' => $data['totalCount'], 'list' => $list];
         }

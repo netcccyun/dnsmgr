@@ -118,7 +118,7 @@ class DnsHelper
                 'sk' => 'API密钥/令牌',
             ],
             'remark' => 2,
-            'status' => false,
+            'status' => true,
             'redirect' => false,
             'log' => false,
             'weight' => false,
@@ -161,8 +161,10 @@ class DnsHelper
         'dnsla' => ['DEF' => '', 'CT' => '84613316902921216', 'CU' => '84613316923892736', 'CM' => '84613316953252864', 'AB' => ''],
         'huoshan' => ['DEF' => 'default', 'CT' => 'telecom', 'CU' => 'unicom', 'CM' => 'mobile', 'AB' => 'oversea'],
         'baidu' => ['DEF' => 'default', 'CT' => 'ct', 'CU' => 'cnc', 'CM' => 'cmnet', 'AB' => ''],
+        'jdcloud' => ['DEF' => '-1', 'CT' => '1', 'CU' => '2', 'CM' => '3', 'AB' => '4'],
         'cloudflare' => ['DEF' => '0'],
         'namesilo' => ['DEF' => '0'],
+        'powerdns' => ['DEF' => '0'],
     ];
 
     public static function getList()

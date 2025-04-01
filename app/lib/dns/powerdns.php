@@ -93,7 +93,7 @@ class powerdns implements DnsInterface
             cache('powerdns_' . $this->domainid, $data['rrsets'], 86400);
             if (!isNullOrEmpty($SubDomain)) {
                 $list = array_values(array_filter($list, function ($v) use ($SubDomain) {
-                    return $v['Name'] == $SubDomain;
+                    return strcasecmp($v['Name'], $SubDomain) === 0;
                 }));
             } else {
                 if (!isNullOrEmpty($KeyWord)) {

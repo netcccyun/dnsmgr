@@ -77,7 +77,7 @@ class huoshan implements DnsInterface
     {
         $query = ['ZID' => intval($this->domainid), 'PageNumber' => $PageNumber, 'PageSize' => $PageSize, 'SearchOrder' => 'desc'];
         if (!empty($SubDomain) || !empty($Type) || !empty($Line) || !empty($Value)) {
-            $query += ['Host' => $SubDomain, 'Value' => $Value, 'Type' => $Type, 'Line' => $Line];
+            $query += ['Host' => $SubDomain, 'Value' => $Value, 'Type' => $Type, 'Line' => $Line, 'SearchMode' => 'exact'];
         } elseif (!empty($KeyWord)) {
             $query += ['Host' => $KeyWord];
         }

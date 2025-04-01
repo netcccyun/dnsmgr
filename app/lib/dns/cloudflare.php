@@ -76,6 +76,8 @@ class cloudflare implements DnsInterface
             $list = [];
             foreach ($data['result'] as $row) {
                 $name = $this->domain == $row['name'] ? '@' : str_replace('.'.$this->domain, '', $row['name']);
+                $status = str_ends_with($name, '_pause') ? '0' : '1';
+                $name = $status == '0' ? substr($name, 0, -6) : $name;
                 $list[] = [
                     'RecordId' => $row['id'],
                     'Domain' => $this->domain,
@@ -85,7 +87,7 @@ class cloudflare implements DnsInterface
                     'Line' => $row['proxied'] ? '1' : '0',
                     'TTL' => $row['ttl'],
                     'MX' => isset($row['priority']) ? $row['priority'] : null,
-                    'Status' => '1',
+                    'Status' => $status,
                     'Weight' => null,
                     'Remark' => $row['comment'],
                     'UpdateTime' => $row['modified_on'],
@@ -108,6 +110,8 @@ class cloudflare implements DnsInterface
         $data = $this->send_reuqest('GET', '/zones/'.$this->domainid.'/dns_records/'.$RecordId);
         if ($data) {
             $name = $this->domain == $data['result']['name'] ? '@' : str_replace('.' . $this->domain, '', $data['result']['name']);
+            $status = str_ends_with($name, '_pause') ? '0' : '1';
+            $name = $status == '0' ? substr($name, 0, -6) : $name;
             return [
                 'RecordId' => $data['result']['id'],
                 'Domain' => $this->domain,
@@ -117,7 +121,7 @@ class cloudflare implements DnsInterface
                 'Line' => $data['result']['proxied'] ? '1' : '0',
                 'TTL' => $data['result']['ttl'],
                 'MX' => isset($data['result']['priority']) ? $data['result']['priority'] : null,
-                'Status' => '1',
+                'Status' => $status,
                 'Weight' => null,
                 'Remark' => $data['result']['comment'],
                 'UpdateTime' => $data['result']['modified_on'],
@@ -168,7 +172,9 @@ class cloudflare implements DnsInterface
     //设置解析记录状态
     public function setDomainRecordStatus($RecordId, $Status)
     {
-        return false;
+        $info = $this->getDomainRecordInfo($RecordId);
+        $Name = $Status == '1' ? str_replace('_pause', '', $info['Name']) : $info['Name'] . '_pause';
+        return $this->updateDomainRecord($RecordId, $Name, $info['Type'], $info['Value'], $info['Line'], $info['TTL'], $info['MX'], $info['Weight'], $info['Remark']);
     }
 
     //获取解析记录操作日志
