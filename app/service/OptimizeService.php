@@ -157,6 +157,9 @@ class OptimizeService
                 if ($row['type'] == 1 && $line == 'CT') {
                     $line = 'DEF';
                 }
+                if (!isset(DnsHelper::$line_name[$drow['type']][$line])) {
+                    continue;
+                }
                 $line_name = DnsHelper::$line_name[$drow['type']][$line];
                 $this->process_dns_line($dns, $row, $domainRecords['list'], $record_num, $get_ips, $line_name, $ip_type);
             }

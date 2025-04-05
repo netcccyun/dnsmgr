@@ -836,4 +836,103 @@ class Domain extends BaseController
         if (strlen($data) > 500) $data = substr($data, 0, 500);
         Db::name('log')->insert(['uid' => request()->user['id'], 'domain' => $domain, 'action' => $action, 'data' => $data, 'addtime' => date("Y-m-d H:i:s")]);
     }
+
+
+    public function weight()
+    {
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if (!$drow) {
+            return $this->alert('error', '域名不存在');
+        }
+        if (!checkPermission(0, $drow['name'])) return $this->alert('error', '无权限');
+        if (request()->isAjax()) {
+            $act = input('param.act');
+            if ($act == 'status') {
+                $subdomain = input('post.subdomain', null, 'trim');
+                $status = input('post.status', null, 'trim');
+                $type = input('post.type', null, 'trim');
+                $line = input('post.line', null, 'trim');
+                $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+                if ($dns->setWeightStatus($subdomain, $status, $type, $line)) {
+                    return json(['code' => 0, 'msg' => '操作成功']);
+                } else {
+                    return json(['code' => -1, 'msg' => '操作失败，' . $dns->getError()]);
+                }
+            } elseif ($act == 'update') {
+                $subdomain = input('post.subdomain', null, 'trim');
+                $status = input('post.status', '0', 'trim');
+                $type = input('post.type', null, 'trim');
+                $line = input('post.line', null, 'trim');
+                $weight = input('post.weight');
+                if (empty($subdomain) || empty($type) || empty($line) || $status == '1' && empty($weight)) {
+                    return json(['code' => -1, 'msg' => '参数不能为空']);
+                }
+                $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+                if ($dns->setWeightStatus($subdomain, $status, $type, $line)) {
+                    if ($status == '1') {
+                        $success = 0;
+                        foreach($weight as $recordid => $weight) {
+                            if ($dns->updateRecordWeight($recordid, $weight)) {
+                                $success++;
+                            }
+                        }
+                        if ($success > 0) {
+                            return json(['code' => 0, 'msg' => '成功修改' . $success . '条解析记录权重']);
+                        } else {
+                            return json(['code' => -1, 'msg' => '修改权重失败，' . $dns->getError()]);
+                        }
+                    }
+                    return json(['code' => 0, 'msg' => '修改成功']);
+                } else {
+                    return json(['code' => -1, 'msg' => '修改失败，' . $dns->getError()]);
+                }
+            } else {
+                return json(['code' => -1, 'msg' => '参数错误']);
+            }
+        }
+
+        $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+        if ($dnstype != 'aliyun') {
+            return $this->alert('error', '仅支持阿里云解析的域名');
+        }
+        list($recordLine, $minTTL) = $this->get_line_and_ttl($drow);
+
+        $recordLineArr = [];
+        foreach ($recordLine as $key => $item) {
+            $recordLineArr[] = ['id' => strval($key), 'name' => $item['name'], 'parent' => $item['parent']];
+        }
+
+        $dnsconfig = DnsHelper::$dns_config[$dnstype];
+        $dnsconfig['type'] = $dnstype;
+
+        View::assign('domainId', $id);
+        View::assign('domainName', $drow['name']);
+        View::assign('recordLine', $recordLineArr);
+        View::assign('dnsconfig', $dnsconfig);
+        return view();
+    }
+
+    public function weight_data()
+    {
+        $id = input('param.id/d');
+        $keyword = input('post.keyword', null, 'trim');
+        $offset = input('post.offset/d');
+        $limit = input('post.limit/d');
+        if ($limit == 0) {
+            $page = 1;
+        } else {
+            $page = $offset / $limit + 1;
+        }
+
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if (!$drow) {
+            return json(['total' => 0, 'rows' => []]);
+        }
+        if (!checkPermission(0, $drow['name'])) return json(['total' => 0, 'rows' => []]);
+
+        $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+        $domainRecords = $dns->getWeightSubDomains($page, $limit, $keyword);
+        return json(['total' => $domainRecords['total'], 'rows' => $domainRecords['list']]);
+    }
 }

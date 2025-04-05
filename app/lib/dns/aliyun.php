@@ -253,6 +253,46 @@ class aliyun implements DnsInterface
         return false;
     }
 
+    //获取权重配置子域名列表
+    public function getWeightSubDomains($PageNumber = 1, $PageSize = 20, $SubDomain = null)
+    {
+        $param = ['Action' => 'DescribeDNSSLBSubDomains', 'DomainName' => $this->domain, 'PageNumber' => $PageNumber, 'PageSize' => $PageSize];
+        if (!empty($SubDomain)) {
+            $param += ['Rr' => $SubDomain];
+        }
+        $data = $this->request($param, true);
+        if ($data) {
+            $list = $data['SlbSubDomains']['SlbSubDomain'];
+            $i = 1;
+            foreach ($list as &$v) {
+                $v['id'] = $i++;
+                $v['rr'] = substr($v['SubDomain'], 0, -strlen($this->domain) - 1);
+            }
+            return ['total' => $data['TotalCount'], 'list' => $list];
+        }
+        return false;
+    }
+
+    //开启关闭权重配置
+    public function setWeightStatus($SubDomain, $Open, $Type = null, $Line = null)
+    {
+        $param = ['Action' => 'SetDNSSLBStatus', 'DomainName' => $this->domain, 'SubDomain' => $SubDomain, 'Open' => $Open == '1' ? 'true' : 'false'];
+        if (!empty($Type)) {
+            $param += ['Type' => $Type];
+        }
+        if (!empty($Line)) {
+            $param += ['Line' => $Line];
+        }
+        return $this->request($param);
+    }
+
+    //修改权重
+    public function updateRecordWeight($RecordId, $Weight)
+    {
+        $param = ['Action' => 'UpdateDNSSLBWeight', 'RecordId' => $RecordId, 'Weight' => $Weight];
+        return $this->request($param);
+    }
+
     private function convertLineCode($line)
     {
         $convert_dict = ['0' => 'default', '10=1' => 'unicom', '10=0' => 'telecom', '10=3' => 'mobile', '10=2' => 'edu', '3=0' => 'oversea', '10=22' => 'btvn', '80=0' => 'search', '7=0' => 'internal'];
@@ -265,13 +305,13 @@ class aliyun implements DnsInterface
     private function request($param, $returnData = false)
     {
         if (empty($this->AccessKeyId) || empty($this->AccessKeySecret)) return false;
-        try{
+        try {
             $result = $this->client->request($param);
-        }catch(Exception $e){
-            try{
+        } catch (Exception $e) {
+            try {
                 usleep(50000);
                 $result = $this->client->request($param);
-            }catch(Exception $e){
+            } catch (Exception $e) {
                 $this->setError($e->getMessage());
                 return false;
             }

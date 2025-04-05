@@ -159,7 +159,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 </div>
 <div class="row">
 	<div class="col-xs-12 center-block" style="float: none;">
-	<div class="panel panel-default panel-default">
+	<div class="panel panel-default">
 	<div class="panel-heading">
 		<h3 class="panel-title">{if request()->user['type'] eq 'user'}<a href="/domain" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{/if}{$domainName}</h3>
 	</div>
@@ -177,6 +177,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新解析记录列表"><i class="fa fa-refresh"></i> 刷新</a>
   <a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加记录</a>
+  {if $dnsconfig.type=='aliyun'}<a href="/record/weight/{$domainId}" class="btn btn-default">权重配置</a>{/if}
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
 	<ul class="dropdown-menu"><li><a href="/record/batchadd/{$domainId}">添加</a></li><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('edit')">修改记录</a></li><li><a href="javascript:operation('editline')">修改线路</a></li>{if $dnsconfig.remark == 1}<li><a href="javascript:operation('editremark')">修改备注</a></li>{/if}<li><a href="javascript:operation('delete')">删除</a></li></ul>

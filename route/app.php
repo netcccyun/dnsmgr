@@ -66,6 +66,8 @@ Route::group(function () {
     Route::any('/record/batchadd/:id', 'domain/record_batch_add');
     Route::any('/record/log/:id', 'domain/record_log');
     Route::post('/record/list', 'domain/record_list');
+    Route::post('/record/weight/data/:id', 'domain/weight_data');
+    Route::any('/record/weight/:id', 'domain/weight');
     Route::get('/record/:id', 'domain/record');
 
     Route::get('/dmonitor/overview', 'dmonitor/overview');

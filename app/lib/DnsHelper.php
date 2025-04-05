@@ -163,8 +163,8 @@ class DnsHelper
         'baidu' => ['DEF' => 'default', 'CT' => 'ct', 'CU' => 'cnc', 'CM' => 'cmnet', 'AB' => ''],
         'jdcloud' => ['DEF' => '-1', 'CT' => '1', 'CU' => '2', 'CM' => '3', 'AB' => '4'],
         'cloudflare' => ['DEF' => '0'],
-        'namesilo' => ['DEF' => '0'],
-        'powerdns' => ['DEF' => '0'],
+        'namesilo' => ['DEF' => 'default'],
+        'powerdns' => ['DEF' => 'default'],
     ];
 
     public static function getList()
