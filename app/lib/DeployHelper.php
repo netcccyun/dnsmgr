@@ -1535,7 +1535,7 @@ class DeployHelper
                 'privatekey' => [
                     'name' => '私钥',
                     'type' => 'textarea',
-                    'placeholder' => '填写私钥内容',
+                    'placeholder' => '填写PEM格式私钥内容',
                     'required' => true,
                     'show' => 'auth==1',
                 ],
