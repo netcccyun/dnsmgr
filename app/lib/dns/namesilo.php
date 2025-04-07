@@ -120,6 +120,7 @@ class namesilo implements DnsInterface
     //添加解析记录
     public function addDomainRecord($Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
     {
+        if ($Name == '@') $Name = '';
         $param = ['domain' => $this->domain, 'rrtype' => $Type, 'rrhost' => $Name, 'rrvalue' => $Value, 'rrttl' => $TTL];
         if ($Type == 'MX') $param['rrdistance'] = intval($MX);
         $data = $this->send_reuqest('dnsAddRecord', $param);
@@ -129,6 +130,7 @@ class namesilo implements DnsInterface
     //修改解析记录
     public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
     {
+        if ($Name == '@') $Name = '';
         $param = ['domain' => $this->domain, 'rrid' => $RecordId, 'rrtype' => $Type, 'rrhost' => $Name, 'rrvalue' => $Value, 'rrttl' => $TTL];
         if ($Type == 'MX') $param['rrdistance'] = intval($MX);
         $data = $this->send_reuqest('dnsUpdateRecord', $param);

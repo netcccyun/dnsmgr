@@ -1,0 +1,162 @@
+{extend name="common/layout" /}
+{block name="title"}批量添加解析{/block}
+{block name="main"}
+<style>
+tbody tr>td:nth-child(3){min-width:300px;word-break:break-all;}
+</style>
+<div class="row" id="app">
+<div class="col-xs-12 center-block" style="float: none;">
+<div class="panel panel-default">
+<div class="panel-heading"><h3 class="panel-title"><a href="/domain" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>批量添加解析</h3></div>
+<div class="panel-body">
+  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="form-store">
+    <div class="form-group">
+        <label class="col-sm-3 col-xs-12 control-label no-padding-right">主机记录&记录值</label>
+        <div class="col-sm-6">
+            <textarea name="record" v-model="set.record" placeholder="主机记录和记录值用空格隔开，一行一个" class="form-control" rows="8" required></textarea>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">记录类型</label>
+        <div class="col-sm-6">
+            <select name="type" class="form-control" v-model="set.type">
+                <option value="">A / CNAME / AAAA 自动识别</option>
+                <option value="A">A</option>
+                <option value="CNAME">CNAME</option>
+                <option value="AAAA">AAAA</option>
+                <option value="NS">NS</option>
+                <option value="MX">MX</option>
+                <option value="SRV">SRV</option>
+                <option value="TXT">TXT</option>
+                <option value="CAA">CAA</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">线路类型</label>
+        <div class="col-sm-6">
+			<select name="line" class="form-control" disabled><option value="default">默认</option></select>
+        </div>
+    </div>
+    <div class="form-group" style="display:none" id="mx_type">
+        <label class="col-sm-3 control-label no-padding-right">MX优先级</label>
+        <div class="col-sm-6">
+            <input type="text" class="form-control" name="mx" v-model="set.mx">
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">TTL</label>
+        <div class="col-sm-6">
+            <input type="text" class="form-control" name="ttl" v-model="set.ttl" placeholder="指解析结果在DNS服务器中的缓存时间" required>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">确定添加</button></div>
+    </div>
+  </form>
+</div>
+</div>
+<div class="panel panel-default">
+	<div class="panel-heading"><h3 class="panel-title">解析记录添加结果</h3></div>
+	<div class="panel-body">
+		<table class="table table-striped table-hover table-bordered">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>域名</th>
+					<th>添加结果</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr v-for="item in domainList">
+					<td>{{item.id}}</td>
+					<td><img :src="'/static/images/'+item.type+'.ico'" class="type-logo"></img><a :href="'/record/'+item.id" target="_blank">{{item.name}}</a></td>
+					<td v-html="item.result"></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}vue/2.6.14/vue.min.js"></script>
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script>
+new Vue({
+    el: '#app',
+    data: {
+		domainList: [],
+		set: {
+			record: '',
+			type: '',
+			mx: 10,
+			ttl: 600,
+		}
+    },
+	watch: {
+		'set.type': function(val){
+			if(val == 'MX'){
+				$("#mx_type").show();
+			}else{
+				$("#mx_type").hide();
+			}
+		}
+    },
+    mounted() {
+		this.domainList = JSON.parse(sessionStorage.getItem('domains')) || [];
+		if(this.domainList.length == 0){
+			layer.alert('请先选中要添加解析的域名', {icon: 2}, function(){
+				window.location.href = '/domain';
+			});
+		}
+		for(var i=0; i<this.domainList.length; i++){
+			this.$set(this.domainList[i], 'result', '<span class="text-muted">待添加</span>');
+		}
+    },
+    methods: {
+		async save(id){
+			var that = this;
+			return new Promise((resolve, reject) => {
+				$.ajax({
+					type: "POST",
+					url: '/record/batchadd/'+id,
+					data: that.set,
+					dataType: 'json',
+					success: function(data) {
+						resolve(data);
+					},
+					error: function() {
+						reject('服务器错误');
+					}
+				});
+			});
+		},
+        async submit(){
+			if(this.set.record == ''){
+				layer.alert('请填写主机记录和记录值', {icon: 2});
+				return;
+			}
+			if(this.set.ttl == ''){
+				layer.alert('请填写TTL', {icon: 2});
+				return;
+			}
+			if(this.set.type == 'MX' && this.set.mx == ''){
+				layer.alert('请填写MX优先级', {icon: 2});
+				return;
+			}
+			var ii = layer.load(2);
+			for(var i=0; i<this.domainList.length; i++){
+				this.domainList[i].result = '<span class="text-yellow"><i class="fa fa-refresh fa-spin fa-fw"></i> 正在添加</span>';
+				var res = await this.save(this.domainList[i].id);
+				if(res.code == 0){
+					this.domainList[i].result = '<span class="text-green">'+res.msg+'</span>';
+				}else{
+					this.domainList[i].result = '<span class="text-red">'+res.msg+'</span>';
+				}
+			}
+			layer.close(ii);
+        }
+    },
+});
+</script>
+{/block}

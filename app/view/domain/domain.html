@@ -109,7 +109,7 @@
   {if request()->user['level'] eq 2}<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
-	<ul class="dropdown-menu"><li><a href="/domain/add">添加</a></li><li><a href="javascript:operation('editremark')">修改备注</a></li><li><a href="javascript:operation('delete')">删除</a></li></ul>
+	<ul class="dropdown-menu"><li><a href="/domain/add">添加域名</a></li><li><a href="javascript:operation('editremark')">修改域名备注</a></li><li><a href="javascript:operation('delete')">删除域名</a></li><li role="separator" class="divider"></li><li><a href="javascript:operation('addrecord')">添加解析</a></li><li><a href="javascript:operation('editrecord')">修改解析</a></li></ul>
   </div>{/if}
 </form>
 
@@ -351,7 +351,7 @@ function getDomainList(){
 function operation(action){
 	var rows = $("#listTable").bootstrapTable('getSelections');
 	if(rows.length == 0){
-		layer.msg('请选择要操作的记录');
+		layer.msg('请选择要操作的域名');
 		return;
 	}
 	var ids = [];
@@ -361,8 +361,16 @@ function operation(action){
 	if(action == 'editremark'){
 		batch_edit_remark(ids)
 		return;
+	}else if(action == 'addrecord'){
+		sessionStorage.setItem('domains', JSON.stringify(rows));
+		window.location.href = '/record/batchadd';
+		return;
+	}else if(action == 'editrecord'){
+		sessionStorage.setItem('domains', JSON.stringify(rows));
+		window.location.href = '/record/batchedit';
+		return;
 	}
-	var confirmobj = layer.confirm('确定要删除所选记录吗？', {
+	var confirmobj = layer.confirm('确定要删除所选域名吗？', {
 	  btn: ['确定','取消']
 	}, function(){
 	  var ii = layer.load(2);

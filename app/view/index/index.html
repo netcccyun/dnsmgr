@@ -71,19 +71,64 @@
 </div>
 <!-- /.row -->
 <div class="row">
-    <div class="col-md-7 col-sm-12">
-        <div id="browser-notice"></div>
+	<div class="col-md-12">
+		<div id="browser-notice"></div>
+	</div>
+    <div class="col-md-4 col-sm-12">
         <div class="box box-primary">
+            <div class="box-header with-border">
+                <i class="fa fa-heartbeat fa-fw"></i>
+                <h3 class="box-title">容灾切换概览</h3>
+            </div>
+			<ul class="nav nav-pills nav-stacked">
+                <li><a href="/dmonitor/overview">运行状态<b><span class="pull-right" id="dmonitor_state"></span></b></a></li>
+                <li><a href="/dmonitor/task">切换策略(已开启)<span class="pull-right badge bg-blue" id="dmonitor_active">0</span></a>
+                </li>
+                <li><a href="/dmonitor/task?status=0">健康状况正常<span class="pull-right badge bg-green" id="dmonitor_status_0">0</span></a></li>
+				<li><a href="/dmonitor/task?status=1">健康状况异常<span class="pull-right badge bg-red" id="dmonitor_status_1">0</span></a></li>
+            </ul>
+        </div>
+		<div class="box box-info">
+            <div class="box-header with-border">
+                <i class="fa fa-globe fa-fw"></i>
+                <h3 class="box-title">CF优选IP概览</h3>
+            </div>
+			<ul class="nav nav-pills nav-stacked">
+                <li><a href="/optimizeip/opiplist">任务数量(已开启)<span class="pull-right badge bg-blue" id="optimizeip_active">0</span></a>
+                </li>
+                <li><a href="/optimizeip/opiplist?status=1">更新成功<span class="pull-right badge bg-green" id="optimizeip_status_1">0</span></a></li>
+				<li><a href="/optimizeip/opiplist?status=2">更新失败<span class="pull-right badge bg-red" id="optimizeip_status_2">0</span></a></li>
+            </ul>
+        </div>
+	</div>
+    <div class="col-md-4 col-sm-12">
+		<div class="box box-success">
+            <div class="box-header with-border">
+                <i class="fa fa-globe fa-fw"></i>
+                <h3 class="box-title">SSL证书概览</h3>
+            </div>
+			<ul class="nav nav-pills nav-stacked">
+				<li class="text-center"><a href="/cert/certorder"><b>SSL证书订单</b></a></li>
+                <li><a href="/cert/certorder?status=3">已签发<span class="pull-right badge bg-green" id="certorder_status_3">0</span></a>
+                </li>
+                <li><a href="/cert/certorder?status=5">签发失败<span class="pull-right badge bg-red" id="certorder_status_5">0</span></a></li>
+				<li><a href="/cert/certorder?status=6">即将过期<span class="pull-right badge bg-orange" id="certorder_status_6">0</span></a></li>
+				<li><a href="/cert/certorder?status=7">已过期<span class="pull-right badge bg-gray" id="certorder_status_7">0</span></a></li>
+				<li class="text-center"><a href="/cert/deploytask"><b>自动部署任务</b></a></li>
+				<li><a href="/cert/deploytask?status=0">待处理<span class="pull-right badge bg-aqua" id="certdeploy_status_0">0</span></a></li>
+				<li><a href="/cert/deploytask?status=1">部署成功<span class="pull-right badge bg-green" id="certdeploy_status_1">0</span></a></li>
+				<li><a href="/cert/deploytask?status=-1">部署失败<span class="pull-right badge bg-red" id="certdeploy_status_2">0</span></a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-12">
+		<div class="box box-primary">
             <div class="box-header with-border">
                 <i class="fa fa-cloud"></i>
                 <h3 class="box-title">服务器信息</h3>
             </div>
             <table class="table table-bordered">
                 <tbody>
-                <tr>
-                    <td class="query-title">框架版本</td>
-                    <td class="query-result">{$info.framework_version}</td>
-                </tr>
                 <tr>
                     <td class="query-title">PHP版本</td>
                     <td class="query-result">{$info.php_version}</td>
@@ -93,22 +138,12 @@
                     <td class="query-result">{$info.mysql_version}</td>
                 </tr>
                 <tr>
-                    <td class="query-title">WEB软件</td>
-                    <td class="query-result">{$info.software}</td>
-                </tr>
-                <tr>
-                    <td class="query-title">操作系统</td>
-                    <td class="query-result">{$info.os}</td>
-                </tr>
-                <tr>
                     <td class="query-title">服务器时间</td>
                     <td class="query-result">{$info.date}</td>
                 </tr>
                 </tbody>
             </table>
         </div>
-    </div>
-    <div class="col-md-5 col-sm-12">
         <div class="box box-default">
             <div class="box-header with-border">
                 <i class="fa fa-volume-up"></i>
@@ -134,6 +169,20 @@ $(document).ready(function(){
 			$('#count2').html(data.tasks);
 			$('#count3').html(data.certs);
             $('#count4').html(data.deploys);
+			$('#dmonitor_state').html(data.dmonitor_state==1?'<font color="green">正在运行</font>':'<font color="red">已停止</font>');
+			$('#dmonitor_active').html(data.dmonitor_active);
+			$('#dmonitor_status_0').html(data.dmonitor_status_0);
+			$('#dmonitor_status_1').html(data.dmonitor_status_1);
+			$('#optimizeip_active').html(data.optimizeip_active);
+			$('#optimizeip_status_1').html(data.optimizeip_status_1);
+			$('#optimizeip_status_2').html(data.optimizeip_status_2);
+			$('#certorder_status_3').html(data.certorder_status_3);
+			$('#certorder_status_5').html(data.certorder_status_5);
+			$('#certorder_status_6').html(data.certorder_status_6);
+			$('#certorder_status_7').html(data.certorder_status_7);
+			$('#certdeploy_status_0').html(data.certdeploy_status_0);
+			$('#certdeploy_status_1').html(data.certdeploy_status_1);
+			$('#certdeploy_status_2').html(data.certdeploy_status_2);
             $.ajax({
 				url: '{$checkupdate}',
 				type: 'get',

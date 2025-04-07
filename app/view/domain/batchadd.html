@@ -49,7 +49,7 @@
         </div>
     </div>
     <div class="form-group">
-        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" onclick="save()">保存</button></div>
+        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" onclick="save()">添加</button></div>
     </div>
   </form>
 </div>
@@ -110,7 +110,6 @@ function save(){
 	if(!$("#form-store").data("bootstrapValidator").isValid()){
 		return;
 	}
-	var act = $("#form-store input[name=action]").val();
 	var ii = layer.load(2);
 	$.ajax({
 		type : 'POST',

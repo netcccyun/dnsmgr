@@ -226,7 +226,11 @@ class Volcengine
 
         $arr = json_decode($response, true);
         if ($httpCode == 200) {
-            if (isset($arr['Result'])) {
+            if (isset($arr['ResponseMetadata']['Error']['MessageCN'])) {
+                throw new Exception($arr['ResponseMetadata']['Error']['MessageCN']);
+            } elseif (isset($arr['ResponseMetadata']['Error']['Message'])) {
+                throw new Exception($arr['ResponseMetadata']['Error']['Message']);
+            } elseif (isset($arr['Result'])) {
                 return $arr['Result'];
             }
             return true;

@@ -39,6 +39,7 @@ class Dmonitor extends BaseController
     {
         if (!checkPermission(2)) return json(['total' => 0, 'rows' => []]);
         $type = input('post.type/d', 1);
+        $status = input('post.status', null);
         $kw = input('post.kw', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
@@ -56,6 +57,9 @@ class Dmonitor extends BaseController
             } elseif ($type == 5) {
                 $select->whereLike('remark', '%' . $kw . '%');
             }
+        }
+        if (!isNullOrEmpty($status)) {
+            $select->where('status', intval($status));
         }
         $total = $select->count();
         $list = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name domain')->select()->toArray();

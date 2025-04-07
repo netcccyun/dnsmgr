@@ -19,18 +19,36 @@ class Index extends BaseController
         }
         if ($this->request->isAjax()) {
             if (input('post.do') == 'stat') {
-                $stat = ['domains' => 0, 'tasks' => 0, 'certs' => 0, 'deploys' => 0];
+                $stat = [];
                 if ($this->request->user['level'] == 2) {
                     $stat['domains'] = Db::name('domain')->count();
-                    $stat['tasks'] = Db::name('dmtask')->count();
-                    $stat['certs'] = Db::name('cert_order')->count();
-                    $stat['deploys'] = Db::name('cert_deploy')->count();
                 } else {
                     $stat['domains'] = Db::name('domain')->where('name', 'in', $this->request->user['permission'])->count();
-                    $stat['tasks'] = Db::name('dmtask')->count();
-                    $stat['certs'] = Db::name('cert_order')->count();
-                    $stat['deploys'] = Db::name('cert_deploy')->count();
                 }
+                $stat['tasks'] = Db::name('dmtask')->count();
+                $stat['certs'] = Db::name('cert_order')->count();
+                $stat['deploys'] = Db::name('cert_deploy')->count();
+                
+                $run_time = config_get('run_time', null, true);
+                $run_state = $run_time ? (time() - strtotime($run_time) > 10 ? 0 : 1) : 0;
+                $stat['dmonitor_state'] = $run_state;
+                $stat['dmonitor_active'] = Db::name('dmtask')->where('active', 1)->count();
+                $stat['dmonitor_status_0'] = Db::name('dmtask')->where('status', 0)->count();
+                $stat['dmonitor_status_1'] = Db::name('dmtask')->where('status', 1)->count();
+
+                $stat['optimizeip_active'] = Db::name('optimizeip')->where('active', 1)->count();
+                $stat['optimizeip_status_1'] = Db::name('optimizeip')->where('status', 1)->count();
+                $stat['optimizeip_status_2'] = Db::name('optimizeip')->where('status', 2)->count();
+
+                $stat['certorder_status_3'] = Db::name('cert_order')->where('status', 3)->count();
+                $stat['certorder_status_5'] = Db::name('cert_order')->where('status', '<', 0)->count();
+                $stat['certorder_status_6'] = Db::name('cert_order')->where('expiretime', '<', date('Y-m-d H:i:s', time() + 86400 * 7))->where('expiretime', '>=', date('Y-m-d H:i:s'))->count();
+                $stat['certorder_status_7'] = Db::name('cert_order')->where('expiretime', '<', date('Y-m-d H:i:s'))->count();
+                
+                $stat['certdeploy_status_0'] = Db::name('cert_deploy')->where('status', 0)->count();
+                $stat['certdeploy_status_1'] = Db::name('cert_deploy')->where('status', 1)->count();
+                $stat['certdeploy_status_2'] = Db::name('cert_deploy')->where('status', -1)->count();
+
                 return json($stat);
             }
             return json(['code' => -3]);

@@ -439,7 +439,6 @@ class Domain extends BaseController
 
     public function record_list()
     {
-        if (!checkPermission(2)) return $this->alert('error', '无权限');
         $id = input('post.id/d');
         $rr = input('post.rr', null, 'trim');
 
@@ -450,16 +449,19 @@ class Domain extends BaseController
         if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
 
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-        $domainRecords = $dns->getSubDomainRecords($rr, 1, 100);
+        $domainRecords = $dns->getSubDomainRecords($rr, 1, 99);
         if (!$domainRecords) return json(['code' => -1, 'msg' => '获取记录列表失败，' . $dns->getError()]);
 
         list($recordLine, $minTTL) = $this->get_line_and_ttl($drow);
 
+        $list = [];
         foreach ($domainRecords['list'] as &$row) {
+            if ($rr == '@' && ($row['Type'] == 'NS' || $row['Type'] == 'SOA')) continue;
             $row['LineName'] = isset($recordLine[$row['Line']]) ? $recordLine[$row['Line']]['name'] : $row['Line'];
+            $list[] = $row;
         }
 
-        return json(['code' => 0, 'data' => $domainRecords['list']]);
+        return json(['code' => 0, 'data' => $list]);
     }
 
     public function record_add()
@@ -768,6 +770,9 @@ class Domain extends BaseController
             if (empty($record) || empty($recordlist)) {
                 return json(['code' => -1, 'msg' => '参数不能为空']);
             }
+            if (is_null($line)) {
+                $line = DnsHelper::$line_name[$dnstype]['DEF'];
+            }
 
             $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
 
@@ -786,7 +791,13 @@ class Domain extends BaseController
                     $fail++;
                 }
             }
-            return json(['code' => 0, 'msg' => '批量添加解析，成功' . $success . '条，失败' . $fail . '条']);
+            if ($success > 0) {
+                return json(['code' => 0, 'msg' => '批量添加解析，成功' . $success . '条，失败' . $fail . '条']);
+            } elseif($fail > 0) {
+                return json(['code' => -1, 'msg' => '批量添加解析失败，' . $dns->getError()]);
+            } else {
+                return json(['code' => -1, 'msg' => '批量添加解析失败，没有可添加的记录']);
+            }
         }
 
         list($recordLine, $minTTL) = $this->get_line_and_ttl($drow);
@@ -805,6 +816,89 @@ class Domain extends BaseController
         View::assign('minTTL', $minTTL ? $minTTL : 1);
         View::assign('dnsconfig', $dnsconfig);
         return view('batchadd');
+    }
+
+    public function record_batch_add2()
+    {
+        return view('batchadd2');
+    }
+
+    public function record_batch_edit2()
+    {
+        if (request()->isAjax()) {
+            $id = input('post.id/d');
+            $drow = Db::name('domain')->where('id', $id)->find();
+            if (!$drow) {
+                return json(['code' => -1, 'msg' => '域名不存在']);
+            }
+            $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+            if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
+
+            $name = input('post.name', null, 'trim');
+            $type = input('post.type', null, 'trim');
+            $value = input('post.value', null, 'trim');
+            $ttl = input('post.ttl/d', 0);
+            $mx = input('post.mx/d', 0);
+
+            if (empty($name) || empty($type) || empty($value)) {
+                return json(['code' => -1, 'msg' => '必填参数不能为空']);
+            }
+            $line = DnsHelper::$line_name[$dnstype]['DEF'];
+
+            $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+            $domainRecords = $dns->getSubDomainRecords($name, 1, 99);
+            if (!$domainRecords) return json(['code' => -1, 'msg' => '获取记录列表失败，' . $dns->getError()]);
+            if (empty($domainRecords['list'])) return json(['code' => -1, 'msg' => '没有可修改的记录']);
+
+            if ($type == 'A' || $type == 'AAAA' || $type == 'CNAME') {
+                $list2 = array_filter($domainRecords['list'], function ($item) use ($type) {
+                    return $item['Type'] == $type;
+                });
+                if (!empty($list2)) {
+                    $list = $list2;
+                } else {
+                    $list = array_filter($domainRecords['list'], function ($item) {
+                        return $item['Type'] == 'A' || $item['Type'] == 'AAAA' || $item['Type'] == 'CNAME';
+                    });
+                }
+            } else {
+                $list = array_filter($domainRecords['list'], function ($item) use ($type) {
+                    return $item['Type'] == $type;
+                });
+            }
+            if (empty($list)) return json(['code' => -1, 'msg' => '没有可修改的'.$type.'记录']);
+
+            $list2 = array_filter($domainRecords['list'], function ($item) use ($line) {
+                return $item['Line'] == $line;
+            });
+            if (!empty($list2)) $list = $list2;
+
+            $success = 0;
+            $fail = 0;
+            foreach ($list as $record) {
+                if ($name == '@' && ($record['Type'] == 'NS' || $record['Type'] == 'SOA')) continue;
+                
+                if ($ttl > 0) $record['TTL'] = $ttl;
+                if ($mx > 0) $record['MX'] = $mx;
+                $recordid = $dns->updateDomainRecord($record['RecordId'], $record['Name'], $type, $value, $record['Line'], $record['TTL'], $record['MX'], $record['Weight'], $record['Remark']);
+                if ($recordid) {
+                    if (is_array($record['Value'])) $record['Value'] = implode(',', $record['Value']);
+                    $this->add_log($drow['name'], '修改解析', $record['Name'].' ['.$record['Type'].'] '.$record['Value'].' → '.$record['Name'].' ['.$type.'] '.$value.' (线路:'.$record['Line'].' TTL:'.$record['TTL'].')');
+                    $success++;
+                } else {
+                    $fail++;
+                }
+            }
+            if ($success > 0) {
+                return json(['code' => 0, 'msg' => '成功修改' . $success . '条解析记录']);
+            } elseif($fail > 0) {
+                return json(['code' => -1, 'msg' => $dns->getError()]);
+            } else {
+                return json(['code' => -1, 'msg' => '没有可修改的记录']);
+            }
+        }
+
+        return view('batchedit');
     }
 
     public function record_log()

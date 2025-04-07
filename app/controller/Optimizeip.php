@@ -39,6 +39,7 @@ class Optimizeip extends BaseController
         if (!checkPermission(2)) return json(['total' => 0, 'rows' => []]);
         $type = input('post.type/d', 1);
         $kw = input('post.kw', null, 'trim');
+        $status = input('post.status', null);
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
 
@@ -49,6 +50,9 @@ class Optimizeip extends BaseController
             } elseif ($type == 2) {
                 $select->whereLike('remark', '%' . $kw . '%');
             }
+        }
+        if (!isNullOrEmpty($status)) {
+            $select->where('status', intval($status));
         }
         $total = $select->count();
         $list = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name domain')->select();
