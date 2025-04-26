@@ -190,6 +190,7 @@ class aliyun implements DeployInterface
 
         $cert_id = null;
         $cert_name = null;
+        $casid = null;
         foreach ($data['Result'] as $cert) {
             $domains = explode(',', $cert['SAN']);
             $flag = true;
@@ -202,6 +203,7 @@ class aliyun implements DeployInterface
             if ($flag) {
                 $cert_id = $cert['Id'];
                 $cert_name = $cert['CommonName'];
+                $casid = $cert['CasId'];
                 break;
             }
         }
@@ -215,6 +217,10 @@ class aliyun implements DeployInterface
         if ($cert_id) {
             $param['Update'] = 'true';
             $param['Id'] = $cert_id;
+            if ($casid == $cas_id) {
+                $this->log('ESA站点 ' . $sitename . ' 证书已配置，无需重复操作');
+                return;
+            }
         }
         $client->request($param);
         if ($cert_id) {

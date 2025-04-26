@@ -483,7 +483,6 @@ class Cert extends BaseController
 
         foreach($domains as $domain){
             if (!$wildcard && strpos($domain, '*') !== false) return ['code' => -1, 'msg' => '该证书账户类型不支持泛域名'];
-            if (preg_match('/[\x{4e00}-\x{9fa5}]/u', $domain) && !function_exists('idn_to_ascii')) return ['code' => -1, 'msg' => '域名包含中文，请开启intl扩展'];
             $mainDomain = getMainDomain($domain);
             $drow = Db::name('domain')->where('name', $mainDomain)->find();
             if (!$drow) {

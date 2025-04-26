@@ -1,6 +1,7 @@
 <?php
 // 应用公共文件
 use think\facade\Db;
+use think\facade\Config;
 use think\facade\Request;
 
 function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $header = 0, $ua = 0, $nobody = 0, $addheader = 0)
@@ -294,6 +295,16 @@ function convert_second($s)
 function getMainDomain($host)
 {
     if (filter_var($host, FILTER_VALIDATE_IP)) return $host;
+    $domains = config('temp.domains');
+    if (!$domains) {
+        $domains = Db::name('domain')->column('name');
+        config(['domains'=>$domains], 'temp');
+    }
+    foreach ($domains as $domain) {
+        if (str_ends_with($host, $domain)) {
+            return $domain;
+        }
+    }
     $domain_root = file_get_contents(app()->getBasePath() . 'data' . DIRECTORY_SEPARATOR . 'domain_root.txt');
     $domain_root = explode("\r\n", $domain_root);
     $data = explode('.', $host);

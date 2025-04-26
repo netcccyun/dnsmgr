@@ -38,10 +38,17 @@
         "ext-pdo": "*",
         "ext-gd": "*",
         "ext-curl": "*",
+        "ext-openssl": "*",
+        "ext-sockets": "*",
+        "ext-mbstring": "*",
+        "ext-ssh2": "*",
+        "ext-ftp": "*",
         "topthink/framework": "^6.0.0",
         "topthink/think-orm": "^2.0",
         "topthink/think-view": "^1.0",
-        "cccyun/think-captcha": "^3.0"
+        "cccyun/think-captcha": "^3.0",
+        "symfony/polyfill-intl-idn": "^1.31",
+        "symfony/polyfill-php80": "^1.31"
     },
     "require-dev": {
         "symfony/var-dumper": "^4.2",

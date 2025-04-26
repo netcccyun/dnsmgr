@@ -68,6 +68,7 @@ class jdcloud implements DnsInterface
     //获取解析记录列表
     public function getDomainRecords($PageNumber = 1, $PageSize = 20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null)
     {
+        if ($PageSize > 99) $PageSize = 99;
         $query = ['pageNumber' => $PageNumber, 'pageSize' => $PageSize];
         if (!isNullOrEmpty($SubDomain)) {
             $SubDomain = strtolower($SubDomain);

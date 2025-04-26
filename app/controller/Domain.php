@@ -449,7 +449,7 @@ class Domain extends BaseController
         if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
 
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-        $domainRecords = $dns->getSubDomainRecords($rr, 1, 99);
+        $domainRecords = $dns->getSubDomainRecords($rr, 1, 100);
         if (!$domainRecords) return json(['code' => -1, 'msg' => '获取记录列表失败，' . $dns->getError()]);
 
         list($recordLine, $minTTL) = $this->get_line_and_ttl($drow);
@@ -846,7 +846,7 @@ class Domain extends BaseController
             $line = DnsHelper::$line_name[$dnstype]['DEF'];
 
             $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-            $domainRecords = $dns->getSubDomainRecords($name, 1, 99);
+            $domainRecords = $dns->getSubDomainRecords($name, 1, 100);
             if (!$domainRecords) return json(['code' => -1, 'msg' => '获取记录列表失败，' . $dns->getError()]);
             if (empty($domainRecords['list'])) return json(['code' => -1, 'msg' => '没有可修改的记录']);
 
