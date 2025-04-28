@@ -16,14 +16,20 @@
 <div class="panel-body">
   <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="taskform">
     <div class="form-group">
-        <label class="col-sm-3 col-xs-12 control-label no-padding-right">域名选择</label>
-        <div class="col-sm-3 col-xs-5"><input type="text" name="rr" v-model="set.rr" placeholder="主机记录" class="form-control" required></div>
-        <div class="col-sm-3 col-xs-7 dselect"><select name="did" v-model="set.did" class="form-control" required>
-            <option value="">--主域名--</option>
-            {foreach $domains as $k=>$v}
-                <option value="{$k}">{$v}</option>
-            {/foreach}
-        </select></div>
+        <label class="col-sm-3 control-label no-padding-right">域名选择</label>
+        <div class="col-sm-6">
+            <div class="input-group">
+                <input type="text" name="rr" v-model="set.rr" placeholder="主机记录" class="form-control" required>
+                <span class="input-group-addon">.</span>
+                <select name="did" v-model="set.did" class="form-control" required>
+                    <option value="">--主域名--</option>
+                    {foreach $domains as $k=>$v}
+                        <option value="{$k}">{$v}</option>
+                    {/foreach}
+                </select>
+                <a tabindex="0" class="input-group-addon" role="button" data-toggle="popover" data-trigger="focus" title="" data-placement="bottom" data-content="不支持对CloudFlare里的域名添加优选，必须使用其他DNS服务商。" data-original-title="说明"><span class="glyphicon glyphicon-info-sign"></span></a>
+            </div>
+        </div>
     </div>
     <div class="form-group">
         <label class="col-sm-3 control-label no-padding-right">CDN服务商</label>
@@ -142,6 +148,7 @@ new Vue({
             live: 'submitted',
         });
         $('[data-toggle="tooltip"]').tooltip();
+        $('[data-toggle="popover"]').popover()
     },
     methods: {
         submit(){

@@ -17,11 +17,16 @@
   <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="taskform">
     <div class="form-group">
         <label class="col-sm-3 col-xs-12 control-label no-padding-right">域名选择</label>
-        <div class="col-sm-3 col-xs-5"><input type="text" name="rr" v-model="set.rr" placeholder="主机记录" class="form-control" required></div>
-        <div class="col-sm-3 col-xs-7 dselect"><select name="did" v-model="set.did" class="form-control" required>
-            <option value="">--主域名--</option>
-            <option v-for="option in domainList" :value="option.id">{{option.name}}</option>
-        </select></div>
+        <div class="col-sm-6">
+            <div class="input-group">
+                <input type="text" name="rr" v-model="set.rr" placeholder="主机记录" class="form-control" required>
+                <span class="input-group-addon">.</span>
+                <select name="did" v-model="set.did" class="form-control" required>
+                    <option value="">--主域名--</option>
+                    <option v-for="option in domainList" :value="option.id">{{option.name}}</option>
+                </select>
+            </div>
+        </div>
     </div>
     <div class="form-group">
         <label class="col-sm-3 control-label no-padding-right">解析记录</label>

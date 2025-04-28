@@ -46,6 +46,8 @@ class huoshan implements DeployInterface
                 $this->deploy_imagex($cert_id, $config);
             } elseif ($config['product'] == 'clb') {
                 $this->deploy_clb($cert_id, $config);
+            } elseif ($config['product'] == 'alb') {
+                $this->deploy_alb($cert_id, $config);
             }
         }
     }
@@ -165,6 +167,19 @@ class huoshan implements DeployInterface
         ];
         $client->request('GET', 'ModifyListenerAttributes', $param);
         $this->log('CLB监听器 ' . $config['listener_id'] . ' 部署证书成功！');
+    }
+
+    private function deploy_alb($cert_id, $config)
+    {
+        if (empty($config['listener_id'])) throw new Exception('监听器ID不能为空');
+        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'open.volcengineapi.com', 'alb', '2020-04-01', 'cn-beijing', $this->proxy);
+        $param = [
+            'ListenerId' => $config['listener_id'],
+            'CertificateSource' => 'cert_center',
+            'CertCenterCertificateId' => $cert_id,
+        ];
+        $client->request('GET', 'ModifyListenerAttributes', $param);
+        $this->log('ALB监听器 ' . $config['listener_id'] . ' 部署证书成功！');
     }
 
     private function get_cert_id($fullchain, $privatekey)

@@ -1,0 +1,85 @@
+{extend name="common/layout" /}
+{block name="title"}域名到期提醒设置{/block}
+{block name="main"}
+<div class="row">
+<div class="col-xs-12 col-sm-8 col-lg-6 center-block" style="float: none;">
+
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title"><a href="/domain" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>域名到期提醒设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">到期提醒天数</label>
+	  <div class="col-sm-9"><input type="text" name="expire_noticedays" value="{:config_get('expire_noticedays')}" class="form-control" placeholder="留空则不开启到期提醒"/><font color="green">域名到期前多少天发送通知，可填写多个天数，用英文逗号隔开。例如填写7,14则在域名到期前7天与14天分别发送通知。</font></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">邮件通知</label>
+	  <div class="col-sm-9"><select class="form-control" name="expire_notice_mail" default="{:config_get('expire_notice_mail')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">微信公众号通知</label>
+	  <div class="col-sm-9"><select class="form-control" name="expire_notice_wxtpl" default="{:config_get('expire_notice_wxtpl')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+	</div>
+	<div class="form-group">
+		<label class="col-sm-3 control-label">Telegram机器人通知</label>
+		<div class="col-sm-9"><select class="form-control" name="expire_notice_tgbot" default="{:config_get('expire_notice_tgbot')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+	</div>
+	<div class="form-group">
+		<label class="col-sm-3 control-label">群机器人Webhook</label>
+		<div class="col-sm-9"><select class="form-control" name="expire_notice_webhook" default="{:config_get('expire_notice_webhook')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+	</div>
+	<div class="form-group">
+	  <div class="col-sm-offset-3 col-sm-9">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+	  </div>
+	</div>
+  </form>
+</div>
+</div>
+
+<div class="panel panel-warning">
+<div class="panel-heading"><h3 class="panel-title">计划任务说明</h3></div>
+<div class="panel-body">
+  <p>支持域名到期提醒+域名列表到期时间自动刷新。与SSL证书共用计划任务，不需要单独添加计划任务。</p><p><a href="/cert/certset">查看计划任务说明</a></p>
+</div>
+</div>
+
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script>
+var items = $("select[default]");
+for (i = 0; i < items.length; i++) {
+	$(items[i]).val($(items[i]).attr("default")||0);
+}
+function saveSetting(obj){
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'POST',
+		url : '',
+		data : $(obj).serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert('设置保存成功！', {
+					icon: 1,
+					closeBtn: false
+				}, function(){
+				  window.location.reload()
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+	return false;
+}
+</script>
+{/block}

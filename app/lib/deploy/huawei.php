@@ -58,8 +58,10 @@ class huawei implements DeployInterface
                 ],
             ],
         ];
-        $client->request('PUT', '/v1.1/cdn/configuration/domains/' . $config['domain'] . '/configs', null, $param);
-        $this->log('CDN域名 ' . $config['domain'] . ' 部署证书成功！');
+        foreach (explode(',', $config['domain']) as $domain) {
+            $client->request('PUT', '/v1.1/cdn/configuration/domains/' . $domain . '/configs', null, $param);
+            $this->log('CDN域名 ' . $domain . ' 部署证书成功！');
+        }
     }
 
     private function deploy_elb($fullchain, $privatekey, $config)

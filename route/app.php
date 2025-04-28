@@ -49,6 +49,8 @@ Route::group(function () {
     Route::post('/account/op', 'domain/account_op');
     Route::get('/account', 'domain/account');
 
+    Route::any('/domain/expirenotice', 'domain/expire_notice');
+    Route::post('/domain/updatedate', 'domain/update_date');
     Route::post('/domain/data', 'domain/domain_data');
     Route::post('/domain/op', 'domain/domain_op');
     Route::post('/domain/list', 'domain/domain_list');

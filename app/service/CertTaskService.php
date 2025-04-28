@@ -13,6 +13,7 @@ class CertTaskService
     {
         $this->execute_deploy();
         $this->execute_order();
+        (new ExpireNoticeService())->task();
         config_set('certtask_time', date("Y-m-d H:i:s"));
         echo 'done'.PHP_EOL;
     }

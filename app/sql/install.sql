@@ -5,7 +5,7 @@ CREATE TABLE `dnsmgr_config` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `dnsmgr_config` VALUES ('version', '1028');
+INSERT INTO `dnsmgr_config` VALUES ('version', '1033');
 INSERT INTO `dnsmgr_config` VALUES ('notice_mail', '0');
 INSERT INTO `dnsmgr_config` VALUES ('notice_wxtpl', '0');
 INSERT INTO `dnsmgr_config` VALUES ('mail_smtp', 'smtp.qq.com');
@@ -35,6 +35,12 @@ CREATE TABLE `dnsmgr_domain` (
   `is_sso` tinyint(1) NOT NULL DEFAULT '0',
   `recordcount` int(1) NOT NULL DEFAULT '0',
   `remark` varchar(100) DEFAULT NULL,
+  `is_notice` tinyint(1) NOT NULL DEFAULT '0',
+  `regtime` datetime DEFAULT NULL,
+  `expiretime` datetime DEFAULT NULL,
+  `checktime` datetime DEFAULT NULL,
+  `noticetime` datetime DEFAULT NULL,
+  `checkstatus` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

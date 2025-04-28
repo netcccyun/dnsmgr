@@ -5,8 +5,9 @@ namespace app\controller;
 use app\BaseController;
 use think\facade\Db;
 use think\facade\View;
-use think\facade\Request;
+use think\facade\Cache;
 use app\lib\DnsHelper;
+use app\service\ExpireNoticeService;
 use Exception;
 
 class Domain extends BaseController
@@ -179,6 +180,7 @@ class Domain extends BaseController
         if (!checkPermission(1)) return json(['total' => 0, 'rows' => []]);
         $kw = input('post.kw', null, 'trim');
         $type = input('post.type', null, 'trim');
+        $status = input('post.status', null, 'trim');
         $offset = input('post.offset/d', 0);
         $limit = input('post.limit/d', 10);
 
@@ -191,6 +193,13 @@ class Domain extends BaseController
         }
         if (request()->user['level'] == 1) {
             $select->where('is_hide', 0)->where('A.name', 'in', request()->user['permission']);
+        }
+        if (!isNullOrEmpty($status)) {
+            if ($status == '2') {
+                $select->where('A.expiretime', '<=', date('Y-m-d H:i:s'));
+            } elseif ($status == '1') {
+                $select->where('A.expiretime', '<=', date('Y-m-d H:i:s', time() + 86400 * 30))->where('A.expiretime', '>', date('Y-m-d H:i:s'));
+            }
         }
         $total = $select->count();
         $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->order('A.id', 'desc')->limit($offset, $limit)->select();
@@ -240,11 +249,13 @@ class Domain extends BaseController
             if (!$row) return json(['code' => -1, 'msg' => '域名不存在']);
             $is_hide = input('post.is_hide/d');
             $is_sso = input('post.is_sso/d');
+            $is_notice = input('post.is_notice/d');
             $remark = input('post.remark', null, 'trim');
             if (empty($remark)) $remark = null;
             Db::name('domain')->where('id', $id)->update([
                 'is_hide' => $is_hide,
                 'is_sso' => $is_sso,
+                'is_notice' => $is_notice,
                 'remark' => $remark,
             ]);
             return json(['code' => 0, 'msg' => '修改域名配置成功！']);
@@ -280,8 +291,15 @@ class Domain extends BaseController
             if (empty($ids)) return json(['code' => -1, 'msg' => '参数不能为空']);
             $remark = input('post.remark', null, 'trim');
             if (empty($remark)) $remark = null;
-            Db::name('domain')->where('id', 'in', $ids)->update(['remark' => $remark]);
-            return json(['code' => 0, 'msg' => '成功修改' . count($ids) . '个域名！']);
+            $count = Db::name('domain')->where('id', 'in', $ids)->update(['remark' => $remark]);
+            return json(['code' => 0, 'msg' => '成功修改' . $count . '个域名！']);
+        } elseif ($act == 'batchsetnotice') {
+            if (!checkPermission(2)) return $this->alert('error', '无权限');
+            $ids = input('post.ids');
+            $is_notice = input('post.is_notice/d', 0);
+            if (empty($ids)) return json(['code' => -1, 'msg' => '参数不能为空']);
+            $count = Db::name('domain')->where('id', 'in', $ids)->update(['is_notice' => $is_notice]);
+            return json(['code' => 0, 'msg' => '成功修改' . $count . '个域名！']);
         } elseif ($act == 'batchdel') {
             if (!checkPermission(2)) return $this->alert('error', '无权限');
             $ids = input('post.ids');
@@ -1028,5 +1046,34 @@ class Domain extends BaseController
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         $domainRecords = $dns->getWeightSubDomains($page, $limit, $keyword);
         return json(['total' => $domainRecords['total'], 'rows' => $domainRecords['list']]);
+    }
+
+    public function expire_notice()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        if ($this->request->isPost()) {
+            $params = input('post.');
+            foreach ($params as $key => $value) {
+                if (empty($key)) {
+                    continue;
+                }
+                config_set($key, $value);
+                Cache::delete('configs');
+            }
+            return json(['code' => 0, 'msg' => 'succ']);
+        }
+        return View::fetch();
+    }
+
+    public function update_date()
+    {
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if (!$drow) {
+            return json(['code' => -1, 'msg' => '域名不存在']);
+        }
+        if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
+        $result = (new ExpireNoticeService())->updateDomainDate($id, $drow['name']);
+        return json($result);
     }
 }

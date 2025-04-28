@@ -483,3 +483,22 @@ function convertDomainToUtf8($domain) {
         return $domain;
     }
 }
+
+function getDomainDate($domain)
+{
+    try {
+        $whois = \Iodev\Whois\Factory::get()->createWhois();
+        $info = $whois->loadDomainInfo($domain);
+        if ($info) {
+            if ($info->expirationDate > 0) {
+                return [date('Y-m-d H:i:s', $info->creationDate), date('Y-m-d H:i:s', $info->expirationDate)];
+            } else {
+                throw new Exception('域名到期时间未知');
+            }
+        } else {
+            throw new Exception('域名信息未找到');
+        }
+    } catch (Exception $e) {
+        throw new Exception('查询域名whois失败: ' . $e->getMessage());
+    }
+}

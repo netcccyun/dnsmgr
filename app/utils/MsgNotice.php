@@ -133,6 +133,34 @@ class MsgNotice
         }
     }
 
+    public static function expire_notice_send($day, $list)
+    {
+        $mail_title = '您有'.count($list).'个域名即将在'.$day.'天后到期';
+        $mail_content = '尊敬的用户，您好：您有'.count($list).'个域名即将在'.$day.'天后到期！<br/><b>域名&到期时间：</b><br/>';
+        foreach ($list as $domain) {
+            $mail_content .= '<b>'.$domain['name'].'</b> - '.$domain['expiretime'].'<br/>';
+        }
+        $mail_content .= '<br/><font color="grey">'.self::$sitename.'</font><br/><font color="grey">'.date('Y-m-d H:i:s').'</font>';
+
+        if (config_get('expire_notice_mail') == 1 || config_get('expire_notice_mail') == 2) {
+            $mail_name = config_get('mail_recv') ? config_get('mail_recv') : config_get('mail_name');
+            self::send_mail($mail_name, $mail_title, $mail_content);
+        }
+        if (config_get('expire_notice_wxtpl') == 1 || config_get('expire_notice_wxtpl') == 2) {
+            $content = str_replace(['<br/>', '<b>', '</b>'], ["\n\n", '**', '**'], $mail_content);
+            self::send_wechat_tplmsg($mail_title, strip_tags($content));
+        }
+        if (config_get('expire_notice_tgbot') == 1 || config_get('expire_notice_tgbot') == 2) {
+            $content = str_replace('<br/>', "\n", $mail_content);
+            $content = "<strong>".$mail_title."</strong>\n".strip_tags($content);
+            self::send_telegram_bot($content);
+        }
+        if (config_get('expire_notice_webhook') == 1) {
+            $content = str_replace(['*', '<br/>', '<b>', '</b>'], ['\*', "\n", '**', '**'], $mail_content);
+            self::send_webhook($mail_title, $content);
+        }
+    }
+
     public static function send_mail($to, $sub, $msg)
     {
         $mail_type = config_get('mail_type');
