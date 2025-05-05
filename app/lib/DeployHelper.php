@@ -998,7 +998,7 @@ class DeployHelper
                 'domain' => [
                     'name' => '绑定的域名',
                     'type' => 'input',
-                    'placeholder' => '',
+                    'placeholder' => '多个域名可使用,分隔',
                     'required' => true,
                 ],
             ],
@@ -1035,7 +1035,7 @@ class DeployHelper
                 'domain' => [
                     'name' => 'CDN域名',
                     'type' => 'input',
-                    'placeholder' => '',
+                    'placeholder' => '多个域名可使用,分隔',
                     'required' => true,
                 ],
             ],

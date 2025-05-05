@@ -72,8 +72,9 @@ class CheckUtils
         return ['status' => $status, 'errmsg' => $errmsg, 'usetime' => $usetime];
     }
 
-    public static function tcp($target, $port, $timeout)
+    public static function tcp($target, $ip, $port, $timeout)
     {
+        if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP)) $target = $ip;
         if (substr($target, -1) == '.') $target = substr($target, 0, -1);
         if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
             $target = gethostbyname($target);
@@ -95,9 +96,10 @@ class CheckUtils
         return ['status' => $status, 'errmsg' => $errStr, 'usetime' => $usetime];
     }
 
-    public static function ping($target)
+    public static function ping($target, $ip)
     {
         if (!function_exists('exec')) return ['status' => false, 'errmsg' => 'exec函数不可用', 'usetime' => 0];
+        if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP)) $target = $ip;
         if (substr($target, -1) == '.') $target = substr($target, 0, -1);
         if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
             $target = gethostbyname($target);

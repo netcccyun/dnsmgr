@@ -28,8 +28,8 @@ class doge implements DeployInterface
 
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
-        $domain = $config['domain'];
-        if (empty($domain)) throw new Exception('绑定的域名不能为空');
+        $domains = $config['domain'];
+        if (empty($domains)) throw new Exception('绑定的域名不能为空');
 
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
@@ -37,13 +37,14 @@ class doge implements DeployInterface
 
         $cert_id = $this->get_cert_id($fullchain, $privatekey, $cert_name);
 
-        $param = [
-            'id' => $cert_id,
-            'domain' => $domain,
-        ];
-        $this->request('/cdn/cert/bind.json', $param);
-
-        $this->log('CDN域名 ' . $domain . ' 绑定证书成功！');
+        foreach (explode(',', $domains) as $domain) {
+            $param = [
+                'id' => $cert_id,
+                'domain' => $domain,
+            ];
+            $this->request('/cdn/cert/bind.json', $param);
+            $this->log('CDN域名 ' . $domain . ' 绑定证书成功！');
+        }
         $info['cert_id'] = $cert_id;
     }
 

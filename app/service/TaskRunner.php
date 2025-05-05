@@ -45,9 +45,9 @@ class TaskRunner
             if ($row['checktype'] == 2) {
                 $result = CheckUtils::curl($row['checkurl'], $row['timeout'], $row['main_value'], $row['proxy'] == 1);
             } elseif ($row['checktype'] == 1) {
-                $result = CheckUtils::tcp($row['main_value'], $row['tcpport'], $row['timeout']);
+                $result = CheckUtils::tcp($row['main_value'], $row['checkurl'], $row['tcpport'], $row['timeout']);
             } else {
-                $result = CheckUtils::ping($row['main_value']);
+                $result = CheckUtils::ping($row['main_value'], $row['checkurl']);
             }
 
             $action = 0;

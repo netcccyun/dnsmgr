@@ -29,8 +29,8 @@ class qiniu implements DeployInterface
 
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
-        $domain = $config['domain'];
-        if (empty($domain)) throw new Exception('绑定的域名不能为空');
+        $domains = $config['domain'];
+        if (empty($domains)) throw new Exception('绑定的域名不能为空');
 
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
@@ -38,14 +38,16 @@ class qiniu implements DeployInterface
 
         $cert_id = $this->get_cert_id($fullchain, $privatekey, $certInfo['subject']['CN'], $cert_name);
 
-        if ($config['product'] == 'cdn') {
-            $this->deploy_cdn($domain, $cert_id);
-        } elseif ($config['product'] == 'oss') {
-            $this->deploy_oss($domain, $cert_id);
-        } elseif ($config['product'] == 'pili') {
-            $this->deploy_pili($config['pili_hub'], $domain, $cert_name);
-        } else {
-            throw new Exception('未知的产品类型');
+        foreach (explode(',', $domains) as $domain) {
+            if ($config['product'] == 'cdn') {
+                $this->deploy_cdn($domain, $cert_id);
+            } elseif ($config['product'] == 'oss') {
+                $this->deploy_oss($domain, $cert_id);
+            } elseif ($config['product'] == 'pili') {
+                $this->deploy_pili($config['pili_hub'], $domain, $cert_name);
+            } else {
+                throw new Exception('未知的产品类型');
+            }
         }
         $info['cert_id'] = $cert_id;
         $info['cert_name'] = $cert_name;
