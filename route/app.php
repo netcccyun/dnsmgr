@@ -136,6 +136,8 @@ Route::group('api', function () {
     Route::post('/record/remark/:id', 'domain/record_remark');
     Route::post('/record/batch/:id', 'domain/record_batch');
 
+    Route::post('/cert/order', 'cert/order_info');
+
 })->middleware(AuthApi::class);
 
 Route::miss(function() {

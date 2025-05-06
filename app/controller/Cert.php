@@ -244,6 +244,17 @@ class Cert extends BaseController
         return json(['total' => $total, 'rows' => $list]);
     }
 
+    public function order_info()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        $id = input('post.id/d');
+        $row = Db::name('cert_order')->where('id', $id)->find();
+        if (!$row) return json(['code' => -1, 'msg' => '证书订单不存在']);
+        $pfx = CertHelper::getPfx($row['fullchain'], $row['privatekey']);
+        $row['pfx'] = base64_encode($pfx);
+        return json(['code' => 0, 'data' => ['id' => $row['id'], 'crt' => $row['fullchain'], 'key' => $row['privatekey'], 'pfx' => $row['pfx'], 'issuetime' => $row['issuetime'], 'expiretime' => $row['expiretime'], 'domains' => Db::name('cert_domain')->where('oid', $row['id'])->order('sort','ASC')->column('domain')]]);
+    }
+
     public function order_op()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');
