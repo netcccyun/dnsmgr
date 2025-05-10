@@ -145,6 +145,7 @@ class AWS
 
         $path = '/' . $this->version . $path;
         $body = '';
+        $query = [];
         if ($method == 'GET' || $method == 'DELETE') {
             $query = $params;
         } else {
