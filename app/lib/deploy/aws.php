@@ -54,8 +54,11 @@ class aws implements DeployInterface
         }
 
         $data['ViewerCertificate']['ACMCertificateArn'] = $cert_id;
-        $data['ViewerCertificate']['CloudFrontDefaultCertificate'] = false;
-        $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><DistributionConfig></DistributionConfig>');
+        $data['ViewerCertificate']['CloudFrontDefaultCertificate'] = 'false';
+        unset($data['ViewerCertificate']['Certificate']);
+        unset($data['ViewerCertificate']['CertificateSource']);
+
+        $xml = new \SimpleXMLElement('<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2020-05-31/"></DistributionConfig>');
         $client->requestXmlN('PUT', '/distribution/' . $config['distribution_id'] . '/config', $data, $xml);
         $this->log('分配ID: ' . $config['distribution_id'] . ' 证书部署成功！');
     }

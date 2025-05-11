@@ -328,16 +328,31 @@ class AWS
         return json_decode(json_encode(simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA), JSON_UNESCAPED_UNICODE), true);
     }
 
-    private function array2xml($array, $xml = null)
+    private function array2xml($array, $xml = null, $parentTagName = 'root')
     {
         if ($xml === null) {
             $xml = new \SimpleXMLElement('<root/>');
         }
 
         foreach ($array as $key => $value) {
+            // 确定当前标签名：如果是数字键名，使用父级标签名，否则使用当前键名
+            $tagName = is_numeric($key) ? $parentTagName : $key;
+
             if (is_array($value)) {
-                $subNode = $xml->addChild($key);
-                $this->array2xml($value, $subNode);
+                // 检查数组的第一个子节点的键是否为0
+                $firstKey = array_key_first($value);
+                $isFirstKeyZero = ($firstKey === 0 || $firstKey === '0');
+
+                if ($isFirstKeyZero) {
+                    // 如果第一个子节点的键是0，则不生成当前节点标签，直接递归子节点
+                    $this->array2xml($value, $xml, $tagName);
+
+                } else {
+                    // 否则生成当前节点标签，并递归子节点
+                    $subNode = $xml->addChild($tagName);
+                    $this->array2xml($value, $subNode, $tagName);
+                }
+
             } else {
                 $xml->addChild($key, $value);
             }
