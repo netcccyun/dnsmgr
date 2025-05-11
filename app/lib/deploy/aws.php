@@ -33,18 +33,9 @@ class aws implements DeployInterface
         if (empty($config['distribution_id'])) throw new Exception('分配ID不能为空');
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
-        $config['cert_name'] = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
-        if (isset($info['cert_id']) && isset($info['cert_name']) && $info['cert_name'] == $config['cert_name']) {
-            $cert_id = $info['cert_id'];
-            $this->log('证书已上传：' . $cert_id);
-        } else {
-            $cert_id = $this->get_cert_id($fullchain, $privatekey);
-            $this->log('证书上传成功：' . $cert_id);
-            $info['cert_id'] = $cert_id;
-            $info['cert_name'] = $config['cert_name'];
-            usleep(500000);
-        }
+        $cert_id = $this->get_cert_id($fullchain, $privatekey, $info['cert_id']);
+        usleep(500000);
 
         $client = new AWSClient($this->AccessKeyId, $this->SecretAccessKey, 'cloudfront.amazonaws.com', 'cloudfront', '2020-05-31', 'us-east-1', $this->proxy);
         try {
@@ -63,13 +54,48 @@ class aws implements DeployInterface
         $this->log('分配ID: ' . $config['distribution_id'] . ' 证书部署成功！');
     }
 
-    private function get_cert_id($fullchain, $privatekey)
+    private function get_cert_id($fullchain, $privatekey, $cert_id = null)
     {
-        $cert = explode('-----END CERTIFICATE-----', $fullchain)[0] . '-----END CERTIFICATE-----';
+        $client = new AWSClient($this->AccessKeyId, $this->SecretAccessKey, 'acm.us-east-1.amazonaws.com', 'acm', '', 'us-east-1', $this->proxy);
+
+        if (!empty($cert_id)) {
+            try {
+                $data = $client->request('POST', 'CertificateManager.GetCertificate', [
+                    'CertificateArn' => $cert_id
+                ]);
+                // 如果成功获取证书信息，说明证书存在，直接返回cert_id
+                if (isset($data['Certificate'])) {
+                    $this->log('证书已存在：' . $cert_id);
+                    return $cert_id;
+                }
+            } catch (Exception $e) {
+                $this->log('证书已被删除：' . $cert_id. '，准备重新上传');
+            }
+        }
+
+        $this->log('证书尚未存在，开始上传到AWS ACM');
+
+        $certificates = explode('-----END CERTIFICATE-----', $fullchain);
+        $cert = $certificates[0] . '-----END CERTIFICATE-----';
+        $certificateChain = '';
+        if (count($certificates) > 1) {
+            // 从第二个证书开始，重新拼接中间证书链
+            for ($i = 1; $i < count($certificates); $i++) {
+                if (trim($certificates[$i]) !== '') { // 忽略空字符串（可能由末尾分割产生）
+                    $certificateChain .= $certificates[$i] . '-----END CERTIFICATE-----';
+                }
+            }
+        }
+
         $param = [
             'Certificate' => base64_encode($cert),
             'PrivateKey' => base64_encode($privatekey),
         ];
+
+        // 如果有中间证书链，则添加到参数中
+        if (!empty($certificateChain)) {
+            $param['CertificateChain'] = base64_encode($certificateChain);
+        }
 
         $client = new AWSClient($this->AccessKeyId, $this->SecretAccessKey, 'acm.us-east-1.amazonaws.com', 'acm', '', 'us-east-1', $this->proxy);
         try {
@@ -78,6 +104,11 @@ class aws implements DeployInterface
         } catch (Exception $e) {
             throw new Exception('上传证书失败：' . $e->getMessage());
         }
+
+        $this->log('证书上传成功：' . $cert_id);
+
+        $info['cert_id'] = $cert_id;
+
         return $cert_id;
     }
 
