@@ -1244,6 +1244,15 @@ class DeployHelper
                 ],
             ],
             'taskinputs' => [
+                'product' => [
+                    'name' => '要部署的产品',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'cdnpro', 'label'=>'CDN Pro']
+                    ],
+                    'value' => 'cdnpro',
+                    'required' => true,
+                ],
                 'domain' => [
                     'name' => '绑定的域名',
                     'type' => 'input',
