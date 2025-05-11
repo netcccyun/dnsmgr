@@ -1210,6 +1210,57 @@ class DeployHelper
                 ],
             ],
         ],
+        'wangsu' => [
+            'name' => '网宿科技',
+            'class' => 2,
+            'icon' => 'wangsu.ico',
+            'note' => '支持网宿CDN Pro，暂不支持其他产品线，暂不支持AKSK鉴权',
+            'inputs' => [
+                'username' => [
+                    'name' => '账号',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'apiKey' => [
+                    'name' => 'APIKEY',
+                    'type' => 'input',
+                    'placeholder' => '自行联系提供商申请',
+                    'required' => true,
+                ],
+                'spKey' => [
+                    'name' => '特殊KEY',
+                    'type' => 'input',
+                    'placeholder' => '特殊场景下才需要使用的APIKEY，留空默认同APIKEY',
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'product' => [
+                    'name' => '要部署的产品',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'cdnpro', 'label'=>'CDN Pro']
+                    ],
+                    'value' => 'cdnpro',
+                    'required' => true,
+                ],
+                'domain' => [
+                    'name' => '绑定的域名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+            ],
+        ],
         'baishan' => [
             'name' => '白山云',
             'class' => 2,
