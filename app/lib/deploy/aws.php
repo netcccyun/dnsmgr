@@ -34,7 +34,8 @@ class aws implements DeployInterface
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
 
-        $cert_id = $this->get_cert_id($fullchain, $privatekey, $info['cert_id']);
+        $cert_id = isset($info['cert_id']) ? $info['cert_id'] : null;
+        $cert_id = $this->get_cert_id($fullchain, $privatekey, $cert_id, $config['cert_name']);
         usleep(500000);
 
         $client = new AWSClient($this->AccessKeyId, $this->SecretAccessKey, 'cloudfront.amazonaws.com', 'cloudfront', '2020-05-31', 'us-east-1', $this->proxy);
