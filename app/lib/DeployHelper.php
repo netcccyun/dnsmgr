@@ -1422,7 +1422,7 @@ class DeployHelper
             'name' => 'AWS',
             'class' => 2,
             'icon' => 'aws.ico',
-            'note' => '支持部署到Amazon CloudFront',
+            'note' => '支持部署到Amazon CloudFront、AWS Certificate Manager',
             'inputs' => [
                 'AccessKeyId' => [
                     'name' => 'AccessKeyId',
@@ -1452,14 +1452,24 @@ class DeployHelper
                     'type' => 'select',
                     'options' => [
                         ['value'=>'cloudfront', 'label'=>'CloudFront'],
+                        ['value'=>'acm', 'label'=>'AWS Certificate Manager'],
                     ],
-                    'value' => 'cloudfront',
+                    'value' => 'acm',
                     'required' => true,
                 ],
                 'distribution_id' => [
                     'name' => '分配ID',
                     'type' => 'input',
                     'placeholder' => 'distributions id',
+                    'show' => 'product==\'cloudfront\'',
+                    'required' => true,
+                ],
+                'acm_arn' => [
+                    'name' => 'ACM ARN',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'show' => 'product==\'acm\'',
+                    'note' => '在AWS Certificate Manager控制台查看证书的ARN',
                     'required' => true,
                 ],
             ],
