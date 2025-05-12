@@ -1214,7 +1214,7 @@ class DeployHelper
             'name' => '网宿科技',
             'class' => 2,
             'icon' => 'wangsu.ico',
-            'note' => '支持网宿CDN Pro，暂不支持其他产品线，暂不支持AKSK鉴权',
+            'note' => '适用产品：网页加速、下载分发、全站加速、点播分发、直播分发、上传加速、移动加速、上网加速、S-P2P、PCDN、应用性能管理、WEB应用防火墙、BotGuard爬虫管理、WSS、DMS、DDoS云清洗、应用加速、应用安全加速解决方案、IPv6一体化解决方案、电商安全加速解决方案、金融安全加速解决方案、政企安全加速解决方案、DDoS云清洗(非网站业务)、区块链安全加速解决方案、IPv6安全加速解决方案、CDN Pro。暂不支持AKSK鉴权。',
             'inputs' => [
                 'username' => [
                     'name' => '账号',
@@ -1248,14 +1248,31 @@ class DeployHelper
                     'name' => '要部署的产品',
                     'type' => 'select',
                     'options' => [
-                        ['value'=>'cdnpro', 'label'=>'CDN Pro']
+                        ['value'=>'cdn', 'label'=>'CDN'],
+                        ['value'=>'cdnpro', 'label'=>'CDN Pro'],
+                        ['value'=>'certificate', 'label'=>'证书管理']
                     ],
-                    'value' => 'cdnpro',
+                    'value' => 'cdn',
+                    'required' => true,
+                ],
+                'domains' => [
+                    'name' => '绑定的域名',
+                    'type' => 'input',
+                    'show' => 'product==\'cdn\'',
+                    'placeholder' => '多个域名可使用,分隔',
                     'required' => true,
                 ],
                 'domain' => [
                     'name' => '绑定的域名',
                     'type' => 'input',
+                    'show' => 'product==\'cdnpro\'',
+                    'placeholder' => '不支持输入多个域名',
+                    'required' => true,
+                ],
+                'cert_id' => [
+                    'name' => '证书ID',
+                    'type' => 'input',
+                    'show' => 'product==\'certificate\'',
                     'placeholder' => '',
                     'required' => true,
                 ],
