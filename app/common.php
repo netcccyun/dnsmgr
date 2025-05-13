@@ -392,7 +392,7 @@ function clearDirectory($dir): bool
     return true;
 }
 
-function curl_client($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 5)
+function curl_client($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 5, $default_headers = true)
 {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -400,11 +400,15 @@ function curl_client($url, $data = null, $referer = null, $cookie = null, $heade
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    $httpheader[] = "Accept: */*";
-    $httpheader[] = "Accept-Language: zh-CN,zh;q=0.8";
-    $httpheader[] = "Connection: close";
-    if ($headers) {
-        $httpheader = array_merge($httpheader, $headers);
+    if ($default_headers === true) {
+        $httpheader[] = "Accept: */*";
+        $httpheader[] = "Accept-Language: zh-CN,zh;q=0.8";
+        $httpheader[] = "Connection: close";
+        if ($headers) {
+            $httpheader = array_merge($headers, $httpheader);
+        }
+    } else {
+        $httpheader = $headers;
     }
     curl_setopt($ch, CURLOPT_HTTPHEADER, $httpheader);
     curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36");

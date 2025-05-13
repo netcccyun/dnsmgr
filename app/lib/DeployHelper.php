@@ -1210,6 +1210,74 @@ class DeployHelper
                 ],
             ],
         ],
+        'wangsu' => [
+            'name' => '网宿科技',
+            'class' => 2,
+            'icon' => 'wangsu.ico',
+            'note' => '适用产品：网页加速、下载分发、全站加速、点播分发、直播分发、上传加速、移动加速、上网加速、S-P2P、PCDN、应用性能管理、WEB应用防火墙、BotGuard爬虫管理、WSS、DMS、DDoS云清洗、应用加速、应用安全加速解决方案、IPv6一体化解决方案、电商安全加速解决方案、金融安全加速解决方案、政企安全加速解决方案、DDoS云清洗(非网站业务)、区块链安全加速解决方案、IPv6安全加速解决方案、CDN Pro。暂不支持AKSK鉴权。',
+            'inputs' => [
+                'username' => [
+                    'name' => '账号',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'apiKey' => [
+                    'name' => 'APIKEY',
+                    'type' => 'input',
+                    'placeholder' => '自行联系提供商申请',
+                    'required' => true,
+                ],
+                'spKey' => [
+                    'name' => '特殊KEY',
+                    'type' => 'input',
+                    'placeholder' => '特殊场景下才需要使用的APIKEY，留空默认同APIKEY',
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'product' => [
+                    'name' => '要部署的产品',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'cdn', 'label'=>'CDN'],
+                        ['value'=>'cdnpro', 'label'=>'CDN Pro'],
+                        ['value'=>'certificate', 'label'=>'证书管理']
+                    ],
+                    'value' => 'cdn',
+                    'required' => true,
+                ],
+                'domains' => [
+                    'name' => '绑定的域名',
+                    'type' => 'input',
+                    'show' => 'product==\'cdn\'',
+                    'placeholder' => '多个域名可使用,分隔',
+                    'required' => true,
+                ],
+                'domain' => [
+                    'name' => '绑定的域名',
+                    'type' => 'input',
+                    'show' => 'product==\'cdnpro\'',
+                    'placeholder' => '不支持输入多个域名',
+                    'required' => true,
+                ],
+                'cert_id' => [
+                    'name' => '证书ID',
+                    'type' => 'input',
+                    'show' => 'product==\'certificate\'',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+            ],
+        ],
         'baishan' => [
             'name' => '白山云',
             'class' => 2,
@@ -1371,7 +1439,7 @@ class DeployHelper
             'name' => 'AWS',
             'class' => 2,
             'icon' => 'aws.ico',
-            'note' => '支持部署到Amazon CloudFront',
+            'note' => '支持部署到Amazon CloudFront、AWS Certificate Manager',
             'inputs' => [
                 'AccessKeyId' => [
                     'name' => 'AccessKeyId',
@@ -1401,14 +1469,24 @@ class DeployHelper
                     'type' => 'select',
                     'options' => [
                         ['value'=>'cloudfront', 'label'=>'CloudFront'],
+                        ['value'=>'acm', 'label'=>'AWS Certificate Manager'],
                     ],
-                    'value' => 'cloudfront',
+                    'value' => 'acm',
                     'required' => true,
                 ],
                 'distribution_id' => [
                     'name' => '分配ID',
                     'type' => 'input',
                     'placeholder' => 'distributions id',
+                    'show' => 'product==\'cloudfront\'',
+                    'required' => true,
+                ],
+                'acm_arn' => [
+                    'name' => 'ACM ARN',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'show' => 'product==\'acm\'',
+                    'note' => '在AWS Certificate Manager控制台查看证书的ARN',
                     'required' => true,
                 ],
             ],
