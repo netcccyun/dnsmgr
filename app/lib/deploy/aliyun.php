@@ -236,7 +236,7 @@ class aliyun implements DeployInterface
         if (empty($config['oss_endpoint'])) throw new Exception('OSS Endpoint不能为空');
         if (empty($config['oss_bucket'])) throw new Exception('OSS Bucket不能为空');
         $client = new AliyunOSS($this->AccessKeyId, $this->AccessKeySecret, $config['oss_endpoint']);
-        $client->addBucketCnameCert($config['oss_bucket'], $config['domain'], $cert_id);
+        $client->addBucketCnameCert($config['oss_bucket'], $config['domain'], $cert_id . '-cn-hangzhou');
         $this->log('OSS域名 ' . $config['domain'] . ' 部署证书成功！');
     }
 
