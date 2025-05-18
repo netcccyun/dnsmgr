@@ -49,24 +49,12 @@ class CertHelper
             'wildcard' => true,
             'max_domains' => 100,
             'cname' => true,
-            'note' => '<a href="https://app.zerossl.com/developer" target="_blank" rel="noreferrer">ZeroSSL密钥生成地址</a>',
+            'note' => null,
             'inputs' => [
                 'email' => [
                     'name' => '邮箱地址',
                     'type' => 'input',
                     'placeholder' => 'EAB申请邮箱',
-                    'required' => true,
-                ],
-                'kid' => [
-                    'name' => 'EAB KID',
-                    'type' => 'input',
-                    'placeholder' => '',
-                    'required' => true,
-                ],
-                'key' => [
-                    'name' => 'EAB HMAC Key',
-                    'type' => 'input',
-                    'placeholder' => '',
                     'required' => true,
                 ],
                 'proxy' => [

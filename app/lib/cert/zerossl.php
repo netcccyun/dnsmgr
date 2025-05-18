@@ -27,20 +27,22 @@ class zerossl implements CertInterface
     public function register()
     {
         if (empty($this->config['email'])) throw new Exception('邮件地址不能为空');
-        if (empty($this->config['kid']) || empty($this->config['key'])) throw new Exception('必填参数不能为空');
+        $eab = $this->getEAB($this->config['email']);
 
         if (!empty($this->ext['key'])) {
-            $kid = $this->ac->registerEAB(true, $this->config['kid'], $this->config['key'], $this->config['email']);
+            $kid = $this->ac->registerEAB(true, $eab['kid'], $eab['key'], $this->config['email']);
             return ['kid' => $kid, 'key' => $this->ext['key']];
         }
 
         $key = $this->ac->generateRSAKey(2048);
         $this->ac->loadAccountKey($key);
-        $kid = $this->ac->registerEAB(true, $this->config['kid'], $this->config['key'], $this->config['email']);
+        $kid = $this->ac->registerEAB(true, $eab['kid'], $eab['key'], $this->config['email']);
         return ['kid' => $kid, 'key' => $key];
     }
 
-    public function buyCert($domainList, &$order) {}
+    public function buyCert($domainList, &$order)
+    {
+    }
 
     public function createOrder($domainList, &$order, $keytype, $keysize)
     {
@@ -101,10 +103,27 @@ class zerossl implements CertInterface
         $this->ac->revoke($pem);
     }
 
-    public function cancel($order) {}
+    public function cancel($order)
+    {
+    }
 
     public function setLogger($func)
     {
         $this->ac->setLogger($func);
+    }
+
+    private function getEAB($email)
+    {
+        $api = "https://api.zerossl.com/acme/eab-credentials-email";
+        $response = curl_client($api, http_build_query(['email' => $email]), null, null, null, $this->config['proxy'] == 1);
+        $result = json_decode($response['body'], true);
+        if (!isset($result['success'])) {
+            throw new Exception('解析返回数据失败：' . $response['body']);
+        } elseif (!$result['success'] && isset($result['error'])) {
+            throw new Exception('获取EAB失败：' . $result['error']['code'] . ' - ' . $result['error']['type']);
+        } elseif (!isset($result['eab_kid']) || !isset($result['eab_hmac_key'])) {
+            throw new Exception('获取EAB失败：返回数据不完整');
+        }
+        return ['kid' => $result['eab_kid'], 'key' => $result['eab_hmac_key']];
     }
 }
