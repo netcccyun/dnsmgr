@@ -397,6 +397,16 @@ class DeployHelper
                     'placeholder' => '1Panel面板设置->API接口',
                     'required' => true,
                 ],
+                'version' => [
+                    'name' => '1Panel版本',
+                    'type' => 'radio',
+                    'options' => [
+                        'v1' => '1.x',
+                        'v2' => '2.x',
+                    ],
+                    'value' => 'v1',
+                    'required' => true,
+                ],
                 'proxy' => [
                     'name' => '使用代理服务器',
                     'type' => 'radio',
