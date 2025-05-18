@@ -21,9 +21,9 @@ class ACMEv2
     {
 		$this->directory = $directory;
 		$this->proxy = $proxy;
-        if ($proxy == 2) {
-            $this->proxy_config = $proxy_config;
-        }
+		if ($proxy == 2) {
+			$this->proxy_config = $proxy_config;
+		}
 	}
 
 	public function __destruct()
@@ -199,8 +199,8 @@ class ACMEv2
 		}
 
 		if (!$this->kid_header['kid'] && $type === 'newAccount') {
-            // 反向替换反向代理配置，防止破坏签名
-            $this->kid_header['kid'] = $this->unproxiedURL($ret['headers']['location']);
+			// 反向替换反向代理配置，防止破坏签名
+			$this->kid_header['kid'] = $this->unproxiedURL($ret['headers']['location']);
 			$this->log('AccountID: ' . $this->kid_header['kid']);
 		}
 
@@ -229,7 +229,7 @@ class ACMEv2
 		}
 
 		// 反向替换反向代理配置，防止破坏签名
-        $protected['url'] = $this->unproxiedURL($this->resources[$type]);
+		$protected['url'] = $this->unproxiedURL($this->resources[$type]);
 
 		$protected64 = $this->base64url(json_encode($protected, JSON_UNESCAPED_SLASHES));
 		$payload64 = $this->base64url(is_string($payload) ? $payload : json_encode($payload, JSON_UNESCAPED_SLASHES));
@@ -296,8 +296,8 @@ class ACMEv2
 			$this->delay_until = null;
 		}
 
-        // 替换反向代理配置
-        $url = $this->proxiedURL($url);
+		// 替换反向代理配置
+		$url = $this->proxiedURL($url);
 
 		$method = $data === false ? 'HEAD' : ($data === null ? 'GET' : 'POST');
 		$user_agent = 'ACMECert v3.4.0 (+https://github.com/skoerfgen/ACMECert)';
@@ -421,29 +421,29 @@ class ACMEv2
 		);
 	}
 
-    // 替换反向代理配置
-    protected function proxiedURL($url)
-    {
-        if ($this->proxy == 2) {
-            return str_replace(
-                $this->proxy_config['origin'],
-                $this->proxy_config['proxy'],
-                $url
-            );
-        }
-        return $url;
-    }
+	// 替换反向代理配置
+	protected function proxiedURL($url)
+	{
+		if ($this->proxy == 2) {
+			return str_replace(
+				$this->proxy_config['origin'],
+				$this->proxy_config['proxy'],
+				$url
+			);
+		}
+		return $url;
+	}
 
-    // 反向替换反向代理配置
-    protected function unproxiedURL($url)
-    {
-        if ($this->proxy == 2) {
-            return str_replace(
-                $this->proxy_config['proxy'],
-                $this->proxy_config['origin'],
-                $url
-            );
-        }
-        return $url;
-    }
+	// 反向替换反向代理配置
+	protected function unproxiedURL($url)
+	{
+		if ($this->proxy == 2) {
+			return str_replace(
+				$this->proxy_config['proxy'],
+				$this->proxy_config['origin'],
+				$url
+			);
+		}
+		return $url;
+	}
 }
