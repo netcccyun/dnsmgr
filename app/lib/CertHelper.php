@@ -128,9 +128,26 @@ class CertHelper
                 'proxy_url' => [
                     'name' => '反向代理地址',
                     'type' => 'input',
-                    'placeholder' => 'https://dv.acme-v02.api.pki.goog',
+                    'placeholder' => 'https://gts.rat.dev',
                     'required' => true,
                     'show' => 'proxy==2',
+	                'note' => '反向代理配置参考：
+					<pre>resolver 8.8.8.8 ipv6=off valid=300s;
+resolver_timeout 10s;
+
+location / {
+    set $empty "";
+    proxy_pass https://dv.acme-v02.api.pki.goog$empty;
+    proxy_set_header Accept-Encoding "";
+    proxy_ssl_session_reuse off;
+    proxy_ssl_server_name on;
+    proxy_ssl_protocols TLSv1.2 TLSv1.3;
+    proxy_http_version 1.1;
+
+    sub_filter_once off;
+    sub_filter_types *;
+    sub_filter \'dv.acme-v02.api.pki.goog\' \'gts.rat.dev\'; # 替换自己的域名
+}</pre>',
                 ],
             ]
         ],
