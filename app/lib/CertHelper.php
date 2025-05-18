@@ -75,7 +75,7 @@ class CertHelper
             'wildcard' => true,
             'max_domains' => 100,
             'cname' => true,
-            'note' => '<a href="https://cloud.google.com/certificate-manager/docs/public-ca-tutorial" target="_blank" rel="noreferrer">查看Google SSL账户配置说明</a>',
+            'note' => 'EAB支持通过第三方接口<a href="https://panel.haozi.net" target="_blank" rel="noreferrer">（耗子面板提供）</a>自动获取（不支持测试环境）或手动输入，<a href="https://cloud.google.com/certificate-manager/docs/public-ca-tutorial" target="_blank" rel="noreferrer">查看Google SSL账户手动配置说明</a>',
             'inputs' => [
                 'email' => [
                     'name' => '邮箱地址',
@@ -83,17 +83,28 @@ class CertHelper
                     'placeholder' => 'EAB申请邮箱',
                     'required' => true,
                 ],
+                'eabMode' => [
+                    'name' => 'EAB获取方式',
+                    'type' => 'radio',
+                    'options' => [
+                        'auto' => '自动获取',
+                        'manual' => '手动输入',
+                    ],
+                    'value' => 'auto'
+                ],
                 'kid' => [
                     'name' => 'keyId',
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                    'show' => 'eabMode==\'manual\'',
                 ],
                 'key' => [
                     'name' => 'b64MacKey',
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                    'show' => 'eabMode==\'manual\'',
                 ],
                 'mode' => [
                     'name' => '环境选择',
@@ -110,8 +121,16 @@ class CertHelper
                     'options' => [
                         '0' => '否',
                         '1' => '是',
+                        '2' => '是（反向代理）'
                     ],
                     'value' => '0'
+                ],
+                'proxy_url' => [
+                    'name' => '反向代理地址',
+                    'type' => 'input',
+                    'placeholder' => 'https://dv.acme-v02.api.pki.goog',
+                    'required' => true,
+                    'show' => 'proxy==2',
                 ],
             ]
         ],
@@ -348,7 +367,8 @@ class CertHelper
         return false;
     }
 
-    public static function getPfx($fullchain, $privatekey, $pwd = '123456'){
+    public static function getPfx($fullchain, $privatekey, $pwd = '123456')
+    {
         openssl_pkcs12_export($fullchain, $pfx, $privatekey, $pwd);
         return $pfx;
     }
