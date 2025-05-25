@@ -80,7 +80,8 @@ class ucloud implements CertInterface
         if (!empty($data['Auths'])) {
             foreach ($data['Auths'] as $auth) {
                 $mainDomain = getMainDomain($auth['Domain']);
-                $dnsList[$mainDomain][] = ['name' => $auth['AuthRecord'], 'type' => $auth['AuthType'] == 'DNS_TXT' ? 'TXT' : 'CNAME', 'value' => $auth['AuthValue']];
+                $name = substr($auth['Domain'], 0, -(strlen($mainDomain) + 1));
+                $dnsList[$mainDomain][] = ['name' => $name, 'type' => $auth['AuthType'] == 'DNS_TXT' ? 'TXT' : 'CNAME', 'value' => $auth['AuthValue']];
             }
         }
         return $dnsList;

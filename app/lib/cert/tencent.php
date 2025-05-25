@@ -60,8 +60,9 @@ class tencent implements CertInterface
         $dnsList = [];
         if (!empty($data['DvAuthDetail']['DvAuths'])) {
             foreach ($data['DvAuthDetail']['DvAuths'] as $opts) {
-                $mainDomain = $opts['DvAuthDomain'];
-                $dnsList[$mainDomain][] = ['name' => $opts['DvAuthSubDomain'], 'type' => $opts['DvAuthVerifyType'] ?? 'CNAME', 'value' => $opts['DvAuthValue']];
+                $mainDomain = getMainDomain($opts['DvAuthKey']);
+                $name = substr($opts['DvAuthKey'], 0, -(strlen($mainDomain) + 1));
+                $dnsList[$mainDomain][] = ['name' => $name, 'type' => $opts['DvAuthVerifyType'] ?? 'CNAME', 'value' => $opts['DvAuthValue']];
             }
         }
 
@@ -97,6 +98,12 @@ class tencent implements CertInterface
 
     public function finalizeOrder($domainList, $order, $keytype, $keysize)
     {
+        $param = [
+            'CertificateIds' => [$order['CertificateId']],
+            'SwitchStatus' => 1,
+        ];
+        $this->request('ModifyCertificatesExpiringNotificationSwitch', $param);
+
         if (!is_dir(app()->getRuntimePath() . 'cert')) mkdir(app()->getRuntimePath() . 'cert');
         $param = [
             'CertificateId' => $order['CertificateId'],

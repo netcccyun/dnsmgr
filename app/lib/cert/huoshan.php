@@ -66,7 +66,7 @@ class huoshan implements CertInterface
             $type = $data['validation_type'] == 'dns_cname' ? 'CNAME' : 'TXT';
             foreach ($data['domains_to_be_validated'] as $opts) {
                 $mainDomain = getMainDomain($domain);
-                $name = str_replace('.' . $mainDomain, '', $opts['validation_domain']);
+                $name = substr($opts['validation_domain'], 0, -(strlen($mainDomain) + 1));
                 $dnsList[$mainDomain][] = ['name' => $name, 'type' => $type, 'value' => $opts['value']];
             }
         }

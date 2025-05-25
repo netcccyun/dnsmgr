@@ -60,7 +60,7 @@ class letsencrypt implements CertInterface
         if (!empty($order['challenges'])) {
             foreach ($order['challenges'] as $opts) {
                 $mainDomain = getMainDomain($opts['domain']);
-                $name = str_replace('.' . $mainDomain, '', $opts['key']);
+                $name = substr($opts['key'], 0, -(strlen($mainDomain) + 1));
                 /*if (!array_key_exists($mainDomain, $dnsList)) {
                     $dnsList[$mainDomain][] = ['name' => '@', 'type' => 'CAA', 'value' => '0 issue "letsencrypt.org"'];
                 }*/

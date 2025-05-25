@@ -69,7 +69,7 @@ class aliyun implements CertInterface
         $dnsList = [];
         if ($data['Type'] == 'domain_verify') {
             $mainDomain = getMainDomain($domain);
-            $name = str_replace('.' . $mainDomain, '', $data['RecordDomain']);
+            $name = substr($data['RecordDomain'], 0, -(strlen($mainDomain) + 1));
             $dnsList[$mainDomain][] = ['name' => $name, 'type' => $data['RecordType'], 'value' => $data['RecordValue']];
         }
 

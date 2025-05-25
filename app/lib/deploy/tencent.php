@@ -105,6 +105,13 @@ class tencent implements DeployInterface
         }
         $this->log('上传证书成功 CertificateId=' . $data['CertificateId']);
         usleep(300000);
+
+        $param = [
+            'CertificateIds' => [$data['CertificateId']],
+            'SwitchStatus' => 1,
+        ];
+        $this->client->request('ModifyCertificatesExpiringNotificationSwitch', $param);
+
         return $data['CertificateId'];
     }
 
