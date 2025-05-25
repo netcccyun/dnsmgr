@@ -16,7 +16,7 @@ class zerossl implements CertInterface
     public function __construct($config, $ext = null)
     {
         $this->config = $config;
-        $this->ac = new ACMECert($this->directory, $config['proxy'] == 1);
+        $this->ac = new ACMECert($this->directory, (int)$config['proxy']);
         if ($ext) {
             $this->ext = $ext;
             $this->ac->loadAccountKey($ext['key']);
@@ -27,7 +27,12 @@ class zerossl implements CertInterface
     public function register()
     {
         if (empty($this->config['email'])) throw new Exception('邮件地址不能为空');
-        $eab = $this->getEAB($this->config['email']);
+
+        if (isset($this->config['eabMode']) && $this->config['eabMode'] == 'auto') {
+            $eab = $this->getEAB($this->config['email']);
+        } else {
+            $eab = ['kid' => $this->config['kid'], 'key' => $this->config['key']];
+        }
 
         if (!empty($this->ext['key'])) {
             $kid = $this->ac->registerEAB(true, $eab['kid'], $eab['key'], $this->config['email']);
@@ -118,7 +123,7 @@ class zerossl implements CertInterface
         $response = curl_client($api, http_build_query(['email' => $email]), null, null, null, $this->config['proxy'] == 1);
         $result = json_decode($response['body'], true);
         if (!isset($result['success'])) {
-            throw new Exception('解析返回数据失败：' . $response['body']);
+            throw new Exception('获取EAB失败：' . $response['body']);
         } elseif (!$result['success'] && isset($result['error'])) {
             throw new Exception('获取EAB失败：' . $result['error']['code'] . ' - ' . $result['error']['type']);
         } elseif (!isset($result['eab_kid']) || !isset($result['eab_hmac_key'])) {

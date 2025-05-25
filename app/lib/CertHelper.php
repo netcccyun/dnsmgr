@@ -49,13 +49,36 @@ class CertHelper
             'wildcard' => true,
             'max_domains' => 100,
             'cname' => true,
-            'note' => null,
+            'note' => '<a href="https://app.zerossl.com/developer" target="_blank" rel="noreferrer">ZeroSSL密钥手动获取</a>',
             'inputs' => [
                 'email' => [
                     'name' => '邮箱地址',
                     'type' => 'input',
                     'placeholder' => 'EAB申请邮箱',
                     'required' => true,
+                ],
+                'eabMode' => [
+                    'name' => 'EAB获取方式',
+                    'type' => 'radio',
+                    'options' => [
+                        'auto' => '自动获取',
+                        'manual' => '手动输入',
+                    ],
+                    'value' => 'manual'
+                ],
+                'kid' => [
+                    'name' => 'EAB KID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                    'show' => 'eabMode==\'manual\'',
+                ],
+                'key' => [
+                    'name' => 'EAB HMAC Key',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                    'show' => 'eabMode==\'manual\'',
                 ],
                 'proxy' => [
                     'name' => '使用代理服务器',
@@ -90,7 +113,7 @@ class CertHelper
                         'auto' => '自动获取',
                         'manual' => '手动输入',
                     ],
-                    'value' => 'auto'
+                    'value' => 'manual'
                 ],
                 'kid' => [
                     'name' => 'keyId',

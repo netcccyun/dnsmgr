@@ -15,7 +15,7 @@ class customacme implements CertInterface
     public function __construct($config, $ext = null)
     {
         $this->config = $config;
-        $this->ac = new ACMECert($config['directory'], $config['proxy'] == 1);
+        $this->ac = new ACMECert($config['directory'], (int)$config['proxy']);
         if ($ext) {
             $this->ext = $ext;
             $this->ac->loadAccountKey($ext['key']);
