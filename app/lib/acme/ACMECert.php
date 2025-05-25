@@ -25,7 +25,7 @@ class ACMECert extends ACMEv2
 		$protected = array(
 			'alg' => 'HS256',
 			'kid' => $eab_kid,
-			'url' => $this->resources['newAccount']
+			'url' => $this->unproxiedURL($this->resources['newAccount'])
 		);
 		$payload = $this->jwk_header['jwk'];
 
