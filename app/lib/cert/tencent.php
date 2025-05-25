@@ -15,14 +15,15 @@ class tencent implements CertInterface
     private $service = "ssl";
     private $version = "2019-12-05";
     private $logger;
+    private $proxy;
     private TencentCloud $client;
 
     public function __construct($config, $ext = null)
     {
         $this->SecretId = $config['SecretId'];
         $this->SecretKey = $config['SecretKey'];
-        $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
-        $this->client = new TencentCloud($this->SecretId, $this->SecretKey, $this->endpoint, $this->service, $this->version, null, $proxy);
+        $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
+        $this->client = new TencentCloud($this->SecretId, $this->SecretKey, $this->endpoint, $this->service, $this->version, null, $this->proxy);
         $this->email = $config['email'];
     }
 
@@ -102,7 +103,9 @@ class tencent implements CertInterface
             'ServiceType' => 'nginx',
         ];
         $data = $this->request('DescribeDownloadCertificateUrl', $param);
-        $file_data = get_curl($data['DownloadCertificateUrl']);
+        $file_data = curl_client($data['DownloadCertificateUrl'], null, null, null, null, $this->proxy);
+        $file_data = $file_data['body'] ?? null;
+        if (empty($file_data)) throw new Exception('下载证书失败');
         $file_path = app()->getRuntimePath() . 'cert/' . $data['DownloadFilename'];
         $file_name = substr($data['DownloadFilename'], 0, -4);
         file_put_contents($file_path, $file_data);

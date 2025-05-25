@@ -288,6 +288,7 @@ uk.com
 us.com
 uy.com
 za.com
+it.com
 co.cr
 ed.cr
 fi.cr
@@ -1341,6 +1342,7 @@ zagan.pl
 zarow.pl
 zgora.pl
 zgorzelec.pl
+co.pl
 co.pn
 net.pn
 org.pn
@@ -1925,4 +1927,18 @@ edu.kg
 edu.cn
 eu.org
 us.kg
+xx.kg
+qzz.io
+dpdns.org
 ggff.net
+ac.ru
+edu.ru
+com.ru
+msk.ru
+net.ru
+nov.ru
+org.ru
+pp.ru
+spb.ru
+uk.co
+gov.scot

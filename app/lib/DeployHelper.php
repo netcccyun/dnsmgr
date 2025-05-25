@@ -229,6 +229,45 @@ class DeployHelper
             ],
             'taskinputs' => [],
         ],
+        'btwaf' => [
+            'name' => '堡塔云WAF',
+            'class' => 1,
+            'icon' => 'bt.ico',
+            'note' => null,
+            'tasknote' => '',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => '堡塔云WAF面板地址',
+                    'note' => '填写规则如：http://192.168.1.100:8379 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'key' => [
+                    'name' => '接口密钥',
+                    'type' => 'input',
+                    'placeholder' => '面板设置->API接口',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'sites' => [
+                    'name' => '网站名称列表',
+                    'type' => 'textarea',
+                    'placeholder' => '填写要部署证书的网站名称，每行一个',
+                    'required' => true,
+                ],
+            ],
+        ],
         'cdnfly' => [
             'name' => 'Cdnfly',
             'class' => 1,

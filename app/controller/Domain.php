@@ -250,12 +250,14 @@ class Domain extends BaseController
             $is_hide = input('post.is_hide/d');
             $is_sso = input('post.is_sso/d');
             $is_notice = input('post.is_notice/d');
+            $expiretime = input('post.expiretime', null, 'trim');
             $remark = input('post.remark', null, 'trim');
             if (empty($remark)) $remark = null;
             Db::name('domain')->where('id', $id)->update([
                 'is_hide' => $is_hide,
                 'is_sso' => $is_sso,
                 'is_notice' => $is_notice,
+                'expiretime' => $expiretime ? $expiretime : null,
                 'remark' => $remark,
             ]);
             return json(['code' => 0, 'msg' => '修改域名配置成功！']);
@@ -419,8 +421,8 @@ class Domain extends BaseController
         $type = input('post.type', null, 'trim');
         $line = input('post.line', null, 'trim');
         $status = input('post.status', null, 'trim');
-        $offset = input('post.offset/d');
-        $limit = input('post.limit/d');
+        $offset = input('post.offset/d', 0);
+        $limit = input('post.limit/d', 10);
         if ($limit == 0) {
             $page = 1;
         } else {
@@ -543,10 +545,14 @@ class Domain extends BaseController
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         $recordid = $dns->updateDomainRecord($recordid, $name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if ($recordid) {
-            if (is_array($recordinfo['Value'])) $recordinfo['Value'] = implode(',', $recordinfo['Value']);
-            if ($recordinfo['Name'] != $name || $recordinfo['Type'] != $type || $recordinfo['Value'] != $value) {
-                $this->add_log($drow['name'], '修改解析', $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' → '.$name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
-            } elseif($recordinfo['Line'] != $line || $recordinfo['TTL'] != $ttl) {
+            if ($recordinfo) {
+                if (is_array($recordinfo['Value'])) $recordinfo['Value'] = implode(',', $recordinfo['Value']);
+                if ($recordinfo['Name'] != $name || $recordinfo['Type'] != $type || $recordinfo['Value'] != $value) {
+                    $this->add_log($drow['name'], '修改解析', $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' → '.$name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
+                } elseif($recordinfo['Line'] != $line || $recordinfo['TTL'] != $ttl) {
+                    $this->add_log($drow['name'], '修改解析', $name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
+                }
+            } else {
                 $this->add_log($drow['name'], '修改解析', $name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
             }
             return json(['code' => 0, 'msg' => '修改解析记录成功！']);
@@ -790,6 +796,9 @@ class Domain extends BaseController
             }
             if (is_null($line)) {
                 $line = DnsHelper::$line_name[$dnstype]['DEF'];
+                if ($dnstype == 'cloudflare' && input('post.proxy/d', 0) == 1) {
+                    $line = '1';
+                }
             }
 
             $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);

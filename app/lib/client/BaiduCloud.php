@@ -158,8 +158,9 @@ class BaiduCloud
         $errno = curl_errno($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         if ($errno) {
+            $errmsg = curl_error($ch);
             curl_close($ch);
-            throw new Exception('Curl error: ' . curl_error($ch));
+            throw new Exception('Curl error: ' . $errmsg);
         }
         curl_close($ch);
 

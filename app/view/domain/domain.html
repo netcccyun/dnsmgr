@@ -1,6 +1,7 @@
 {extend name="common/layout" /}
 {block name="title"}域名管理{/block}
 {block name="main"}
+<link href="{$cdnpublic}bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
 <div class="modal" id="modal-store" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
 	<div class="modal-dialog">
 		<div class="modal-content animated flipInX">
@@ -50,6 +51,12 @@
 			<div class="modal-body">
 				<form class="form-horizontal" id="form-store2">
 					<input type="hidden" name="id"/>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">到期时间</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="expiretime" placeholder="" value="">
+						</div>
+					</div>
 					<div class="form-group">
 						<label class="col-sm-3 control-label">到期提醒</label>
 						<div class="col-sm-9">
@@ -137,6 +144,9 @@
 </div>
 {/block}
 {block name="script"}
+<script src="{$cdnpublic}moment.js/2.29.4/moment.min.js"></script>
+<script src="{$cdnpublic}moment.js/2.29.4/locale/zh-cn.js"></script>
+<script src="{$cdnpublic}bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
 <script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
@@ -334,6 +344,12 @@ function editframe(id){
 	$("#form-store2 select[name=is_sso]").val(row.is_sso);
 	$("#form-store2 select[name=is_notice]").val(row.is_notice);
 	$("#form-store2 input[name=remark]").val(row.remark);
+
+	$("#form-store2 input[name=expiretime]").datetimepicker({
+		format: 'YYYY-MM-DD HH:mm:ss',
+		locale: 'zh-cn',
+		defaultDate: row.expiretime,
+	}).val(row.expiretime);
 }
 function saveEdit(){
 	var ii = layer.load(2);

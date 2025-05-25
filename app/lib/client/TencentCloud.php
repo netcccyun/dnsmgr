@@ -113,8 +113,9 @@ class TencentCloud
         $response = curl_exec($ch);
         $errno = curl_errno($ch);
         if ($errno) {
+            $errmsg = curl_error($ch);
             curl_close($ch);
-            throw new Exception('Curl error: ' . curl_error($ch));
+            throw new Exception('Curl error: ' . $errmsg);
         }
         curl_close($ch);
 

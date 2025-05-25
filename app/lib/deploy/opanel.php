@@ -14,7 +14,7 @@ class opanel implements DeployInterface
 
     public function __construct($config)
     {
-        $this->url = rtrim($config['url'], '/') . '/api/' . $config['version'] ?: 'v1';
+        $this->url = rtrim($config['url'], '/') . '/api/' . (isset($config['version']) ? $config['version'] : 'v1');
         $this->key = $config['key'];
         $this->proxy = $config['proxy'] == 1;
     }

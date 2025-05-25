@@ -276,6 +276,7 @@ class Cert extends BaseController
                 'addtime' => date('Y-m-d H:i:s'),
                 'issuer' => '',
                 'status' => 0,
+                'isauto' => 1,
             ];
             $domains = array_map('trim', $domains);
             $domains = array_filter($domains, function ($v) {

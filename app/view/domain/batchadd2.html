@@ -38,6 +38,17 @@ tbody tr>td:nth-child(3){min-width:300px;word-break:break-all;}
 			<select name="line" class="form-control" disabled><option value="default">默认</option></select>
         </div>
     </div>
+	<div class="form-group" v-if="existCF">
+        <label class="col-sm-3 control-label no-padding-right">开启反代</label>
+        <div class="col-sm-6">
+            <label class="radio-inline">
+                <input type="radio" name="proxy" value="0" v-model="set.proxy"> 否
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="proxy" value="1" v-model="set.proxy"> 是（仅Cloudflare域名）
+            </label>
+        </div>
+    </div>
     <div class="form-group" style="display:none" id="mx_type">
         <label class="col-sm-3 control-label no-padding-right">MX优先级</label>
         <div class="col-sm-6">
@@ -91,7 +102,9 @@ new Vue({
 			type: '',
 			mx: 10,
 			ttl: 600,
-		}
+			proxy: 0,
+		},
+		existCF: false,
     },
 	watch: {
 		'set.type': function(val){
@@ -112,6 +125,7 @@ new Vue({
 		for(var i=0; i<this.domainList.length; i++){
 			this.$set(this.domainList[i], 'result', '<span class="text-muted">待添加</span>');
 		}
+		this.existCF = this.domainList.some(item => item.type === 'cloudflare');
     },
     methods: {
 		async save(id){

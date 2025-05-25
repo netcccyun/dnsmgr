@@ -434,8 +434,9 @@ function curl_client($url, $data = null, $referer = null, $cookie = null, $heade
     $ret = curl_exec($ch);
     $errno = curl_errno($ch);
     if ($errno) {
+        $errmsg = curl_error($ch);
         curl_close($ch);
-        throw new Exception('Curl error: ' . curl_error($ch));
+        throw new Exception('Curl error: ' . $errmsg);
     }
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
