@@ -70,6 +70,19 @@
 		</div>
 	</div>
 </div>
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">其他登录设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveAccount(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+		<div class="form-group">
+			<label class="col-sm-3 control-label">开启图形验证码</label>
+			<div class="col-sm-9" style="margin-top:6.5px"><div class="material-switch"><input id="vocde_switch" type="checkbox" {if config_get('vcode', '1')=='1'}checked{/if} onchange="setvcode()"><label for="vocde_switch" class="label-primary"></label></div></div>
+		</div>
+	</div>
+  </form>
+</div>
+</div>
 {/block}
 {block name="script"}
 <script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
@@ -166,6 +179,17 @@ function close_totp(){
 				layer.alert(res.msg, {icon: 2});
 			}
 		});
+	});
+}
+function setvcode(){
+	var status = $("#vocde_switch").is(':checked') ? '1' : '2';
+	$.post('/system/set', {vcode: status}, function(res){
+		if(res.code == 0){
+			layer.msg(status == '1' ? '图形验证码已开启' : '图形验证码已关闭', {icon: 1, time: 1000});
+		}else{
+			layer.alert(res.msg, {icon: 2});
+			$("#vocde_switch").prop('checked', !status);
+		}
 	});
 }
 $(document).ready(function(){

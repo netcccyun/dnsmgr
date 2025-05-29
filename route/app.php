@@ -80,7 +80,6 @@ Route::group(function () {
     Route::get('/dmonitor/task/info/:id', 'dmonitor/taskinfo');
     Route::any('/dmonitor/task/:action', 'dmonitor/taskform');
     Route::get('/dmonitor/task', 'dmonitor/task');
-    Route::post('/dmonitor/noticeset', 'dmonitor/noticeset');
     Route::post('/dmonitor/clean', 'dmonitor/clean');
 
     Route::any('/optimizeip/opipset', 'optimizeip/opipset');
@@ -112,10 +111,11 @@ Route::group(function () {
     Route::post('/cert/cname/data', 'cert/cname_data');
     Route::post('/cert/cname/:action', 'cert/cname_op');
     
-    Route::any('/cert/certset', 'cert/certset');
+    Route::get('/cert/certset', 'cert/certset');
 
-    Route::any('/system/noticeset', 'system/noticeset');
-    Route::any('/system/proxyset', 'system/proxyset');
+    Route::get('/system/noticeset', 'system/noticeset');
+    Route::get('/system/proxyset', 'system/proxyset');
+    Route::post('/system/set', 'system/set');
     Route::get('/system/mailtest', 'system/mailtest');
     Route::get('/system/tgbottest', 'system/tgbottest');
     Route::get('/system/webhooktest', 'system/webhooktest');

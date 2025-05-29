@@ -57,7 +57,7 @@ function saveSetting(obj){
 	var ii = layer.load(2, {shade:[0.1,'#fff']});
 	$.ajax({
 		type : 'POST',
-		url : '',
+		url : '/system/set',
 		data : $(obj).serialize(),
 		dataType : 'json',
 		success : function(data) {

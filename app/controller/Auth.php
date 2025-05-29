@@ -26,7 +26,7 @@ class Auth extends BaseController
             if (empty($username) || empty($password)) {
                 return json(['code' => -1, 'msg' => '用户名或密码不能为空']);
             }
-            if (!captcha_check($code)) {
+            if (config_get('vcode', '1') == '1' && !captcha_check($code)) {
                 return json(['code' => -1, 'msg' => '验证码错误', 'vcode' => 1]);
             }
             if (file_exists($login_limit_file)) {

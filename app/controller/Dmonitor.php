@@ -222,20 +222,6 @@ class Dmonitor extends BaseController
         return json(['total' => $total, 'rows' => $list]);
     }
 
-    public function noticeset()
-    {
-        if (!checkPermission(2)) return $this->alert('error', '无权限');
-        $params = input('post.');
-        foreach ($params as $key => $value) {
-            if (empty($key)) {
-                continue;
-            }
-            config_set($key, $value);
-            Cache::delete('configs');
-        }
-        return json(['code' => 0, 'msg' => 'succ']);
-    }
-
     public function clean()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');

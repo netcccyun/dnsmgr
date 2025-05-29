@@ -10,41 +10,33 @@ use think\facade\Cache;
 
 class System extends BaseController
 {
+    public function set()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        $params = input('post.');
+        if (isset($params['mail_type']) && isset($params['mail_name2']) && $params['mail_type'] > 0) {
+            $params['mail_name'] = $params['mail_name2'];
+            unset($params['mail_name2']);
+        }
+        foreach ($params as $key => $value) {
+            if (empty($key)) {
+                continue;
+            }
+            config_set($key, $value);
+        }
+        Cache::delete('configs');
+        return json(['code' => 0, 'msg' => 'succ']);
+    }
+
     public function noticeset()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');
-        if ($this->request->isPost()) {
-            $params = input('post.');
-            if (isset($params['mail_type']) && isset($params['mail_name2']) && $params['mail_type'] > 0) {
-                $params['mail_name'] = $params['mail_name2'];
-                unset($params['mail_name2']);
-            }
-            foreach ($params as $key => $value) {
-                if (empty($key)) {
-                    continue;
-                }
-                config_set($key, $value);
-                Cache::delete('configs');
-            }
-            return json(['code' => 0, 'msg' => 'succ']);
-        }
         return View::fetch();
     }
 
     public function proxyset()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');
-        if ($this->request->isPost()) {
-            $params = input('post.');
-            foreach ($params as $key => $value) {
-                if (empty($key)) {
-                    continue;
-                }
-                config_set($key, $value);
-                Cache::delete('configs');
-            }
-            return json(['code' => 0, 'msg' => 'succ']);
-        }
         return View::fetch();
     }
 

@@ -55,13 +55,13 @@ a{color:#444}
                             <div class="input-group-addon"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span></div>
                             <input type="password" class="form-control" placeholder="密码" name="password" required="required"/>
                         </div>
-                        <div class="input-group">
+                        {if config_get('vcode', '1')=='1'}<div class="input-group">
                             <div class="input-group-addon"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span></div>
                             <input type="text" class="form-control input-lg" placeholder="验证码" name="code" autocomplete="off" required="required"/>
                             <span class="input-group-addon" style="padding: 0">
                               <img id="verifycode" src="/verifycode" height="45" onclick="this.src='/verifycode?r='+Math.random();" title="点击更换验证码">
                             </span>
-                        </div>
+                        </div>{/if}
                         <div class="form-group">
                             <button type="submit" class="btn btn-success btn-lg btn-block" id="submit" style="background:#708eea;">登 录</button>
                         </div>

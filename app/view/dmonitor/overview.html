@@ -195,7 +195,7 @@ function submitClean(){
 	});
 }
 function submitNotice(){
-	$.post('/dmonitor/noticeset', $("#form-notice").serialize(), function(res){
+	$.post('/system/set', $("#form-notice").serialize(), function(res){
 		if(res.code == 0){
 			layer.alert('设置保存成功！<br/>重启检测进程或容器后生效', {
 				icon: 1,
