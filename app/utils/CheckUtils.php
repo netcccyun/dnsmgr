@@ -30,6 +30,8 @@ class CheckUtils
                 $proxy_type = CURLPROXY_SOCKS4;
             } elseif ($proxy_type == 'sock5') {
                 $proxy_type = CURLPROXY_SOCKS5;
+            } elseif ($proxy_type == 'sock5h') {
+                $proxy_type = CURLPROXY_SOCKS5_HOSTNAME;
             } else {
                 $proxy_type = CURLPROXY_HTTP;
             }
