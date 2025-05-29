@@ -321,7 +321,7 @@ class ACMEv2
 			}
 		));
 		
-		if ($this->proxy) {
+		if ($this->proxy == 1) {
 			curl_set_proxy($this->ch);
         }
 
