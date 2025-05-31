@@ -22,9 +22,28 @@
             {foreach $accounts as $k=>$v}
                 <option value="{$k}" data-type="{$v.type}">{$v.name}</option>
             {/foreach}
+            <option value="-1" data-type="">手动续期</option>
         </select></div>
     </div>
-    <div class="form-group">
+    <div class="form-group" v-show="set.aid==-1">
+        <label class="col-sm-3 control-label no-padding-right" is-required>证书内容</label>
+        <div class="col-sm-6">
+            <div class="input-group">
+                <textarea name="fullchain" v-model="set.fullchain" class="form-control" rows="5" placeholder="输入PEM格式证书链" required></textarea>
+                <a class="btn btn-default input-group-addon" @click="upload('fullchain')" title="上传证书文件"><i class="fa fa-upload"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.aid==-1">
+        <label class="col-sm-3 control-label no-padding-right" is-required>私钥内容</label>
+        <div class="col-sm-6">
+            <div class="input-group">
+                <textarea name="privatekey" v-model="set.privatekey" class="form-control" rows="5" placeholder="输入PEM格式私钥" required></textarea>
+                <a class="btn btn-default input-group-addon" @click="upload('privatekey')" title="上传私钥文件"><i class="fa fa-upload"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.aid!=-1">
         <label class="col-sm-3 control-label no-padding-right" is-required>签名算法</label>
         <div class="col-sm-6">
             <label class="radio-inline" v-for="item in keytypeList">
@@ -32,7 +51,7 @@
             </label>
         </div>
     </div>
-    <div class="form-group">
+    <div class="form-group" v-show="set.aid!=-1">
         <label class="col-sm-3 control-label no-padding-right" is-required>密钥长度</label>
         <div class="col-sm-6">
             <label class="radio-inline" v-for="item in keysizeList">
@@ -41,7 +60,7 @@
         </div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" v-show="set.aid!=-1">
         <label class="col-sm-3 control-label no-padding-right" is-required>绑定域名</label>
         <div class="col-sm-6">
             <textarea name="domains" v-model="domains" class="form-control" rows="5" placeholder="请输入域名，一行一个" required></textarea>
@@ -51,7 +70,8 @@
     <div class="form-group">
         <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
     </div>
-    <div class="panel panel-default"><div class="panel-body"><p><b style="color:#39b603;"><i class="fa fa-info-circle fa-fw"></i></b>提示：添加或修改订单信息，点击提交后，不会立即执行签发，只能通过计划任务或列表手动点击来执行</p><p>证书签发之前确保该主域名下没有CAA类型记录，避免证书验证失败。</p></div></div>
+    <div class="panel panel-default" v-show="set.aid!=-1"><div class="panel-body"><p><b style="color:#39b603;"><i class="fa fa-info-circle fa-fw"></i></b>提示：添加或修改订单信息，点击提交后，不会立即执行签发，只能通过计划任务或列表手动点击来执行</p><p>证书签发之前确保该主域名下没有CAA类型记录，避免证书验证失败。</p></div></div>
+    <div class="panel panel-default" v-show="set.aid==-1"><div class="panel-body"><p><b style="color:#39b603;"><i class="fa fa-info-circle fa-fw"></i></b>提示：选择手动续期，到达设置的续期天数，只会发送消息通知。</p></div></div>
   </form>
 </div>
 </div>
@@ -72,6 +92,8 @@ new Vue({
         set: {
             id: '',
             aid: '',
+            fullchain: '',
+            privatekey: '',
             keytype: '',
             keysize: '',
             domains: [],
@@ -150,6 +172,22 @@ new Vue({
                     layer.msg('服务器错误');
                 }
             });
+        },
+        upload(name){
+            //读取上传文件并填充到表单
+            var file = document.createElement('input');
+            file.type = 'file';
+            file.accept = '.pem,.crt,.key';
+            file.style.display = 'none';
+            file.onchange = function(){
+                var reader = new FileReader();
+                reader.onload = function(e){
+                    this.set[name] = e.target.result;
+                }.bind(this);
+                reader.readAsText(file.files[0]);
+            }.bind(this);
+            document.body.appendChild(file);
+            file.click();
         }
     },
 });

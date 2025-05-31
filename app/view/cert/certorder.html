@@ -34,12 +34,6 @@ pre.pre-log{height: 330px;overflow-y: auto;width: 100%;background-color: rgba(51
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新订单列表"><i class="fa fa-refresh"></i> 刷新</a>
   <div class="btn-group">
 	<a href="/cert/order/add" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
-	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-		<span class="caret"></span>
-	  </button>
-	  <ul class="dropdown-menu">
-		<li><a href="/cert/order/import">导入已有证书</a></li>
-	  </ul>
   </div>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
@@ -87,7 +81,10 @@ $(document).ready(function(){
 				field: 'typename',
 				title: '证书账户',
 				formatter: function(value, row, index) {
-					return '<span title="'+row.aremark+'" data-toggle="tooltip" data-placement="right"><img src="/static/images/'+row.icon+'" class="type-logo">'+value+'('+row.aid+')</span>';
+					if(value){
+						return '<span title="'+row.aremark+'" data-toggle="tooltip" data-placement="right"><img src="/static/images/'+row.icon+'" class="type-logo">'+value+'('+row.aid+')</span>';
+					}
+					return '手动续期';
 				}
 			},
 			{
@@ -208,7 +205,10 @@ $(document).ready(function(){
 					}else if(row.status == 2) {
 						html += '<a href="javascript:doOrder(\''+row.id+'\')" class="btn btn-success btn-xs"><i class="fa fa-check-circle"></i> 继续验证</a>&nbsp;&nbsp;';
 					}else if(row.status == 3) {
-						html += '<a href="javascript:download(\''+row.id+'\')" class="btn btn-success btn-xs"><i class="fa fa-download"></i> 下载</a>&nbsp;&nbsp;<a href="javascript:renewOrder(\''+row.id+'\')" class="btn btn-warning btn-xs"><i class="fa fa-refresh"></i> 续签</a>&nbsp;&nbsp;';
+						html += '<a href="javascript:download(\''+row.id+'\')" class="btn btn-success btn-xs"><i class="fa fa-download"></i> 下载</a>&nbsp;&nbsp;';
+						if(row.aid > 0){
+							html += '<a href="javascript:renewOrder(\''+row.id+'\')" class="btn btn-warning btn-xs"><i class="fa fa-refresh"></i> 续签</a>&nbsp;&nbsp;';
+						}
 					}else if(row.status == 4) {
 						html += '<a href="javascript:renewOrder(\''+row.id+'\')" class="btn btn-success btn-xs"><i class="fa fa-play-circle"></i> 重新申请</a>&nbsp;&nbsp;';
 					}else{
@@ -219,7 +219,9 @@ $(document).ready(function(){
 					html += '<li><a href="javascript:showLog(\''+row.processid+'\')">查看日志</a></li>';
 					if(row.status == 3){
 						html += '<li><a href="/cert/deploytask?oid='+row.id+'">部署任务</a></li>';
-						html += '<li><a href="javascript:revokeOrder(\''+row.id+'\')">吊销证书</a></li>';
+						if(row.aid > 0){
+							html += '<li><a href="javascript:revokeOrder(\''+row.id+'\')">吊销证书</a></li>';
+						}
 					}else if(row.status < 0){
 						html += '<li><a href="javascript:resetOrder(\''+row.id+'\')">重置订单</a></li>';
 					}else if(row.status == 1 || row.status == 2){

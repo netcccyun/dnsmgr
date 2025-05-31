@@ -21,10 +21,14 @@ class CertTaskService
     private function execute_order()
     {
         $days = config_get('cert_renewdays', 7);
-        $list = Db::name('cert_order')->field('id,status,issend')->whereRaw('status NOT IN (3,4) AND (retrytime IS NULL OR retrytime<NOW()) OR status=3 AND isauto=1 AND expiretime<:expiretime', ['expiretime' => date('Y-m-d H:i:s', time() + $days * 86400)])->select();
+        $list = Db::name('cert_order')->field('id,aid,status,issend')->whereRaw('status NOT IN (3,4) AND (retrytime IS NULL OR retrytime<NOW()) OR status=3 AND isauto=1 AND expiretime<:expiretime', ['expiretime' => date('Y-m-d H:i:s', time() + $days * 86400)])->select();
         //print_r($list);exit;
         $failcount = 0;
         foreach ($list as $row) {
+            if ($row['aid'] == 0) {
+                if($row['issend'] == 0) MsgNotice::cert_order_send($row['id'], true);
+                continue;
+            }
             try {
                 $service = new CertOrderService($row['id']);
                 if ($row['status'] == 3) {

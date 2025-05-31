@@ -46,7 +46,16 @@ class btpanel implements DeployInterface
         foreach ($sites as $site) {
             $siteName = trim($site);
             if (empty($siteName)) continue;
-            if ($config['type'] == '2') {
+            if ($config['type'] == '3') {
+                try {
+                    $this->deployDocker($siteName, $fullchain, $privatekey);
+                    $this->log("Docker域名 {$siteName} 证书部署成功");
+                    $success++;
+                } catch (Exception $e) {
+                    $errmsg = $e->getMessage();
+                    $this->log("Docker域名 {$siteName} 证书部署失败：" . $errmsg);
+                }
+            } elseif ($config['type'] == '2') {
                 try {
                     $this->deployMailSys($siteName, $fullchain, $privatekey);
                     $this->log("邮局域名 {$siteName} 证书部署成功");
@@ -117,6 +126,25 @@ class btpanel implements DeployInterface
             'key' => $privatekey,
             'csr' => $fullchain,
             'act' => 'add',
+        ];
+        $response = $this->request($path, $data);
+        $result = json_decode($response, true);
+        if (isset($result['status']) && $result['status']) {
+            return true;
+        } elseif (isset($result['msg'])) {
+            throw new Exception($result['msg']);
+        } else {
+            throw new Exception($response ? $response : '返回数据解析失败');
+        }
+    }
+
+    private function deployDocker($domain, $fullchain, $privatekey)
+    {
+        $path = '/mod/docker/com/set_ssl';
+        $data = [
+            'site_name' => $domain,
+            'key' => $privatekey,
+            'csr' => $fullchain,
         ];
         $response = $this->request($path, $data);
         $result = json_decode($response, true);

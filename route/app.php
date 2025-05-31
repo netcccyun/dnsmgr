@@ -98,7 +98,6 @@ Route::group(function () {
     Route::post('/cert/order/data', 'cert/order_data');
     Route::post('/cert/order/process', 'cert/order_process');
     Route::post('/cert/order/:action', 'cert/order_op');
-    Route::get('/cert/order/import', 'cert/order_import');
     Route::get('/cert/order/:action', 'cert/order_form');
 
     Route::get('/cert/deploytask', 'cert/deploytask');
