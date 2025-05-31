@@ -59,6 +59,7 @@ class lecdn implements DeployInterface
         $path = '/prod-api/login';
         $params = [
             'email' => $this->email,
+            'username' => $this->email,
             'password' => $this->password,
         ];
         $result = $this->request($path, $params);

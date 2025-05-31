@@ -500,7 +500,7 @@ function getDomainDate($domain)
         $info = $whois->loadDomainInfo($domain);
         if ($info) {
             if ($info->expirationDate > 0) {
-                return [date('Y-m-d H:i:s', $info->creationDate), date('Y-m-d H:i:s', $info->expirationDate)];
+                return [$info->creationDate > 0 ? date('Y-m-d H:i:s', $info->creationDate) : null, date('Y-m-d H:i:s', $info->expirationDate)];
             } else {
                 throw new Exception('域名到期时间未知');
             }
