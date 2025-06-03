@@ -12,6 +12,7 @@ pre.pre-log{height: 330px;overflow-y: auto;width: 100%;background-color: rgba(51
 	<div class="panel-body">
 	
 <form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
+	<input type="hidden" name="aid" value="">
 	<input type="hidden" name="oid" value="">
   <div class="form-group">
 	<label>搜索</label>
@@ -80,6 +81,7 @@ $(document).ready(function(){
 				field: 'typename',
 				title: '自动部署账户',
 				formatter: function(value, row, index) {
+					if(!value) return '已被删除'
 					return '<span title="'+row.aname+'" data-toggle="tooltip" data-placement="right"><img src="/static/images/'+row.icon+'" class="type-logo">'+(row.aremark?row.aremark:value+'('+row.aid+')')+'</span>';
 				}
 			},

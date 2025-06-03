@@ -177,7 +177,7 @@ location / {
         'tencent' => [
             'name' => '腾讯云免费SSL',
             'class' => 2,
-            'icon' => 'tencent.ico',
+            'icon' => 'tencent.png',
             'wildcard' => false,
             'max_domains' => 1,
             'cname' => false,
@@ -215,7 +215,7 @@ location / {
         'aliyun' => [
             'name' => '阿里云免费SSL',
             'class' => 2,
-            'icon' => 'aliyun.ico',
+            'icon' => 'aliyun.png',
             'wildcard' => false,
             'max_domains' => 1,
             'cname' => false,

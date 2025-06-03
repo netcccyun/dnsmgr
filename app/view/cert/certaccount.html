@@ -68,7 +68,7 @@ $(document).ready(function(){
 				field: '',
 				title: '操作',
 				formatter: function(value, row, index) {
-					var html = '<a href="/cert/account/edit?deploy=0&id='+row.id+'" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a>';
+					var html = '<a href="/cert/account/edit?deploy=0&id='+row.id+'" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a> <a href="/cert/certorder?aid='+row.id+'" class="btn btn-default btn-xs">订单</a>';
 					return html;
 				}
 			},
@@ -79,12 +79,12 @@ function delItem(id){
 	layer.confirm('确定要删除此账户吗？', {
 		btn: ['确定','取消']
 	}, function(){
-		$.post('/cert/account/del?deploy=0', {id: id}, function(data){
+		$.post('/cert/account/del', {id: id, deploy: 0}, function(data){
 			if(data.code == 0) {
 				layer.msg('删除成功', {icon: 1, time:800});
 				$('#listTable').bootstrapTable('refresh');
 			} else {
-				layer.msg(data.msg, {icon: 2});
+				layer.alert(data.msg, {icon: 2});
 			}
 		}, 'json');
 	});

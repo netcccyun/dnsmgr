@@ -43,8 +43,17 @@ class Cert extends BaseController
 
         $list = [];
         foreach ($rows as $row) {
-            $row['typename'] = $deploy == 1 ? DeployHelper::$deploy_config[$row['type']]['name'] : CertHelper::$cert_config[$row['type']]['name'];
-            $row['icon'] = $deploy == 1 ? DeployHelper::$deploy_config[$row['type']]['icon'] : CertHelper::$cert_config[$row['type']]['icon'];
+            if ($deploy == 1) {
+                if (!empty($row['type']) && isset(DeployHelper::$deploy_config[$row['type']])) {
+                    $row['typename'] = DeployHelper::$deploy_config[$row['type']]['name'];
+                    $row['icon'] = DeployHelper::$deploy_config[$row['type']]['icon'];
+                }
+            } else {
+                if (!empty($row['type']) && isset(CertHelper::$cert_config[$row['type']])) {
+                    $row['typename'] = CertHelper::$cert_config[$row['type']]['name'];
+                    $row['icon'] = CertHelper::$cert_config[$row['type']]['icon'];
+                }
+            }
             $list[] = $row;
         }
 
@@ -202,6 +211,7 @@ class Cert extends BaseController
         if (!checkPermission(2)) return $this->alert('error', '无权限');
         $domain = $this->request->post('domain', null, 'trim');
         $id = input('post.id');
+        $aid = input('post.aid', null, 'trim');
         $type = input('post.type', null, 'trim');
         $status = input('post.status', null, 'trim');
         $offset = input('post.offset/d');
@@ -213,6 +223,9 @@ class Cert extends BaseController
         } elseif (!empty($domain)) {
             $oids = Db::name('cert_domain')->where('domain', 'like', '%' . $domain . '%')->column('oid');
             $select->whereIn('A.id', $oids);
+        }
+        if (!empty($aid)) {
+            $select->where('A.aid', $aid);
         }
         if (!empty($type)) {
             $select->where('B.type', $type);
@@ -233,7 +246,7 @@ class Cert extends BaseController
 
         $list = [];
         foreach ($rows as $row) {
-            if (!empty($row['type'])) {
+            if (!empty($row['type']) && isset(CertHelper::$cert_config[$row['type']])) {
                 $row['typename'] = CertHelper::$cert_config[$row['type']]['name'];
                 $row['icon'] = CertHelper::$cert_config[$row['type']]['icon'];
             } else {
@@ -599,6 +612,7 @@ class Cert extends BaseController
 
         $accounts = [];
         foreach (Db::name('cert_account')->where('deploy', 0)->select() as $row) {
+            if (empty($row['type']) || !isset(CertHelper::$cert_config[$row['type']])) continue;
             $accounts[$row['id']] = ['name' => $row['id'] . '_' . CertHelper::$cert_config[$row['type']]['name'], 'type' => $row['type']];
             if (!empty($row['remark'])) {
                 $accounts[$row['id']]['name'] .= '（' . $row['remark'] . '）';
@@ -627,18 +641,22 @@ class Cert extends BaseController
         if (!checkPermission(2)) return $this->alert('error', '无权限');
         $domain = $this->request->post('domain', null, 'trim');
         $oid = input('post.oid');
+        $aid = input('post.aid', null, 'trim');
         $type = input('post.type', null, 'trim');
         $status = input('post.status', null, 'trim');
         $remark = input('post.remark', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
 
-        $select = Db::name('cert_deploy')->alias('A')->join('cert_account B', 'A.aid = B.id')->join('cert_order C', 'A.oid = C.id')->join('cert_account D', 'C.aid = D.id');
+        $select = Db::name('cert_deploy')->alias('A')->leftJoin('cert_account B', 'A.aid = B.id')->leftJoin('cert_order C', 'A.oid = C.id')->leftJoin('cert_account D', 'C.aid = D.id');
         if (!empty($oid)) {
             $select->where('A.oid', $oid);
         } elseif (!empty($domain)) {
             $oids = Db::name('cert_domain')->where('domain', 'like', '%' . $domain . '%')->column('oid');
             $select->whereIn('oid', $oids);
+        }
+        if (!empty($aid)) {
+            $select->where('A.aid', $aid);
         }
         if (!empty($type)) {
             $select->where('B.type', $type);
@@ -654,9 +672,15 @@ class Cert extends BaseController
 
         $list = [];
         foreach ($rows as $row) {
-            $row['typename'] = DeployHelper::$deploy_config[$row['type']]['name'];
-            $row['icon'] = DeployHelper::$deploy_config[$row['type']]['icon'];
-            $row['certtypename'] = CertHelper::$cert_config[$row['certtype']]['name'];
+            if (!empty($row['type']) && isset(DeployHelper::$deploy_config[$row['type']])) {
+                $row['typename'] = DeployHelper::$deploy_config[$row['type']]['name'];
+                $row['icon'] = DeployHelper::$deploy_config[$row['type']]['icon'];
+            }
+            if (!empty($row['certtype']) && isset(CertHelper::$cert_config[$row['certtype']])) {
+                $row['certtypename'] = CertHelper::$cert_config[$row['certtype']]['name'];
+            } else {
+                $row['certtypename'] = '手动续期';
+            }
             $row['domains'] = Db::name('cert_domain')->where('oid', $row['oid'])->order('sort', 'ASC')->column('domain');
             if ($row['error']) $row['error'] = htmlspecialchars(str_replace("'", "\\'", $row['error']));
             $list[] = $row;
@@ -782,6 +806,7 @@ class Cert extends BaseController
 
         $accounts = [];
         foreach (Db::name('cert_account')->where('deploy', 1)->select() as $row) {
+            if (empty($row['type']) || !isset(DeployHelper::$deploy_config[$row['type']])) continue;
             $accounts[$row['id']] = ['name' => $row['id'] . '_' . DeployHelper::$deploy_config[$row['type']]['name'], 'type' => $row['type']];
             if (!empty($row['remark'])) {
                 $accounts[$row['id']]['name'] .= '（' . $row['remark'] . '）';
@@ -790,10 +815,15 @@ class Cert extends BaseController
         View::assign('accounts', $accounts);
 
         $orders = [];
-        foreach (Db::name('cert_order')->alias('A')->join('cert_account B', 'A.aid = B.id')->where('status', '<>', 4)->fieldRaw('A.id,A.aid,B.type,B.remark aremark')->order('id', 'desc')->select() as $row) {
+        foreach (Db::name('cert_order')->alias('A')->leftJoin('cert_account B', 'A.aid = B.id')->where('status', '<>', 4)->fieldRaw('A.id,A.aid,B.type,B.remark aremark')->order('id', 'desc')->select() as $row) {
             $domains = Db::name('cert_domain')->where('oid', $row['id'])->order('sort', 'ASC')->column('domain');
             $domainstr = count($domains) > 2 ? implode('、', array_slice($domains, 0, 2)) . '等' . count($domains) . '个域名' : implode('、', $domains);
-            $orders[$row['id']] = ['name' => $row['id'] . '_' . $domainstr . '（' . CertHelper::$cert_config[$row['type']]['name'] . '）'];
+            if ($row['aid'] == 0) {
+                $name = $row['id'] . '_' . $domainstr . '（手动续期）';
+            } else {
+                $name = $row['id'] . '_' . $domainstr . '（' . CertHelper::$cert_config[$row['type']]['name'] . '）';
+            }
+            $orders[$row['id']] = ['name' => $name];
         }
         View::assign('orders', $orders);
 
@@ -821,7 +851,7 @@ class Cert extends BaseController
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
 
-        $select = Db::name('cert_cname')->alias('A')->join('domain B', 'A.did = B.id');
+        $select = Db::name('cert_cname')->alias('A')->leftJoin('domain B', 'A.did = B.id');
         if (!empty($kw)) {
             $select->whereLike('A.domain', '%' . $kw . '%');
         }

@@ -10,7 +10,8 @@ class DeployHelper
         'btpanel' => [
             'name' => '宝塔面板',
             'class' => 1,
-            'icon' => 'bt.ico',
+            'icon' => 'bt.png',
+            'desc' => '支持部署到宝塔面板搭建的站点、Docker、邮局与面板本身',
             'note' => null,
             'inputs' => [
                 'url' => [
@@ -63,6 +64,7 @@ class DeployHelper
             'name' => 'Kangle用户',
             'class' => 1,
             'icon' => 'host.png',
+            'desc' => '支持虚拟主机与CDN站点',
             'note' => '以上登录信息为Easypanel用户面板的，非管理员面板。如选网站密码认证类型，则用户面板登录不能开启验证码。',
             'inputs' => [
                 'url' => [
@@ -136,6 +138,7 @@ class DeployHelper
             'name' => 'Kangle管理员',
             'class' => 1,
             'icon' => 'host.png',
+            'desc' => '支持虚拟主机与CDN站点',
             'note' => '以上登录地址需填写Easypanel管理员面板地址，非用户面板。',
             'inputs' => [
                 'url' => [
@@ -202,6 +205,7 @@ class DeployHelper
             'name' => '雷池WAF',
             'class' => 1,
             'icon' => 'safeline.png',
+            'desc' => '',
             'note' => null,
             'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
             'inputs' => [
@@ -233,7 +237,8 @@ class DeployHelper
         'btwaf' => [
             'name' => '堡塔云WAF',
             'class' => 1,
-            'icon' => 'bt.ico',
+            'icon' => 'bt.png',
+            'desc' => '',
             'note' => null,
             'tasknote' => '',
             'inputs' => [
@@ -273,6 +278,7 @@ class DeployHelper
             'name' => 'Cdnfly',
             'class' => 1,
             'icon' => 'waf.png',
+            'desc' => '',
             'note' => '登录Cdnfly控制台->账户中心->API密钥，点击开启后获取',
             'inputs' => [
                 'url' => [
@@ -318,6 +324,7 @@ class DeployHelper
             'name' => 'LeCDN',
             'class' => 1,
             'icon' => 'waf.png',
+            'desc' => '',
             'note' => null,
             'inputs' => [
                 'url' => [
@@ -363,6 +370,7 @@ class DeployHelper
             'name' => 'GoEdge',
             'class' => 1,
             'icon' => 'waf.png',
+            'desc' => '',
             'note' => '需要先<a href="https://goedge.cloud/docs/API/Settings.md" target="_blank" rel="noreferrer">开启HTTP API端口</a>',
             'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
             'inputs' => [
@@ -421,6 +429,7 @@ class DeployHelper
             'name' => '1Panel',
             'class' => 1,
             'icon' => 'opanel.png',
+            'desc' => '更新面板证书管理内的SSL证书',
             'note' => null,
             'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
             'inputs' => [
@@ -463,6 +472,7 @@ class DeployHelper
             'name' => 'MW面板',
             'class' => 1,
             'icon' => 'mwpanel.ico',
+            'desc' => '',
             'note' => null,
             'tasknote' => '',
             'inputs' => [
@@ -520,6 +530,7 @@ class DeployHelper
             'name' => '耗子面板',
             'class' => 1,
             'icon' => 'ratpanel.ico',
+            'desc' => '支持耗子面板 v2.5+ 版本使用',
             'note' => '支持耗子面板 v2.5+ 版本使用',
             'inputs' => [
                 'url' => [
@@ -578,6 +589,7 @@ class DeployHelper
             'name' => '群晖面板',
             'class' => 1,
             'icon' => 'synology.png',
+            'desc' => '支持群晖DSM 6.x/7.x版本',
             'note' => null,
             'tasknote' => '',
             'inputs' => [
@@ -633,6 +645,7 @@ class DeployHelper
             'name' => 'Proxmox VE',
             'class' => 1,
             'icon' => 'proxmox.ico',
+            'desc' => '部署到PVE节点',
             'note' => '在“权限->API令牌”添加令牌，不要选特权分离',
             'tasknote' => '',
             'inputs' => [
@@ -677,8 +690,9 @@ class DeployHelper
         'aliyun' => [
             'name' => '阿里云',
             'class' => 2,
-            'icon' => 'aliyun.ico',
-            'note' => '支持部署到阿里云CDN、ESA、SLB、OSS、WAF等服务',
+            'icon' => 'aliyun.png',
+            'desc' => '支持部署到阿里云CDN、ESA、SLB、OSS、WAF、FC等服务',
+            'note' => '支持部署到阿里云CDN、ESA、SLB、OSS、WAF、FC等服务',
             'tasknote' => '',
             'inputs' => [
                 'AccessKeyId' => [
@@ -824,7 +838,8 @@ class DeployHelper
         'tencent' => [
             'name' => '腾讯云',
             'class' => 2,
-            'icon' => 'tencent.ico',
+            'icon' => 'tencent.png',
+            'desc' => '支持部署到腾讯云CDN、EO、CLB、COS、TKE、SCF等服务',
             'note' => '支持部署到腾讯云CDN、EO、CLB、COS、TKE、SCF等服务',
             'tasknote' => '',
             'inputs' => [
@@ -959,6 +974,7 @@ class DeployHelper
             'name' => '华为云',
             'class' => 2,
             'icon' => 'huawei.ico',
+            'desc' => '支持部署到华为云CDN、ELB、WAF等服务',
             'note' => '支持部署到华为云CDN、ELB、WAF等服务',
             'inputs' => [
                 'AccessKeyId' => [
@@ -1031,6 +1047,7 @@ class DeployHelper
             'name' => 'UCloud',
             'class' => 2,
             'icon' => 'ucloud.ico',
+            'desc' => '支持部署到UCDN',
             'note' => '支持部署到UCDN',
             'inputs' => [
                 'PublicKey' => [
@@ -1060,6 +1077,7 @@ class DeployHelper
             'name' => '七牛云',
             'class' => 2,
             'icon' => 'qiniu.ico',
+            'desc' => '支持部署到七牛云CDN、OSS',
             'note' => '支持部署到七牛云CDN、OSS',
             'inputs' => [
                 'AccessKey' => [
@@ -1115,6 +1133,7 @@ class DeployHelper
             'name' => '多吉云',
             'class' => 2,
             'icon' => 'cloud.png',
+            'desc' => '支持部署到多吉云融合CDN',
             'note' => '支持部署到多吉云融合CDN',
             'inputs' => [
                 'AccessKey' => [
@@ -1152,6 +1171,8 @@ class DeployHelper
             'name' => '又拍云',
             'class' => 2,
             'icon' => 'upyun.ico',
+            'desc' => '支持部署到又拍云CDN',
+            'note' => '支持部署到又拍云CDN',
             'tasknote' => '系统会根据关联SSL证书的域名，进行证书的迁移操作',
             'inputs' => [
                 'username' => [
@@ -1181,6 +1202,7 @@ class DeployHelper
             'name' => '百度云',
             'class' => 2,
             'icon' => 'baidu.ico',
+            'desc' => '支持部署到百度云CDN',
             'note' => '支持部署到百度云CDN',
             'inputs' => [
                 'AccessKeyId' => [
@@ -1218,6 +1240,7 @@ class DeployHelper
             'name' => '火山引擎',
             'class' => 2,
             'icon' => 'huoshan.ico',
+            'desc' => '支持部署到火山引擎CDN',
             'note' => '支持部署到火山引擎CDN',
             'inputs' => [
                 'AccessKeyId' => [
@@ -1285,6 +1308,7 @@ class DeployHelper
             'name' => '西部数码',
             'class' => 2,
             'icon' => 'west.ico',
+            'desc' => '支持部署到西部数码虚拟主机',
             'note' => '支持部署到西部数码虚拟主机',
             'inputs' => [
                 'username' => [
@@ -1322,6 +1346,7 @@ class DeployHelper
             'name' => '网宿科技',
             'class' => 2,
             'icon' => 'wangsu.ico',
+            'desc' => '支持部署到网宿CDN',
             'note' => '适用产品：网页加速、下载分发、全站加速、点播分发、直播分发、上传加速、移动加速、上网加速、S-P2P、PCDN、应用性能管理、WEB应用防火墙、BotGuard爬虫管理、WSS、DMS、DDoS云清洗、应用加速、应用安全加速解决方案、IPv6一体化解决方案、电商安全加速解决方案、金融安全加速解决方案、政企安全加速解决方案、DDoS云清洗(非网站业务)、区块链安全加速解决方案、IPv6安全加速解决方案、CDN Pro。暂不支持AKSK鉴权。',
             'inputs' => [
                 'username' => [
@@ -1390,6 +1415,7 @@ class DeployHelper
             'name' => '白山云',
             'class' => 2,
             'icon' => 'waf.png',
+            'desc' => '替换白山云证书管理内的证书',
             'note' => null,
             'inputs' => [
                 'account' => [
@@ -1429,7 +1455,8 @@ class DeployHelper
             'name' => '天翼云',
             'class' => 2,
             'icon' => 'ctyun.ico',
-            'note' => '支持部署到天翼云CDN',
+            'desc' => '支持部署到天翼云CDN、边缘加速',
+            'note' => '支持部署到天翼云CDN、边缘加速',
             'inputs' => [
                 'AccessKeyId' => [
                     'name' => 'AccessKeyId',
@@ -1477,6 +1504,7 @@ class DeployHelper
             'name' => '括彩云',
             'class' => 2,
             'icon' => 'kuocai.jpg',
+            'desc' => '替换括彩云证书管理内的证书',
             'note' => '支持括彩云及其代理商，填写控制台登录账号及密码',
             'inputs' => [
                 'username' => [
@@ -1512,41 +1540,11 @@ class DeployHelper
                 ],
             ],
         ],
-        'allwaf' => [
-            'name' => 'AllWAF',
-            'class' => 2,
-            'icon' => 'waf.png',
-            'note' => '在<a href="https://user.allwaf.cn/" target="_blank" rel="noreferrer">ALLWAF</a>访问控制页面创建AccessKey',
-            'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
-            'inputs' => [
-                'accessKeyId' => [
-                    'name' => 'AccessKey ID',
-                    'type' => 'input',
-                    'placeholder' => '',
-                    'required' => true,
-                ],
-                'accessKey' => [
-                    'name' => 'AccessKey密钥',
-                    'type' => 'input',
-                    'placeholder' => '',
-                    'required' => true,
-                ],
-                'proxy' => [
-                    'name' => '使用代理服务器',
-                    'type' => 'radio',
-                    'options' => [
-                        '0' => '否',
-                        '1' => '是',
-                    ],
-                    'value' => '0'
-                ],
-            ],
-            'taskinputs' => [],
-        ],
         'aws' => [
             'name' => 'AWS',
             'class' => 2,
-            'icon' => 'aws.ico',
+            'icon' => 'aws.png',
+            'desc' => '支持部署到Amazon CloudFront、AWS Certificate Manager',
             'note' => '支持部署到Amazon CloudFront、AWS Certificate Manager',
             'inputs' => [
                 'AccessKeyId' => [
@@ -1603,6 +1601,7 @@ class DeployHelper
             'name' => 'Gcore',
             'class' => 2,
             'icon' => 'gcore.ico',
+            'desc' => '替换Gcore CDN证书',
             'note' => '在 个人资料->API令牌 页面创建API令牌',
             'inputs' => [
                 'account' => [
@@ -1647,6 +1646,7 @@ class DeployHelper
             'name' => 'Cachefly',
             'class' => 2,
             'icon' => 'cloud.png',
+            'desc' => '替换Cachefly CDN证书',
             'note' => '在 API Tokens 页面生成 API Token',
             'inputs' => [
                 'account' => [
@@ -1679,6 +1679,7 @@ class DeployHelper
             'name' => 'SSH服务器',
             'class' => 3,
             'icon' => 'server.png',
+            'desc' => '可通过SSH连接到Linux/Windows服务器并部署证书',
             'note' => '可通过SSH连接到Linux/Windows服务器并部署证书，php需要安装ssh2扩展',
             'tasknote' => '请确保路径存在且有写入权限，路径一定要以/开头（Windows路径请使用/代替\，且需要在最开头加/）',
             'inputs' => [
@@ -1805,6 +1806,7 @@ class DeployHelper
             'name' => 'FTP服务器',
             'class' => 3,
             'icon' => 'server.png',
+            'desc' => '可将证书上传到FTP服务器',
             'note' => '可将证书上传到FTP服务器，php需要安装ftp扩展',
             'tasknote' => '请确保路径存在且有写入权限',
             'inputs' => [
@@ -1888,6 +1890,7 @@ class DeployHelper
             'name' => '复制到本机',
             'class' => 3,
             'icon' => 'server2.png',
+            'desc' => '将证书复制到本机指定路径',
             'note' => '将证书复制到本机指定路径',
             'tasknote' => '请确保php进程有对证书保存路径的写入权限，宝塔面板需关闭防跨站攻击，如果当前是Docker运行的，则需要做目录映射到宿主机。',
             'inputs' => [],
