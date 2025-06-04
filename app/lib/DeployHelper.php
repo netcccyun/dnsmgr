@@ -370,7 +370,7 @@ class DeployHelper
             'name' => 'GoEdge',
             'class' => 1,
             'icon' => 'waf.png',
-            'desc' => '',
+            'desc' => '支持GoEdge与FlexCDN',
             'note' => '需要先<a href="https://goedge.cloud/docs/API/Settings.md" target="_blank" rel="noreferrer">开启HTTP API端口</a>',
             'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
             'inputs' => [

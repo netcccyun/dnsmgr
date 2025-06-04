@@ -2,6 +2,8 @@
 
 namespace app\utils;
 
+use Exception;
+
 class DnsQueryUtils
 {
     private static $doh_servers = ['https://dns.alidns.com/resolve', 'https://doh.pub/resolve', 'https://doh.360.cn/resolve'];
@@ -10,7 +12,11 @@ class DnsQueryUtils
     {
         $dns_type = ['A' => DNS_A, 'AAAA' => DNS_AAAA, 'CNAME' => DNS_CNAME, 'MX' => DNS_MX, 'TXT' => DNS_TXT];
         if (!array_key_exists($type, $dns_type)) return false;
-        $list = dns_get_record($domain, $dns_type[$type]);
+        try{
+            $list = dns_get_record($domain, $dns_type[$type]);
+        }catch(Exception $e){
+            return false;
+        }
         if (!$list || empty($list)) return false;
         $result = [];
         foreach ($list as $row) {
