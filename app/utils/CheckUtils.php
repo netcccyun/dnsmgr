@@ -9,6 +9,12 @@ class CheckUtils
         $status = true;
         $errmsg = null;
         $urlarr = parse_url($url);
+        if (!$urlarr) {
+            return ['status' => false, 'errmsg' => 'Invalid URL', 'usetime' => 0];
+        }
+        if (substr($urlarr['host'], 0, 1) == '[' && substr($urlarr['host'], -1) == ']') {
+            $urlarr['host'] = substr($urlarr['host'], 1, -1);
+        }
         if (!empty($ip) && !filter_var($urlarr['host'], FILTER_VALIDATE_IP)) {
             if (!filter_var($ip, FILTER_VALIDATE_IP)) {
                 $ip = gethostbyname($ip);

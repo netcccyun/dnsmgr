@@ -38,7 +38,7 @@ pre.pre-log{height: 330px;overflow-y: auto;width: 100%;background-color: rgba(51
   <a href="/cert/deploy/add" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
-	<ul class="dropdown-menu"><li><a href="javascript:operation('delete')">删除</a></li><li><a href="javascript:operation('reset')">重置任务</a></li><li><a href="javascript:operation('open')">开启任务</a></li><li><a href="javascript:operation('close')">停止任务</a></li></ul>
+	<ul class="dropdown-menu"><li><a href="javascript:operation('delete')">删除</a></li><li><a href="javascript:operation('reset')">重置任务</a></li><li><a href="javascript:operation('open')">开启任务</a></li><li><a href="javascript:operation('close')">停止任务</a></li><li><a href="javascript:operation('cert')">修改关联证书</a></li></ul>
   </div>
 </form>
 
@@ -309,6 +309,8 @@ function operation(action){
 		if(!confirm('确定要删除所选自动部署任务吗？')) return;
 	}else if(action == 'reset'){
 		if(!confirm('重置任务后，任务将变成待处理状态，是否确定重置？')) return;
+	}else if(action == 'cert'){
+		return batch_set_cert(ids);
 	}
 
 	var ii = layer.load(2);
@@ -327,6 +329,27 @@ function operation(action){
 				layer.alert(data.msg, {icon: 2});
 			}
 		}
+	});
+}
+function batch_set_cert(ids){
+	layer.prompt({title: '填写证书ID', value: '', formType: 0}, function(text, index){
+		var ii = layer.load(2, {shade:[0.1,'#fff']});
+		$.ajax({
+			type : 'POST',
+			url : '/cert/deploy/operation',
+			data : {action: 'cert', ids: ids, certid: text},
+			dataType : 'json',
+			success : function(data) {
+				layer.close(ii);
+				if(data.code == 0){
+					layer.closeAll();
+					layer.alert(data.msg, {icon: 1});
+					searchRefresh();
+				}else{
+					layer.alert(data.msg, {icon: 2});
+				}
+			}
+		});
 	});
 }
 </script>

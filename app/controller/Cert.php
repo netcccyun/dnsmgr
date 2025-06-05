@@ -747,6 +747,12 @@ class Cert extends BaseController
         } elseif ($action == 'operation') {
             $ids = input('post.ids');
             $success = 0;
+            $certid = 0;
+            if (input('post.action') == 'cert') {
+                $certid = input('post.certid/d');
+                $cert = Db::name('cert_order')->where('id', $certid)->find();
+                if (!$cert) return json(['code' => -1, 'msg' => '证书订单不存在']);
+            }
             foreach ($ids as $id) {
                 if (input('post.action') == 'delete') {
                     Db::name('cert_deploy')->where('id', $id)->delete();
@@ -761,6 +767,9 @@ class Cert extends BaseController
                 } elseif (input('post.action') == 'open' || input('post.action') == 'close') {
                     $active = input('post.action') == 'open' ? 1 : 0;
                     Db::name('cert_deploy')->where('id', $id)->update(['active' => $active]);
+                    $success++;
+                } elseif (input('post.action') == 'cert') {
+                    Db::name('cert_deploy')->where('id', $id)->update(['oid' => $certid]);
                     $success++;
                 }
             }

@@ -195,6 +195,10 @@ SSL证书自动部署功能
 
 ⭐ 如果您觉得本项目对您有帮助，欢迎给项目点个 Star
 
+🤝 捐赠：
+
+<img height="240" src="https://wkphoto.bj.bcebos.com/d8f9d72a6059252db065f556249b033b5bb5b976.jpg">
+
 ### 其他推荐
 
 - [彩虹云主机 - 免备案CDN/虚拟主机](https://www.cccyun.net/)
