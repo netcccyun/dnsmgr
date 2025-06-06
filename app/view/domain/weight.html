@@ -156,6 +156,8 @@ function editframe(id){
 				$("#form-store input[name=id]").val(id);
 				$("#form-store input[name=subdomain]").val(row.SubDomain);
 				$("#form-store input[name=type]").val(row.Type);
+				if(row.Type == 'CNAME') $("#weight-switch").prop("disabled", true);
+				else $("#weight-switch").prop("disabled", false);
 				
 				lineList = [];
 				$.each(recordLine, function(i, item){

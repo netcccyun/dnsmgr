@@ -178,7 +178,7 @@ class CertOrderService
     private function saveResult($status, $error = null, $retrytime = null)
     {
         $this->order['status'] = $status;
-        if (mb_strlen($error) > 300) {
+        if (!empty($error) && strlen($error) > 300) {
             $error = mb_strcut($error, 0, 300);
         }
         $update = ['status' => $status, 'error' => $error, 'updatetime' => date('Y-m-d H:i:s'), 'retrytime' => $retrytime];

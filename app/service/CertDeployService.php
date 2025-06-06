@@ -89,7 +89,7 @@ class CertDeployService
     private function saveResult($status, $error = null, $retrytime = null)
     {
         $this->task['status'] = $status;
-        if (mb_strlen($error) > 300) {
+        if (!empty($error) && strlen($error) > 300) {
             $error = mb_strcut($error, 0, 300);
         }
         $update = ['status' => $status, 'error' => $error, 'retrytime' => $retrytime];

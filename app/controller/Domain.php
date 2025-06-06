@@ -990,7 +990,7 @@ class Domain extends BaseController
                     return json(['code' => -1, 'msg' => '参数不能为空']);
                 }
                 $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-                if ($dns->setWeightStatus($subdomain, $status, $type, $line)) {
+                if ($type == 'CNAME' || $dns->setWeightStatus($subdomain, $status, $type, $line)) {
                     if ($status == '1') {
                         $success = 0;
                         foreach($weight as $recordid => $weight) {
