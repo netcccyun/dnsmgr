@@ -396,14 +396,14 @@ function clearDirectory($dir): bool
  * 发送 HTTP 请求
  *
  * @param string $url 请求URL
- * @param mixed $data 请求数据，可以是字符串或数组，数组将自动序列化
- * @param string|null $referer 请求的Referer头部
- * @param array|null $cookie 请求的Cookie头部
+ * @param mixed $data 请求数据，可以是字符串或数组，数组将自动根据请求方法及传入的 Content-Type 序列化
+ * @param string|null $referer 请求的 Referer 头部
+ * @param array|null $cookie 请求的 Cookie 头部
  * @param array|null $headers 其他自定义请求头部
  * @param bool $proxy 是否使用代理
- * @param string|null $method 请求方法，默认为GET或POST（如果$data不为空）
- * @param int $timeout 请求超时时间，默认为10秒
- * @return array 包含HTTP状态码、重定向URL、响应头和响应体的数组
+ * @param string|null $method 请求方法，默认为 GET 或 POST（如果存在请求数据）
+ * @param int $timeout 请求超时时间，默认为 10 秒
+ * @return array 包含 HTTP 状态码、重定向 URL、响应头和响应体的数组
  * @throws Exception
  */
 function http_request($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 10)
