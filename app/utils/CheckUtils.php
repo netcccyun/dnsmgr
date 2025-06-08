@@ -12,12 +12,12 @@ class CheckUtils
         if (!$urlarr) {
             return ['status' => false, 'errmsg' => 'Invalid URL', 'usetime' => 0];
         }
-	    if (str_starts_with($urlarr['host'], '[') && str_ends_with($urlarr['host'], ']')) {
-		    $urlarr['host'] = substr($urlarr['host'], 1, -1);
-	    }
+        if (str_starts_with($urlarr['host'], '[') && str_ends_with($urlarr['host'], ']')) {
+            $urlarr['host'] = substr($urlarr['host'], 1, -1);
+        }
         if (!empty($ip) && !filter_var($urlarr['host'], FILTER_VALIDATE_IP) && filter_var($ip, FILTER_VALIDATE_IP)) {
-	        $port = $urlarr['port'] ?? ($urlarr['scheme'] == 'https' ? 443 : 80);
-	        $resolve = $urlarr['host'] . ':' . $port . ':' . $ip;
+            $port = $urlarr['port'] ?? ($urlarr['scheme'] == 'https' ? 443 : 80);
+            $resolve = $urlarr['host'] . ':' . $port . ':' . $ip;
         }
         $ch = curl_init();
         if ($proxy) {
