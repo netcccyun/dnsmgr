@@ -67,8 +67,8 @@ class Index extends BaseController
             'software' => $_SERVER['SERVER_SOFTWARE'],
             'os' => php_uname(),
             'date' => date("Y-m-d H:i:s"),
-	        'no_https' => ! $this->request->isSsl(),
-	        'old_browser' => str_contains($this->request->header('User-Agent'), 'Windows NT') && str_contains($this->request->header('User-Agent'), 'Trident'),
+            'no_https' => ! $this->request->isSsl(),
+            'old_browser' => str_contains($this->request->header('User-Agent'), 'Windows NT') && str_contains($this->request->header('User-Agent'), 'Trident'),
         ];
         View::assign('info', $info);
         View::assign('checkupdate', '//auth.cccyun.cc/app/dnsmgr.php?ver=' . config('app.version'));
