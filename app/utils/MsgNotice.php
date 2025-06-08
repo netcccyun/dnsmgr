@@ -220,7 +220,7 @@ class MsgNotice
         if (!$wechat_apptoken || !$wechat_appuid) return false;
         $url = 'https://wxpusher.zjiecode.com/api/send/message';
         $post = ['appToken' => $wechat_apptoken, 'content' => $content, 'summary' => $title, 'contentType' => 3, 'uids' => [$wechat_appuid]];
-        $result = get_curl($url, json_encode($post), 0, 0, 0, 0, ['Content-Type: application/json; charset=UTF-8']);
+        $result = get_curl($url, json_encode($post), 0, 0, 0, 0, ['Content-Type' => 'application/json; charset=UTF-8']);
         $arr = json_decode($result, true);
         if (isset($arr['success']) && $arr['success'] == true) {
             return true;
@@ -284,7 +284,7 @@ class MsgNotice
         } else {
             return '不支持的Webhook地址';
         }
-        $result = get_curl($url, json_encode($post), 0, 0, 0, 0, ['Content-Type: application/json; charset=UTF-8']);
+        $result = get_curl($url, json_encode($post), 0, 0, 0, 0, ['Content-Type' => 'application/json; charset=UTF-8']);
         $arr = json_decode($result, true);
         if (isset($arr['errcode']) && $arr['errcode'] == 0 || isset($arr['code']) && $arr['code'] == 0) {
             return true;

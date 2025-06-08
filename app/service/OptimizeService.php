@@ -57,7 +57,7 @@ class OptimizeService
             'key' => config_get('optimize_ip_key', 'o1zrmHAF'),
             'type' => $ip_type,
         ];
-        $response = get_curl($url, json_encode($params), 0, 0, 0, 0, ['Content-Type: application/json; charset=UTF-8']);
+        $response = get_curl($url, json_encode($params), 0, 0, 0, 0, ['Content-Type' => 'application/json; charset=UTF-8']);
         $arr = json_decode($response, true);
         if (isset($arr['code']) && $arr['code'] == 200) {
             return $arr['info'];
