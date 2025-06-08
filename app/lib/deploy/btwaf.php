@@ -128,7 +128,7 @@ class btwaf implements DeployInterface
             'Content-Type' => 'application/json',
         ];
         $post = $params ? json_encode($params) : null;
-        $response = curl_client($url, $post, null, null, $headers, $this->proxy, 'POST');
+        $response = http_request($url, $post, null, null, $headers, $this->proxy, 'POST');
         return $response['body'];
     }
 }

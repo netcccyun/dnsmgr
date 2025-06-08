@@ -121,7 +121,7 @@ class mwpanel implements DeployInterface
             'app-id' => $this->appid,
             'app-secret' => $this->appsecret,
         ];
-        $response = curl_client($url, $params ? http_build_query($params) : null, null, null, $headers, $this->proxy);
+        $response = http_request($url, $params ? http_build_query($params) : null, null, null, $headers, $this->proxy);
         return $response['body'];
     }
 }

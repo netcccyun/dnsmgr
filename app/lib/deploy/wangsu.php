@@ -433,7 +433,7 @@ class wangsu implements DeployInterface
         }
 
         $url = 'https://open.chinanetcenter.com' . $path;
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy, $method, 30);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy, $method, 30);
         $result = json_decode($response['body'], true);
 
         if ((isset($response['code']) && $response['code'] == 201) || (isset($response['code']) && $response['code'] == 200 && $getLocation === true)) {

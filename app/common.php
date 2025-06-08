@@ -11,7 +11,6 @@ function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $ua = 0, $nobody =
         'timeout' => 10,
         'verify' => false,
         'headers' => [
-            'Content-Type' => 'application/x-www-form-urlencoded',
             'User-Agent' => $ua ?: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
         ],
         'http_errors' => false // 不抛出异常
@@ -28,6 +27,9 @@ function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $ua = 0, $nobody =
     $method = 'GET';
     if ($post) {
         $method = 'POST';
+        if (!isset($options['headers']['Content-Type'])) {
+            $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+        }
         if (is_array($post)) {
             $options['form_params'] = $post;
         } else {
@@ -390,7 +392,7 @@ function clearDirectory($dir): bool
     return true;
 }
 
-function curl_client($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 5)
+function http_request($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 5)
 {
     $options = [
         'timeout' => $timeout,
@@ -398,7 +400,6 @@ function curl_client($url, $data = null, $referer = null, $cookie = null, $heade
         'allow_redirects' => false,
         'verify' => false,
         'headers' => [
-            'Content-Type' => 'application/x-www-form-urlencoded',
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
         ],
         'http_errors' => false // 不抛出异常
@@ -423,6 +424,9 @@ function curl_client($url, $data = null, $referer = null, $cookie = null, $heade
     // 处理数据
     if ($data) {
         if ($method !== 'GET') {
+            if (!isset($options['headers']['Content-Type'])) {
+                $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+            }
             $options['body'] = $data;
         } else {
             // 兼容已经存在查询字符串的情况

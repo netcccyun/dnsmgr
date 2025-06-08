@@ -113,7 +113,7 @@ class ratpanel implements DeployInterface
         $url = $this->url . '/api' . $path;
         $body = $method == 'GET' ? null : json_encode($params);
         $sign = $this->signRequest($method, $url, $body, $this->id, $this->token);
-        $response = curl_client($url, $body, null, null, [
+        $response = http_request($url, $body, null, null, [
             'Content-Type' => 'application/json',
             'X-Timestamp' => $sign['timestamp'],
             'Authorization' => 'HMAC-SHA256 Credential=' . $sign['id'] . ', Signature=' . $sign['signature']

@@ -120,7 +120,7 @@ class zerossl implements CertInterface
     private function getEAB($email)
     {
         $api = "https://api.zerossl.com/acme/eab-credentials-email";
-        $response = curl_client($api, http_build_query(['email' => $email]), null, null, null, $this->config['proxy'] == 1);
+        $response = http_request($api, http_build_query(['email' => $email]), null, null, null, $this->config['proxy'] == 1);
         $result = json_decode($response['body'], true);
         if (!isset($result['success'])) {
             throw new Exception('获取EAB失败：' . $response['body']);

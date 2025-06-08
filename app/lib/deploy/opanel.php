@@ -101,7 +101,7 @@ class opanel implements DeployInterface
         ];
         $body = $params ? json_encode($params) : '{}';
         if ($body) $headers['Content-Type'] = 'application/json';
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy);
         $result = json_decode($response['body'], true);
         if (isset($result['code']) && $result['code'] == 200) {
             return $result['data'] ?? null;

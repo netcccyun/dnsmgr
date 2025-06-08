@@ -179,7 +179,7 @@ class btpanel implements DeployInterface
             'request_time' => $now_time
         ];
         $post_data = array_merge($post_data, $params);
-        $response = curl_client($url, $post_data, null, null, null, $this->proxy);
+        $response = http_request($url, $post_data, null, null, null, $this->proxy);
         return $response['body'];
     }
 }

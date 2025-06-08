@@ -43,7 +43,7 @@ class cachefly implements DeployInterface
             $headers['Content-Type'] = 'application/json';
             $body = json_encode($params);
         }
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy, $method);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy, $method);
         $result = json_decode($response['body'], true);
         if ($response['code'] >= 200 && $response['code'] < 300) {
             return $result;

@@ -61,7 +61,7 @@ class proxmox implements DeployInterface
         $url = $this->url . $path;
         $headers = ['Authorization' => 'PVEAPIToken=' . $this->api_user . '=' . $this->api_key];
         $post = $params ? http_build_query($params) : null;
-        $response = curl_client($url, $post, null, null, $headers, $this->proxy);
+        $response = http_request($url, $post, null, null, $headers, $this->proxy);
         if ($response['code'] == 200) {
             $result = json_decode($response['body'], true);
             if (isset($result['data'])) {

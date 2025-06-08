@@ -98,7 +98,7 @@ class doge implements DeployInterface
         $headers = ['Authorization' => $authorization];
         if($body && $json) $headers['Content-Type'] = 'application/json';
         $url = 'https://api.dogecloud.com'.$path;
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy);
         $result = json_decode($response['body'], true);
         if(isset($result['code']) && $result['code'] == 200){
             return $result['data'] ?? true;

@@ -74,7 +74,7 @@ class kuocai implements DeployInterface
         $body = $json ? json_encode($params) : $params;
         $headers = [];
         if ($json) $headers['Content-Type'] = 'application/json';
-        $response = curl_client(
+        $response = http_request(
             $url,
             $body,
             null,

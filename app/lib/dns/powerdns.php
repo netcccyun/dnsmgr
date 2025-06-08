@@ -380,7 +380,7 @@ class powerdns implements DnsInterface
             $headers['Content-Type'] = 'application/json';
         }
         try {
-            $response = curl_client($url, $body, null, null, $headers, $this->proxy, $method);
+            $response = http_request($url, $body, null, null, $headers, $this->proxy, $method);
         } catch (Exception $e) {
             $this->setError($e->getMessage());
             return false;

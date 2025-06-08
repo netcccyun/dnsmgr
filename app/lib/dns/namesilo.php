@@ -197,7 +197,7 @@ class namesilo implements DnsInterface
         $url .= '?' . http_build_query($params);
 
         try{
-            $response = curl_client($url, null, null, null, null, $this->proxy);
+            $response = http_request($url, null, null, null, null, $this->proxy);
         }catch(Exception $e){
             $this->setError($e->getMessage());
             return false;
