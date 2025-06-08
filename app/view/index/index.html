@@ -72,7 +72,23 @@
 <!-- /.row -->
 <div class="row">
 	<div class="col-md-12">
-		<div id="browser-notice"></div>
+		<div id="browser-notice">
+			{if $info.no_https}
+			<div class="panel panel-default">
+				<div class="panel-body">
+					<b style='color:#CC3022;'><i class='fa fa-info-circle fa-fw'></i></b>当前正在使用HTTP访问，可能存在被窃取敏感信息风险，请使用HTTPS访问！
+				</div>
+			</div>
+			{/if}
+			{if $info.old_browser}
+			<div class="panel panel-default">
+				<div class="panel-body">
+					当前浏览器是兼容模式，为确保后台功能正常使用，请切换到<b style='color:#51b72f'>极速模式</b>！<br>
+					操作方法：点击浏览器地址栏右侧的IE符号<b style='color:#51b72f;'><i class='fa fa-internet-explorer fa-fw'></i></b>→选择“<b style='color:#51b72f;'><i class='fa fa-flash fa-fw'></i></b><b style='color:#51b72f;'>极速模式</b>”
+				</div>
+			</div>
+			{/if}
+		</div>
 	</div>
     <div class="col-md-4 col-sm-12">
         <div class="box box-primary">
@@ -129,18 +145,22 @@
             </div>
             <table class="table table-bordered">
                 <tbody>
-                <tr>
+				<tr>
                     <td class="query-title">框架版本</td>
                     <td class="query-result">{$info.framework_version}</td>
-                </tr>
+				</tr>
                 <tr>
                     <td class="query-title">PHP版本</td>
                     <td class="query-result">{$info.php_version}</td>
                 </tr>
                 <tr>
-                    <td class="query-title">MySQL版本</td>
+                    <td class="query-title">数据库版本</td>
                     <td class="query-result">{$info.mysql_version}</td>
                 </tr>
+				<tr>
+                    <td class="query-title">Web服务器</td>
+                    <td class="query-result">{$info.software}</td>
+				</tr>
                 <tr>
                     <td class="query-title">服务器时间</td>
                     <td class="query-result">{$info.date}</td>
@@ -219,19 +239,5 @@ function cleancache(){
 		}
 	});
 }
-</script>
-<script>
-function speedModeNotice(){
-	var ua = window.navigator.userAgent;
-	if(ua.indexOf('Windows NT')>-1 && ua.indexOf('Trident/')>-1){
-		var html = "<div class=\"panel panel-default\"><div class=\"panel-body\">当前浏览器是兼容模式，为确保后台功能正常使用，请切换到<b style='color:#51b72f'>极速模式</b>！<br>操作方法：点击浏览器地址栏右侧的IE符号<b style='color:#51b72f;'><i class='fa fa-internet-explorer fa-fw'></i></b>→选择“<b style='color:#51b72f;'><i class='fa fa-flash fa-fw'></i></b><b style='color:#51b72f;'>极速模式</b>”</div></div>";
-		$("#browser-notice").html(html)
-	}
-	else if(window.location.protocol.indexOf("https")==-1){
-		var html = "<div class=\"panel panel-default\"><div class=\"panel-body\"><b style='color:#CC3022;'><i class='fa fa-info-circle fa-fw'></i></b>当前正在使用HTTP访问，可能存在被窃取敏感信息风险，请使用HTTPS访问！</div></div>";
-		$("#browser-notice").html(html)
-	}
-}
-speedModeNotice();
 </script>
 {/block}

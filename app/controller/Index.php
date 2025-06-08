@@ -26,7 +26,7 @@ class Index extends BaseController
                 $stat['tasks'] = Db::name('dmtask')->count();
                 $stat['certs'] = Db::name('cert_order')->count();
                 $stat['deploys'] = Db::name('cert_deploy')->count();
-                
+
                 $run_time = config_get('run_time', null, true);
                 $run_state = $run_time ? (time() - strtotime($run_time) > 10 ? 0 : 1) : 0;
                 $stat['dmonitor_state'] = $run_state;
@@ -42,7 +42,7 @@ class Index extends BaseController
                 $stat['certorder_status_5'] = Db::name('cert_order')->where('status', '<', 0)->count();
                 $stat['certorder_status_6'] = Db::name('cert_order')->where('expiretime', '<', date('Y-m-d H:i:s', time() + 86400 * 7))->where('expiretime', '>=', date('Y-m-d H:i:s'))->count();
                 $stat['certorder_status_7'] = Db::name('cert_order')->where('expiretime', '<', date('Y-m-d H:i:s'))->count();
-                
+
                 $stat['certdeploy_status_0'] = Db::name('cert_deploy')->where('status', 0)->count();
                 $stat['certdeploy_status_1'] = Db::name('cert_deploy')->where('status', 1)->count();
                 $stat['certdeploy_status_2'] = Db::name('cert_deploy')->where('status', -1)->count();
@@ -67,6 +67,8 @@ class Index extends BaseController
             'software' => $_SERVER['SERVER_SOFTWARE'],
             'os' => php_uname(),
             'date' => date("Y-m-d H:i:s"),
+	        'no_https' => ! $this->request->isSsl(),
+	        'old_browser' => str_contains($this->request->header('User-Agent'), 'Windows NT') && str_contains($this->request->header('User-Agent'), 'Trident'),
         ];
         View::assign('info', $info);
         View::assign('checkupdate', '//auth.cccyun.cc/app/dnsmgr.php?ver=' . config('app.version'));
