@@ -123,9 +123,9 @@ class btwaf implements DeployInterface
 
         $now_time = time();
         $headers = [
-            'waf_request_time: ' . $now_time,
-            'waf_request_token: ' . md5($now_time . md5($this->key)),
-            'Content-Type: application/json',
+            'waf_request_time' => $now_time,
+            'waf_request_token' => md5($now_time . md5($this->key)),
+            'Content-Type' => 'application/json',
         ];
         $post = $params ? json_encode($params) : null;
         $response = curl_client($url, $post, null, null, $headers, $this->proxy, 'POST');

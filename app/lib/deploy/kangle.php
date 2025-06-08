@@ -117,8 +117,8 @@ class kangle implements DeployInterface
         $response = curl_client($url, null, null, null, null, $this->proxy);
         if ($response['code'] == 302 && !empty($response['redirect_url'])) {
             $cookie = '';
-            if (preg_match_all('/Set-Cookie: (.*);/iU', $response['header'], $matchs)) {
-                foreach ($matchs[1] as $val) {
+            if (isset($response['headers']['Set-Cookie'])) {
+                foreach ($response['headers']['Set-Cookie'] as $val) {
                     $arr = explode('=', $val);
                     if ($arr[1] == '' || $arr[1] == 'deleted') continue;
                     $cookie .= $val . '; ';
@@ -168,8 +168,8 @@ class kangle implements DeployInterface
         $response = curl_client($url, http_build_query($post), $referer, null, null, $this->proxy);
         if ($response['code'] == 302) {
             $cookie = '';
-            if (preg_match_all('/Set-Cookie: (.*);/iU', $response['header'], $matchs)) {
-                foreach ($matchs[1] as $val) {
+            if (isset($response['headers']['Set-Cookie'])) {
+                foreach ($response['headers']['Set-Cookie'] as $val) {
                     $arr = explode('=', $val);
                     if ($arr[1] == '' || $arr[1] == 'deleted') continue;
                     $cookie .= $val . '; ';

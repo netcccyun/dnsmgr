@@ -101,8 +101,8 @@ class upyun implements DeployInterface
         $result = json_decode($response['body'], true);
         if (isset($result['data']['result']) && $result['data']['result'] == true) {
             $cookie = '';
-            if (preg_match_all('/Set-Cookie: (.*);/iU', $response['header'], $matchs)) {
-                foreach ($matchs[1] as $val) {
+            if (isset($response['headers']['Set-Cookie'])) {
+                foreach ($response['headers']['Set-Cookie'] as $val) {
                     $arr = explode('=', $val);
                     if ($arr[1] == '' || $arr[1] == 'deleted') continue;
                     $cookie .= $val . '; ';

@@ -1,50 +1,52 @@
 <?php
 // 应用公共文件
 use think\facade\Db;
-use think\facade\Config;
 use think\facade\Request;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 
-function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $header = 0, $ua = 0, $nobody = 0, $addheader = 0)
+function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $ua = 0, $nobody = 0, $addheader = [])
 {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    $httpheader[] = "Accept: */*";
-    $httpheader[] = "Accept-Encoding: gzip,deflate,sdch";
-    $httpheader[] = "Accept-Language: zh-CN,zh;q=0.8";
-    $httpheader[] = "Connection: close";
-    if ($addheader) {
-        $httpheader = array_merge($httpheader, $addheader);
-    }
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $httpheader);
-    if ($post) {
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-    }
-    if ($header) {
-        curl_setopt($ch, CURLOPT_HEADER, true);
+    $options = [
+        'timeout' => 10,
+        'verify' => false,
+        'headers' => [
+            'Content-Type' => 'application/x-www-form-urlencoded',
+            'User-Agent' => $ua ?: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+        ],
+        'http_errors' => false // 不抛出异常
+    ];
+
+    $options['headers'] = array_merge($options['headers'], $addheader);
+    if ($referer) {
+        $options['headers']['Referer'] = $referer;
     }
     if ($cookie) {
-        curl_setopt($ch, CURLOPT_COOKIE, $cookie);
+        $options['headers']['Cookie'] = $cookie;
     }
-    if ($referer) {
-        curl_setopt($ch, CURLOPT_REFERER, $referer);
+
+    $method = 'GET';
+    if ($post) {
+        $method = 'POST';
+        if (is_array($post)) {
+            $options['form_params'] = $post;
+        } else {
+            $options['body'] = $post;
+        }
     }
-    if ($ua) {
-        curl_setopt($ch, CURLOPT_USERAGENT, $ua);
-    } else {
-        curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Linux; U; Android 4.0.4; es-mx; HTC_One_X Build/IMM76D) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0");
+
+    try {
+        $client = new Client();
+        $response = $client->request($method, $url, $options);
+
+        if ($nobody) {
+            return '';
+        }
+
+        return $response->getBody()->getContents();
+    } catch (GuzzleException $e) {
+        return '';
     }
-    if ($nobody) {
-        curl_setopt($ch, CURLOPT_NOBODY, 1);
-    }
-    curl_setopt($ch, CURLOPT_ENCODING, "gzip");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    $ret = curl_exec($ch);
-    curl_close($ch);
-    return $ret;
 }
 
 function real_ip($type = 0)
@@ -319,47 +321,41 @@ function getMainDomain($host)
 
 function check_proxy($url, $proxy_server, $proxy_port, $type, $proxy_user, $proxy_pwd)
 {
-    $ch = curl_init($url);
-    if ($type == 'https') {
-        $proxy_type = CURLPROXY_HTTPS;
-    } elseif ($type == 'sock4') {
-        $proxy_type = CURLPROXY_SOCKS4;
-    } elseif ($type == 'sock5') {
-        $proxy_type = CURLPROXY_SOCKS5;
-    } elseif ($type == 'sock5h') {
-        $proxy_type = CURLPROXY_SOCKS5_HOSTNAME;
-    } else {
-        $proxy_type = CURLPROXY_HTTP;
-    }
-    curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
-    curl_setopt($ch, CURLOPT_PROXY, $proxy_server);
-    curl_setopt($ch, CURLOPT_PROXYPORT, intval($proxy_port));
+    match ($type) {
+        'https' => $proxy_string = 'https://',
+        'sock4' => $proxy_string = 'socks4://',
+        'sock5' => $proxy_string = 'socks5://',
+        'sock5h' => $proxy_string = 'socks5h://',
+        default => $proxy_string = 'http://',
+    };
+
     if (!empty($proxy_user) && !empty($proxy_pwd)) {
-        curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxy_user . ':' . $proxy_pwd);
+        $proxy_string .= $proxy_user . ':' . $proxy_pwd . '@';
     }
-    curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy_type);
-    $httpheader[] = "Accept: */*";
-    $httpheader[] = "Accept-Language: zh-CN,zh;q=0.8";
-    $httpheader[] = "Connection: close";
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $httpheader);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36');
-    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-    curl_exec($ch);
-    $errno = curl_errno($ch);
-    if ($errno) {
-        $errmsg = curl_error($ch);
-        curl_close($ch);
-        throw new Exception($errmsg);
-    }
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    if ($httpCode >= 200 && $httpCode < 400) {
-        return true;
-    } else {
-        throw new Exception('HTTP状态码异常：' . $httpCode);
+
+    $proxy_string .= $proxy_server . ':' . intval($proxy_port);
+    $options = [
+        'proxy' => $proxy_string,
+        'timeout' => 3,
+        'connect_timeout' => 3,
+        'verify' => false,
+        'headers' => [
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+        ]
+    ];
+
+    try {
+        $client = new Client();
+        $response = $client->request('GET', $url, $options);
+        $httpCode = $response->getStatusCode();
+
+        if ($httpCode >= 200 && $httpCode < 400) {
+            return true;
+        } else {
+            throw new Exception('HTTP状态码异常：' . $httpCode);
+        }
+    } catch (GuzzleException $e) {
+        throw new Exception($e->getMessage());
     }
 }
 
@@ -394,59 +390,94 @@ function clearDirectory($dir): bool
     return true;
 }
 
-function curl_client($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 5, $default_headers = true)
+function curl_client($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 5)
 {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    if ($default_headers === true) {
-        $httpheader[] = "Accept: */*";
-        $httpheader[] = "Accept-Language: zh-CN,zh;q=0.8";
-        $httpheader[] = "Connection: close";
-        if ($headers) {
-            $httpheader = array_merge($headers, $httpheader);
-        }
-    } else {
-        $httpheader = $headers;
+    $options = [
+        'timeout' => $timeout,
+        'connect_timeout' => $timeout,
+        'allow_redirects' => false,
+        'verify' => false,
+        'headers' => [
+            'Content-Type' => 'application/x-www-form-urlencoded',
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+        ],
+        'http_errors' => false // 不抛出异常
+    ];
+
+    // 默认请求方法
+    if (!$method) {
+        $method = $data ? 'POST' : 'GET';
     }
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $httpheader);
-    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36");
-    curl_setopt($ch, CURLOPT_HEADER, true);
-    if ($data) {
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    // 处理头部
+    if (is_array($headers)) {
+        $options['headers'] = array_merge($options['headers'], $headers);
     }
+    // 处理Cookie
     if ($cookie) {
-        curl_setopt($ch, CURLOPT_COOKIE, $cookie);
+        $options['headers']['Cookie'] = $cookie;
     }
+    // 处理Referer
     if ($referer) {
-        curl_setopt($ch, CURLOPT_REFERER, $referer);
+        $options['headers']['Referer'] = $referer;
     }
-    if ($method) {
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+    // 处理数据
+    if ($data) {
+        if ($method !== 'GET') {
+            $options['body'] = $data;
+        } else {
+            // 兼容已经存在查询字符串的情况
+            if (!str_contains($url, '?')) {
+                $options['query'] = $data;
+            }
+        }
     }
-
+    // 处理代理
     if ($proxy) {
-        curl_set_proxy($ch);
+        $proxy_server = config_get('proxy_server');
+        $proxy_port = intval(config_get('proxy_port'));
+        $proxy_userpwd = config_get('proxy_user').':'.config_get('proxy_pwd');
+        $proxy_type = config_get('proxy_type');
+
+        if (empty($proxy_server) || empty($proxy_port)) {
+            throw new Exception('代理服务器或端口未配置');
+        }
+
+        match ($proxy_type) {
+            'https' => $proxy_string = 'https://',
+            'sock4' => $proxy_string = 'socks4://',
+            'sock5' => $proxy_string = 'socks5://',
+            'sock5h' => $proxy_string = 'socks5h://',
+            default => $proxy_string = 'http://',
+        };
+
+        if ($proxy_userpwd != ':') {
+            $proxy_string .= $proxy_userpwd . '@';
+        }
+
+        $proxy_string .= $proxy_server . ':' . $proxy_port;
+        $options['proxy'] = $proxy_string;
     }
 
-    $ret = curl_exec($ch);
-    $errno = curl_errno($ch);
-    if ($errno) {
-        $errmsg = curl_error($ch);
-        curl_close($ch);
-        throw new Exception('Curl error: ' . $errmsg);
+    try {
+        $client = new Client();
+        $response = $client->request($method, $url, $options);
+        $code = $response->getStatusCode();
+
+        // 取重定向URL
+        $redirect_url = '';
+        if ($code >= 300 && $code < 400) {
+            $redirect_url = $response->getHeaderLine('Location');
+        }
+
+        return [
+            'code' => $code,
+            'redirect_url' => $redirect_url,
+            'headers' => $response->getHeaders(),
+            'body' => $response->getBody()->getContents()
+        ];
+    } catch (GuzzleException $e) {
+        throw new Exception('请求失败: ' . $e->getMessage());
     }
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-    $redirect_url = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
-    curl_close($ch);
-    $header = substr($ret, 0, $headerSize);
-    $body = substr($ret, $headerSize);
-    return ['code' => $httpCode, 'redirect_url' => $redirect_url, 'header' => $header, 'body' => $body];
 }
 
 function curl_set_proxy(&$ch)

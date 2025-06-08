@@ -59,7 +59,7 @@ class proxmox implements DeployInterface
     private function send_request($path, $params = null)
     {
         $url = $this->url . $path;
-        $headers = ['Authorization: PVEAPIToken=' . $this->api_user . '=' . $this->api_key];
+        $headers = ['Authorization' => 'PVEAPIToken=' . $this->api_user . '=' . $this->api_key];
         $post = $params ? http_build_query($params) : null;
         $response = curl_client($url, $post, null, null, $headers, $this->proxy);
         if ($response['code'] == 200) {
@@ -75,12 +75,7 @@ class proxmox implements DeployInterface
                 throw new Exception('返回数据解析失败');
             }
         } else {
-            $header = getSubstr($response['header'], ' ', "\r\n");
-            if ($header) {
-                throw new Exception($header);
-            } else {
-                throw new Exception('请求失败(httpCode=' . $response['code'] . ')');
-            }
+            throw new Exception('请求失败(httpCode=' . $response['code'] . ', body=' . $response['body'] . ')');
         }
     }
 

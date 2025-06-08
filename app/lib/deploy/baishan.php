@@ -56,7 +56,7 @@ class baishan implements DeployInterface
         $headers = [];
         $body = null;
         if ($params) {
-            $headers[] = 'Content-Type: application/json';
+            $headers['Content-Type'] = 'application/json';
             $body = json_encode($params);
         }
         $response = curl_client($url, $body, null, null, $headers, $this->proxy);

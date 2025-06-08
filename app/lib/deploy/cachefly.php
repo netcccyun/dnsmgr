@@ -37,10 +37,10 @@ class cachefly implements DeployInterface
     private function request($path, $params = null, $method = null)
     {
         $url = $this->url . $path;
-        $headers = ['x-cf-authorization: Bearer ' . $this->apikey];
+        $headers = ['x-cf-authorization' => 'Bearer ' . $this->apikey];
         $body = null;
         if ($params) {
-            $headers[] = 'Content-Type: application/json';
+            $headers['Content-Type'] = 'application/json';
             $body = json_encode($params);
         }
         $response = curl_client($url, $body, null, null, $headers, $this->proxy, $method);
