@@ -392,7 +392,21 @@ function clearDirectory($dir): bool
     return true;
 }
 
-function http_request($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 5)
+/**
+ * 发送 HTTP 请求
+ *
+ * @param string $url 请求URL
+ * @param mixed $data 请求数据，可以是字符串或数组，数组将自动序列化
+ * @param string|null $referer 请求的Referer头部
+ * @param array|null $cookie 请求的Cookie头部
+ * @param array|null $headers 其他自定义请求头部
+ * @param bool $proxy 是否使用代理
+ * @param string|null $method 请求方法，默认为GET或POST（如果$data不为空）
+ * @param int $timeout 请求超时时间，默认为10秒
+ * @return array 包含HTTP状态码、重定向URL、响应头和响应体的数组
+ * @throws Exception
+ */
+function http_request($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 10)
 {
     $options = [
         'timeout' => $timeout,
@@ -424,10 +438,35 @@ function http_request($url, $data = null, $referer = null, $cookie = null, $head
     // 处理数据
     if ($data) {
         if ($method !== 'GET') {
-            if (!isset($options['headers']['Content-Type'])) {
-                $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+            if (is_string($data)) {
+                $options['body'] = $data;
+                if (!isset($options['headers']['Content-Type'])) {
+                    if (json_validate($data)) {
+                        // json
+                        $options['headers']['Content-Type'] = 'application/json';
+                    } elseif (str_contains($data, '=') || str_contains($data, '&')) {
+                        // 表单
+                        $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+                    }
+                }
+            } else if (is_array($data) || is_object($data)) {
+                if (!isset($options['headers']['Content-Type'])) {
+                    // 默认为表单
+                    $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+                }
+                if ($options['headers']['Content-Type'] == 'application/x-www-form-urlencoded') {
+                    // 表单
+                    $options['form_params'] = $data;
+                } else if ($options['headers']['Content-Type'] == 'application/json') {
+                    // json
+                    $options['json'] = $data;
+                } else {
+                    // 其他
+                    $options['body'] = http_build_query($data);
+                }
+            } else {
+                $options['body'] = $data;
             }
-            $options['body'] = $data;
         } else {
             // 兼容已经存在查询字符串的情况
             if (!str_contains($url, '?')) {
