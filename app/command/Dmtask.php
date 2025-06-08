@@ -45,7 +45,7 @@ class Dmtask extends Command
 
     private function runtask()
     {
-        \Co::set(['hook_flags' => SWOOLE_HOOK_ALL]);
+        \Co::set(['hook_flags' => SWOOLE_HOOK_ALL ^ SWOOLE_HOOK_NATIVE_CURL]);
         \Co\run(function () {
             $date = date("Ymd");
             $count = config_get('run_count', null, true) ?? 0;

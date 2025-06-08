@@ -12,17 +12,12 @@ class CheckUtils
         if (!$urlarr) {
             return ['status' => false, 'errmsg' => 'Invalid URL', 'usetime' => 0];
         }
-        if (substr($urlarr['host'], 0, 1) == '[' && substr($urlarr['host'], -1) == ']') {
-            $urlarr['host'] = substr($urlarr['host'], 1, -1);
-        }
-        if (!empty($ip) && !filter_var($urlarr['host'], FILTER_VALIDATE_IP)) {
-            if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-                $ip = gethostbyname($ip);
-            }
-            if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP)) {
-                $port = isset($urlarr['port']) ? $urlarr['port'] : ($urlarr['scheme'] == 'https' ? 443 : 80);
-                $resolve = $urlarr['host'] . ':' . $port . ':' . $ip;
-            }
+	    if (str_starts_with($urlarr['host'], '[') && str_ends_with($urlarr['host'], ']')) {
+		    $urlarr['host'] = substr($urlarr['host'], 1, -1);
+	    }
+        if (!empty($ip) && !filter_var($urlarr['host'], FILTER_VALIDATE_IP) && filter_var($ip, FILTER_VALIDATE_IP)) {
+	        $port = $urlarr['port'] ?? ($urlarr['scheme'] == 'https' ? 443 : 80);
+	        $resolve = $urlarr['host'] . ':' . $port . ':' . $ip;
         }
         $ch = curl_init();
         if ($proxy) {
@@ -83,12 +78,12 @@ class CheckUtils
     public static function tcp($target, $ip, $port, $timeout)
     {
         if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP)) $target = $ip;
-        if (substr($target, -1) == '.') $target = substr($target, 0, -1);
+        if (str_ends_with($target, '.')) $target = substr($target, 0, -1);
         if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
             $target = gethostbyname($target);
             if (!$target) return ['status' => false, 'errmsg' => 'DNS resolve failed', 'usetime' => 0];
         }
-        if (filter_var($target, FILTER_VALIDATE_IP) && strpos($target, ':') !== false) {
+        if (filter_var($target, FILTER_VALIDATE_IP) && str_contains($target, ':')) {
             $target = '['.$target.']';
         }
         $starttime = getMillisecond();
@@ -108,7 +103,7 @@ class CheckUtils
     {
         if (!function_exists('exec')) return ['status' => false, 'errmsg' => 'exec函数不可用', 'usetime' => 0];
         if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP)) $target = $ip;
-        if (substr($target, -1) == '.') $target = substr($target, 0, -1);
+        if (str_ends_with($target, '.')) $target = substr($target, 0, -1);
         if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
             $target = gethostbyname($target);
             if (!$target) return ['status' => false, 'errmsg' => 'DNS resolve failed', 'usetime' => 0];
@@ -117,7 +112,7 @@ class CheckUtils
             return ['status' => false, 'errmsg' => 'Invalid IP address', 'usetime' => 0];
         }
         $timeout = 1;
-        exec('ping -c 1 -w '.$timeout.' '.$target.'', $output, $return_var);
+        exec('ping -c 1 -w '.$timeout.' '.$target, $output, $return_var);
         $usetime = !empty($output[1]) ? round(getSubstr($output[1], 'time=', ' ms')) : 0;
         $errmsg = null;
         if ($return_var !== 0) {
