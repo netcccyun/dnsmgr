@@ -7,8 +7,6 @@ use Exception;
 use think\facade\Db;
 use think\facade\View;
 use think\facade\Cache;
-use app\lib\DnsHelper;
-use app\utils\MsgNotice;
 
 class Index extends BaseController
 {
@@ -63,7 +61,7 @@ class Index extends BaseController
         $tmp = 'version()';
         $mysqlVersion = Db::query("select version()")[0][$tmp];
         $info = [
-            'framework_version' => app()::VERSION,
+            'framework_version' => app()->version(),
             'php_version' => PHP_VERSION,
             'mysql_version' => $mysqlVersion,
             'software' => $_SERVER['SERVER_SOFTWARE'],
