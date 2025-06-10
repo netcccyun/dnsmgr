@@ -83,9 +83,6 @@ class CheckUtils
         } catch (GuzzleException $e) {
             $status = false;
             $errmsg = guzzle_error($e);
-            if (strlen($errmsg) > 100) {
-                $errmsg = substr($errmsg, 0, 97) . '...';
-            }
         }
 
         $usetime = round((microtime(true) - $start) * 1000);
