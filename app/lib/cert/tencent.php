@@ -110,7 +110,7 @@ class tencent implements CertInterface
             'ServiceType' => 'nginx',
         ];
         $data = $this->request('DescribeDownloadCertificateUrl', $param);
-        $file_data = curl_client($data['DownloadCertificateUrl'], null, null, null, null, $this->proxy);
+        $file_data = http_request($data['DownloadCertificateUrl'], null, null, null, null, $this->proxy);
         $file_data = $file_data['body'] ?? null;
         if (empty($file_data)) throw new Exception('下载证书失败');
         $file_path = app()->getRuntimePath() . 'cert/' . $data['DownloadFilename'];

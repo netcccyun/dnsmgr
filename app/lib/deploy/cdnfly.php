@@ -44,13 +44,13 @@ class cdnfly implements DeployInterface
     private function request($path, $params = null, $method = null)
     {
         $url = $this->url . $path;
-        $headers = ['api-key: ' . $this->api_key, 'api-secret: ' . $this->api_secret];
+        $headers = ['api-key' => $this->api_key, 'api-secret' => $this->api_secret];
         $body = null;
         if ($params) {
-            $headers[] = 'Content-Type: application/json';
+            $headers['Content-Type'] = 'application/json';
             $body = json_encode($params);
         }
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy, $method);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy, $method);
         $result = json_decode($response['body'], true);
         if (isset($result['code']) && $result['code'] == 0) {
             return isset($result['data']) ? $result['data'] : null;

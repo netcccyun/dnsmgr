@@ -273,7 +273,7 @@ class wangsu implements DeployInterface
                 } elseif ($cert_name == $cert['name']) {
                     $this->log('证书' . $cert_name . '已存在，但序列号（' . $cert['certificate-id'] . '）不匹配，准备重新上传');
                     try {
-                        $this->request('/api/certificate/' . $cert['certificate-id'], [['name'] => $cert_name . '-bak'], true, null, 'PUT');
+                        $this->request('/api/certificate/' . $cert['certificate-id'], ['name' => $cert_name . '-bak'], true, null, 'PUT');
                     } catch (Exception $e) {
                         throw new Exception('证书更名失败：' . $e->getMessage());
                     }
@@ -416,29 +416,29 @@ class wangsu implements DeployInterface
 
         if (empty($headers)) {
             $headers = [
-                'Authorization: ' . $authorization,
-                'Date: ' . $date,
-                'Accept: application/json',
-                'Connection: close',
+                'Authorization' => $authorization,
+                'Date' => $date,
+                'Accept' => 'application/json',
+                'Connection' => 'close',
             ];
         } else {
-            $headers[] = 'Authorization: ' . $authorization;
-            $headers[] = 'Date: ' . $date;
-            $headers[] = 'Accept: application/json';
-            $headers[] = 'Connection: close';
+            $headers['Authorization'] = $authorization;
+            $headers['Date'] = $date;
+            $headers['Accept'] = 'application/json';
+            $headers['Connection'] = 'close';
         }
 
         if ($body && $json) {
-            $headers[] = 'Content-Type: application/json';
+            $headers['Content-Type'] = 'application/json';
         }
 
         $url = 'https://open.chinanetcenter.com' . $path;
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy, $method, 30, false);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy, $method, 30);
         $result = json_decode($response['body'], true);
 
         if ((isset($response['code']) && $response['code'] == 201) || (isset($response['code']) && $response['code'] == 200 && $getLocation === true)) {
-            if (preg_match('/Location:\s*(.*)/i', $response['header'], $matches)) {
-                $location = trim($matches[1]); // 提取 Location 头部的值并去除多余空格
+            if (isset($response['headers']['Location'])) {
+                $location = trim(array_shift($response['headers']['Location'])); // 提取 Location 头部的值并去除多余空格
                 if (!empty($location)) {
                     return $location;
                 }

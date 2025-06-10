@@ -44,7 +44,7 @@ class DnsQueryUtils
         $data = get_curl($url);
         $arr = json_decode($data, true);
         if (!$arr) {
-            unset($doh_servers[$id]);
+            unset(self::$doh_servers[$id]);
             $id = array_rand(self::$doh_servers);
             $url = self::$doh_servers[$id].'?name='.urlencode($domain).'&type='.$dns_type[$type];
             $data = get_curl($url);

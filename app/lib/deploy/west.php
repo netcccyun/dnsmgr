@@ -103,7 +103,7 @@ class west implements DeployInterface
         $params['username'] = $this->username;
         $params['time'] = getMillisecond();
         $params['token'] = md5($this->username . $this->api_password . $params['time']);
-        $response = curl_client($this->baseUrl . $path, str_replace('+', '%20', http_build_query($params)), null, null, null, $this->proxy);
+        $response = http_request($this->baseUrl . $path, str_replace('+', '%20', http_build_query($params)), null, null, null, $this->proxy);
         $response = mb_convert_encoding($response['body'], 'UTF-8', 'GBK');
         $arr = json_decode($response, true);
         if ($arr) {

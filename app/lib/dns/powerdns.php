@@ -369,7 +369,7 @@ class powerdns implements DnsInterface
     private function send_reuqest($method, $path, $params = null)
     {
         $url = $this->url . $path;
-        $headers[] = 'X-API-Key: ' . $this->apikey;
+        $headers['X-API-Key'] = $this->apikey;
         $body = null;
         if ($method == 'GET' || $method == 'DELETE') {
             if ($params) {
@@ -377,10 +377,10 @@ class powerdns implements DnsInterface
             }
         } else {
             $body = json_encode($params);
-            $headers[] = 'Content-Type: application/json';
+            $headers['Content-Type'] = 'application/json';
         }
         try {
-            $response = curl_client($url, $body, null, null, $headers, $this->proxy, $method);
+            $response = http_request($url, $body, null, null, $headers, $this->proxy, $method);
         } catch (Exception $e) {
             $this->setError($e->getMessage());
             return false;
@@ -404,6 +404,5 @@ class powerdns implements DnsInterface
     private function setError($message)
     {
         $this->error = $message;
-        //file_put_contents('logs.txt',date('H:i:s').' '.$message."\r\n", FILE_APPEND);
     }
 }

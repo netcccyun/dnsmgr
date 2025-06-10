@@ -71,7 +71,7 @@ class kangle implements DeployInterface
             'certificate' => $fullchain,
             'certificate_key' => $privatekey,
         ];
-        $response = curl_client($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
+        $response = http_request($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
         if (strpos($response['body'], '成功')) {
             return true;
         } elseif (preg_match('/alert\(\'(.*?)\'\)/i', $response['body'], $match)) {
@@ -90,7 +90,7 @@ class kangle implements DeployInterface
             'certificate' => $fullchain,
             'certificate_key' => $privatekey,
         ];
-        $response = curl_client($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
+        $response = http_request($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
         if (strpos($response['body'], '成功')) {
             return true;
         } elseif (preg_match('/alert\(\'(.*?)\'\)/i', $response['body'], $match)) {
@@ -114,11 +114,11 @@ class kangle implements DeployInterface
     private function loginBySkey()
     {
         $url = $this->url . '/vhost/index.php?c=sso&a=hello&url=' . urlencode($this->url . '/index.php?');
-        $response = curl_client($url, null, null, null, null, $this->proxy);
+        $response = http_request($url, null, null, null, null, $this->proxy);
         if ($response['code'] == 302 && !empty($response['redirect_url'])) {
             $cookie = '';
-            if (preg_match_all('/Set-Cookie: (.*);/iU', $response['header'], $matchs)) {
-                foreach ($matchs[1] as $val) {
+            if (isset($response['headers']['Set-Cookie'])) {
+                foreach ($response['headers']['Set-Cookie'] as $val) {
                     $arr = explode('=', $val);
                     if ($arr[1] == '' || $arr[1] == 'deleted') continue;
                     $cookie .= $val . '; ';
@@ -147,7 +147,7 @@ class kangle implements DeployInterface
     {
         $s = md5($sess_key . $this->username . $sess_key . $this->skey);
         $url = $this->url . '/vhost/index.php?c=sso&a=login&name=' . $this->username . '&r=' . $sess_key . '&s=' . $s;
-        $response = curl_client($url, null, null, $cookie, null, $this->proxy);
+        $response = http_request($url, null, null, $cookie, null, $this->proxy);
         if ($response['code'] == 302) {
             return true;
         } elseif (strlen($response['body']) > 3 && strlen($response['body']) < 50) {
@@ -165,11 +165,11 @@ class kangle implements DeployInterface
             'username' => $this->username,
             'passwd' => $this->password,
         ];
-        $response = curl_client($url, http_build_query($post), $referer, null, null, $this->proxy);
+        $response = http_request($url, http_build_query($post), $referer, null, null, $this->proxy);
         if ($response['code'] == 302) {
             $cookie = '';
-            if (preg_match_all('/Set-Cookie: (.*);/iU', $response['header'], $matchs)) {
-                foreach ($matchs[1] as $val) {
+            if (isset($response['headers']['Set-Cookie'])) {
+                foreach ($response['headers']['Set-Cookie'] as $val) {
                     $arr = explode('=', $val);
                     if ($arr[1] == '' || $arr[1] == 'deleted') continue;
                     $cookie .= $val . '; ';
@@ -191,7 +191,7 @@ class kangle implements DeployInterface
     private function getMain()
     {
         $path = '/vhost/';
-        curl_client($this->url . $path, null, null, $this->cookie, null, $this->proxy);
+        http_request($this->url . $path, null, null, $this->cookie, null, $this->proxy);
     }
 
     public function setLogger($func)

@@ -83,16 +83,16 @@ class safeline implements DeployInterface
     private function request($path, $params = null)
     {
         $url = $this->url . $path;
-        $headers = ['X-SLCE-API-TOKEN: ' . $this->token];
+        $headers = ['X-SLCE-API-TOKEN' => $this->token];
         $body = null;
         if ($params) {
-            $heders[] = 'Content-Type: application/json';
+            $headers['Content-Type'] = 'application/json';
             $body = json_encode($params);
         }
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy);
         $result = json_decode($response['body'], true);
         if ($response['code'] == 200 && $result) {
-            return isset($result['data']) ? $result['data'] : null;
+            return $result['data'] ?? null;
         } else {
             throw new Exception(!empty($result['msg']) ? $result['msg'] : '请求失败(httpCode=' . $response['code'] . ')');
         }

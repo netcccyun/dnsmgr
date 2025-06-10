@@ -119,19 +119,19 @@ class goedge implements DeployInterface
         $body = null;
         if ($this->accessToken) {
             if ($this->systype == '1') {
-                $headers[] = 'X-Cloud-Access-Token: ' . $this->accessToken;
+                $headers['X-Cloud-Access-Token'] = $this->accessToken;
             } else {
-                $headers[] = 'X-Edge-Access-Token: ' . $this->accessToken;
+                $headers['X-Edge-Access-Token'] = $this->accessToken;
             }
         }
         if ($params) {
-            $headers[] = 'Content-Type: application/json';
+            $headers['Content-Type'] = 'application/json';
             $body = json_encode($params);
         }
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy);
         $result = json_decode($response['body'], true);
         if (isset($result['code']) && $result['code'] == 200) {
-            return isset($result['data']) ? $result['data'] : null;
+            return $result['data'] ?? null;
         } elseif (isset($result['message'])) {
             throw new Exception($result['message']);
         } else {

@@ -128,7 +128,7 @@ class google implements CertInterface
     private function getEAB()
     {
         $api = "https://gts.rat.dev/eab";
-        $response = curl_client($api, null, null, null, null, $this->config['proxy'] == 1, 'GET', 10);
+        $response = http_request($api, null, null, null, null, $this->config['proxy'] == 1, 'GET', 10);
         $result = json_decode($response['body'], true);
         if (!isset($result['msg'])) {
             throw new Exception('解析返回数据失败：' . $response['body']);

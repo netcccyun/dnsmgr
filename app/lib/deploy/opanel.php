@@ -96,15 +96,15 @@ class opanel implements DeployInterface
         $timestamp = time() . '';
         $token = md5('1panel' . $this->key . $timestamp);
         $headers = [
-            '1Panel-Token: ' . $token,
-            '1Panel-Timestamp: ' . $timestamp
+            '1Panel-Token' => $token,
+            '1Panel-Timestamp' => $timestamp
         ];
         $body = $params ? json_encode($params) : '{}';
-        if ($body) $headers[] = 'Content-Type: application/json';
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy);
+        if ($body) $headers['Content-Type'] = 'application/json';
+        $response = http_request($url, $body, null, null, $headers, $this->proxy);
         $result = json_decode($response['body'], true);
         if (isset($result['code']) && $result['code'] == 200) {
-            return isset($result['data']) ? $result['data'] : null;
+            return $result['data'] ?? null;
         } elseif (isset($result['message'])) {
             throw new Exception($result['message']);
         } else {

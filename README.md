@@ -29,7 +29,7 @@
 
 * 从[Release](https://github.com/netcccyun/dnsmgr/releases)页面下载安装包
 
-* 运行环境要求PHP7.4+，MySQL5.6+
+* 运行环境要求PHP8.0+，MySQL5.6+
 
 * 设置网站运行目录为`public`
 
@@ -52,10 +52,13 @@
 * Nginx
 
 ```
+location ~* (runtime|application)/ {
+    return 403;
+}
 location / {
-	if (!-e $request_filename){
-		rewrite  ^(.*)$  /index.php?s=$1  last;   break;
-	}
+    if (!-e $request_filename) {
+        rewrite ^(.*)$ /index.php?s=$1 last; break;
+    }
 }
 ```
 

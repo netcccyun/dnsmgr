@@ -7,8 +7,6 @@ use Exception;
 use think\facade\Db;
 use think\facade\View;
 use think\facade\Cache;
-use app\lib\DnsHelper;
-use app\utils\MsgNotice;
 
 class Index extends BaseController
 {
@@ -28,7 +26,7 @@ class Index extends BaseController
                 $stat['tasks'] = Db::name('dmtask')->count();
                 $stat['certs'] = Db::name('cert_order')->count();
                 $stat['deploys'] = Db::name('cert_deploy')->count();
-                
+
                 $run_time = config_get('run_time', null, true);
                 $run_state = $run_time ? (time() - strtotime($run_time) > 10 ? 0 : 1) : 0;
                 $stat['dmonitor_state'] = $run_state;
@@ -44,7 +42,7 @@ class Index extends BaseController
                 $stat['certorder_status_5'] = Db::name('cert_order')->where('status', '<', 0)->count();
                 $stat['certorder_status_6'] = Db::name('cert_order')->where('expiretime', '<', date('Y-m-d H:i:s', time() + 86400 * 7))->where('expiretime', '>=', date('Y-m-d H:i:s'))->count();
                 $stat['certorder_status_7'] = Db::name('cert_order')->where('expiretime', '<', date('Y-m-d H:i:s'))->count();
-                
+
                 $stat['certdeploy_status_0'] = Db::name('cert_deploy')->where('status', 0)->count();
                 $stat['certdeploy_status_1'] = Db::name('cert_deploy')->where('status', 1)->count();
                 $stat['certdeploy_status_2'] = Db::name('cert_deploy')->where('status', -1)->count();
@@ -63,7 +61,7 @@ class Index extends BaseController
         $tmp = 'version()';
         $mysqlVersion = Db::query("select version()")[0][$tmp];
         $info = [
-            'framework_version' => app()::VERSION,
+            'framework_version' => app()->version(),
             'php_version' => PHP_VERSION,
             'mysql_version' => $mysqlVersion,
             'software' => $_SERVER['SERVER_SOFTWARE'],

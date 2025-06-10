@@ -95,13 +95,13 @@ class doge implements DeployInterface
         $signStr = $path . "\n" . $body;
         $sign = hash_hmac('sha1', $signStr, $this->SecretKey);
         $authorization = "TOKEN " . $this->AccessKey . ":" . $sign;
-        $headers = ['Authorization: ' . $authorization];
-        if($body && $json) $headers[] = 'Content-Type: application/json';
+        $headers = ['Authorization' => $authorization];
+        if($body && $json) $headers['Content-Type'] = 'application/json';
         $url = 'https://api.dogecloud.com'.$path;
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy);
         $result = json_decode($response['body'], true);
         if(isset($result['code']) && $result['code'] == 200){
-            return isset($result['data']) ? $result['data'] : true;
+            return $result['data'] ?? true;
         }elseif(isset($result['msg'])){
             throw new Exception($result['msg']);
         }else{

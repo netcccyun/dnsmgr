@@ -1,4 +1,5 @@
 {
+    "$schema": "https://getcomposer.org/schema.json",
     "name": "netcccyun/dnsmgr",
     "description": "聚合DNS管理系统",
     "type": "project",
@@ -31,40 +32,49 @@
             "email": "admin@kuxi.tech",
             "homepage": "https://www.kuxi.tech",
             "role": "Project Developer"
+        },
+        {
+            "name": "耗子",
+            "email": "haozi@loli.email",
+            "homepage": "https://hzbk.net",
+            "role": "Project Developer"
         }
     ],
     "require": {
-        "php": ">=7.4.0",
-        "ext-pdo": "*",
-        "ext-gd": "*",
+        "php": ">=8.2.0",
         "ext-curl": "*",
-        "ext-openssl": "*",
-        "ext-sockets": "*",
-        "ext-mbstring": "*",
-        "ext-ssh2": "*",
         "ext-ftp": "*",
-        "topthink/framework": "^6.0.0",
-        "topthink/think-orm": "^2.0",
-        "topthink/think-view": "^1.0",
+        "ext-gd": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "ext-pdo": "*",
+        "ext-sockets": "*",
+        "ext-ssh2": "*",
+        "cccyun/php-whois": "^1.0",
         "cccyun/think-captcha": "^3.0",
-        "symfony/polyfill-intl-idn": "^1.31",
-        "symfony/polyfill-php80": "^1.31",
-        "cccyun/php-whois": "^1.0"
+        "guzzlehttp/guzzle": "^7.0",
+        "symfony/polyfill-intl-idn": "^1.32",
+        "symfony/polyfill-mbstring": "^1.32",
+        "symfony/polyfill-php81": "^1.32",
+        "symfony/polyfill-php82": "^1.32",
+        "topthink/framework": "^8.1.0",
+        "topthink/think-orm": "^4.0",
+        "topthink/think-view": "^2.0"
     },
     "require-dev": {
-        "symfony/var-dumper": "^4.2",
+        "symfony/var-dumper": "^7.3",
         "topthink/think-trace":"^1.0",
-        "swoole/ide-helper": "^5.1"
+        "swoole/ide-helper": "^6.0"
     },
     "autoload": {
         "psr-4": {
             "app\\": "app"
-        },
-        "psr-0": {
-            "": "extend/"
         }
     },
     "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "platform-check": false,
         "preferred-install": "dist"
     },
     "scripts": {
@@ -72,5 +82,7 @@
             "@php think service:discover",
             "@php think vendor:publish"
         ]
-    }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }

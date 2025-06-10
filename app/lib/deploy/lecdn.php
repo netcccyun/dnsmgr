@@ -76,16 +76,16 @@ class lecdn implements DeployInterface
         $headers = [];
         $body = null;
         if ($this->accessToken) {
-            $headers[] = 'Authorization: Bearer ' . $this->accessToken;
+            $headers['Authorization'] = 'Bearer ' . $this->accessToken;
         }
         if ($params) {
-            $headers[] = 'Content-Type: application/json;charset=UTF-8';
+            $headers['Content-Type'] = 'application/json;charset=UTF-8';
             $body = json_encode($params);
         }
-        $response = curl_client($url, $body, null, null, $headers, $this->proxy, $method);
+        $response = http_request($url, $body, null, null, $headers, $this->proxy, $method);
         $result = json_decode($response['body'], true);
         if (isset($result['code']) && $result['code'] == 200) {
-            return isset($result['data']) ? $result['data'] : null;
+            return $result['data'] ?? null;
         } elseif (isset($result['message'])) {
             throw new Exception($result['message']);
         } else {

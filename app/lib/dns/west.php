@@ -182,7 +182,7 @@ class west implements DnsInterface
         $params['time'] = getMillisecond();
         $params['token'] = md5($this->username.$this->api_password.$params['time']);
         try{
-            $response = curl_client($this->baseUrl . $path, http_build_query($params), null, null, null, $this->proxy);
+            $response = http_request($this->baseUrl . $path, http_build_query($params), null, null, null, $this->proxy);
         }catch(\Exception $e){
             $this->setError($e->getMessage());
             return false;

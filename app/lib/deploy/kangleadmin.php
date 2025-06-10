@@ -71,7 +71,7 @@ class kangleadmin implements DeployInterface
             'certificate' => $fullchain,
             'certificate_key' => $privatekey,
         ];
-        $response = curl_client($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
+        $response = http_request($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
         if (strpos($response['body'], '成功')) {
             return true;
         } elseif (preg_match('/alert\(\'(.*?)\'\)/i', $response['body'], $match)) {
@@ -90,7 +90,7 @@ class kangleadmin implements DeployInterface
             'certificate' => $fullchain,
             'certificate_key' => $privatekey,
         ];
-        $response = curl_client($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
+        $response = http_request($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
         if (strpos($response['body'], '成功')) {
             return true;
         } elseif (preg_match('/alert\(\'(.*?)\'\)/i', $response['body'], $match)) {
@@ -105,11 +105,11 @@ class kangleadmin implements DeployInterface
     private function login()
     {
         $url = $this->url . $this->path . '/index.php?c=sso&a=hello&url=' . urlencode($this->url . $this->path . '/index.php?');
-        $response = curl_client($url, null, null, null, null, $this->proxy);
+        $response = http_request($url, null, null, null, null, $this->proxy);
         if ($response['code'] == 302 && !empty($response['redirect_url'])) {
             $cookie = '';
-            if (preg_match_all('/Set-Cookie: (.*);/iU', $response['header'], $matchs)) {
-                foreach ($matchs[1] as $val) {
+            if (isset($response['headers']['Set-Cookie'])) {
+                foreach ($response['headers']['Set-Cookie'] as $val) {
                     $arr = explode('=', $val);
                     if ($arr[1] == '' || $arr[1] == 'deleted') continue;
                     $cookie .= $val . '; ';
@@ -138,7 +138,7 @@ class kangleadmin implements DeployInterface
     {
         $s = md5($sess_key . $this->username . $sess_key . $this->skey);
         $url = $this->url . $this->path . '/index.php?c=sso&a=login&name=' . $this->username . '&r=' . $sess_key . '&s=' . $s;
-        $response = curl_client($url, null, null, $cookie, null, $this->proxy);
+        $response = http_request($url, null, null, $cookie, null, $this->proxy);
         if ($response['code'] == 302) {
             return true;
         } elseif (strlen($response['body']) > 3 && strlen($response['body']) < 50) {
@@ -151,9 +151,9 @@ class kangleadmin implements DeployInterface
     private function loginVhost($name)
     {
         $url = $this->url . $this->path . '/index.php?c=vhost&a=impLogin&name=' . $name;
-        $response = curl_client($url, null, null, $this->cookie, null, $this->proxy);
+        $response = http_request($url, null, null, $this->cookie, null, $this->proxy);
         if ($response['code'] == 302) {
-            curl_client($this->url . '/vhost/', null, null, $this->cookie, null, $this->proxy);
+            http_request($this->url . '/vhost/', null, null, $this->cookie, null, $this->proxy);
         } else {
             throw new Exception('用户面板登录失败 (httpCode=' . $response['code'] . ')');
         }

@@ -43,7 +43,7 @@ class synology implements DeployInterface
             'format' => 'sid',
             'enable_syno_token' => 'yes',
         ];
-        $response = curl_client($url, http_build_query($params), null, null, null, $this->proxy);
+        $response = http_request($url, http_build_query($params), null, null, null, $this->proxy);
         $result = json_decode($response['body'], true);
         if (isset($result['success']) && $result['success']) {
             $this->token = $result['data'];
@@ -69,7 +69,7 @@ class synology implements DeployInterface
             '_sid' => $this->token['sid'],
             'SynoToken' => $this->token['synotoken'],
         ];
-        $response = curl_client($url . '?' . http_build_query($params), null, null, $this->proxy);
+        $response = http_request($url . '?' . http_build_query($params), null, null, $this->proxy);
         $result = json_decode($response['body'], true);
         if (isset($result['success']) && $result['success']) {
             $this->log('获取证书列表成功');
@@ -119,7 +119,7 @@ class synology implements DeployInterface
             'id' => $id,
             'desc' => $config['desc'],
         ];
-        $response = curl_client($url . '?' . http_build_query($params), $post, null, null, null, $this->proxy, null, 15);
+        $response = http_request($url . '?' . http_build_query($params), $post, null, null, null, $this->proxy, null, 15);
         unlink($privatekey_file);
         unlink($fullchain_file);
         $result = json_decode($response['body'], true);

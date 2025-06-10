@@ -35,7 +35,7 @@ class upyun implements DeployInterface
             'certificate' => $fullchain,
             'private_key' => $privatekey,
         ];
-        $response = curl_client($url, http_build_query($params), null, $this->cookie, null, $this->proxy);
+        $response = http_request($url, http_build_query($params), null, $this->cookie, null, $this->proxy);
         $result = json_decode($response['body'], true);
         if ($result['data']['status'] === 0) {
             $common_name = $result['data']['result']['commonName'];
@@ -52,7 +52,7 @@ class upyun implements DeployInterface
             'limit' => 100,
             'domain' => $common_name,
         ];
-        $response = curl_client($url . '?' . http_build_query($params), null, null, $this->cookie, null, $this->proxy);
+        $response = http_request($url . '?' . http_build_query($params), null, null, $this->cookie, null, $this->proxy);
         $result = json_decode($response['body'], true);
         if (isset($result['data']['result']) && is_array($result['data']['result'])) {
             $cert_list = $result['data']['result'];
@@ -73,7 +73,7 @@ class upyun implements DeployInterface
                 'new_crt_id' => $certificate_id,
                 'old_crt_id' => $crt_id,
             ];
-            $response = curl_client($url, http_build_query($params), null, $this->cookie, null, $this->proxy);
+            $response = http_request($url, http_build_query($params), null, $this->cookie, null, $this->proxy);
             $result = json_decode($response['body'], true);
             if (isset($result['data']['result']) && $result['data']['result'] == true) {
                 $i++;
@@ -97,12 +97,12 @@ class upyun implements DeployInterface
             'username' => $this->username,
             'password' => $this->password,
         ];
-        $response = curl_client($url, http_build_query($params), null, null, null, $this->proxy);
+        $response = http_request($url, http_build_query($params), null, null, null, $this->proxy);
         $result = json_decode($response['body'], true);
         if (isset($result['data']['result']) && $result['data']['result'] == true) {
             $cookie = '';
-            if (preg_match_all('/Set-Cookie: (.*);/iU', $response['header'], $matchs)) {
-                foreach ($matchs[1] as $val) {
+            if (isset($response['headers']['Set-Cookie'])) {
+                foreach ($response['headers']['Set-Cookie'] as $val) {
                     $arr = explode('=', $val);
                     if ($arr[1] == '' || $arr[1] == 'deleted') continue;
                     $cookie .= $val . '; ';
