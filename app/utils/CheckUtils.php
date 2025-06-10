@@ -17,6 +17,18 @@ class CheckUtils
         if (!$urlarr) {
             return ['status' => false, 'errmsg' => 'Invalid URL', 'usetime' => 0];
         }
+        if (str_starts_with($urlarr['host'], '[') && str_ends_with($urlarr['host'], ']')) {
+            $urlarr['host'] = substr($urlarr['host'], 1, -1);
+        }
+        if (!empty($ip) && !filter_var($urlarr['host'], FILTER_VALIDATE_IP)) {
+            if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+                $ip = gethostbyname($ip);
+            }
+            if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP)) {
+                $port = $urlarr['port'] ?? ($urlarr['scheme'] == 'https' ? 443 : 80);
+                $resolve = $urlarr['host'] . ':' . $port . ':' . $ip;
+            }
+        }
 
         $options = [
             'timeout' => $timeout,
@@ -27,7 +39,13 @@ class CheckUtils
             ],
             'http_errors' => false // 不抛出异常
         ];
-
+        // 处理解析
+        if (!empty($resolve)) {
+            $options['curl'] = [
+                CURLOPT_DNS_USE_GLOBAL_CACHE => false,
+                CURLOPT_RESOLVE => [$resolve]
+            ];
+        }
         // 处理代理
         if ($proxy) {
             $proxy_server = config_get('proxy_server');
