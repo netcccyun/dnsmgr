@@ -82,7 +82,7 @@ class CheckUtils
             }
         } catch (GuzzleException $e) {
             $status = false;
-            $errmsg = $e->getMessage();
+            $errmsg = guzzle_error($e);
         }
 
         $usetime = round((microtime(true) - $start) * 1000);
