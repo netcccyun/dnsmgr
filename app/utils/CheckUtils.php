@@ -83,6 +83,13 @@ class CheckUtils
         } catch (GuzzleException $e) {
             $status = false;
             $errmsg = $e->getMessage();
+            if (preg_match('/^cURL error \d+: /', $errmsg)) {
+                $errmsg = preg_replace('/^cURL error \d+: /', '', $errmsg);
+            }
+            $errmsg = str_replace(' (see https://curl.haxx.se/libcurl/c/libcurl-errors.html)', '', $errmsg);
+            if (strlen($errmsg) > 100) {
+                $errmsg = substr($errmsg, 0, 97) . '...';
+            }
         }
 
         $usetime = round((microtime(true) - $start) * 1000);
