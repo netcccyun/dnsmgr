@@ -357,7 +357,7 @@ function check_proxy($url, $proxy_server, $proxy_port, $type, $proxy_user, $prox
             throw new Exception('HTTP状态码异常：' . $httpCode);
         }
     } catch (GuzzleException $e) {
-        throw new Exception($e->getMessage());
+        throw new Exception(guzzle_error($e));
     }
 }
 
@@ -519,8 +519,24 @@ function http_request($url, $data = null, $referer = null, $cookie = null, $head
             'body' => $response->getBody()->getContents()
         ];
     } catch (GuzzleException $e) {
-        throw new Exception('请求失败: ' . $e->getMessage());
+        throw new Exception('请求失败: ' . guzzle_error($e));
     }
+}
+
+function guzzle_error($e)
+{
+    $errmsg = $e->getMessage();
+    if (preg_match('/^cURL error \d+: /', $errmsg)) {
+        $errmsg = preg_replace('/^cURL error \d+: /', '', $errmsg);
+    }
+    $pos = strpos($errmsg, ' (see https://curl.haxx.se/libcurl/c/libcurl-errors.html)');
+    if ($pos !== false) {
+        $errmsg = substr($errmsg, 0, $pos);
+    }
+    if (strlen($errmsg) > 100) {
+        $errmsg = substr($errmsg, 0, 97) . '...';
+    }
+    return $errmsg;
 }
 
 function curl_set_proxy(&$ch)
