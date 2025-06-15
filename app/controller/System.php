@@ -28,6 +28,12 @@ class System extends BaseController
         return json(['code' => 0, 'msg' => 'succ']);
     }
 
+    public function loginset()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        return View::fetch();
+    }
+
     public function noticeset()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');

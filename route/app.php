@@ -112,6 +112,7 @@ Route::group(function () {
     
     Route::get('/cert/certset', 'cert/certset');
 
+    Route::get('/system/loginset', 'system/loginset');
     Route::get('/system/noticeset', 'system/noticeset');
     Route::get('/system/proxyset', 'system/proxyset');
     Route::post('/system/set', 'system/set');
