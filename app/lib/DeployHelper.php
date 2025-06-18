@@ -770,7 +770,7 @@ class DeployHelper
                         ['value'=>'ap-southeast-1', 'label'=>'非中国内地'],
                     ],
                     'value' => 'cn-hangzhou',
-                    'show' => 'product==\'waf\'||product==\'waf2\'||product==\'ddoscoo\'',
+                    'show' => 'product==\'waf\'||product==\'waf2\'||product==\'ddoscoo\'||product==\'esa\'',
                     'required' => true,
                 ],
                 'regionid' => [
