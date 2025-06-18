@@ -81,7 +81,14 @@ class aliyun implements DeployInterface
         $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
         $serial_no = strtolower($certInfo['serialNumberHex']);
 
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'cas.aliyuncs.com', '2020-04-07', $this->proxy);
+        if ($config['region'] == 'ap-southeast-1') {
+            $endpoint = 'cas.ap-southeast-1.aliyuncs.com';
+
+        } else {
+            $endpoint = 'cas.aliyuncs.com';
+        }
+
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2020-04-07', $this->proxy);
         $param = [
             'Action' => 'ListUserCertificateOrder',
             'Keyword' => $certInfo['subject']['CN'],
@@ -162,7 +169,13 @@ class aliyun implements DeployInterface
         $sitename = $config['esa_sitename'];
         if (empty($sitename)) throw new Exception('ESA站点名称不能为空');
 
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'esa.cn-hangzhou.aliyuncs.com', '2024-09-10');
+        if ($config['region'] == 'cn-hangzhou') {
+            $endpoint = 'esa.cn-hangzhou.aliyuncs.com';
+        } else {
+            $endpoint = 'esa.ap-southeast-1.aliyuncs.com';
+        }
+
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2024-09-10');
         $param = [
             'Action' => 'ListSites',
             'SiteName' => $sitename,
