@@ -83,7 +83,6 @@ class aliyun implements DeployInterface
 
         if ($config['region'] == 'ap-southeast-1') {
             $endpoint = 'cas.ap-southeast-1.aliyuncs.com';
-
         } else {
             $endpoint = 'cas.aliyuncs.com';
         }
@@ -201,23 +200,25 @@ class aliyun implements DeployInterface
         }
         $this->log('ESA站点 ' . $sitename . ' 查询到' . $data['TotalCount'] . '个SSL证书');
 
-        $cert_id = null;
-        $cert_name = null;
-        $casid = null;
-        foreach ($data['Result'] as $cert) {
-            $domains = explode(',', $cert['SAN']);
-            $flag = true;
-            foreach ($domains as $domain) {
-                if (!in_array($domain, $config['domainList'])) {
-                    $flag = false;
+        $exist_cert_id = null;
+        $exist_cert_name = null;
+        $exist_cert_casid = null;
+        if ($data['TotalCount'] > 0) {
+            foreach ($data['Result'] as $cert) {
+                $domains = explode(',', $cert['SAN']);
+                $flag = true;
+                foreach ($domains as $domain) {
+                    if (!in_array($domain, $config['domainList'])) {
+                        $flag = false;
+                        break;
+                    }
+                }
+                if ($flag) {
+                    $exist_cert_id = $cert['Id'];
+                    $exist_cert_name = $cert['CommonName'];
+                    $exist_cert_casid = $cert['CasId'];
                     break;
                 }
-            }
-            if ($flag) {
-                $cert_id = $cert['Id'];
-                $cert_name = $cert['CommonName'];
-                $casid = $cert['CasId'];
-                break;
             }
         }
 
@@ -227,19 +228,22 @@ class aliyun implements DeployInterface
             'Type' => 'cas',
             'CasId' => $cas_id,
         ];
-        if ($cert_id) {
-            $param['Update'] = 'true';
-            $param['Id'] = $cert_id;
-            if ($casid == $cas_id) {
+
+        if ($exist_cert_id) {
+            $param['Id'] = $exist_cert_id;
+
+            if ($exist_cert_casid == $cas_id) {
                 $this->log('ESA站点 ' . $sitename . ' 证书已配置，无需重复操作');
                 return;
             }
         }
+
         $client->request($param);
-        if ($cert_id) {
-            $this->log('ESA站点 ' . $sitename . ' 域名 ' . $cert_name . ' 更新证书成功！');
+
+        if ($exist_cert_name) {
+            $this->log('ESA站点 ' . $sitename . ' 证书 ' . $exist_cert_name . ' 更新成功');
         } else {
-            $this->log('ESA站点 ' . $sitename . ' 添加证书成功！');
+            $this->log('ESA站点 ' . $sitename . ' 证书添加成功！');
         }
     }
 
