@@ -42,7 +42,7 @@ class aliyun implements DeployInterface
         } elseif ($config['product'] == 'fc2') {
             $this->deploy_fc2($fullchain, $privatekey, $config);
         } else {
-            [$cert_id, $cert_name] = $this->get_cert_id($fullchain, $privatekey);
+            [$cert_id, $cert_name] = $this->get_cert_id($fullchain, $privatekey, $config);
             if (!$cert_id) throw new Exception('证书ID获取失败');
             if ($config['product'] == 'cdn') {
                 $this->deploy_cdn($cert_id, $cert_name, $config);
