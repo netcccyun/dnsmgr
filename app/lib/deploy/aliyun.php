@@ -49,7 +49,7 @@ class aliyun implements DeployInterface
             } elseif ($config['product'] == 'dcdn') {
                 $this->deploy_dcdn($cert_id, $cert_name, $config);
             } elseif ($config['product'] == 'esa') {
-                $this->deploy_esa($cert_id, $config);
+                $this->deploy_esa($cert_id, $cert_name, $config);
             } elseif ($config['product'] == 'oss') {
                 $this->deploy_oss($cert_id, $config);
             } elseif ($config['product'] == 'waf') {
@@ -163,7 +163,7 @@ class aliyun implements DeployInterface
         $this->log('DCDN域名 ' . $domain . ' 部署证书成功！');
     }
 
-    private function deploy_esa($cas_id, $config)
+    private function deploy_esa($cas_id, $cert_name, $config)
     {
         $sitename = $config['esa_sitename'];
         if (empty($sitename)) throw new Exception('ESA站点名称不能为空');
@@ -215,7 +215,7 @@ class aliyun implements DeployInterface
                 }
                 if ($flag) {
                     $exist_cert_id = $cert['Id'];
-                    $exist_cert_name = $cert['CommonName'];
+                    $exist_cert_name = $cert['Name'];
                     $exist_cert_casid = $cert['CasId'];
                     break;
                 }
@@ -227,6 +227,8 @@ class aliyun implements DeployInterface
             'SiteId' => $site_id,
             'Type' => 'cas',
             'CasId' => $cas_id,
+            'Name' => $cert_name,
+            'Region' => $config['region'],
         ];
 
         if ($exist_cert_id) {
