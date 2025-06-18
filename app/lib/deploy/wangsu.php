@@ -452,6 +452,9 @@ class wangsu implements DeployInterface
         } elseif (isset($result['message'])) {
             throw new Exception($result['message']);
 
+        } elseif (isset($result['result'])) {
+            throw new Exception($result['result']);
+
         } else {
             throw new Exception('请求失败');
         }
