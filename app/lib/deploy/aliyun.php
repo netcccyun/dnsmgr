@@ -74,7 +74,7 @@ class aliyun implements DeployInterface
         }
     }
 
-    private function get_cert_id($fullchain, $privatekey)
+    private function get_cert_id($fullchain, $privatekey, $config)
     {
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
