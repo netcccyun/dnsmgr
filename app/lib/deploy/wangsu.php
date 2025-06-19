@@ -24,7 +24,7 @@ class wangsu implements DeployInterface
     public function check()
     {
         if (empty($this->username) || empty($this->apiKey)) throw new Exception('必填参数不能为空');
-        $this->request('/cdn/certificates');
+        $this->request('/api/ssl/certificate');
         return true;
     }
 
@@ -451,6 +451,9 @@ class wangsu implements DeployInterface
 
         } elseif (isset($result['message'])) {
             throw new Exception($result['message']);
+
+        } elseif (isset($result['result'])) {
+            throw new Exception($result['result']);
 
         } else {
             throw new Exception('请求失败');
