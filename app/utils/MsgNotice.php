@@ -1,7 +1,7 @@
 <?php
 
 namespace app\utils;
-use PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\PHPMailer;
 use think\facade\Db;
 use app\lib\CertHelper;
 use app\lib\DeployHelper;
@@ -187,6 +187,7 @@ class MsgNotice
             $mail_pwd = config_get('mail_pwd');
             if (!$mail_name || !$mail_port || !$mail_smtp || !$mail_pwd) return false;
             $mail = new PHPMailer(true);
+            $mail->setLanguage('zh_cn', app()->getRootPath().'vendor/phpmailer/phpmailer/language/');
             try {
                 $mail->SMTPDebug = 0;
                 $mail->CharSet = 'UTF-8';
