@@ -42,14 +42,14 @@ class aliyun implements DeployInterface
         } elseif ($config['product'] == 'fc2') {
             $this->deploy_fc2($fullchain, $privatekey, $config);
         } else {
-            [$cert_id, $cert_name] = $this->get_cert_id($fullchain, $privatekey);
+            [$cert_id, $cert_name] = $this->get_cert_id($fullchain, $privatekey, $config);
             if (!$cert_id) throw new Exception('证书ID获取失败');
             if ($config['product'] == 'cdn') {
                 $this->deploy_cdn($cert_id, $cert_name, $config);
             } elseif ($config['product'] == 'dcdn') {
                 $this->deploy_dcdn($cert_id, $cert_name, $config);
             } elseif ($config['product'] == 'esa') {
-                $this->deploy_esa($cert_id, $config);
+                $this->deploy_esa($cert_id, $cert_name, $config);
             } elseif ($config['product'] == 'oss') {
                 $this->deploy_oss($cert_id, $config);
             } elseif ($config['product'] == 'waf') {
@@ -74,14 +74,20 @@ class aliyun implements DeployInterface
         }
     }
 
-    private function get_cert_id($fullchain, $privatekey)
+    private function get_cert_id($fullchain, $privatekey, $config)
     {
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
         $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
         $serial_no = strtolower($certInfo['serialNumberHex']);
 
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'cas.aliyuncs.com', '2020-04-07', $this->proxy);
+        if ($config['region'] == 'ap-southeast-1') {
+            $endpoint = 'cas.ap-southeast-1.aliyuncs.com';
+        } else {
+            $endpoint = 'cas.aliyuncs.com';
+        }
+
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2020-04-07', $this->proxy);
         $param = [
             'Action' => 'ListUserCertificateOrder',
             'Keyword' => $certInfo['subject']['CN'],
@@ -157,12 +163,18 @@ class aliyun implements DeployInterface
         $this->log('DCDN域名 ' . $domain . ' 部署证书成功！');
     }
 
-    private function deploy_esa($cas_id, $config)
+    private function deploy_esa($cas_id, $cert_name, $config)
     {
         $sitename = $config['esa_sitename'];
         if (empty($sitename)) throw new Exception('ESA站点名称不能为空');
 
-        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'esa.cn-hangzhou.aliyuncs.com', '2024-09-10');
+        if ($config['region'] == 'cn-hangzhou') {
+            $endpoint = 'esa.cn-hangzhou.aliyuncs.com';
+        } else {
+            $endpoint = 'esa.ap-southeast-1.aliyuncs.com';
+        }
+
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2024-09-10');
         $param = [
             'Action' => 'ListSites',
             'SiteName' => $sitename,
@@ -188,23 +200,25 @@ class aliyun implements DeployInterface
         }
         $this->log('ESA站点 ' . $sitename . ' 查询到' . $data['TotalCount'] . '个SSL证书');
 
-        $cert_id = null;
-        $cert_name = null;
-        $casid = null;
-        foreach ($data['Result'] as $cert) {
-            $domains = explode(',', $cert['SAN']);
-            $flag = true;
-            foreach ($domains as $domain) {
-                if (!in_array($domain, $config['domainList'])) {
-                    $flag = false;
+        $exist_cert_id = null;
+        $exist_cert_name = null;
+        $exist_cert_casid = null;
+        if ($data['TotalCount'] > 0) {
+            foreach ($data['Result'] as $cert) {
+                $domains = explode(',', $cert['SAN']);
+                $flag = true;
+                foreach ($domains as $domain) {
+                    if (!in_array($domain, $config['domainList'])) {
+                        $flag = false;
+                        break;
+                    }
+                }
+                if ($flag) {
+                    $exist_cert_id = $cert['Id'];
+                    $exist_cert_name = $cert['Name'];
+                    $exist_cert_casid = $cert['CasId'];
                     break;
                 }
-            }
-            if ($flag) {
-                $cert_id = $cert['Id'];
-                $cert_name = $cert['CommonName'];
-                $casid = $cert['CasId'];
-                break;
             }
         }
 
@@ -213,20 +227,25 @@ class aliyun implements DeployInterface
             'SiteId' => $site_id,
             'Type' => 'cas',
             'CasId' => $cas_id,
+            'Name' => $cert_name,
+            'Region' => $config['region'],
         ];
-        if ($cert_id) {
-            $param['Update'] = 'true';
-            $param['Id'] = $cert_id;
-            if ($casid == $cas_id) {
+
+        if ($exist_cert_id) {
+            $param['Id'] = $exist_cert_id;
+
+            if ($exist_cert_casid == $cas_id) {
                 $this->log('ESA站点 ' . $sitename . ' 证书已配置，无需重复操作');
                 return;
             }
         }
+
         $client->request($param);
-        if ($cert_id) {
-            $this->log('ESA站点 ' . $sitename . ' 域名 ' . $cert_name . ' 更新证书成功！');
+
+        if ($exist_cert_name) {
+            $this->log('ESA站点 ' . $sitename . ' 证书 ' . $exist_cert_name . ' 更新成功');
         } else {
-            $this->log('ESA站点 ' . $sitename . ' 添加证书成功！');
+            $this->log('ESA站点 ' . $sitename . ' 证书添加成功！');
         }
     }
 
