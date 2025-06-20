@@ -1507,16 +1507,16 @@
         },
         {
             "name": "topthink/think-orm",
-            "version": "v4.0.41",
+            "version": "v4.0.44",
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/think-orm.git",
-                "reference": "cb610268dadaa5fb98d2400030a25659e580bc75"
+                "reference": "7bc58345e9bc212950a3f9f00f93029559ac7928"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/think-orm/zipball/cb610268dadaa5fb98d2400030a25659e580bc75",
-                "reference": "cb610268dadaa5fb98d2400030a25659e580bc75",
+                "url": "https://api.github.com/repos/top-think/think-orm/zipball/7bc58345e9bc212950a3f9f00f93029559ac7928",
+                "reference": "7bc58345e9bc212950a3f9f00f93029559ac7928",
                 "shasum": ""
             },
             "require": {
@@ -1561,9 +1561,9 @@
             ],
             "support": {
                 "issues": "https://github.com/top-think/think-orm/issues",
-                "source": "https://github.com/top-think/think-orm/tree/v4.0.41"
+                "source": "https://github.com/top-think/think-orm/tree/v4.0.44"
             },
-            "time": "2025-05-28T09:27:43+00:00"
+            "time": "2025-06-18T09:47:05+00:00"
         },
         {
             "name": "topthink/think-template",
@@ -1608,16 +1608,16 @@
         },
         {
             "name": "topthink/think-validate",
-            "version": "v3.0.6",
+            "version": "v3.0.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/think-validate.git",
-                "reference": "c6a7704fc991d3689408299822dbc2ba4ee3f79a"
+                "reference": "85063f6d4ef8ed122f17a36179dc3e0949b30988"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/think-validate/zipball/c6a7704fc991d3689408299822dbc2ba4ee3f79a",
-                "reference": "c6a7704fc991d3689408299822dbc2ba4ee3f79a",
+                "url": "https://api.github.com/repos/top-think/think-validate/zipball/85063f6d4ef8ed122f17a36179dc3e0949b30988",
+                "reference": "85063f6d4ef8ed122f17a36179dc3e0949b30988",
                 "shasum": ""
             },
             "require": {
@@ -1646,9 +1646,9 @@
             "description": "think validate",
             "support": {
                 "issues": "https://github.com/top-think/think-validate/issues",
-                "source": "https://github.com/top-think/think-validate/tree/v3.0.6"
+                "source": "https://github.com/top-think/think-validate/tree/v3.0.7"
             },
-            "time": "2025-05-23T04:10:45+00:00"
+            "time": "2025-06-11T05:51:40+00:00"
         },
         {
             "name": "topthink/think-view",
@@ -1863,7 +1863,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
@@ -1877,6 +1877,6 @@
         "ext-sockets": "*",
         "ext-ssh2": "*"
     },
-    "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "platform-dev": [],
+    "plugin-api-version": "2.3.0"
 }
