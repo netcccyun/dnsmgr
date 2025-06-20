@@ -14,12 +14,16 @@
     </div>
 </div>
 </div>
+</div>
+</div>
 {/block}
 {block name="script"}
 <script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
-<script src="{$cdnpublic}jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
-<script src="{$cdnpublic}clipboard.js/1.7.1/clipboard.min.js"></script>
 <script>
+var items = $("select[default]");
+for (i = 0; i < items.length; i++) {
+	$(items[i]).val($(items[i]).attr("default")||0);
+}
 function setvcode(){
     var status = $("#vocde_switch").is(':checked') ? '1' : '2';
     $.post('/system/set', {vcode: status}, function(res){
