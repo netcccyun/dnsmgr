@@ -536,7 +536,6 @@ class Domain extends BaseController
         $remark = input('post.remark', null, 'trim');
 
         $recordinfo = input('post.recordinfo', null, 'trim');
-        $recordinfo = json_decode($recordinfo, true);
 
         if (empty($recordid) || empty($name) || empty($type) || empty($value)) {
             return json(['code' => -1, 'msg' => '参数不能为空']);
@@ -546,6 +545,7 @@ class Domain extends BaseController
         $recordid = $dns->updateDomainRecord($recordid, $name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if ($recordid) {
             if ($recordinfo) {
+                $recordinfo = json_decode($recordinfo, true);
                 if (is_array($recordinfo['Value'])) $recordinfo['Value'] = implode(',', $recordinfo['Value']);
                 if ($recordinfo['Name'] != $name || $recordinfo['Type'] != $type || $recordinfo['Value'] != $value) {
                     $this->add_log($drow['name'], '修改解析', $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' → '.$name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
@@ -572,7 +572,6 @@ class Domain extends BaseController
 
         $recordid = input('post.recordid', null, 'trim');
         $recordinfo = input('post.recordinfo', null, 'trim');
-        $recordinfo = json_decode($recordinfo, true);
 
         if (empty($recordid)) {
             return json(['code' => -1, 'msg' => '参数不能为空']);
@@ -581,6 +580,7 @@ class Domain extends BaseController
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         if ($dns->deleteDomainRecord($recordid)) {
             if ($recordinfo) {
+                $recordinfo = json_decode($recordinfo, true);
                 if (is_array($recordinfo['Value'])) $recordinfo['Value'] = implode(',', $recordinfo['Value']);
                 $this->add_log($drow['name'], '删除解析', $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' (线路:'.$recordinfo['Line'].' TTL:'.$recordinfo['TTL'].')');
             } else {
@@ -604,7 +604,6 @@ class Domain extends BaseController
         $recordid = input('post.recordid', null, 'trim');
         $status = input('post.status', null, 'trim');
         $recordinfo = input('post.recordinfo', null, 'trim');
-        $recordinfo = json_decode($recordinfo, true);
 
         if (empty($recordid)) {
             return json(['code' => -1, 'msg' => '参数不能为空']);
@@ -614,6 +613,7 @@ class Domain extends BaseController
         if ($dns->setDomainRecordStatus($recordid, $status)) {
             $action = $status == '1' ? '启用解析' : '暂停解析';
             if ($recordinfo) {
+                $recordinfo = json_decode($recordinfo, true);
                 if (is_array($recordinfo['Value'])) $recordinfo['Value'] = implode(',', $recordinfo['Value']);
                 $this->add_log($drow['name'], $action, $recordinfo['Name'].' ['.$recordinfo['Type'].'] '.$recordinfo['Value'].' (线路:'.$recordinfo['Line'].' TTL:'.$recordinfo['TTL'].')');
             } else {

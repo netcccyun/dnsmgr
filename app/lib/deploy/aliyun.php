@@ -168,10 +168,10 @@ class aliyun implements DeployInterface
         $sitename = $config['esa_sitename'];
         if (empty($sitename)) throw new Exception('ESA站点名称不能为空');
 
-        if ($config['region'] == 'cn-hangzhou') {
-            $endpoint = 'esa.cn-hangzhou.aliyuncs.com';
-        } else {
+        if ($config['region'] == 'ap-southeast-1') {
             $endpoint = 'esa.ap-southeast-1.aliyuncs.com';
+        } else {
+            $endpoint = 'esa.cn-hangzhou.aliyuncs.com';
         }
 
         $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2024-09-10');

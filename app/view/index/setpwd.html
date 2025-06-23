@@ -7,21 +7,21 @@
 <div class="panel-heading"><h3 class="panel-title">修改密码</h3></div>
 <div class="panel-body">
   <form onsubmit="return saveAccount(this)" method="post" class="form" role="form">
+	<div class="form-group">
+	  <label>旧密码：</label>
+	  <input type="password" name="oldpwd" value="" class="form-control"  placeholder="请输入当前的密码" required/>
+	</div>
     <div class="form-group">
-      <label>旧密码：</label>
-      <input type="password" name="oldpwd" value="" class="form-control"  placeholder="请输入当前的密码" required/>
-    </div>
+	  <label>新密码：</label>
+	  <input type="password" name="newpwd" value="" class="form-control"  placeholder="" required/>
+	</div>
     <div class="form-group">
-      <label>新密码：</label>
-      <input type="password" name="newpwd" value="" class="form-control"  placeholder="" required/>
-    </div>
-    <div class="form-group">
-      <label>重输密码：</label>
-      <input type="password" name="newpwd2" value="" class="form-control"  placeholder="" required/>
-    </div>
-    <div class="form-group text-center">
-      <input type="submit" name="submit" value="确定" class="btn btn-success btn-block"/>
-    </div>
+	  <label>重输密码：</label>
+	  <input type="password" name="newpwd2" value="" class="form-control"  placeholder="" required/>
+	</div>
+	<div class="form-group text-center">
+	  <input type="submit" name="submit" value="确定" class="btn btn-success btn-block"/>
+	</div>
   </form>
 </div>
 </div>
@@ -29,18 +29,18 @@
 <div class="panel-heading"><h3 class="panel-title">TOTP二次验证</h3></div>
 <div class="panel-body">
   <form onsubmit="return saveAccount(this)" method="post" class="form" role="form">
-    <div class="form-group">
-        <div class="input-group">
-            {if $user.totp_open == 1}
-            <input type="text" name="totp_status" value="已开启" style="color:green" class="form-control" readonly/>
-            <div class="input-group-btn"><button type="button" class="btn btn-info" onclick="open_totp()">重置</button></div>
-            <div class="input-group-btn"><button type="button" class="btn btn-danger" onclick="close_totp()">关闭</button></div>
-            {else}
-            <input type="text" name="totp_status" value="未开启" style="color:blue" class="form-control" readonly/>
-            <div class="input-group-btn"><button type="button" class="btn btn-info" onclick="open_totp()">开启</button></div>
-            {/if}
-        </div>
-    </div>
+	<div class="form-group">
+		<div class="input-group">
+			{if $user.totp_open == 1}
+			<input type="text" name="totp_status" value="已开启" style="color:green" class="form-control" readonly/>
+			<div class="input-group-btn"><button type="button" class="btn btn-info" onclick="open_totp()">重置</button></div>
+			<div class="input-group-btn"><button type="button" class="btn btn-danger" onclick="close_totp()">关闭</button></div>
+			{else}
+			<input type="text" name="totp_status" value="未开启" style="color:blue" class="form-control" readonly/>
+			<div class="input-group-btn"><button type="button" class="btn btn-info" onclick="open_totp()">开启</button></div>
+			{/if}
+		</div>
+	</div>
   </form>
 </div>
 <div class="panel-footer">
@@ -49,26 +49,26 @@
 </div>
 </div>
 <div class="modal" id="modal-totp" data-backdrop="static" data-keyboard="false" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                <h4 class="modal-title">TOTP绑定</h4>
-            </div>
-            <div class="modal-body text-center">
-                <p>使用支持TOTP的认证软件扫描以下二维码</p>
-                <div class="qr-image mt-4" id="qrcode"></div>
-                <p><a href="javascript:;" data-clipboard-text="" id="copy-btn">复制密钥</a></p>
-                <form id="form-totp" style="text-align: left;" onsubmit="return bind_totp()">
-                    <div class="form-group mt-4">
-                        <div class="input-group"><input type="number" class="form-control input-lg" name="code" id="code" value="" placeholder="填写动态口令" autocomplete="off" required><div class="input-group-btn"><input type="submit" name="submit" value="完成绑定" class="btn btn-success btn-lg btn-block"/></div></div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">TOTP绑定</h4>
+			</div>
+			<div class="modal-body text-center">
+				<p>使用支持TOTP的认证软件扫描以下二维码</p>
+				<div class="qr-image mt-4" id="qrcode"></div>
+				<p><a href="javascript:;" data-clipboard-text="" id="copy-btn">复制密钥</a></p>
+				<form id="form-totp" style="text-align: left;" onsubmit="return bind_totp()">
+					<div class="form-group mt-4">
+						<div class="input-group"><input type="number" class="form-control input-lg" name="code" id="code" value="" placeholder="填写动态口令" autocomplete="off" required><div class="input-group-btn"><input type="submit" name="submit" value="完成绑定" class="btn btn-success btn-lg btn-block"/></div></div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 </div>
 {/block}
 {block name="script"}
@@ -78,110 +78,110 @@
 <script>
 var commonData = {secret:null,qrcode:null};
 function saveAccount(obj){
-    var ii = layer.load(2, {shade:[0.1,'#fff']});
-    $.ajax({
-        type : 'POST',
-        url : '/setpwd',
-        data : $(obj).serialize(),
-        dataType : 'json',
-        success : function(data) {
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'POST',
+		url : '/setpwd',
+		data : $(obj).serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert('密码修改成功！请重新登录。', {
+					icon: 1,
+					closeBtn: false
+				}, function(){
+				  window.location.reload()
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
             layer.close(ii);
-            if(data.code == 0){
-                layer.alert('密码修改成功！请重新登录。', {
-                    icon: 1,
-                    closeBtn: false
-                }, function(){
-                  window.location.reload()
-                });
-            }else{
-                layer.alert(data.msg, {icon: 2})
-            }
-        },
-        error:function(data){
-            layer.close(ii);
-            layer.msg('服务器错误');
-        }
-    });
-    return false;
+			layer.msg('服务器错误');
+		}
+	});
+	return false;
 }
 function open_totp(){
-    if(!commonData.qrcode || !commonData.secret){
-        var ii = layer.load(2, {shade:[0.1,'#fff']});
-        $.post('/totp/generate', {}, function(res){
-            layer.close(ii);
-            if(res.code == 0){
-                commonData.secret = res.data.secret;
-                commonData.qrcode = res.data.qrcode;
-                $('#qrcode').qrcode({
-                    text: commonData.qrcode,
-                    width: 150,
-                    height: 150,
-                    foreground: "#000000",
-                    background: "#ffffff",
-                    typeNumber: -1
-                });
-                $("#copy-btn").attr('data-clipboard-text', commonData.secret);
-                $('#modal-totp').modal('show');
-                $("#code").focus();
-            }else{
-                layer.alert(res.msg, {icon: 2});
-            }
-        });
-    }else{
-        $('#modal-totp').modal('show');
-        $("#code").focus();
-    }
+	if(!commonData.qrcode || !commonData.secret){
+		var ii = layer.load(2, {shade:[0.1,'#fff']});
+		$.post('/totp/generate', {}, function(res){
+			layer.close(ii);
+			if(res.code == 0){
+				commonData.secret = res.data.secret;
+				commonData.qrcode = res.data.qrcode;
+				$('#qrcode').qrcode({
+					text: commonData.qrcode,
+					width: 150,
+					height: 150,
+					foreground: "#000000",
+					background: "#ffffff",
+					typeNumber: -1
+				});
+				$("#copy-btn").attr('data-clipboard-text', commonData.secret);
+				$('#modal-totp').modal('show');
+				$("#code").focus();
+			}else{
+				layer.alert(res.msg, {icon: 2});
+			}
+		});
+	}else{
+		$('#modal-totp').modal('show');
+		$("#code").focus();
+	}
 }
 function bind_totp(){
-    var code = $("#code").val();
-    if(code.length != 6){
-        layer.msg('动态口令格式错误', {icon: 2});
-        return false;
-    }
-    var ii = layer.load(2, {shade:[0.1,'#fff']});
-    $.post('/totp/bind', {secret:commonData.secret, code:code}, function(res){
-        layer.close(ii);
-        if(res.code == 0){
-            layer.alert('TOTP绑定成功', {icon: 1}, function(){
-                window.location.reload();
-            });
-        }else{
-            layer.alert(res.msg, {icon: 2});
-        }
-    });
-    return false;
+	var code = $("#code").val();
+	if(code.length != 6){
+		layer.msg('动态口令格式错误', {icon: 2});
+		return false;
+	}
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.post('/totp/bind', {secret:commonData.secret, code:code}, function(res){
+		layer.close(ii);
+		if(res.code == 0){
+			layer.alert('TOTP绑定成功', {icon: 1}, function(){
+				window.location.reload();
+			});
+		}else{
+			layer.alert(res.msg, {icon: 2});
+		}
+	});
+	return false;
 }
 function close_totp(){
-    layer.confirm('确定要关闭TOTP二次验证吗？', {
-        btn: ['确定','取消']
-    }, function(){
-        var ii = layer.load(2, {shade:[0.1,'#fff']});
-        $.post('/totp/close', {}, function(res){
-            layer.close(ii);
-            if(res.code == 0){
-                layer.alert('TOTP已关闭', {icon: 1}, function(){
-                    window.location.reload();
-                });
-            }else{
-                layer.alert(res.msg, {icon: 2});
-            }
-        });
-    });
+	layer.confirm('确定要关闭TOTP二次验证吗？', {
+		btn: ['确定','取消']
+	}, function(){
+		var ii = layer.load(2, {shade:[0.1,'#fff']});
+		$.post('/totp/close', {}, function(res){
+			layer.close(ii);
+			if(res.code == 0){
+				layer.alert('TOTP已关闭', {icon: 1}, function(){
+					window.location.reload();
+				});
+			}else{
+				layer.alert(res.msg, {icon: 2});
+			}
+		});
+	});
 }
 $(document).ready(function(){
-    var clipboard = new Clipboard('#copy-btn');
-    clipboard.on('success', function (e) {
-        layer.msg('复制成功！', {icon: 1, time: 600});
-    });
-    clipboard.on('error', function (e) {
-        layer.msg('复制失败', {icon: 2});
-    });
-    $("#code").keyup(function(){
-        var code = $(this).val();
-        if(code.length == 6){
-            $("#form-totp").submit();
-        }
-    });
+	var clipboard = new Clipboard('#copy-btn');
+	clipboard.on('success', function (e) {
+		layer.msg('复制成功！', {icon: 1, time: 600});
+	});
+	clipboard.on('error', function (e) {
+		layer.msg('复制失败', {icon: 2});
+	});
+	$("#code").keyup(function(){
+		var code = $(this).val();
+		if(code.length == 6){
+			$("#form-totp").submit();
+		}
+	});
 });
 </script>
 {/block}

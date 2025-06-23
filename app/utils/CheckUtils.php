@@ -127,7 +127,14 @@ class CheckUtils
         }
         $timeout = 1;
         exec('ping -c 1 -w '.$timeout.' '.$target, $output, $return_var);
-        $usetime = !empty($output[1]) ? round(getSubstr($output[1], 'time=', ' ms')) : 0;
+        if (!empty($output[1])) {
+            if (strpos($output[1], '毫秒') !== false) {
+                $usetime = getSubstr($output[1], '时间=', ' 毫秒');
+            } else {
+                $usetime = getSubstr($output[1], 'time=', ' ms');
+            }
+        }
+        $usetime = !empty($usetime) ? round(trim($usetime)) : 0;
         $errmsg = null;
         if ($return_var !== 0) {
             $usetime = $usetime == 0 ? $timeout * 1000 : $usetime;
