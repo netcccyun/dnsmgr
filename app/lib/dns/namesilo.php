@@ -181,6 +181,11 @@ class namesilo implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        return false;
+    }
+
     private function send_reuqest($operation, $param = null)
     {
         $url = $this->baseUrl . $operation;

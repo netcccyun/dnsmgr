@@ -38,6 +38,9 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 								<option value="CAA">CAA</option>
 								{if $dnsconfig.redirect}<option value="REDIRECT_URL">显性URL</option>
 								<option value="FORWARD_URL">隐性URL</option>{/if}
+								{if $dnsconfig.type=='powerdns'}<option value="LOC">LOC</option>
+								<option value="PTR">PTR</option>
+								<option value="LUA">LUA</option>{/if}
 							</select>
 						</div>
 					</div>
@@ -112,6 +115,9 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 								<option value="CAA">CAA</option>
 								{if $dnsconfig.redirect}<option value="REDIRECT_URL">显性URL</option>
 								<option value="FORWARD_URL">隐性URL</option>{/if}
+								{if $dnsconfig.type=='powerdns'}<option value="LOC">LOC</option>
+								<option value="PTR">PTR</option>
+								<option value="LUA">LUA</option>{/if}
 							</select>
 						</div>
 					</div>
@@ -201,6 +207,9 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 		<option value="CAA">CAA</option>
 		{if $dnsconfig.redirect}<option value="REDIRECT_URL">显性URL</option>
 		<option value="FORWARD_URL">隐性URL</option>{/if}
+		{if $dnsconfig.type=='powerdns'}<option value="LOC">LOC</option>
+		<option value="PTR">PTR</option>
+		<option value="LUA">LUA</option>{/if}
 	</select>
   </div>
   <div class="form-group">

@@ -210,6 +210,16 @@ class dnsla implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        $param = ['domain' => $Domain];
+        $data = $this->execute('POST', '/api/domain', $param);
+        if ($data) {
+            return ['id' => $data['id'], 'name' => $Domain];
+        }
+        return false;
+    }
+
     private function convertType($type)
     {
         $typeList = array_flip($this->typeList);

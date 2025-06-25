@@ -142,13 +142,14 @@ class Domain extends BaseController
         $accounts = [];
         $types = [];
         foreach ($list as $row) {
-            $accounts[$row['id']] = $row['id'] . '_' . DnsHelper::$dns_config[$row['type']]['name'];
+            $name = $row['id'] . '_' . DnsHelper::$dns_config[$row['type']]['name'];
             if (!array_key_exists($row['type'], $types)) {
                 $types[$row['type']] = DnsHelper::$dns_config[$row['type']]['name'];
             }
             if (!empty($row['remark'])) {
-                $accounts[$row['id']] .= '（' . $row['remark'] . '）';
+                $name .= '（' . $row['remark'] . '）';
             }
+            $accounts[] = ['id' => $row['id'], 'name' => $name, 'type' => DnsHelper::$dns_config[$row['type']]['name'], 'add' => DnsHelper::$dns_config[$row['type']]['add']];
         }
         View::assign('accounts', $accounts);
         View::assign('types', $types);
@@ -225,12 +226,20 @@ class Domain extends BaseController
         } elseif ($act == 'add') {
             if (!checkPermission(2)) return $this->alert('error', '无权限');
             $aid = input('post.aid/d');
+            $method = input('post.method/d', 0);
             $name = input('post.name', null, 'trim');
             $thirdid = input('post.thirdid', null, 'trim');
             $recordcount = input('post.recordcount/d', 0);
-            if (empty($name) || empty($thirdid)) return json(['code' => -1, 'msg' => '参数不能为空']);
+            if ($method == 1 && empty($name) || $method == 0 && (empty($name) || empty($thirdid))) return json(['code' => -1, 'msg' => '参数不能为空']);
             if (Db::name('domain')->where('aid', $aid)->where('name', $name)->find()) {
                 return json(['code' => -1, 'msg' => '域名已存在']);
+            }
+            if ($method == 1) {
+                $dns = DnsHelper::getModel($aid);
+                $result = $dns->addDomain($name);
+                if (!$result) return json(['code' => -1, 'msg' => '添加域名失败，' . $dns->getError()]);
+                $name = $result['name'];
+                $thirdid = $result['id'];
             }
             Db::name('domain')->insert([
                 'aid' => $aid,

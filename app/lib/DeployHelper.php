@@ -641,6 +641,44 @@ class DeployHelper
                 ],
             ],
         ],
+        'lucky' => [
+            'name' => 'Lucky',
+            'class' => 1,
+            'icon' => 'lucky.png',
+            'desc' => '更新Lucky证书',
+            'note' => '在“设置->开发者设置”打开OpenToken开关',
+            'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'Lucky 面板地址',
+                    'note' => '填写规则如：https://192.168.1.100:16601 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'path' => [
+                    'name' => '安全入口',
+                    'type' => 'input',
+                    'note' => '未设置请留空，参考Lucky设置中的安全入口设置'
+                ],
+                'opentoken' => [
+                    'name' => 'OpenToken',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [],
+        ],
         'proxmox' => [
             'name' => 'Proxmox VE',
             'class' => 1,

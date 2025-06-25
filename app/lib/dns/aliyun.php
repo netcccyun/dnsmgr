@@ -293,6 +293,16 @@ class aliyun implements DnsInterface
         return $this->request($param);
     }
 
+    public function addDomain($Domain)
+    {
+        $param = ['Action' => 'AddDomain', 'DomainName' => $Domain];
+        $result = $this->request($param, true);
+        if ($result) {
+            return ['id' => $result['DomainId'], 'name' => $result['DomainName']];
+        }
+        return false;
+    }
+
     private function convertLineCode($line)
     {
         $convert_dict = ['0' => 'default', '10=1' => 'unicom', '10=0' => 'telecom', '10=3' => 'mobile', '10=2' => 'edu', '3=0' => 'oversea', '10=22' => 'btvn', '80=0' => 'search', '7=0' => 'internal'];

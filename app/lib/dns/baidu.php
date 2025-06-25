@@ -222,6 +222,19 @@ class baidu implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        $query = ['clientToken' => getSid(), 'name' => $Domain];
+        $res = $this->send_reuqest('POST', '/v1/dns/zone', null, $query);
+        if ($res) {
+            $data = $this->getDomainInfo($Domain);
+            if ($data) {
+                return ['id' => $data['DomainId'], 'name' => $data['Domain']];
+            }
+        }
+        return false;
+    }
+
     private function convertType($type)
     {
         return $type;

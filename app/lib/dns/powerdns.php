@@ -327,6 +327,23 @@ class powerdns implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        if (substr($Domain, -1) != '.') {
+            $Domain .= '.';
+        }
+        $param = [
+            'name' => $Domain,
+            'kind' => 'Native',
+            'soa_edit_api' => 'INCREASE',
+        ];
+        $result = $this->send_reuqest('POST', '/servers/' . $this->server_id . '/zones', $param);
+        if ($result) {
+            return ['id' => $result['id'], 'name' => rtrim($result['name'], '.')];
+        }
+        return false;
+    }
+
     private function rrset_replace($host, $type, $ttl, $records, $remark = null)
     {
         $name = $host == '@' ? $this->domainid : $host . '.' . $this->domainid;

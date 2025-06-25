@@ -229,6 +229,18 @@ class huawei implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        $params = [
+            'name' => $Domain,
+        ];
+        $data = $this->send_request('POST', '/v2/zones', null, $params);
+        if ($data) {
+            return ['id' => $data['id'], 'name' => rtrim($data['name'], '.')];
+        }
+        return false;
+    }
+
     private function convertType($type)
     {
         return $type;

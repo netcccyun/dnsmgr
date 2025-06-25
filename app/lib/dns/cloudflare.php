@@ -205,6 +205,16 @@ class cloudflare implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        $param = ['name' => $Domain];
+        $data = $this->send_reuqest('POST', '/zones', $param);
+        if ($data) {
+            return ['id' => $data['result']['id'], 'name' => $data['result']['name']];
+        }
+        return false;
+    }
+
     private function convertType($type)
     {
         $convert_dict = ['REDIRECT_URL' => 'URI', 'FORWARD_URL' => 'URI'];

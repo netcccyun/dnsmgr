@@ -225,6 +225,16 @@ class jdcloud implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        $params = ['packId' => 0, 'domainName' => $Domain];
+        $data = $this->send_request('POST', '/domain', $params);
+        if ($data) {
+            return ['id' => $data['data']['id'], 'name' => $data['data']['domainName']];
+        }
+        return false;
+    }
+
     private function convertType($type)
     {
         $convert_dict = ['REDIRECT_URL' => 'EXPLICIT_URL', 'FORWARD_URL' => 'IMPLICIT_URL'];

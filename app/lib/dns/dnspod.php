@@ -314,6 +314,19 @@ class dnspod implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        $action = 'CreateDomain';
+        $param = [
+            'Domain' => $Domain,
+        ];
+        $data = $this->send_request($action, $param);
+        if ($data) {
+            return ['id' => $data['DomainInfo']['Id'], 'name' => $data['DomainInfo']['Domain']];
+        }
+        return false;
+    }
+
     private function convertLineCode($line)
     {
         $convert_dict = ['default' => '0', 'unicom' => '10=1', 'telecom' => '10=0', 'mobile' => '10=3', 'edu' => '10=2', 'oversea' => '3=0', 'btvn' => '10=22', 'search' => '80=0', 'internal' => '7=0'];

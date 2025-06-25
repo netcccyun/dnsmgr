@@ -31,4 +31,6 @@ interface DnsInterface
     function getRecordLine();
 
     function getMinTTL();
+
+    function addDomain($Domain);
 }

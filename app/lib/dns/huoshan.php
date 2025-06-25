@@ -237,6 +237,16 @@ class huoshan implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        $params = ['ZoneName' => $Domain];
+        $data = $this->send_request('POST', 'CreateZone', $params);
+        if ($data) {
+            return ['id' => $data['ZID'], 'name' => $data['ZoneName']];
+        }
+        return false;
+    }
+
     private function convertType($type)
     {
         return $type;

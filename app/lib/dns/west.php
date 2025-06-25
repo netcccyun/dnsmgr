@@ -171,6 +171,11 @@ class west implements DnsInterface
         return false;
     }
 
+    public function addDomain($Domain)
+    {
+        return false;
+    }
+
     private function convertType($type)
     {
         return $type;

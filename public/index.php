@@ -12,8 +12,8 @@
 // [ 应用入口文件 ]
 namespace think;
 
-if (version_compare(PHP_VERSION, '7.4.0', '<')) {
-    die('require PHP >= 7.4 !');
+if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+    die('require PHP >= 8.0 !');
 }
 
 require __DIR__ . '/../vendor/autoload.php';

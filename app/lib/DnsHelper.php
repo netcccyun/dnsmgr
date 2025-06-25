@@ -19,6 +19,7 @@ class DnsHelper
             'log' => true, //是否支持查看日志
             'weight' => false, //是否支持权重
             'page' => false, //是否客户端分页
+            'add' => true, //是否支持添加域名
         ],
         'dnspod' => [
             'name' => '腾讯云',
@@ -32,6 +33,7 @@ class DnsHelper
             'log' => true,
             'weight' => true,
             'page' => false,
+            'add' => true,
         ],
         'huawei' => [
             'name' => '华为云',
@@ -45,6 +47,7 @@ class DnsHelper
             'log' => false,
             'weight' => true,
             'page' => false,
+            'add' => true,
         ],
         'baidu' => [
             'name' => '百度云',
@@ -58,6 +61,7 @@ class DnsHelper
             'log' => false,
             'weight' => false,
             'page' => true,
+            'add' => true,
         ],
         'west' => [
             'name' => '西部数码',
@@ -71,6 +75,7 @@ class DnsHelper
             'log' => false,
             'weight' => false,
             'page' => false,
+            'add' => false,
         ],
         'huoshan' => [
             'name' => '火山引擎',
@@ -84,6 +89,7 @@ class DnsHelper
             'log' => false,
             'weight' => true,
             'page' => false,
+            'add' => true,
         ],
         'jdcloud' => [
             'name' => '京东云',
@@ -97,6 +103,7 @@ class DnsHelper
             'log' => false,
             'weight' => true,
             'page' => false,
+            'add' => true,
         ],
         'dnsla' => [
             'name' => 'DNSLA',
@@ -110,6 +117,7 @@ class DnsHelper
             'log' => false,
             'weight' => true,
             'page' => false,
+            'add' => true,
         ],
         'cloudflare' => [
             'name' => 'Cloudflare',
@@ -123,6 +131,7 @@ class DnsHelper
             'log' => false,
             'weight' => false,
             'page' => false,
+            'add' => true,
         ],
         'namesilo' => [
             'name' => 'NameSilo',
@@ -136,6 +145,7 @@ class DnsHelper
             'log' => false,
             'weight' => false,
             'page' => true,
+            'add' => false,
         ],
         'powerdns' => [
             'name' => 'PowerDNS',
@@ -150,6 +160,7 @@ class DnsHelper
             'log' => false,
             'weight' => false,
             'page' => true,
+            'add' => true,
         ],
     ];
 

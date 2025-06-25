@@ -17,16 +17,29 @@
 						<label class="col-sm-3 control-label">域名账户</label>
 						<div class="col-sm-9">
 							<select name="aid" class="form-control">
-								{foreach $accounts as $k=>$v}
-									<option value="{$k}">{$v}</option>
+								{foreach $accounts as $item}
+									<option value="{$item.id}" data-type="{$item.type}" data-add="{$item.add}">{$item.name}</option>
 								{/foreach}
 							</select>
 						</div>
 					</div>
-					<div class="form-group">
+					<div class="form-group" id="methodSelect" style="display: none;">
+						<label class="col-sm-3 control-label"></label>
+						<div class="col-sm-9">
+							<label class="radio-inline"><input type="radio" name="method" value="0" checked> 已有域名</label>
+							<label class="radio-inline"><input type="radio" name="method" value="1"> 新域名</label>
+						</div>
+					</div>
+					<div class="form-group" id="domainSelect">
 						<label class="col-sm-3 control-label">选择域名</label>
 						<div class="col-sm-9">
 							<select name="domain" id="domainList" class="form-control"></select>
+						</div>
+					</div>
+					<div class="form-group" id="domainInput" style="display: none;">
+						<label class="col-sm-3 control-label">输入域名</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="adddomain" placeholder="输入要新增的域名" value="">
 						</div>
 					</div>
 					
@@ -289,7 +302,30 @@ $(document).ready(function(){
 	})
 
 	$("#form-store select[name=aid]").change(function(){
-		getDomainList()
+		if($(this).val() != ''){
+			$("#form-store input[name=method][value=0]").prop('checked', true);
+			$("#domainSelect").show();
+			$("#domainInput").hide();
+			var add = $(this).find('option:selected').data('add');
+			if(add == '1'){
+				$("#methodSelect").show();
+			}else{
+				$("#methodSelect").hide();
+			}
+			getDomainList();
+		}
+	})
+	$("#form-store input[name=method]").change(function(){
+		var value = $("#form-store input[name=method]:checked").val();
+		if(value == '0'){
+			$("#domainSelect").show();
+			$("#domainInput").hide();
+			getDomainList();
+		}else{
+			$("#domainSelect").hide();
+			$("#domainInput").show();
+			$('#domainList').empty();
+		}
 	})
 
 	$('[data-toggle="popover"]').popover()
@@ -298,26 +334,37 @@ function addframe(){
 	$("#modal-store").modal('show');
 	var aid = $("#form-store select[name=aid]").val();
 	if(aid != ''){
-		getDomainList()
+		$("#form-store select[name=aid]").change();
 	}
 }
 function saveAdd(){
 	var aid = $("#form-store select[name=aid]").val();
-	var select = $('#domainList').select2('data');
-	if(select.length == 0){
-		layer.alert('请选择域名！');return false;
+	if(aid == ''){
+		layer.alert('请选择域名账户！');return false;
 	}
-	var name = select[0].text;
-	var thirdid = select[0].id;
-	var recordcount = select[0].recordcount;
-	if(aid=='' || thirdid==''){
-		layer.alert('请确保各项不能为空！');return false;
+	var method = $("#form-store input[name=method]:checked").val();
+	if(method == '1'){
+		var name = $("#form-store input[name=adddomain]").val();
+		if(name == ''){
+			layer.alert('域名不能为空！');return false;
+		}
+	}else{
+		var select = $('#domainList').select2('data');
+		if(select.length == 0){
+			layer.alert('请选择域名！');return false;
+		}
+		var name = select[0].text;
+		var thirdid = select[0].id;
+		var recordcount = select[0].recordcount;
+		if(aid=='' || thirdid==''){
+			layer.alert('请确保各项不能为空！');return false;
+		}
 	}
 	var ii = layer.load(2);
 	$.ajax({
 		type : 'POST',
 		url : '/domain/op/act/add',
-		data : {aid: aid, thirdid: thirdid, name: name, recordcount: recordcount},
+		data : {aid: aid, method: method, thirdid: thirdid, name: name, recordcount: recordcount},
 		dataType : 'json',
 		success : function(data) {
 			layer.close(ii);
