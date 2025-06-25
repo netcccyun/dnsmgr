@@ -1170,7 +1170,7 @@ class DeployHelper
         'doge' => [
             'name' => '多吉云',
             'class' => 2,
-            'icon' => 'cloud.png',
+            'icon' => 'doge.png',
             'desc' => '支持部署到多吉云融合CDN',
             'note' => '支持部署到多吉云融合CDN',
             'inputs' => [
@@ -1574,6 +1574,46 @@ class DeployHelper
                     'type' => 'input',
                     'placeholder' => '',
                     'note' => '在控制台->我的域名->配置复制浏览器地址栏显示的域名ID（19位数字），注意域名是否与证书匹配',
+                    'required' => true,
+                ],
+            ],
+        ],
+        'rainyun' => [
+            'name' => '雨云',
+            'class' => 2,
+            'icon' => 'waf.png',
+            'desc' => '替换雨云证书管理内的证书',
+            'note' => null,
+            'inputs' => [
+                'account' => [
+                    'name' => '账号',
+                    'type' => 'input',
+                    'placeholder' => '仅用作标记',
+                    'required' => true,
+                ],
+                'apikey' => [
+                    'name' => 'ApiKey',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'note' => '在 账户设置->API密钥 页面查看',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'id' => [
+                    'name' => '证书ID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'note' => '在SSL证书->我的证书页面查看，注意域名是否与证书匹配',
                     'required' => true,
                 ],
             ],
