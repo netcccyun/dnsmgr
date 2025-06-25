@@ -28,7 +28,7 @@ DROP TABLE IF EXISTS `dnsmgr_domain`;
 CREATE TABLE `dnsmgr_domain` (
   `id` int(11) unsigned NOT NULL auto_increment,
   `aid` int(11) unsigned NOT NULL,
-  `name` varchar(128) NOT NULL,
+  `name` varchar(255) NOT NULL,
   `thirdid` varchar(60) DEFAULT NULL,
   `addtime` datetime DEFAULT NULL,
   `is_hide` tinyint(1) NOT NULL DEFAULT '0',
@@ -66,7 +66,7 @@ DROP TABLE IF EXISTS `dnsmgr_permission`;
 CREATE TABLE `dnsmgr_permission` (
   `id` int(11) unsigned NOT NULL auto_increment,
   `uid` int(11) unsigned NOT NULL,
-  `domain` varchar(128) NOT NULL,
+  `domain` varchar(255) NOT NULL,
   `sub` varchar(80) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `uid` (`uid`)
@@ -77,7 +77,7 @@ CREATE TABLE `dnsmgr_log` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `uid` int(11) unsigned NOT NULL,
   `action` varchar(40) NOT NULL,
-  `domain` varchar(128) NOT NULL DEFAULT '',
+  `domain` varchar(255) NOT NULL DEFAULT '',
   `data` varchar(500) DEFAULT NULL,
   `addtime` datetime NOT NULL,
   PRIMARY KEY (`id`),
