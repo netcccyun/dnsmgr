@@ -1507,16 +1507,16 @@
         },
         {
             "name": "topthink/think-orm",
-            "version": "v4.0.45",
+            "version": "v4.0.46",
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/think-orm.git",
-                "reference": "ea2e627af7306f7714e4baafc70943cad954cc77"
+                "reference": "4bb0a5679a97db8de1c0eb02bbbe179cb3afd901"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/think-orm/zipball/ea2e627af7306f7714e4baafc70943cad954cc77",
-                "reference": "ea2e627af7306f7714e4baafc70943cad954cc77",
+                "url": "https://api.github.com/repos/top-think/think-orm/zipball/4bb0a5679a97db8de1c0eb02bbbe179cb3afd901",
+                "reference": "4bb0a5679a97db8de1c0eb02bbbe179cb3afd901",
                 "shasum": ""
             },
             "require": {
@@ -1561,9 +1561,9 @@
             ],
             "support": {
                 "issues": "https://github.com/top-think/think-orm/issues",
-                "source": "https://github.com/top-think/think-orm/tree/v4.0.45"
+                "source": "https://github.com/top-think/think-orm/tree/v4.0.46"
             },
-            "time": "2025-06-24T00:00:32+00:00"
+            "time": "2025-06-26T06:05:35+00:00"
         },
         {
             "name": "topthink/think-template",
@@ -1878,5 +1878,5 @@
         "ext-ssh2": "*"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.3.0"
 }
