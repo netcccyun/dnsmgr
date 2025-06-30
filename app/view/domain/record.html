@@ -175,7 +175,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 <div id="searchbox1">
   <div class="form-group">
 	<label>搜索</label>
-    <input type="text" class="form-control" name="keyword" placeholder="输入关键字">
+	<input type="text" class="form-control" name="keyword" placeholder="输入关键字">
   </div>
   <div class="form-group">
 	<select name="status" class="form-control"><option value="">所有状态</option><option value="1">启用</option><option value="0">暂停</option></select>
@@ -213,13 +213,13 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 	</select>
   </div>
   <div class="form-group">
-    <input type="text" class="form-control" name="subdomain" placeholder="输入主机记录">
+	<input type="text" class="form-control" name="subdomain" placeholder="输入主机记录">
   </div>
   <div class="form-group">
 	<select name="line" class="form-control"><option value="">全部线路</option></select>
   </div>
   <div class="form-group">
-    <input type="text" class="form-control" name="value" placeholder="输入记录值">
+	<input type="text" class="form-control" name="value" placeholder="输入记录值">
   </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新解析记录列表"><i class="fa fa-refresh"></i> 刷新</a>
@@ -227,9 +227,9 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 </div>
 </form>
 
-      <table id="listTable">
+	  <table id="listTable">
 	  </table>
-    </div>
+	</div>
   </div>
 </div>
 </div>
@@ -269,10 +269,16 @@ $(document).ready(function(){
 				visible: false,
 				title: '记录ID'
 			},
-			{
-				field: 'Name',
-				title: '主机记录'
-			},
+		   {
+			   field: 'Name',
+			   title: '主机记录',
+			   formatter: function(value, row, index) {
+				   var domain = value;
+				   if(domain === "@") domain = "{$domainName}";
+				   else domain = value + ".{$domainName}";
+				   return value + ' <a href="http://' + domain + '" target="_blank" title="访问域名"><i class="fa fa-external-link"></i></a>';
+			   }
+		   },
 			{
 				field: 'Type',
 				title: '记录类型',
@@ -282,7 +288,7 @@ $(document).ready(function(){
 					return value;
 				}
 			},
-            {
+			{
 				field: 'LineName',
 				title: '线路类型'
 			},
