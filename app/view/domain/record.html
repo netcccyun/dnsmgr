@@ -276,7 +276,7 @@ $(document).ready(function(){
 				   var domain = value;
 				   if(domain === "@") domain = "{$domainName}";
 				   else domain = value + ".{$domainName}";
-				   return value + ' <a href="http://' + domain + '" target="_blank" title="访问域名"><i class="fa fa-external-link"></i></a>';
+				   return value + '<a href="http://' + domain + '" target="_blank" title="访问域名" style="padding-left:6px;"><i class="fa fa-external-link"></i></a>';
 			   }
 		   },
 			{
@@ -293,13 +293,17 @@ $(document).ready(function(){
 				title: '线路类型'
 			},
 			{
-				field: 'Value',
-				title: '记录值',
-				formatter: function(value, row, index) {
-					if(row.Type == 'MX') return value + ' | '+row.MX;
-					return value;
-				}
-			},
+			   field: 'Value',
+			   title: '记录值',
+			   formatter: function(value, row, index) {
+				   var display = value;
+				   if(row.Type == 'MX') display = value + ' | ' + row.MX;
+				   var copyId = 'copy-value-' + row.RecordId;
+				   // 只允许安全字符，避免引号问题
+				   var safeValue = (value+'').replace(/'/g, "&#39;").replace(/\\/g, "\\\\");
+				   return '<span id="'+copyId+'">'+display+'</span><a href="javascript:void(0);" title="复制记录值" onclick="copyToClipboard(\''+safeValue+'\', \'#'+copyId+'\')" style="padding-left:6px;"><i class=\"fa fa-copy\"></i></a>';
+			   }
+		   },
 			{
 				field: 'TTL',
 				title: 'TTL'
@@ -723,6 +727,29 @@ function advanceSearch(){
 	}else{
 		$("#searchbox2").slideUp();
 		$("#searchbox1").slideDown();
+	}
+}
+function copyToClipboard(text, selector) {
+	var tempInput = document.createElement('input');
+	tempInput.style.position = 'absolute';
+	tempInput.style.left = '-9999px';
+	tempInput.value = text;
+	document.body.appendChild(tempInput);
+	tempInput.select();
+	document.execCommand('copy');
+	document.body.removeChild(tempInput);
+	if(selector){
+		var icon = document.querySelector(selector + ' + a i');
+		if(icon){
+			var oldClass = icon.className;
+			icon.className = 'fa fa-check';
+			setTimeout(function(){ icon.className = oldClass; }, 1000);
+		}
+	}
+	if(typeof layer !== 'undefined' && layer.msg){
+		layer.msg('已复制到剪贴板');
+	}else{
+		alert('已复制到剪贴板');
 	}
 }
 </script>
