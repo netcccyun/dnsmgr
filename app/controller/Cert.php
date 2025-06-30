@@ -458,7 +458,7 @@ class Cert extends BaseController
             $ids = input('post.ids');
             $success = 0;
             foreach ($ids as $id) {
-                if (input('post.action') == 'delete') {
+                if (input('post.act') == 'delete') {
                     $dcount = DB::name('cert_deploy')->where('oid', $id)->count();
                     if ($dcount > 0) continue;
                     try {
@@ -468,7 +468,7 @@ class Cert extends BaseController
                     Db::name('cert_order')->where('id', $id)->delete();
                     Db::name('cert_domain')->where('oid', $id)->delete();
                     $success++;
-                } elseif (input('post.action') == 'reset') {
+                } elseif (input('post.act') == 'reset') {
                     try {
                         $service = new CertOrderService($id);
                         $service->cancel();
@@ -476,8 +476,8 @@ class Cert extends BaseController
                         $success++;
                     } catch (Exception $e) {
                     }
-                } elseif (input('post.action') == 'open' || input('post.action') == 'close') {
-                    $isauto = input('post.action') == 'open' ? 1 : 0;
+                } elseif (input('post.act') == 'open' || input('post.act') == 'close') {
+                    $isauto = input('post.act') == 'open' ? 1 : 0;
                     Db::name('cert_order')->where('id', $id)->update(['isauto' => $isauto]);
                     $success++;
                 }
@@ -754,21 +754,21 @@ class Cert extends BaseController
                 if (!$cert) return json(['code' => -1, 'msg' => '证书订单不存在']);
             }
             foreach ($ids as $id) {
-                if (input('post.action') == 'delete') {
+                if (input('post.act') == 'delete') {
                     Db::name('cert_deploy')->where('id', $id)->delete();
                     $success++;
-                } elseif (input('post.action') == 'reset') {
+                } elseif (input('post.act') == 'reset') {
                     try {
                         $service = new CertDeployService($id);
                         $service->reset();
                         $success++;
                     } catch (Exception $e) {
                     }
-                } elseif (input('post.action') == 'open' || input('post.action') == 'close') {
-                    $active = input('post.action') == 'open' ? 1 : 0;
+                } elseif (input('post.act') == 'open' || input('post.act') == 'close') {
+                    $active = input('post.act') == 'open' ? 1 : 0;
                     Db::name('cert_deploy')->where('id', $id)->update(['active' => $active]);
                     $success++;
-                } elseif (input('post.action') == 'cert') {
+                } elseif (input('post.act') == 'cert') {
                     Db::name('cert_deploy')->where('id', $id)->update(['oid' => $certid]);
                     $success++;
                 }

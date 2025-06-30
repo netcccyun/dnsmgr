@@ -454,7 +454,7 @@ function operation(action){
 	$.ajax({
 		type : 'POST',
 		url : '/cert/order/operation',
-		data : {action: action, ids: ids},
+		data : {act: action, ids: ids},
 		dataType : 'json',
 		success : function(data) {
 			layer.close(ii);

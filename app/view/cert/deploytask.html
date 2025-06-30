@@ -317,7 +317,7 @@ function operation(action){
 	$.ajax({
 		type : 'POST',
 		url : '/cert/deploy/operation',
-		data : {action: action, ids: ids},
+		data : {act: action, ids: ids},
 		dataType : 'json',
 		success : function(data) {
 			layer.close(ii);
@@ -337,7 +337,7 @@ function batch_set_cert(ids){
 		$.ajax({
 			type : 'POST',
 			url : '/cert/deploy/operation',
-			data : {action: 'cert', ids: ids, certid: text},
+			data : {act: 'cert', ids: ids, certid: text},
 			dataType : 'json',
 			success : function(data) {
 				layer.close(ii);
