@@ -2,72 +2,70 @@
 {block name="title"}切换记录{/block}
 {block name="main"}
 <style>
-tbody tr>td:nth-child(4){overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:180px;}
+    #orderItem .orderTitle{word-break:keep-all;}
+    #orderItem .orderContent{word-break:break-all;}
+    .fixed-table-toolbar,.fixed-table-pagination{padding: 15px;}
 </style>
-<div class="row">
-	<div class="col-xs-12 center-block" style="float: none;">
-	<div class="panel panel-default panel-intro">
-	<div class="panel-body">
-	
-<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
-  <div class="form-group">
-	<label>搜索</label>
-	<div class="form-group">
-		<select name="action" class="form-control"><option value="0">操作类型</option><option value="1">发生异常</option><option value="2">恢复正常</option></select>
-	  </div>
-  </div>
-  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
-  <a href="javascript:searchClear()" class="btn btn-default" title="刷新日志列表"><i class="fa fa-refresh"></i> 刷新</a>
-  &nbsp;&nbsp;24H告警次数：<strong>{$info.fail_count}</strong>&nbsp;&nbsp;切换次数：<strong>{$info.switch_count}</strong>
-</form>
-
-      <table id="listTable">
-	  </table>
+<div class="panel panel-default">
+    <div class="panel-heading font-bold">
+        <h3 class="panel-title">切换记录</h3>
     </div>
-  </div>
-</div>
+    <form class="form-inline" id="searchToolbar" method="GET" onsubmit="return searchSubmit()">
+        <div class="form-group">
+            <div class="form-group">
+                <select class="form-control" name="action">
+                    <option value="0">操作类型</option>
+                    <option value="1">发生异常</option>
+                    <option value="2">恢复正常</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> 搜索</button>
+        <a class="btn btn-default" href="javascript:searchClear()" title="刷新切换记录列表"><i class="fa fa-refresh"></i> 刷新</a>&nbsp;&nbsp;24H告警次数：<strong>{$info.fail_count}</strong>&nbsp;&nbsp;切换次数：<strong>{$info.switch_count}</strong>
+    </form>
+    <table id="listTable">
+    </table>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
-var action_name = {$info.action_name|json_encode|raw};
-$(document).ready(function(){
-	updateToolbar();
-	const defaultPageSize = 15;
-	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+    var action_name = {$info.action_name | json_encode | raw};
+    $(document).ready(function () {
+        updateToolbar();
+        const defaultPageSize = 15;
+        const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+        const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
-	$("#listTable").bootstrapTable({
-		url: '/dmonitor/task/log/data/{$info.id}',
-		pageNumber: pageNumber,
-		pageSize: pageSize,
-		classes: 'table table-striped table-hover table-bordered',
-		columns: [
-			{
-				field: 'id',
-				title: 'ID'
-			},
-			{
-				field: 'action',
-				title: '操作类型',
-				formatter: function(value, row, index) {
-					return action_name[value];
-				}
-			},
-			{
-				field: 'date',
-				title: '时间'
-			},
-			{
-				field: 'errmsg',
-				title: '异常原因'
-			}
-		],
-	})
-})
+        $("#listTable").bootstrapTable({
+            url: '/dmonitor/task/log/data/{$info.id}',
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            classes: 'table table-striped table-hover table-bordered',
+            columns: [
+                {
+                    field: 'id',
+                    title: 'ID'
+                },
+                {
+                    field: 'action',
+                    title: '操作类型',
+                    formatter: function (value, row, index) {
+                        return action_name[value];
+                    }
+                },
+                {
+                    field: 'date',
+                    title: '时间'
+                },
+                {
+                    field: 'errmsg',
+                    title: '异常原因'
+                }
+            ],
+        })
+    })
 </script>
 {/block}

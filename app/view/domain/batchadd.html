@@ -1,138 +1,143 @@
 {extend name="common/layout" /}
 {block name="title"}批量添加解析 - {$domainName}{/block}
 {block name="main"}
-<div class="row" id="app">
-<div class="col-xs-12 center-block" style="float: none;">
-<div class="panel panel-default">
-<div class="panel-heading"><h3 class="panel-title"><a href="/record/{$domainId}" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>批量添加解析 - {$domainName}</h3></div>
-<div class="panel-body">
-  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="form-store">
-    <div class="form-group">
-        <label class="col-sm-3 col-xs-12 control-label no-padding-right">主机记录&记录值</label>
-        <div class="col-sm-6">
-            <textarea name="record" placeholder="主机记录和记录值用空格隔开，一行一个" class="form-control" rows="8" required></textarea>
+<div id="app">
+    <div class="panel panel-default">
+        <div class="panel-heading font-bold"><h3 class="panel-title"><a class="btn btn-sm btn-default pull-right" href="/record/{$domainId}" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>批量添加解析 - {$domainName}</h3></div>
+        <div class="panel-body">
+            <form class="form-horizontal" id="form-store" method="post" onsubmit="return false" role="form">
+                <div class="form-group">
+                    <label class="col-sm-3 col-xs-12 control-label no-padding-right">主机记录&记录值</label>
+                    <div class="col-sm-6">
+                        <textarea class="form-control" name="record" placeholder="主机记录和记录值用空格隔开，一行一个" required rows="8"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">记录类型</label>
+                    <div class="col-sm-6">
+                        <select class="form-control" name="type">
+                            <option value="">A / CNAME / AAAA 自动识别</option>
+                            <option value="A">A</option>
+                            <option value="CNAME">CNAME</option>
+                            <option value="AAAA">AAAA</option>
+                            <option value="NS">NS</option>
+                            <option value="MX">MX</option>
+                            <option value="SRV">SRV</option>
+                            <option value="TXT">TXT</option>
+                            <option value="CAA">CAA</option>
+                            {if $dnsconfig.redirect}
+                                <option value="REDIRECT_URL">显性URL</option>
+                                <option value="FORWARD_URL">隐性URL</option>
+                            {/if}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">线路类型</label>
+                    <div class="col-sm-6" id="line_list">
+                    </div>
+                </div>
+                <div class="form-group" id="mx_type" style="display:none">
+                    <label class="col-sm-3 control-label no-padding-right">MX优先级</label>
+                    <div class="col-sm-6">
+                        <input class="form-control" name="mx" type="text" value="10">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">TTL</label>
+                    <div class="col-sm-6">
+                        <input class="form-control" min="{$minTTL}" name="ttl" placeholder="指解析结果在DNS服务器中的缓存时间" required type="text" value="600">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-3 col-sm-6"><button class="btn btn-primary" onclick="save()" type="button">添加</button></div>
+                </div>
+            </form>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">记录类型</label>
-        <div class="col-sm-6">
-            <select name="type" class="form-control">
-                <option value="">A / CNAME / AAAA 自动识别</option>
-                <option value="A">A</option>
-                <option value="CNAME">CNAME</option>
-                <option value="AAAA">AAAA</option>
-                <option value="NS">NS</option>
-                <option value="MX">MX</option>
-                <option value="SRV">SRV</option>
-                <option value="TXT">TXT</option>
-                <option value="CAA">CAA</option>
-                {if $dnsconfig.redirect}<option value="REDIRECT_URL">显性URL</option>
-                <option value="FORWARD_URL">隐性URL</option>{/if}
-            </select>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">线路类型</label>
-        <div class="col-sm-6" id="line_list">
-        </div>
-    </div>
-    <div class="form-group" style="display:none" id="mx_type">
-        <label class="col-sm-3 control-label no-padding-right">MX优先级</label>
-        <div class="col-sm-6">
-            <input type="text" class="form-control" name="mx" value="10">
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">TTL</label>
-        <div class="col-sm-6">
-            <input type="text" class="form-control" name="ttl" value="600" placeholder="指解析结果在DNS服务器中的缓存时间" required min="{$minTTL}">
-        </div>
-    </div>
-    <div class="form-group">
-        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" onclick="save()">添加</button></div>
-    </div>
-  </form>
-</div>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
 <script>
-var recordLine = {$recordLine|json_encode|raw};
-var dnsconfig = {$dnsconfig|json_encode|raw};
-var defaultLine = recordLine[0].id;
-$(document).ready(function(){
-    $("select[name=type]").change(function(){
-		if($(this).val() == 'MX'){
-			$("#mx_type").show();
-		}else{
-			$("#mx_type").hide();
-		}
-	});
+    var recordLine = {$recordLine | json_encode | raw}
 
-    $("#form-store").bootstrapValidator();
-    initLine();
-});
+    var dnsconfig = {$dnsconfig | json_encode | raw}
 
-function initLine(option, elem){
-	option = option || '';
-	elem = elem || 'line_list';
-	$("#"+elem).empty();
-	$.each(recordLine, function(index, item){
-		if(item.parent == null){
-			option += '<option value="'+item.id+'">'+item.name+'</option>';
-		}
-	})
-	$("#"+elem).append('<select name="line" class="form-control" onchange="changeLine(this, \''+elem+'\')">'+option+'</select>');
-}
-function changeLine(obj, elem){
-	var line = $(obj).val();
-	var flag = false;
-	$("#"+elem).children().each(function(index, elem){
-		if(flag) $(elem).remove()
-		if(obj == elem){
-			flag = true;
-		}
-	})
-	if($(obj).find("option:selected").text() == '子集线路（非必填）') return;
-	var tempLine = recordLine.filter((x) => x.parent == line)
-	if(tempLine.length > 0){
-		var option = '<option value="'+line+'">子集线路（非必填）</option>';
-		$.each(tempLine, function(index, item){
-			option += '<option value="'+item.id+'">'+item.name+'</option>';
-		})
-		$("#"+elem).append('<select name="line" class="form-control" onchange="changeLine(this, \''+elem+'\')">'+option+'</select>');
-	}
-}
-function save(){
-	$("#form-store").data("bootstrapValidator").validate();
-	if(!$("#form-store").data("bootstrapValidator").isValid()){
-		return;
-	}
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'POST',
-		url : '/record/batchadd/{$domainId}',
-		data : $("#form-store").serialize(),
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.alert(data.msg,{
-					icon: 1,
-					closeBtn: false
-				}, function(){
-					if(document.referrer.indexOf('/record?') > 0)
-                        window.location.href = document.referrer;
-                    else
-                        window.location.href = '/record/{$domainId}';
-				});
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
-		}
-	});
-}
+    var defaultLine = recordLine[0].id;
+    $(document).ready(function () {
+        $("select[name=type]").change(function () {
+            if ($(this).val() == 'MX') {
+                $("#mx_type").show();
+            } else {
+                $("#mx_type").hide();
+            }
+        });
+
+        $("#form-store").bootstrapValidator();
+        initLine();
+    });
+
+    function initLine(option, elem) {
+        option = option || '';
+        elem = elem || 'line_list';
+        $("#" + elem).empty();
+        $.each(recordLine, function (index, item) {
+            if (item.parent == null) {
+                option += '<option value="' + item.id + '">' + item.name + '</option>';
+            }
+        })
+        $("#" + elem).append('<select name="line" class="form-control" onchange="changeLine(this, \'' + elem + '\')">' + option + '</select>');
+    }
+
+    function changeLine(obj, elem) {
+        var line = $(obj).val();
+        var flag = false;
+        $("#" + elem).children().each(function (index, elem) {
+            if (flag) $(elem).remove()
+            if (obj == elem) {
+                flag = true;
+            }
+        })
+        if ($(obj).find("option:selected").text() == '子集线路（非必填）') return;
+        var tempLine = recordLine.filter((x) => x.parent == line)
+        if (tempLine.length > 0) {
+            var option = '<option value="' + line + '">子集线路（非必填）</option>';
+            $.each(tempLine, function (index, item) {
+                option += '<option value="' + item.id + '">' + item.name + '</option>';
+            })
+            $("#" + elem).append('<select name="line" class="form-control" onchange="changeLine(this, \'' + elem + '\')">' + option + '</select>');
+        }
+    }
+
+    function save() {
+        $("#form-store").data("bootstrapValidator").validate();
+        if (!$("#form-store").data("bootstrapValidator").isValid()) {
+            return;
+        }
+        var ii = layer.load(2);
+        $.ajax({
+            type: 'POST',
+            url: '/record/batchadd/{$domainId}',
+            data: $("#form-store").serialize(),
+            dataType: 'json',
+            success: function (data) {
+                layer.close(ii);
+                if (data.code == 0) {
+                    layer.alert(data.msg, {
+                        icon: 1,
+                        closeBtn: false
+                    }, function () {
+                        if (document.referrer.indexOf('/record?') > 0)
+                            window.location.href = document.referrer;
+                        else
+                            window.location.href = '/record/{$domainId}';
+                    });
+                } else {
+                    layer.alert(data.msg, {icon: 2})
+                }
+            }
+        });
+    }
 </script>
 {/block}

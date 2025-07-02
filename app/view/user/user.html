@@ -1,338 +1,351 @@
 {extend name="common/layout" /}
 {block name="title"}用户管理{/block}
 {block name="main"}
-<div class="modal" id="modal-store" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
-	<div class="modal-dialog">
-		<div class="modal-content animated flipInX">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal"><span
-							aria-hidden="true">&times;</span><span
-							class="sr-only">Close</span></button>
-				<h4 class="modal-title" id="modal-title">用户修改/添加</h4>
-			</div>
-			<div class="modal-body">
-				<form class="form-horizontal" id="form-store">
-					<input type="hidden" name="action"/>
-					<input type="hidden" name="id"/>
-					<div class="form-group">
-						<label class="col-sm-3 control-label no-padding-right">用户名</label>
-						<div class="col-sm-9">
-							<input type="text" class="form-control" name="username" required>
-						</div>
-					</div>
-					<div class="form-group" style="display:none" id="password_input">
-						<label class="col-sm-3 control-label no-padding-right">密码</label>
-						<div class="col-sm-9">
-							<div class="input-group">
-								<input type="text" class="form-control" name="password" autocomplete="off">
-								<a class="input-group-addon" id="create_password" href="javascript:">随机生成</a>
-							</div>
-						</div>
-					</div>
-					<div class="form-group">
-						<label class="col-sm-3 control-label">API接口</label>
-						<div class="col-sm-9">
-							<select name="is_api" class="form-control">
-								<option value="0">关闭</option>
-								<option value="1">开启</option>
-							</select>
-						</div>
-					</div>
-					<div class="form-group" style="display:none" id="apikey_input">
-						<label class="col-sm-3 control-label no-padding-right">API接口密钥</label>
-						<div class="col-sm-9">
-							<div class="input-group">
-								<input type="text" class="form-control" name="apikey" autocomplete="off" readonly>
-								<a class="input-group-addon" id="create_apikey" href="javascript:">生成密钥</a>
-							</div>
-						</div>
-					</div>
-					<div class="form-group">
-						<label class="col-sm-3 control-label">用户等级</label>
-						<div class="col-sm-9">
-							<div class="input-group">
-								<select name="level" class="form-control">
-									<option value="1">普通用户</option>
-									<option value="2">管理员</option>
-								</select>
-								<a tabindex="0" class="input-group-addon" role="button" data-toggle="popover" data-trigger="focus" title="" data-placement="bottom" data-content="普通用户只能管理指定的域名解析，管理员拥有和你相同的权限" data-original-title="用户权限说明"><span class="glyphicon glyphicon-info-sign"></span></a>
-							</div>
-						</div>
-					</div>
-					<div class="form-group" style="display:none" id="permission_input">
-						<label class="col-sm-3 control-label">域名权限</label>
-						<div class="col-sm-9">
-							<select class="form-control select2" id="permission" name="permission[]" multiple="multiple" placeholder="留空">
-								{foreach $domains as $v}
-									<option value="{$v}">{$v}</option>
-								{/foreach}
-							</select>
-						</div>
-					</div>
-					<div class="form-group" style="display:none" id="repwd_input">
-						<label class="col-sm-3 control-label no-padding-right">重置密码</label>
-						<div class="col-sm-9">
-							<input type="text" class="form-control" name="repwd" autocomplete="off" placeholder="不重置密码请留空">
-						</div>
-					</div>
-				</form>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
-				<button type="button" class="btn btn-primary" id="store" onclick="save()">保存</button>
-			</div>
-		</div>
-	</div>
-</div>
-
-<div class="row">
-	<div class="col-xs-12 center-block" style="float: none;">
-	<div class="panel panel-default panel-intro">
-	<div class="panel-body">
-	
-<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
-  <div class="form-group">
-	<label>搜索</label>
-    <input type="text" class="form-control" name="kw" placeholder="UID或用户名">
-  </div>
-  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
-  <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名列表"><i class="fa fa-refresh"></i> 刷新</a>
-  <a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
-</form>
-
-      <table id="listTable">
-	  </table>
+<div aria-hidden="true" aria-labelledby="myModalLabel" class="modal" data-backdrop="static" id="modal-store" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close" data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="modal-title">用户修改/添加</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" id="form-store">
+                    <input name="action" type="hidden"/>
+                    <input name="id" type="hidden"/>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right">用户名</label>
+                        <div class="col-sm-9">
+                            <input class="form-control" name="username" required type="text">
+                        </div>
+                    </div>
+                    <div class="form-group" id="password_input" style="display:none">
+                        <label class="col-sm-3 control-label no-padding-right">密码</label>
+                        <div class="col-sm-9">
+                            <div class="input-group">
+                                <input autocomplete="off" class="form-control" name="password" type="text">
+                                <a class="input-group-addon" href="javascript:" id="create_password">随机生成</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">API接口</label>
+                        <div class="col-sm-9">
+                            <select class="form-control" name="is_api">
+                                <option value="0">关闭</option>
+                                <option value="1">开启</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" id="apikey_input" style="display:none">
+                        <label class="col-sm-3 control-label no-padding-right">API接口密钥</label>
+                        <div class="col-sm-9">
+                            <div class="input-group">
+                                <input autocomplete="off" class="form-control" name="apikey" readonly type="text">
+                                <a class="input-group-addon" href="javascript:" id="create_apikey">生成密钥</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">用户等级</label>
+                        <div class="col-sm-9">
+                            <div class="input-group">
+                                <select class="form-control" name="level">
+                                    <option value="1">普通用户</option>
+                                    <option value="2">管理员</option>
+                                </select>
+                                <a class="input-group-addon" data-content="普通用户只能管理指定的域名解析，管理员拥有和你相同的权限" data-original-title="用户权限说明" data-placement="bottom" data-toggle="popover" data-trigger="focus" role="button" tabindex="0" title=""><span class="glyphicon glyphicon-info-sign"></span></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" id="permission_input" style="display:none">
+                        <label class="col-sm-3 control-label">域名权限</label>
+                        <div class="col-sm-9">
+                            <select class="form-control select2" id="permission" multiple="multiple" name="permission[]" placeholder="留空">
+                                {foreach $domains as $v}
+                                <option value="{$v}">{$v}</option>
+                                {/foreach}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" id="repwd_input" style="display:none">
+                        <label class="col-sm-3 control-label no-padding-right">重置密码</label>
+                        <div class="col-sm-9">
+                            <input autocomplete="off" class="form-control" name="repwd" placeholder="不重置密码请留空" type="text">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-white" data-dismiss="modal" type="button">关闭</button>
+                <button class="btn btn-primary" id="store" onclick="save()" type="button">保存</button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
+<style>
+    #orderItem .orderTitle{word-break:keep-all;}
+    #orderItem .orderContent{word-break:break-all;}
+    .fixed-table-toolbar,.fixed-table-pagination{padding: 15px;}
+</style>
+<div class="panel panel-default">
+    <div class="panel-heading font-bold">
+        <h3 class="panel-title">用户管理</h3>
+    </div>
+    <form class="form-inline" id="searchToolbar" method="GET" onsubmit="return searchSubmit()">
+        <div class="form-group">
+            <input class="form-control" name="kw" placeholder="UID或用户名" type="text">
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> 搜索</button>
+        <a class="btn btn-default" href="javascript:searchClear()" title="刷新用户列表"><i class="fa fa-refresh"></i> 刷新</a>
+        <a class="btn btn-success" href="javascript:addframe()"><i class="fa fa-plus"></i> 添加</a>
+    </form>
+    <table id="listTable">
+    </table>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="{$cdnpublic}select2/4.0.13/js/select2.min.js"></script>
 <script src="{$cdnpublic}select2/4.0.13/js/i18n/zh-CN.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
-$(document).ready(function(){
-	updateToolbar();
-	const defaultPageSize = 15;
-	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+    $(document).ready(function () {
+        updateToolbar();
+        const defaultPageSize = 15;
+        const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+        const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
-	$("#listTable").bootstrapTable({
-		url: '/user/data',
-		pageNumber: pageNumber,
-		pageSize: pageSize,
-		classes: 'table table-striped table-hover table-bordered',
-		columns: [
-			{
-				field: 'id',
-				title: 'UID'
-			},
-			{
-				field: 'username',
-				title: '用户名'
-			},
-			{
-				field: 'level',
-				title: '用户等级',
-				formatter: function(value, row, index) {
-					switch(value){
-						case 1: return '<font color="blue">普通用户</font>';break;
-						case 2: return '<font color="orange">管理员</font>';break;
-					}
-				}
-			},
-            {
-				field: 'is_api',
-				title: 'API接口',
-				formatter: function(value, row, index) {
-					switch(value){
-						case 0: return '<font color="grey">关闭</font>';break;
-						case 1: return '<font color="green">开启</font>';break;
-					}
-				}
-			},
-			{
-				field: 'regtime',
-				title: '添加时间'
-			},
-			{
-				field: 'lasttime',
-				title: '上次登录时间'
-			},
-			{
-				field: 'status',
-				title: '状态',
-				formatter: function(value, row, index) {
-					switch(value){
-						case 0: return '<a href="javascript:setStatus('+row.id+',1)"><font color=red><i class="fa fa-times-circle"></i>封禁</font></a>';break;
-						case 1: return '<a href="javascript:setStatus('+row.id+',0)"><font color=green><i class="fa fa-check-circle"></i>正常</font></a>';break;
-					}
-				}
-			},
-			{
-				field: 'action',
-				title: '操作',
-				formatter: function(value, row, index) {
-					var html = '<a href="javascript:editframe('+row.id+')" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a>';
-					return html;
-				}
-			},
-		],
-	})
-})
-function addframe(){
-	$("#modal-store").modal('show');
-	$("#modal-title").html("添加用户");
-	$("#form-store input[name=action]").val("add");
-	$("#form-store input[name=id]").val('');
-	$("#form-store input[name=username]").val('');
-	$("#form-store input[name=password]").val('');
-	$("#form-store select[name=is_api]").val(0);
-	$("#form-store select[name=level]").val(1);
-	$("#password_input").show();
-	$("#repwd_input").hide();
-	$("#create_apikey").click();
-	$('#permission').val(null).trigger("change");
-	$("select[name=is_api]").change();
-	$("select[name=level]").change();
-}
-function editframe(id){
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'POST',
-		url : '/user/op/act/get',
-		data : {id: id},
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				$("#modal-store").modal('show');
-				$("#modal-title").html("修改用户");
-				$("#form-store input[name=action]").val("edit");
-				$("#form-store input[name=id]").val(data.data.id);
-				$("#form-store input[name=username]").val(data.data.username);
-				$("#form-store select[name=is_api]").val(data.data.is_api);
-				$("#form-store input[name=apikey]").val(data.data.apikey);
-				$("#form-store select[name=level]").val(data.data.level);
-				$("#form-store input[name=repwd]").val('');
-				$("#password_input").hide();
-				$("#repwd_input").show();
-				$('#permission').val(null).trigger("change");
-				if(data.data.permission != null && data.data.permission.length > 0){
-					$('#permission').val(data.data.permission).trigger('change');
-				}
-				$("select[name=is_api]").change();
-				$("select[name=level]").change();
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
-		}
-	});
-}
-function save(){
-	if($("#form-store input[name=username]").val()==''){
-		layer.alert('请确保各项不能为空！');return false;
-	}
-	var act = $("#form-store input[name=action]").val();
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'POST',
-		url : '/user/op/act/'+act,
-		data : $("#form-store").serialize(),
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.alert(data.msg,{
-					icon: 1,
-					closeBtn: false
-				}, function(){
-					layer.closeAll();
-					$("#modal-store").modal('hide');
-					searchRefresh();
-				});
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
-		}
-	});
-}
-function setStatus(id,status) {
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'POST',
-		url : '/user/op/act/set',
-		data : {id:id, status:status},
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				searchRefresh();
-			}else{
-				layer.msg(data.msg, {icon:2, time:1500});
-			}
-		}
-	});
-}
-function delItem(id) {
-	var confirmobj = layer.confirm('确定要删除此用户吗？', {
-	  btn: ['确定','取消']
-	}, function(){
-	  var ii = layer.load(2);
-	  $.ajax({
-		type : 'POST',
-		url : '/user/op/act/del',
-		data : {id: id},
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.closeAll();
-				searchRefresh();
-			}else{
-				layer.alert(data.msg, {icon: 2});
-			}
-		}
-	  });
-	}, function(){
-	  layer.close(confirmobj);
-	});
-}
-var CreatePassword = function (len)
-{
-	var str = "abcdefhjmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWYXZ";
-	var pass = '';
-    for (var i = 0; i < len; i++ ) 
-        pass += str.charAt(Math.floor( Math.random() * str.length));
-	return pass;
-}
-$(document).ready(function(){
-	$("select[name=is_api]").change(function(){
-		if($(this).val() == 1){
-			$("#apikey_input").show();
-		}else{
-			$("#apikey_input").hide();
-		}
-	});
-	$("select[name=level]").change(function(){
-		if($(this).val() == 2){
-			$("#permission_input").hide();
-		}else{
-			$("#permission_input").show();
-			$('#permission').select2({placeholder: '请选择该用户可管理解析的域名'});
-		}
-	});
-	$("#create_password").click(function(){
-		$("input[name='password']").val(CreatePassword(12));
-	});
-	$("#create_apikey").click(function(){
-		$("input[name='apikey']").val(CreatePassword(16));
-	});
-	$('[data-toggle="popover"]').popover()
-})
+        $("#listTable").bootstrapTable({
+            url: '/user/data',
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            classes: 'table table-striped table-hover table-bordered',
+            columns: [
+                {
+                    field: 'id',
+                    title: 'UID'
+                },
+                {
+                    field: 'username',
+                    title: '用户名'
+                },
+                {
+                    field: 'level',
+                    title: '用户等级',
+                    formatter: function (value, row, index) {
+                        switch (value) {
+                            case 1:
+                                return '<font color="blue">普通用户</font>';
+                                break;
+                            case 2:
+                                return '<font color="orange">管理员</font>';
+                                break;
+                        }
+                    }
+                },
+                {
+                    field: 'is_api',
+                    title: 'API接口',
+                    formatter: function (value, row, index) {
+                        switch (value) {
+                            case 0:
+                                return '<font color="grey">关闭</font>';
+                                break;
+                            case 1:
+                                return '<font color="green">开启</font>';
+                                break;
+                        }
+                    }
+                },
+                {
+                    field: 'regtime',
+                    title: '添加时间'
+                },
+                {
+                    field: 'lasttime',
+                    title: '上次登录时间'
+                },
+                {
+                    field: 'status',
+                    title: '状态',
+                    formatter: function (value, row, index) {
+                        switch (value) {
+                            case 0:
+                                return '<a href="javascript:setStatus(' + row.id + ',1)"><font color=red><i class="fa fa-times-circle"></i>封禁</font></a>';
+                                break;
+                            case 1:
+                                return '<a href="javascript:setStatus(' + row.id + ',0)"><font color=green><i class="fa fa-check-circle"></i>正常</font></a>';
+                                break;
+                        }
+                    }
+                },
+                {
+                    field: 'action',
+                    title: '操作',
+                    formatter: function (value, row, index) {
+                        var html = '<a href="javascript:editframe(' + row.id + ')" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem(' + row.id + ')" class="btn btn-danger btn-xs">删除</a>';
+                        return html;
+                    }
+                },
+            ],
+        })
+    })
+
+    function addframe() {
+        $("#modal-store").modal('show');
+        $("#modal-title").html("添加用户");
+        $("#form-store input[name=action]").val("add");
+        $("#form-store input[name=id]").val('');
+        $("#form-store input[name=username]").val('');
+        $("#form-store input[name=password]").val('');
+        $("#form-store select[name=is_api]").val(0);
+        $("#form-store select[name=level]").val(1);
+        $("#password_input").show();
+        $("#repwd_input").hide();
+        $("#create_apikey").click();
+        $('#permission').val(null).trigger("change");
+        $("select[name=is_api]").change();
+        $("select[name=level]").change();
+    }
+
+    function editframe(id) {
+        var ii = layer.load(2);
+        $.ajax({
+            type: 'POST',
+            url: '/user/op/act/get',
+            data: {id: id},
+            dataType: 'json',
+            success: function (data) {
+                layer.close(ii);
+                if (data.code == 0) {
+                    $("#modal-store").modal('show');
+                    $("#modal-title").html("修改用户");
+                    $("#form-store input[name=action]").val("edit");
+                    $("#form-store input[name=id]").val(data.data.id);
+                    $("#form-store input[name=username]").val(data.data.username);
+                    $("#form-store select[name=is_api]").val(data.data.is_api);
+                    $("#form-store input[name=apikey]").val(data.data.apikey);
+                    $("#form-store select[name=level]").val(data.data.level);
+                    $("#form-store input[name=repwd]").val('');
+                    $("#password_input").hide();
+                    $("#repwd_input").show();
+                    $('#permission').val(null).trigger("change");
+                    if (data.data.permission != null && data.data.permission.length > 0) {
+                        $('#permission').val(data.data.permission).trigger('change');
+                    }
+                    $("select[name=is_api]").change();
+                    $("select[name=level]").change();
+                } else {
+                    layer.alert(data.msg, {icon: 2})
+                }
+            }
+        });
+    }
+
+    function save() {
+        if ($("#form-store input[name=username]").val() == '') {
+            layer.alert('请确保各项不能为空！');
+            return false;
+        }
+        var act = $("#form-store input[name=action]").val();
+        var ii = layer.load(2);
+        $.ajax({
+            type: 'POST',
+            url: '/user/op/act/' + act,
+            data: $("#form-store").serialize(),
+            dataType: 'json',
+            success: function (data) {
+                layer.close(ii);
+                if (data.code == 0) {
+                    layer.alert(data.msg, {
+                        icon: 1,
+                        closeBtn: false
+                    }, function () {
+                        layer.closeAll();
+                        $("#modal-store").modal('hide');
+                        searchRefresh();
+                    });
+                } else {
+                    layer.alert(data.msg, {icon: 2})
+                }
+            }
+        });
+    }
+
+    function setStatus(id, status) {
+        var ii = layer.load(2);
+        $.ajax({
+            type: 'POST',
+            url: '/user/op/act/set',
+            data: {id: id, status: status},
+            dataType: 'json',
+            success: function (data) {
+                layer.close(ii);
+                if (data.code == 0) {
+                    searchRefresh();
+                } else {
+                    layer.msg(data.msg, {icon: 2, time: 1500});
+                }
+            }
+        });
+    }
+
+    function delItem(id) {
+        var confirmobj = layer.confirm('确定要删除此用户吗？', {
+            btn: ['确定', '取消']
+        }, function () {
+            var ii = layer.load(2);
+            $.ajax({
+                type: 'POST',
+                url: '/user/op/act/del',
+                data: {id: id},
+                dataType: 'json',
+                success: function (data) {
+                    layer.close(ii);
+                    if (data.code == 0) {
+                        layer.closeAll();
+                        searchRefresh();
+                    } else {
+                        layer.alert(data.msg, {icon: 2});
+                    }
+                }
+            });
+        }, function () {
+            layer.close(confirmobj);
+        });
+    }
+
+    var CreatePassword = function (len) {
+        var str = "abcdefhjmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWYXZ";
+        var pass = '';
+        for (var i = 0; i < len; i++)
+            pass += str.charAt(Math.floor(Math.random() * str.length));
+        return pass;
+    }
+    $(document).ready(function () {
+        $("select[name=is_api]").change(function () {
+            if ($(this).val() == 1) {
+                $("#apikey_input").show();
+            } else {
+                $("#apikey_input").hide();
+            }
+        });
+        $("select[name=level]").change(function () {
+            if ($(this).val() == 2) {
+                $("#permission_input").hide();
+            } else {
+                $("#permission_input").show();
+                $('#permission').select2({placeholder: '请选择该用户可管理解析的域名'});
+            }
+        });
+        $("#create_password").click(function () {
+            $("input[name='password']").val(CreatePassword(12));
+        });
+        $("#create_apikey").click(function () {
+            $("input[name='apikey']").val(CreatePassword(16));
+        });
+        $('[data-toggle="popover"]').popover()
+    })
 </script>
 {/block}

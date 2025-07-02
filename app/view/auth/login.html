@@ -1,180 +1,178 @@
 <!DOCTYPE html>
-<html lang="zh-cn">
+<html lang="zh-CN">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="renderer" content="webkit">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>聚合DNS管理系统 - 登录</title>
-  <link href="{$cdnpublic}twitter-bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="{$cdnpublic}font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
-  <link href="/static/css/app.min.css" rel="stylesheet">
-  <link href="/static/css/skins/{$skin}.css" rel="stylesheet">
-  <link href="/static/css/bootstrap-table.css" rel="stylesheet"/>
-  <script src="{$cdnpublic}jquery/3.6.4/jquery.min.js"></script>
-  <!--[if lt IE 9]>
+    <meta charset="utf-8" />
+    <title>管理中心登录 | 聚合DNS管理系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <link rel="stylesheet" href="{$cdnpublic}twitter-bootstrap/3.4.1/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="{$cdnpublic}animate.css/3.5.2/animate.min.css" type="text/css" />
+    <link rel="stylesheet" href="{$cdnpublic}font-awesome/4.7.0/css/font-awesome.min.css" type="text/css" />
+    <link rel="stylesheet" href="{$cdnpublic}simple-line-icons/2.4.1/css/simple-line-icons.min.css" type="text/css" />
+    <link rel="stylesheet" href="/static/css/font.css" type="text/css" />
+    <link rel="stylesheet" href="/static/css/app.css" type="text/css" />
+    <!--[if lt IE 9]>
     <script src="{$cdnpublic}html5shiv/3.7.3/html5shiv.min.js"></script>
     <script src="{$cdnpublic}respond.js/1.4.2/respond.min.js"></script>
-  <![endif]-->
-<style type="text/css">
-body{color:#999;background-color:#f1f4fd;background-size:cover}
-a{color:#444}
-.login-screen{max-width:430px;padding:0;margin:100px auto 0 auto}
-.login-screen .well{border-radius:3px;-webkit-box-shadow:0 0 30px rgba(0,0,0,.1);box-shadow:0 0 30px rgba(0,0,0,.1);background:#fff;border:none;padding:0}
-@media (max-width:767px){.login-screen{padding:20px 0}
-}
-.profile-img-card{width:100px;height:100px;display:block;-moz-border-radius:50%;-webkit-border-radius:50%;border-radius:50%;margin:-93px auto 30px;border:5px solid #fff}
-.profile-name-card{text-align:center}
-.login-head{background:#899fe1;border-radius:3px 3px 0 0}
-.login-form{padding:40px 30px;position:relative;z-index:99}
-#login-form{margin-top:20px}
-#login-form .input-group{margin-bottom:15px}
-#login-form .form-control{font-size:14px}
-#totp-form{margin-top:20px}
-#totp-form .input-group{margin-bottom:15px}
-#totp-form .form-control{font-size:14px}
-</style>
+    <![endif]-->
+    <style>input:-webkit-autofill{-webkit-box-shadow:0 0 0px 1000px white inset;-webkit-text-fill-color:#333;}</style>
 </head>
 <body>
-<div class="container">
-    <div class="login-wrapper">
-        <div class="login-screen">
-            <div class="well">
-                <div class="login-head">
-                    <img src="/static/images/login-head.png" style="width:100%;"/>
-                </div>
-                <div class="login-form">
-                    <img id="profile-img" class="profile-img-card" src="/static/images/user.png"/>
-                    <p id="profile-name" class="profile-name-card"></p> 
-                    <form action="" id="login-form" onsubmit="return doLogin()">
-                        <div class="input-group">
-                            <div class="input-group-addon"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></div>
-                            <input type="text" class="form-control" placeholder="用户名" name="username" required="required"/>
-                        </div>
-                        <div class="input-group">
-                            <div class="input-group-addon"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span></div>
-                            <input type="password" class="form-control" placeholder="密码" name="password" required="required"/>
-                        </div>
-                        {if config_get('vcode', '1')=='1'}<div class="input-group">
-                            <div class="input-group-addon"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span></div>
-                            <input type="text" class="form-control input-lg" placeholder="验证码" name="code" autocomplete="off" required="required"/>
-                            <span class="input-group-addon" style="padding: 0">
-                              <img id="verifycode" src="/verifycode" height="45" onclick="this.src='/verifycode?r='+Math.random();" title="点击更换验证码">
-                            </span>
-                        </div>{/if}
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-success btn-lg btn-block" id="submit" style="background:#708eea;">登 录</button>
-                        </div>
-                        <div class="pull-right"><a href="javascript:findpwd()">忘记密码</a></div>
-                    </form>
-                    <form action="" id="totp-form" onsubmit="return doTotp()" style="display:none;">
-                        <div class="alert alert-info" role="alert">TOTP二次验证</div>
-                        <div class="input-group">
-                            <div class="input-group-addon"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span></div>
-                            <input type="number" class="form-control input-lg" placeholder="输入动态口令" name="totp_code" id="totp_code" autocomplete="off" required="required"/>
-                        </div>
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-success btn-lg btn-block" id="submit" style="background:#708eea;">登 录</button>
-                        </div>
-                        <div class="pull-right"><a href="javascript:findpwd()">忘记密码</a></div>
-                    </form>
-                </div>
+<div class="modal inmodal fade" id="modal-findpwd" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">关闭</span>
+                </button>
+                <h4 class="modal-title">忘记密码</h4>
+            </div>
+            <div class="modal-body">
+                <strong>重置密码</strong>
+                <p>进入网站根目录，执行命令：<br/><code>php think reset pwd 用户名 密码</code></p>
+                <strong>关闭TOTP</strong>
+                <p>进入网站根目录，执行命令：<br/><code>php think reset totp 用户名</code></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
             </div>
         </div>
     </div>
 </div>
-<div class="modal" id="modal-findpwd">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-					<span aria-hidden="true">&times;</span>
-				</button>
-				<h4 class="modal-title">忘记密码</h4>
-			</div>
-			<div class="modal-body">
-				<strong>重置密码</strong>
-                <p>进入网站根目录，执行命令：<br/><code>php think reset pwd 用户名 密码</code></p>
-                <strong>关闭TOTP</strong>
-                <p>进入网站根目录，执行命令：<br/><code>php think reset totp 用户名</code></p>
-			</div>
-		</div>
-	</div>
+<div class="app app-header-fixed  ">
+    <div class="container w-xxl w-auto-xs" ng-controller="SigninFormController" ng-init="app.settings.container = false;">
+        <span class="navbar-brand block m-t">聚合DNS管理系统</span>
+        <div class="m-b-lg">
+            <div class="wrapper text-center">
+                <strong>管理中心登录</strong>
+            </div>
+            <div class="text-danger wrapper text-center" ng-show="authError"></div>
+            <form action="" class="form-validation" id="login-form" onsubmit="return doLogin()">
+                <div class="tab-content">
+                    <div class="tab-pane active">
+                        <div class="list-group list-group-sm swaplogin">
+                            <div class="list-group-item">
+                                <input type="text" class="form-control no-border" placeholder="用户名" name="username" required="required"/>
+                            </div>
+                            <div class="list-group-item">
+                                <input type="password" class="form-control no-border" placeholder="密码" name="password" required="required"/>
+                            </div>
+                            {if config_get('vcode', '1')=='1'}
+                            <div class="list-group-item">
+                                <div class="input-group">
+                                    <input type="text" name="code" class="form-control no-border" placeholder="输入验证码" autocomplete="off" required="required"/>
+                                    <span class="input-group-addon" style="padding: 0">
+                                        <img id="verifycode" src="/verifycode" height="33" onclick="this.src='/verifycode?r='+Math.random();" title="点击更换验证码">
+                					</span>
+                                </div>
+                            </div>
+                            {/if}
+                        </div>
+                        <button type="submit" class="btn btn-lg btn-primary btn-block" id="submit">立即登录</button>
+                    </div>
+                </div>
+                <div class="line line-dashed"></div>
+                <div class="form-group">
+                    <a href="javascript:findpwd()" class="btn btn-info btn-rounded"><i class="fa fa-unlock"></i>&nbsp;找回密码</a>
+                </div>
+            </form>
+            <form action="" class="form-validation" id="totp-form" onsubmit="return doTotp()" style="display:none;">
+                <div class="tab-content">
+                    <div class="tab-pane active">
+                        <div class="list-group list-group-sm swaplogin">
+                            <div class="list-group-item">
+                                <input type="number" class="form-control no-border" placeholder="输入动态口令" name="totp_code" id="totp_code" autocomplete="off" required="required"/>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-lg btn-primary btn-block" id="submit">立即登录</button>
+                    </div>
+                </div>
+                <div class="line line-dashed"></div>
+                <div class="form-group">
+                    <a href="javascript:findpwd()" class="btn btn-info btn-rounded"><i class="fa fa-unlock"></i>&nbsp;找回密码</a>
+                </div>
+            </form>
+        </div>
+        <div class="text-center">
+            <p>
+                <small class="text-muted"><a href="/">聚合DNS管理系统</a><br>&copy; 2016~2024</small>
+            </p>
+        </div>
+    </div>
 </div>
+<script src="{$cdnpublic}jquery/3.4.1/jquery.min.js"></script>
 <script src="{$cdnpublic}twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="{$cdnpublic}layer/3.1.1/layer.min.js"></script>
 <script>
-function doLogin(){
-    var username = $("input[name='username']").val();
-    var password = $("input[name='password']").val();
-    var code = $("input[name='code']").val();
-    if(username == ''){
-        layer.msg('用户名不能为空', {icon: 2});
+    function doLogin(){
+        var username = $("input[name='username']").val();
+        var password = $("input[name='password']").val();
+        var code = $("input[name='code']").val();
+        if(username == ''){
+            layer.msg('用户名不能为空', {icon: 2});
+            return false;
+        }
+        if(password == ''){
+            layer.msg('密码不能为空', {icon: 2});
+            return false;
+        }
+        if(code == ''){
+            layer.msg('验证码不能为空', {icon: 2});
+            return false;
+        }
+        var ii = layer.load(2);
+        $.ajax({
+            type: "POST",
+            url: "/login",
+            data: $("#login-form").serialize(),
+            dataType: 'json',
+            success: function(data){
+                layer.close(ii);
+                if(data.code == 0){
+                    layer.msg('登录成功，正在跳转到首页', {icon: 1,shade: 0.01,time: 15000});
+                    window.location.href = '/';
+                }else{
+                    if(data.vcode==1){
+                        $("#verifycode").attr('src', '/verifycode?r='+Math.random())
+                    }else if(data.vcode==2){
+                        $("#totp-form").show();
+                        $("#login-form").hide();
+                        $("#totp_code").focus();
+                        return false;
+                    }
+                    layer.alert(data.msg, {icon: 2});
+                }
+            }
+        });
         return false;
     }
-    if(password == ''){
-        layer.msg('密码不能为空', {icon: 2});
-        return false;
-    }
-    if(code == ''){
-        layer.msg('验证码不能为空', {icon: 2});
-        return false;
-    }
-    var ii = layer.load(2);
-    $.ajax({
-        type: "POST",
-        url: "/login",
-        data: $("#login-form").serialize(),
-        dataType: 'json',
-        success: function(data){
+    function doTotp(){
+        var code = $("#totp_code").val();
+        if(code.length != 6){
+            layer.msg('动态口令格式错误', {icon: 2});
+            return false;
+        }
+        var ii = layer.load(2, {shade:[0.1,'#fff']});
+        $.post('/auth/totp', {code:code}, function(res){
             layer.close(ii);
-            if(data.code == 0){
+            if(res.code == 0){
                 layer.msg('登录成功，正在跳转到首页', {icon: 1,shade: 0.01,time: 15000});
                 window.location.href = '/';
             }else{
-                if(data.vcode==1){
-                    $("#verifycode").attr('src', '/verifycode?r='+Math.random())
-                }else if(data.vcode==2){
-                    $("#totp-form").show();
-                    $("#login-form").hide();
-                    $("#totp_code").focus();
-                    return false;
-                }
-                layer.alert(data.msg, {icon: 2});
+                layer.alert(res.msg, {icon: 2});
             }
-        }
+        });
+        return false;
+    }
+    function findpwd(){
+        $('#modal-findpwd').modal('show');
+    }
+    $(document).ready(function(){
+        $("#totp_code").keyup(function(){
+            var code = $(this).val();
+            if(code.length == 6){
+                $("#totp-form").submit();
+            }
+        });
     });
-    return false;
-}
-function doTotp(){
-    var code = $("#totp_code").val();
-    if(code.length != 6){
-		layer.msg('动态口令格式错误', {icon: 2});
-		return false;
-	}
-	var ii = layer.load(2, {shade:[0.1,'#fff']});
-	$.post('/auth/totp', {code:code}, function(res){
-		layer.close(ii);
-		if(res.code == 0){
-			layer.msg('登录成功，正在跳转到首页', {icon: 1,shade: 0.01,time: 15000});
-            window.location.href = '/';
-		}else{
-			layer.alert(res.msg, {icon: 2});
-		}
-	});
-	return false;
-}
-function findpwd(){
-    $('#modal-findpwd').modal('show');
-}
-$(document).ready(function(){
-	$("#totp_code").keyup(function(){
-		var code = $(this).val();
-		if(code.length == 6){
-			$("#totp-form").submit();
-		}
-	});
-});
 </script>
 </body>
 </html>

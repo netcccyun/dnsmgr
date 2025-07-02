@@ -2,119 +2,114 @@
 {block name="title"}SSL证书计划任务{/block}
 {block name="main"}
 <div class="row">
-<div class="col-xs-12 col-sm-8 col-lg-6 center-block" style="float: none;">
-<div class="panel panel-warning">
-<div class="panel-heading"><h3 class="panel-title">计划任务说明</h3></div>
-<div class="panel-body">
-  <p><li>计划任务：将以下命令添加到计划任务，1分钟1次</li></p>
-  <p><code>cd {:app()->getRootPath()} && php think certtask</code></p>
-  <p><li>上次运行时间：<font color="green">{:config_get('certtask_time', '未运行', true)}</font></li></p>
-</div>
-</div>
-
-<div class="panel panel-info">
-<div class="panel-heading"><h3 class="panel-title">自动续签设置</h3></div>
-<div class="panel-body">
-  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
-	<div class="form-group">
-	  <label class="col-sm-3 control-label">到期前续签天数</label>
-	  <div class="col-sm-9"><input type="text" name="cert_renewdays" value="{:config_get('cert_renewdays', '7')}" class="form-control" placeholder="证书到期前多少天自动续签"/></div>
+	<div class="col-xs-12 col-sm-10 col-md-8 col-lg-6 center-block" style="float: none;">
+		<div class="panel panel-warning">
+			<div class="panel-heading"><h3 class="panel-title">计划任务说明</h3></div>
+			<div class="panel-body">
+				<p>计划任务：将以下命令添加到计划任务，1分钟1次</p>
+				<p><code>cd {:app()->getRootPath()} && php think certtask</code></p>
+				<p>上次运行时间：<font color="green">{:config_get('certtask_time', '未运行', true)}</font></p>
+			</div>
+		</div>
+		<div class="panel panel-info">
+			<div class="panel-heading"><h3 class="panel-title">自动续签设置</h3></div>
+			<div class="panel-body">
+				<form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+					<div class="form-group">
+						<label class="col-sm-3 control-label">到期前续签天数</label>
+						<div class="col-sm-9"><input type="text" name="cert_renewdays" value="{:config_get('cert_renewdays', '7')}" class="form-control" placeholder="证书到期前多少天自动续签"/></div>
+					</div>
+					<div class="form-group">
+						<div class="col-sm-offset-3 col-sm-9">
+							<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="panel-footer">
+				提示：只有已开启自动续签的证书，才会自动续签。
+			</div>
+		</div>
+		<div class="panel panel-info">
+			<div class="panel-heading"><h3 class="panel-title">自动部署设置</h3></div>
+			<div class="panel-body">
+				<form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+					<div class="form-group">
+						<label class="col-sm-3 control-label">部署任务运行时段（小时）</label>
+						<div class="col-sm-9"><div class="input-group"><select class="form-control" name="deploy_hour_start" default="{:config_get('deploy_hour_start', '0')}">{for start="0" end="24"}<option value="{$i}">{$i}</option>{/for}</select><span class="input-group-addon">—</span><select class="form-control" name="deploy_hour_end" default="{:config_get('deploy_hour_end', '23')}">{for start="0" end="24"}<option value="{$i}">{$i}</option>{/for}</select></div></div>
+					</div>
+					<div class="form-group">
+						<div class="col-sm-offset-3 col-sm-9">
+							<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+		<div class="panel panel-info">
+			<div class="panel-heading"><h3 class="panel-title">通知设置</h3></div>
+			<div class="panel-body">
+				<form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+					<div class="form-group">
+						<label class="col-sm-3 control-label">邮件通知</label>
+						<div class="col-sm-9"><select class="form-control" name="cert_notice_mail" default="{:config_get('cert_notice_mail')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">微信公众号通知</label>
+						<div class="col-sm-9"><select class="form-control" name="cert_notice_wxtpl" default="{:config_get('cert_notice_wxtpl')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">Telegram机器人通知</label>
+						<div class="col-sm-9"><select class="form-control" name="cert_notice_tgbot" default="{:config_get('cert_notice_tgbot')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">群机器人Webhook</label>
+						<div class="col-sm-9"><select class="form-control" name="cert_notice_webhook" default="{:config_get('cert_notice_webhook')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
+					</div>
+					<div class="form-group">
+						<div class="col-sm-offset-3 col-sm-9"><input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/></div>
+					</div>
+				</form>
+			</div>
+			<div class="panel-footer">
+				开启后，将在证书签发成功/失败，自动部署任务成功/失败时发送通知。只有计划任务执行会发送通知，控制台手动执行的不会发送。
+			</div>
+		</div>
 	</div>
-	<div class="form-group">
-	  <div class="col-sm-offset-3 col-sm-9">
-		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
-	  </div>
-	</div>
-  </form>
-</div>
-<div class="panel-footer">
-	<li>提示：只有已开启自动续签的证书，才会自动续签。</li>
-</div>
-</div>
-
-<div class="panel panel-info">
-<div class="panel-heading"><h3 class="panel-title">自动部署设置</h3></div>
-<div class="panel-body">
-  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
-	<div class="form-group">
-	  <label class="col-sm-3 control-label">部署任务运行时段（小时）</label>
-	  <div class="col-sm-9"><div class="input-group"><select class="form-control" name="deploy_hour_start" default="{:config_get('deploy_hour_start', '0')}">{for start="0" end="24"}<option value="{$i}">{$i}</option>{/for}</select><span class="input-group-addon">—</span><select class="form-control" name="deploy_hour_end" default="{:config_get('deploy_hour_end', '23')}">{for start="0" end="24"}<option value="{$i}">{$i}</option>{/for}</select></div></div>
-	</div>
-	<div class="form-group">
-	  <div class="col-sm-offset-3 col-sm-9">
-		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
-	  </div>
-	</div>
-  </form>
-</div>
-</div>
-
-<div class="panel panel-info">
-<div class="panel-heading"><h3 class="panel-title">通知设置</h3></div>
-<div class="panel-body">
-  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
-	<div class="form-group">
-	  <label class="col-sm-3 control-label">邮件通知</label>
-	  <div class="col-sm-9"><select class="form-control" name="cert_notice_mail" default="{:config_get('cert_notice_mail')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
-	</div>
-	<div class="form-group">
-	  <label class="col-sm-3 control-label">微信公众号通知</label>
-	  <div class="col-sm-9"><select class="form-control" name="cert_notice_wxtpl" default="{:config_get('cert_notice_wxtpl')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
-	</div>
-	<div class="form-group">
-		<label class="col-sm-3 control-label">Telegram机器人通知</label>
-		<div class="col-sm-9"><select class="form-control" name="cert_notice_tgbot" default="{:config_get('cert_notice_tgbot')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
-	  </div>
-	  <div class="form-group">
-		<label class="col-sm-3 control-label">群机器人Webhook</label>
-		<div class="col-sm-9"><select class="form-control" name="cert_notice_webhook" default="{:config_get('cert_notice_webhook')}"><option value="0">关闭</option><option value="1">开启</option><option value="2">开启(仅失败时)</option></select></div>
-	  </div>
-	<div class="form-group">
-	  <div class="col-sm-offset-3 col-sm-9"><input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/></div>
-	</div>
-  </form>
-</div>
-<div class="panel-footer">
-	<li>开启后，将在证书签发成功/失败，自动部署任务成功/失败时发送通知。只有计划任务执行会发送通知，控制台手动执行的不会发送。</li>
-</div>
-</div>
-
-</div>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script>
-var items = $("select[default]");
-for (i = 0; i < items.length; i++) {
-	$(items[i]).val($(items[i]).attr("default")||0);
-}
-function saveSetting(obj){
-	var ii = layer.load(2, {shade:[0.1,'#fff']});
-	$.ajax({
-		type : 'POST',
-		url : '/system/set',
-		data : $(obj).serialize(),
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.alert('设置保存成功！', {
-					icon: 1,
-					closeBtn: false
-				}, function(){
-				  window.location.reload()
-				});
-			}else{
-				layer.alert(data.msg, {icon: 2})
+	var items = $("select[default]");
+	for (i = 0; i < items.length; i++) {
+		$(items[i]).val($(items[i]).attr("default")||0);
+	}
+	function saveSetting(obj){
+		var ii = layer.load(2, {shade:[0.1,'#fff']});
+		$.ajax({
+			type : 'POST',
+			url : '/system/set',
+			data : $(obj).serialize(),
+			dataType : 'json',
+			success : function(data) {
+				layer.close(ii);
+				if(data.code == 0){
+					layer.alert('设置保存成功！', {
+						icon: 1,
+						closeBtn: false
+					}, function(){
+						window.location.reload()
+					});
+				}else{
+					layer.alert(data.msg, {icon: 2})
+				}
+			},
+			error:function(data){
+				layer.close(ii);
+				layer.msg('服务器错误');
 			}
-		},
-		error:function(data){
-            layer.close(ii);
-			layer.msg('服务器错误');
-		}
-	});
-	return false;
-}
+		});
+		return false;
+	}
 </script>
 {/block}

@@ -2,211 +2,208 @@
 {block name="title"}容灾切换运行概览{/block}
 {block name="main"}
 <style>
-.info-box-content{padding:18px 10px}
-.hbox{display:table;width:100%;height:100%;border-spacing:0;table-layout:fixed;border:1px solid #edf1f2}
-.hbox .col{display:table-cell;float:none;height:100%;vertical-align:top;border:1px solid #edf1f2;padding-top:18px;padding-bottom:18px;color:#98a6ad}
-.hbox .col .fa{display:block;padding-bottom:3px}
-.hbox .col span{font-size:14px}
-.hbox .col:hover{background-color:#f9f9f9;color:#6e7173}
+    .round {
+        line-height: 53px;
+        color: #7266ba;
+        width: 58px;
+        height: 58px;
+        font-size: 26px;
+        margin-left:15px;
+        display: inline-block;
+        font-weight: 400;
+        border: 3px solid #f8f8fe;
+        text-align: center;
+        border-radius: 50%;
+        background: #e3dff9;
+    }
 </style>
-<div class="modal" id="modal-clean">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-					<span aria-hidden="true">&times;</span>
-				</button>
-				<h4 class="modal-title">数据清理</h4>
-			</div>
-			<div class="modal-body">
-				<form id="form-clean" onsubmit="return false;">
-					<div class="form-group">
-						<label>清理多少天前的切换记录</label>
-						<input type="number" class="form-control" name="days" value="30">
-					</div>
-				</form>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-outline-info" data-dismiss="modal">取消</button>
-				<button type="button" class="btn btn-danger" onclick="submitClean()">确定</button>
-			</div>
-		</div>
-	</div>
+<div aria-hidden="true" aria-labelledby="myModalLabel" class="modal inmodal fade" data-backdrop="static" id="modal-clean" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">数据清理</h4>
+            </div>
+            <div class="modal-body">
+                <form id="form-clean" onsubmit="return false;">
+                    <div class="form-group">
+                        <label>清理多少天前的切换记录</label>
+                        <input class="form-control" name="days" type="number" value="30">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-info" data-dismiss="modal" type="button">取消</button>
+                <button class="btn btn-primary" onclick="submitClean()" type="button">确定</button>
+            </div>
+        </div>
+    </div>
 </div>
-<div class="modal" id="modal-notice">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-					<span aria-hidden="true">&times;</span>
-				</button>
-				<h4 class="modal-title">通知设置</h4>
-			</div>
-			<div class="modal-body">
-				<form id="form-notice" onsubmit="return false;" class="form-horizontal">
-					<div class="form-group">
-						<label class="col-sm-4 control-label">邮件通知</label>
-						<div class="col-sm-8"><select class="form-control" name="notice_mail" default="{:config_get('notice_mail')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
-					</div>
-					<div class="form-group">
-						<label class="col-sm-4 control-label">微信公众号通知</label>
-						<div class="col-sm-8"><select class="form-control" name="notice_wxtpl" default="{:config_get('notice_wxtpl')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
-					</div>
-					<div class="form-group">
-						<label class="col-sm-4 control-label">Telegram机器人通知</label>
-						<div class="col-sm-8"><select class="form-control" name="notice_tgbot" default="{:config_get('notice_tgbot')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
-					</div>
-					<div class="form-group">
-						<label class="col-sm-4 control-label">群机器人Webhook</label>
-						<div class="col-sm-8"><select class="form-control" name="notice_webhook" default="{:config_get('notice_webhook')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
-					</div>
-				</form>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-outline-info" data-dismiss="modal">取消</button>
-				<button type="button" class="btn btn-primary" onclick="submitNotice()">确定</button>
-			</div>
-		</div>
-	</div>
+<div aria-hidden="true" aria-labelledby="myModalLabel" class="modal inmodal fade" data-backdrop="static" id="modal-notice" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">通知设置</h4>
+            </div>
+            <div class="modal-body">
+                <form id="form-notice" onsubmit="return false;" class="form-horizontal">
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">邮件通知</label>
+                        <div class="col-sm-8"><select class="form-control" name="notice_mail" default="{:config_get('notice_mail')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">微信公众号通知</label>
+                        <div class="col-sm-8"><select class="form-control" name="notice_wxtpl" default="{:config_get('notice_wxtpl')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">Telegram机器人通知</label>
+                        <div class="col-sm-8"><select class="form-control" name="notice_tgbot" default="{:config_get('notice_tgbot')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">群机器人Webhook</label>
+                        <div class="col-sm-8"><select class="form-control" name="notice_webhook" default="{:config_get('notice_webhook')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-info" data-dismiss="modal" type="button">取消</button>
+                <button class="btn btn-primary" onclick="submitNotice()" type="button">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row row-sm text-center">
+    <div class="col-xs-6 col-sm-3">
+        <div class="panel padder-v item">
+            <div class="row">
+                <div class="col-xs-3"><div class="round"><i class="fa fa-certificate fa-fw"></i></div></div>
+                <div class="col-xs-9"><div class="h1 text-primary-dk font-thin h1"><span>{$info.run_state==1?'<font color="green">正在运行</font>':'<font color="red">已停止</font>'}</span><span class="text-muted text-md"></span></div><span class="text-muted">运行状态</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xs-6 col-sm-3">
+        <div class="panel padder-v item">
+            <div class="row">
+                <div class="col-xs-3"><div class="round"><i class="fa fa-heart fa-fw"></i></div></div>
+                <div class="col-xs-9"><div class="h1 text-dark-dk font-thin h1"><span>{$info.run_count}</span><span class="text-muted text-md"></span></div><span class="text-muted">今日运行次数</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xs-6 col-sm-3">
+        <div class="panel padder-v item">
+            <div class="row">
+                <div class="col-xs-3"><div class="round"><i class="fa fa-bandcamp fa-fw"></i></div></div>
+                <div class="col-xs-9"><div class="h1 text-success-dk font-thin h1"><span>{$info.fail_count}</span><span class="text-muted text-md"></span></div><span class="text-muted">24H告警次数</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xs-6 col-sm-3">
+        <div class="panel padder-v item">
+            <div class="row">
+                <div class="col-xs-3"><div class="round"><i class="fa fa-gratipay fa-fw"></i></div></div>
+                <div class="col-xs-9"><div class="h1 text-info-dk font-thin h1"><span>{$info.switch_count}</span><span class="text-muted text-md"></span></div><span class="text-muted">24H切换次数</span></div>
+            </div>
+        </div>
+    </div>
 </div>
 <div class="row">
-	<div class="col-md-3 col-sm-6 col-xs-12">
-	  <div class="info-box">
-		<span class="info-box-icon bg-aqua"><i class="fa fa-certificate"></i></span>
-
-		<div class="info-box-content">
-		  <span class="info-box-text">运行状态</span>
-		  <span class="info-box-number">{$info.run_state==1?'<font color="green">正在运行</font>':'<font color="red">已停止</font>'}</span>
-		</div>
-		<!-- /.info-box-content -->
-	  </div>
-	  <!-- /.info-box -->
-	</div>
-	<!-- /.col -->
-	<div class="col-md-3 col-sm-6 col-xs-12">
-	  <div class="info-box">
-		<span class="info-box-icon bg-green"><i class="fa fa-heart"></i></span>
-
-		<div class="info-box-content">
-		  <span class="info-box-text">今日运行次数</span>
-		  <span class="info-box-number">{$info.run_count}</span>
-		</div>
-		<!-- /.info-box-content -->
-	  </div>
-	  <!-- /.info-box -->
-	</div>
-	<!-- /.col -->
-
-	<!-- fix for small devices only -->
-	<div class="clearfix visible-sm-block"></div>
-
-	<div class="col-md-3 col-sm-6 col-xs-12">
-	  <div class="info-box">
-		<span class="info-box-icon bg-red"><i class="fa fa-bandcamp"></i></span>
-
-		<div class="info-box-content">
-		  <span class="info-box-text">24H告警次数</span>
-		  <span class="info-box-number">{$info.fail_count}</span>
-		</div>
-		<!-- /.info-box-content -->
-	  </div>
-	  <!-- /.info-box -->
-	</div>
-	<!-- /.col -->
-	<div class="col-md-3 col-sm-6 col-xs-12">
-	  <div class="info-box">
-		<span class="info-box-icon bg-yellow"><i class="fa fa-gratipay"></i></span>
-
-		<div class="info-box-content">
-		  <span class="info-box-text">24H切换次数</span>
-		  <span class="info-box-number">{$info.switch_count}</span>
-		</div>
-		<!-- /.info-box-content -->
-	  </div>
-	  <!-- /.info-box -->
-	</div>
-	<!-- /.col -->
-  </div>
-<div class="row">
-<div class="col-xs-12 col-md-6">
-	<div class="panel panel-success">
-		<div class="panel-heading"><h3 class="panel-title">运行概览</h3></div>
-	<div class="panel-body">
-		<li class="list-group-item"><span class="glyphicon glyphicon-time"></span> <b>上次运行时间：</b> {$info.run_time}</li>
-		<li class="list-group-item"><span class="glyphicon glyphicon-time"></span> <b>当前时间：</b> {:date('Y-m-d H:i:s')}</li>
-		<li class="list-group-item"><span class="fa fa-th-large"></span> <b>Swoole组件：</b> {$info.swoole|raw}</li>
-		{if $info.run_error}<li class="list-group-item"><span class="fa fa-times-circle"></span> <b>上次运行错误信息：</b> {$info.run_error}</li>{/if}
-		<div class="hbox text-center text-sm">
-			<a href="/dmonitor/task" class="col">
-			  <i class="fa fa-list-alt fa-2x"></i>
-			  <span>切换策略</span>
-			</a>
-			<a href="javascript:noticeset()" class="col">
-				<i class="fa fa-bullhorn fa-2x"></i>
-			  <span>通知设置</span>
-			</a>
-			<a href="javascript:clean()" class="col">
-			  <i class="fa fa-trash fa-2x"></i>
-			  <span>数据清理</span>
-			</a>
-		</div>
+    <div class="col-xs-12 col-md-6">
+        <div class="panel panel-success">
+            <div class="panel-heading font-bold"><h3 class="panel-title">运行概览</h3></div>
+            <div class="panel-body">
+                <li class="list-group-item"><span class="glyphicon glyphicon-time"></span>
+                    <b>上次运行时间：</b>{$info.run_time}
+                </li>
+                <li class="list-group-item">
+                    <span class="glyphicon glyphicon-time"></span>
+                    <b>当前时间：</b>{:date('Y-m-d H:i:s')}
+                </li>
+                <li class="list-group-item">
+                    <span class="fa fa-th-large"></span>
+                    <b>Swoole组件：</b>{$info.swoole|raw}
+                </li>
+                {if $info.run_error}
+                    <li class="list-group-item">
+                        <span class="fa fa-times-circle"></span>
+                        <b>上次运行错误信息：</b>{$info.run_error}
+                    </li>
+                {/if}
+                <li class="list-group-item">
+                    <div class="hbox text-center b-light text-sm">
+                        <a href="/dmonitor/task" class="col padder-v text-muted b-light">
+                            <i class="fa fa-list-alt block m-b-xs fa-2x"></i>
+                            <span>切换策略</span>
+                        </a>
+                        <a href="javascript:noticeset()" class="col padder-v text-muted b-light">
+                            <i class="fa fa-bullhorn block m-b-xs fa-2x"></i>
+                            <span>通知设置</span>
+                        </a>
+                        <a href="javascript:clean()" class="col padder-v text-muted b-light">
+                            <i class="fa fa-trash block m-b-xs fa-2x"></i>
+                            <span>数据清理</span>
+                        </a>
+                    </div>
+                </li>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
-<div class="col-xs-12 col-md-6">
-  <div class="panel panel-info">
-	<div class="panel-heading"><h3 class="panel-title">操作说明</h3></div>
-	<div class="panel-body">
-		<p>1、php需要安装swoole组件</p>
-		<p>2、在命令行执行以下命令启动进程：</p>
-		<p><code>cd {:app()->getRootPath()} && php think dmtask</code></p>
-		<p>3、也可以使用进程守护管理器，添加守护进程，运行目录：{:app()->getRootPath()}，启动命令：php think dmtask</p>
+    <div class="col-xs-12 col-md-6">
+        <div class="panel panel-info">
+            <div class="panel-heading font-bold"><h3 class="panel-title">操作说明</h3></div>
+            <div class="panel-body">
+                <p>1、php需要安装swoole组件</p>
+                <p>2、在命令行执行以下命令启动进程：<code>cd {:app()->getRootPath()} && php think dmtask</code></p>
+                <p>3、也可以使用进程守护管理器，添加守护进程，运行目录：<code>{:app()->getRootPath()}</code>，启动命令：<code>php think dmtask</code></p>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script>
-var items = $("select[default]");
-for (i = 0; i < items.length; i++) {
-	$(items[i]).val($(items[i]).attr("default")||0);
-}
-function clean(){
-	$('#modal-clean').modal('show');
-}
-function noticeset(){
-	$('#modal-notice').modal('show');
-}
-function submitClean(){
-	var days = $('#form-clean input[name=days]').val();
-	if(days < 1){
-		layer.alert('清理天数不能小于1', {icon: 2});
-		return;
-	}
-	$.post('/dmonitor/clean', {days: days}, function(res){
-		if(res.code == 0){
-			layer.msg(res.msg, {icon: 1});
-			$('#modal-clean').modal('hide');
-		}else{
-			layer.alert(res.msg, {icon: 2});
-		}
-	});
-}
-function submitNotice(){
-	$.post('/system/set', $("#form-notice").serialize(), function(res){
-		if(res.code == 0){
-			layer.alert('设置保存成功！<br/>重启检测进程或容器后生效', {
-				icon: 1,
-				closeBtn: false
-			}, function(){
-				window.location.reload()
-			});
-		}else{
-			layer.alert(res.msg, {icon: 2});
-		}
-	});
-}
+    var items = $("select[default]");
+    for (i = 0; i < items.length; i++) {
+        $(items[i]).val($(items[i]).attr("default")||0);
+    }
+    function clean() {
+        $('#modal-clean').modal('show');
+    }
+    function noticeset(){
+        $('#modal-notice').modal('show');
+    }
+    function submitClean() {
+        var days = $('#form-clean input[name=days]').val();
+        if (days < 1) {
+            layer.alert('清理天数不能小于1', {icon: 2});
+            return;
+        }
+        $.post('/dmonitor/clean', {days: days}, function (res) {
+            if (res.code == 0) {
+                layer.msg(res.msg, {icon: 1});
+                $('#modal-clean').modal('hide');
+            } else {
+                layer.alert(res.msg, {icon: 2});
+            }
+        });
+    }
+    function submitNotice(){
+        $.post('/system/set', $("#form-notice").serialize(), function(res){
+            if(res.code == 0){
+                layer.alert('设置保存成功！<br/>重启检测进程或容器后生效', {
+                    icon: 1,
+                    closeBtn: false
+                }, function(){
+                    window.location.reload()
+                });
+            }else{
+                layer.alert(res.msg, {icon: 2});
+            }
+        });
+    }
 </script>
 {/block}

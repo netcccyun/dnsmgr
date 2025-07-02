@@ -2,187 +2,194 @@
 {block name="title"}优选IP任务{/block}
 {block name="main"}
 <style>
-    .dselect::before{
+    .dselect::before {
         content: '.';
         position: absolute;
         left: 0;
     }
-    .tips{color: #f6a838; padding-left: 5px;}
+
+    .tips {
+        color: #f6a838;
+        padding-left: 5px;
+    }
 </style>
-<div class="row" id="app">
-<div class="col-xs-12 center-block" style="float: none;">
-<div class="panel panel-default">
-<div class="panel-heading"><h3 class="panel-title"><a href="/optimizeip/opiplist" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{if $action=='edit'}编辑{else}添加{/if}优选IP任务</h3></div>
-<div class="panel-body">
-  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="taskform">
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">域名选择</label>
-        <div class="col-sm-6">
-            <div class="input-group">
-                <input type="text" name="rr" v-model="set.rr" placeholder="主机记录" class="form-control" required>
-                <span class="input-group-addon">.</span>
-                <select name="did" v-model="set.did" class="form-control" required>
-                    <option value="">--主域名--</option>
-                    {foreach $domains as $k=>$v}
-                        <option value="{$k}">{$v}</option>
-                    {/foreach}
-                </select>
-                <a tabindex="0" class="input-group-addon" role="button" data-toggle="popover" data-trigger="focus" title="" data-placement="bottom" data-content="不支持对CloudFlare里的域名添加优选，必须使用其他DNS服务商。" data-original-title="说明"><span class="glyphicon glyphicon-info-sign"></span></a>
-            </div>
+<div id="app">
+    <div class="panel panel-default">
+        <div class="panel-heading font-bold"><h3 class="panel-title"><a class="btn btn-sm btn-default pull-right" href="/optimizeip/opiplist" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{if $action=='edit'}编辑{else}添加{/if}优选IP任务</h3></div>
+        <div class="panel-body">
+            <form class="form-horizontal" id="taskform" method="post" onsubmit="return false" role="form">
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">域名选择</label>
+                    <div class="col-sm-6">
+                        <div class="input-group">
+                            <input type="text" name="rr" v-model="set.rr" placeholder="主机记录" class="form-control" required>
+                            <span class="input-group-addon">.</span>
+                            <select name="did" v-model="set.did" class="form-control" required>
+                                <option value="">--主域名--</option>
+                                {foreach $domains as $k=>$v}
+                                <option value="{$k}">{$v}</option>
+                                {/foreach}
+                            </select>
+                            <a tabindex="0" class="input-group-addon" role="button" data-toggle="popover" data-trigger="focus" title="" data-placement="bottom" data-content="不支持对CloudFlare里的域名添加优选，必须使用其他DNS服务商。" data-original-title="说明"><span class="glyphicon glyphicon-info-sign"></span></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">CDN服务商</label>
+                    <div class="col-sm-6">
+                        <label class="radio-inline" v-for="(value,key) in cdntypeList">
+                            <input :value="key" name="cdntype" type="radio" v-model="set.cdn_type"> {{value}}
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">解析线路类型</label>
+                    <div class="col-sm-6">
+                        <label class="radio-inline">
+                            <input name="type" type="radio" v-model="set.type" value="0"> 电信/联通/移动线路<span class="tips" data-original-title="" data-placement="bottom" data-toggle="tooltip" title="用于已在CF添加，需优化三网访问速度的域名"><i class="fa fa-question-circle"></i></span>
+                        </label>
+                        <label class="radio-inline">
+                            <input name="type" type="radio" v-model="set.type" value="1"> 默认/联通/移动线路<span class="tips" data-original-title="" data-placement="bottom" data-toggle="tooltip" title="将电信优选IP解析到默认线路，用于给其他域名提供CNAME服务"><i class="fa fa-question-circle"></i></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">解析IP类型<span class="tips" data-original-title="同时开启IPv6&IPv4将会请求2次接口消耗双倍积分" data-placement="bottom" data-toggle="tooltip" title=""><i class="fa fa-question-circle"></i></span></label>
+                    <div class="col-sm-6">
+                        <label class="checkbox-inline" v-for="option in iptypeList">
+                            <input :value="option.value" name="ip_type" required type="checkbox" v-model="set.ip_type_select"> {{option.label}}
+                        </label>
+                        <br/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">每线路解析数量<span class="tips" data-original-title="数量不要超过当前域名套餐允许的最大数量，否则会添加解析失败" data-placement="bottom" data-toggle="tooltip" title=""><i class="fa fa-question-circle"></i></span></label>
+                    <div class="col-sm-6">
+                        <input class="form-control" data-bv-integer="true" max="5" min="1" name="recordnum" placeholder="填写每线路解析数量" required type="text" v-model="set.recordnum">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">TTL<span class="tips" data-original-title="TTL不要低于当前域名套餐允许的最小值，否则会添加解析失败" data-placement="bottom" data-toggle="tooltip" title=""><i class="fa fa-question-circle"></i></span></label>
+                    <div class="col-sm-6">
+                        <input class="form-control" data-bv-integer="true" max="3600" min="1" name="ttl" placeholder="填写TTL" required type="text" v-model="set.ttl">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">备注</label>
+                    <div class="col-sm-6">
+                        <input class="form-control" name="remark" placeholder="可留空" type="text" v-model="set.remark">
+                    </div>
+                </div>
+                <div class="form-group" v-show="set.type==0">
+                    <div class="col-sm-offset-3 col-sm-6">
+                        <div class="alert alert-dismissible alert-info">
+                            <button aria-label="Close" class="close" data-dismiss="alert" type="button"><span aria-hidden="true">&times;</span></button>
+                            <strong>提示：</strong>所选域名需保留一个默认线路的解析记录，指向{{cdntypeList[set.cdn_type]}}提供的CNAME地址，其他线路的解析记录需要删除，添加任务后将自动为当前域名添加电信/联通/移动线路的解析记录。
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" v-show="set.type==1">
+                    <div class="col-sm-offset-3 col-sm-6">
+                        <div class="alert alert-dismissible alert-info">
+                            <button aria-label="Close" class="close" data-dismiss="alert" type="button"><span aria-hidden="true">&times;</span></button>
+                            <strong>提示：</strong>所选域名需删除全部解析记录，添加任务后将自动为当前域名添加解析记录。
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-3 col-sm-6">
+                        <button @click="submit" class="btn btn-primary" type="button">提交</button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">CDN服务商</label>
-        <div class="col-sm-6">
-            <label class="radio-inline" v-for="(value,key) in cdntypeList">
-                <input type="radio" name="cdntype" :value="key" v-model="set.cdn_type"> {{value}}
-            </label>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">解析线路类型</label>
-        <div class="col-sm-6">
-            <label class="radio-inline">
-                <input type="radio" name="type" value="0" v-model="set.type"> 电信/联通/移动线路<span class="tips" title="用于已在CF添加，需优化三网访问速度的域名" data-toggle="tooltip" data-placement="bottom" data-original-title=""><i class="fa fa-question-circle"></i></span>
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="type" value="1" v-model="set.type"> 默认/联通/移动线路<span class="tips" title="将电信优选IP解析到默认线路，用于给其他域名提供CNAME服务" data-toggle="tooltip" data-placement="bottom" data-original-title=""><i class="fa fa-question-circle"></i></span>
-            </label>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">解析IP类型<span class="tips" title="" data-toggle="tooltip" data-placement="bottom" data-original-title="同时开启IPv6&IPv4将会请求2次接口消耗双倍积分"><i class="fa fa-question-circle"></i></span></label>
-        <div class="col-sm-6">
-            <label class="checkbox-inline" v-for="option in iptypeList">
-                <input type="checkbox" name="ip_type" :value="option.value" v-model="set.ip_type_select" required> {{option.label}}
-            </label><br/>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">每线路解析数量<span class="tips" title="" data-toggle="tooltip" data-placement="bottom" data-original-title="数量不要超过当前域名套餐允许的最大数量，否则会添加解析失败"><i class="fa fa-question-circle"></i></span></label>
-        <div class="col-sm-6">
-            <input type="text" name="recordnum" v-model="set.recordnum" placeholder="填写每线路解析数量" class="form-control" data-bv-integer="true" min="1" max="5" required>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">TTL<span class="tips" title="" data-toggle="tooltip" data-placement="bottom" data-original-title="TTL不要低于当前域名套餐允许的最小值，否则会添加解析失败"><i class="fa fa-question-circle"></i></span></label>
-        <div class="col-sm-6">
-            <input type="text" name="ttl" v-model="set.ttl" placeholder="填写TTL" class="form-control" data-bv-integer="true" min="1" max="3600" required>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">备注</label>
-        <div class="col-sm-6">
-            <input type="text" name="remark" v-model="set.remark" placeholder="可留空" class="form-control">
-        </div>
-    </div>
-    <div class="form-group" v-show="set.type==0">
-        <div class="col-sm-offset-3 col-sm-6">
-            <div class="alert alert-dismissible alert-info">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <strong>提示：</strong>所选域名需保留一个默认线路的解析记录，指向{{cdntypeList[set.cdn_type]}}提供的CNAME地址，其他线路的解析记录需要删除，添加任务后将自动为当前域名添加电信/联通/移动线路的解析记录。
-            </div>
-        </div>
-    </div>
-    <div class="form-group" v-show="set.type==1">
-        <div class="col-sm-offset-3 col-sm-6">
-            <div class="alert alert-dismissible alert-info">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <strong>提示：</strong>所选域名需删除全部解析记录，添加任务后将自动为当前域名添加解析记录。
-            </div>
-        </div>
-    </div>
-    <div class="form-group">
-        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
-    </div>
-  </form>
-</div>
 </div>
 {/block}
 {block name="script"}
 <script src="{$cdnpublic}vue/2.6.14/vue.min.js"></script>
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
 <script>
-var action = '{$action}';
-var info = {$info|json_encode|raw};
-new Vue({
-    el: '#app',
-    data: {
-        action: '{$action}',
-        set: {
-            id: '',
-            remark: '',
-            rr: '',
-            did: '',
-            type: 0,
-            cdn_type: 1,
-            ip_type_select: ['v4'],
-            ip_type: 'v4',
-            recordnum: 2,
-            ttl: 600,
+    var action = '{$action}';
+    var info = {$info | json_encode | raw}
+
+    new Vue({
+        el: '#app',
+        data: {
+            action: '{$action}',
+            set: {
+                id: '',
+                remark: '',
+                rr: '',
+                did: '',
+                type: 0,
+                cdn_type: 1,
+                ip_type_select: ['v4'],
+                ip_type: 'v4',
+                recordnum: 2,
+                ttl: 600,
+            },
+            iptypeList: [
+                {value: 'v4', label: 'IPv4(A记录)'},
+                {value: 'v6', label: 'IPv6(AAAA记录)'},
+            ],
+            cdntypeList: {
+                1: 'CloudFlare',
+                2: "CloudFront",
+                3: 'Gcore'
+            },
         },
-        iptypeList: [
-            {value:'v4', label:'IPv4(A记录)'},
-            {value:'v6', label:'IPv6(AAAA记录)'},
-        ],
-        cdntypeList: {
-            1:'CloudFlare',
-            2:"CloudFront",
-            3:'Gcore'
-        },
-    },
-    watch: {
-        'set.ip_type_select': function(val){
-            this.set.ip_type = val.join(',');
-        }
-    },
-    mounted() {
-        if(this.action == 'edit'){
-            Object.keys(info).forEach((key) => {
-                this.$set(this.set, key, info[key])
-            })
-            this.set.ip_type_select = this.set.ip_type.split(',')
-        }
-        $("#taskform").bootstrapValidator({
-            live: 'submitted',
-        });
-        $('[data-toggle="tooltip"]').tooltip();
-        $('[data-toggle="popover"]').popover()
-    },
-    methods: {
-        submit(){
-            var that=this;
-            $("#taskform").data("bootstrapValidator").validate();
-            if(!$("#taskform").data("bootstrapValidator").isValid()){
-                return false;
+        watch: {
+            'set.ip_type_select': function (val) {
+                this.set.ip_type = val.join(',');
             }
-            var ii = layer.load(2, {shade:[0.1,'#fff']});
-            $.ajax({
-                type: "POST",
-                url: "",
-                data: this.set,
-                dataType: 'json',
-                success: function(data) {
-                    layer.close(ii);
-                    if(data.code == 0){
-                        layer.alert(data.msg, {icon: 1}, function(){
-                            if(document.referrer.indexOf('/opiplist?') > 0)
-                                window.location.href = document.referrer;
-                            else
-                                window.location.href = '/optimizeip/opiplist';
-                        });
-                    }else{
-                        layer.alert(data.msg, {icon: 2});
-                    }
-                },
-                error: function(data){
-                    layer.close(ii);
-                    layer.msg('服务器错误');
-                }
+        },
+        mounted() {
+            if (this.action == 'edit') {
+                Object.keys(info).forEach((key) => {
+                    this.$set(this.set, key, info[key])
+                })
+                this.set.ip_type_select = this.set.ip_type.split(',')
+            }
+            $("#taskform").bootstrapValidator({
+                live: 'submitted',
             });
-        }
-    },
-});
+            $('[data-toggle="tooltip"]').tooltip();
+            $('[data-toggle="popover"]').popover()
+        },
+        methods: {
+            submit() {
+                var that = this;
+                $("#taskform").data("bootstrapValidator").validate();
+                if (!$("#taskform").data("bootstrapValidator").isValid()) {
+                    return false;
+                }
+                var ii = layer.load(2, {shade: [0.1, '#fff']});
+                $.ajax({
+                    type: "POST",
+                    url: "",
+                    data: this.set,
+                    dataType: 'json',
+                    success: function (data) {
+                        layer.close(ii);
+                        if (data.code == 0) {
+                            layer.alert(data.msg, {icon: 1}, function () {
+                                if (document.referrer.indexOf('/opiplist?') > 0)
+                                    window.location.href = document.referrer;
+                                else
+                                    window.location.href = '/optimizeip/opiplist';
+                            });
+                        } else {
+                            layer.alert(data.msg, {icon: 2});
+                        }
+                    },
+                    error: function (data) {
+                        layer.close(ii);
+                        layer.msg('服务器错误');
+                    }
+                });
+            }
+        },
+    });
 </script>
 {/block}

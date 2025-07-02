@@ -2,105 +2,120 @@
 {block name="title"}CF优选IP设置{/block}
 {block name="main"}
 <div class="row">
-<div class="col-xs-12 col-md-6">
-<div class="panel panel-success">
-<div class="panel-heading"><h3 class="panel-title">功能简介</h3></div>
-<div class="panel-body">
-  <p>由于CloudFlare官方IP是泛播路由，同一个IP在不同地区不同运营商所链接的机房是不同的，速度或延迟也会有区别。目前网上也有很多CF优选CNAME服务，然而公共的CNAME可能无法满足稳定性和安全性的需要。</p>
-  <p>本功能可以获取CloudFlare最新的优选IP地址（分为电信/联通/移动线路），并自动更新到域名解析记录。</p>
-</div>
-</div>
-<div class="panel panel-warning">
-<div class="panel-heading"><h3 class="panel-title">使用说明</h3></div>
-<div class="panel-body">
-  <p><li>不支持对CloudFlare里的域名添加优选，必须使用其他DNS服务商。需开通Cloudflare for SaaS，且域名使用CNAME的方式解析到CloudFlare。</li></p>
-  <p><li>数据接口：<a href="https://www.wetest.vip/" target="_blank" rel="noreferrer">wetest.vip</a> 数据接口支持CloudFlare、CloudFront、Gcore；<a href="https://stock.hostmonit.com/" target="_blank" rel="noreferrer">HostMonit</a> 只支持CloudFlare。</li></p>
-  <p><li>接口密钥：默认o1zrmHAF为免费KEY可永久免费使用。</li></p>
-  <p><li>计划任务：将以下命令添加到计划任务，周期设置为15分钟以上</li></p>
-  <p><code>cd {:app()->getRootPath()} && php think opiptask</code></p>
-</div>
-</div>
-</div>
-<div class="col-xs-12 col-md-6">
-<div class="panel panel-info">
-<div class="panel-heading"><h3 class="panel-title">数据接口设置</h3></div>
-<div class="panel-body">
-  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
-	<div class="form-group">
-	  <label class="col-sm-3 control-label">数据接口</label>
-	  <div class="col-sm-9"><select class="form-control" name="optimize_ip_api" default="{:config_get('optimize_ip_api')}"><option value="0">wetest.vip</option><option value="1">HostMonit</option></select></div>
-	</div>
-	<div class="form-group">
-		<label class="col-sm-3 control-label">接口密钥</label>
-		<div class="col-sm-9"><input type="text" name="optimize_ip_key" value="{:config_get('optimize_ip_key', 'o1zrmHAF')}" class="form-control"/></div>
-	  </div>
-	<div class="form-group">
-	  <div class="col-sm-offset-3 col-sm-9">
-		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
-		<a href="javascript:queryapi()" class="btn btn-default btn-block">查询积分</a>
-	  </div>
-	</div>
-  </form>
-</div>
-</div>
-</div>
-
+    <div class="col-xs-12 col-md-6">
+        <div class="panel panel-success">
+            <div class="panel-heading font-bold"><h3 class="panel-title">功能简介</h3></div>
+            <div class="panel-body">
+                <p>由于CloudFlare官方IP是泛播路由，同一个IP在不同地区不同运营商所链接的机房是不同的，速度或延迟也会有区别。目前网上也有很多CF优选CNAME服务，然而公共的CNAME可能无法满足稳定性和安全性的需要。</p>
+                <p>本功能可以获取CloudFlare最新的优选IP地址（分为电信/联通/移动线路），并自动更新到域名解析记录。</p>
+            </div>
+        </div>
+        <div class="panel panel-warning">
+            <div class="panel-heading font-bold"><h3 class="panel-title">使用说明</h3></div>
+            <div class="panel-body">
+                <p>
+                    不支持对CloudFlare里的域名添加优选，必须使用其他DNS服务商。需开通Cloudflare for SaaS，且域名使用CNAME的方式解析到CloudFlare。
+                </p>
+                <p>
+                    数据接口：<a href="https://www.wetest.vip/" rel="noreferrer" target="_blank">wetest.vip</a>数据接口支持CloudFlare、CloudFront、Gcore；<a href="https://stock.hostmonit.com/" rel="noreferrer" target="_blank">HostMonit</a> 只支持CloudFlare。
+                </p>
+                <p>
+                    接口密钥：默认o1zrmHAF为免费KEY可永久免费使用。
+                </p>
+                <p>
+                    计划任务：将以下命令添加到计划任务，周期设置为15分钟以上
+                </p>
+                <p><code>cd {:app()->getRootPath()} && php think opiptask</code></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xs-12 col-md-6">
+        <div class="panel panel-info">
+            <div class="panel-heading font-bold"><h3 class="panel-title">数据接口设置</h3></div>
+            <div class="panel-body">
+                <form class="form-horizontal" method="post" onsubmit="return saveSetting(this)" role="form">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">数据接口</label>
+                        <div class="col-sm-9">
+                            <select class="form-control" default="{:config_get('optimize_ip_api')}" name="optimize_ip_api">
+                                <option value="0">wetest.vip</option>
+                                <option value="1">HostMonit</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">接口密钥</label>
+                        <div class="col-sm-9">
+                            <input class="form-control" name="optimize_ip_key" type="text" value="{:config_get('optimize_ip_key', 'o1zrmHAF')}"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-offset-3 col-sm-9">
+                            <input class="btn btn-primary btn-block" name="submit" type="submit" value="保存"/>
+                            <a class="btn btn-default btn-block" href="javascript:queryapi()">查询积分</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script>
-var items = $("select[default]");
-for (i = 0; i < items.length; i++) {
-	$(items[i]).val($(items[i]).attr("default")||0);
-}
-function saveSetting(obj){
-	var ii = layer.load(2, {shade:[0.1,'#fff']});
-	$.ajax({
-		type : 'POST',
-		url : '',
-		data : $(obj).serialize(),
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.alert('设置保存成功！', {
-					icon: 1,
-					closeBtn: false
-				}, function(){
-				  window.location.reload()
-				});
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
-		},
-		error:function(data){
-            layer.close(ii);
-			layer.msg('服务器错误');
-		}
-	});
-	return false;
-}
-function queryapi(){
-	var ii = layer.load(2, {shade:[0.1,'#fff']});
-	$.ajax({
-		type : 'POST',
-		url : '/optimizeip/queryapi',
-		data : $("form").serialize(),
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.alert(data.msg, {icon: 1});
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
-		},
-		error:function(data){
-            layer.close(ii);
-			layer.msg('服务器错误');
-		}
-	});
-}
+    var items = $("select[default]");
+    for (i = 0; i < items.length; i++) {
+        $(items[i]).val($(items[i]).attr("default") || 0);
+    }
+
+    function saveSetting(obj) {
+        var ii = layer.load(2, {shade: [0.1, '#fff']});
+        $.ajax({
+            type: 'POST',
+            url: '',
+            data: $(obj).serialize(),
+            dataType: 'json',
+            success: function (data) {
+                layer.close(ii);
+                if (data.code == 0) {
+                    layer.alert('设置保存成功！', {
+                        icon: 1,
+                        closeBtn: false
+                    }, function () {
+                        window.location.reload()
+                    });
+                } else {
+                    layer.alert(data.msg, {icon: 2})
+                }
+            },
+            error: function (data) {
+                layer.close(ii);
+                layer.msg('服务器错误');
+            }
+        });
+        return false;
+    }
+
+    function queryapi() {
+        var ii = layer.load(2, {shade: [0.1, '#fff']});
+        $.ajax({
+            type: 'POST',
+            url: '/optimizeip/queryapi',
+            data: $("form").serialize(),
+            dataType: 'json',
+            success: function (data) {
+                layer.close(ii);
+                if (data.code == 0) {
+                    layer.alert(data.msg, {icon: 1});
+                } else {
+                    layer.alert(data.msg, {icon: 2})
+                }
+            },
+            error: function (data) {
+                layer.close(ii);
+                layer.msg('服务器错误');
+            }
+        });
+    }
 </script>
 {/block}

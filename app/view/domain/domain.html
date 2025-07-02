@@ -2,614 +2,629 @@
 {block name="title"}域名管理{/block}
 {block name="main"}
 <link href="{$cdnpublic}bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
-<div class="modal" id="modal-store" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
-	<div class="modal-dialog">
-		<div class="modal-content animated flipInX">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal"><span
-							aria-hidden="true">&times;</span><span
-							class="sr-only">Close</span></button>
-				<h4 class="modal-title" id="modal-title">添加域名</h4>
-			</div>
-			<div class="modal-body">
-				<form class="form-horizontal" id="form-store">
-					<div class="form-group">
-						<label class="col-sm-3 control-label">域名账户</label>
-						<div class="col-sm-9">
-							<select name="aid" class="form-control">
-								{foreach $accounts as $item}
-									<option value="{$item.id}" data-type="{$item.type}" data-add="{$item.add}">{$item.name}</option>
-								{/foreach}
-							</select>
-						</div>
-					</div>
-					<div class="form-group" id="methodSelect" style="display: none;">
-						<label class="col-sm-3 control-label"></label>
-						<div class="col-sm-9">
-							<label class="radio-inline"><input type="radio" name="method" value="0" checked> 已有域名</label>
-							<label class="radio-inline"><input type="radio" name="method" value="1"> 新域名</label>
-						</div>
-					</div>
-					<div class="form-group" id="domainSelect">
-						<label class="col-sm-3 control-label">选择域名</label>
-						<div class="col-sm-9">
-							<select name="domain" id="domainList" class="form-control"></select>
-						</div>
-					</div>
-					<div class="form-group" id="domainInput" style="display: none;">
-						<label class="col-sm-3 control-label">输入域名</label>
-						<div class="col-sm-9">
-							<input type="text" class="form-control" name="adddomain" placeholder="输入要新增的域名" value="">
-						</div>
-					</div>
-					
-				</form>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
-				<button type="button" class="btn btn-primary" id="store" onclick="saveAdd()">添加</button>
-			</div>
-		</div>
-	</div>
-</div>
-<div class="modal" id="modal-store2" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
-	<div class="modal-dialog">
-		<div class="modal-content animated flipInX">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal"><span
-							aria-hidden="true">&times;</span><span
-							class="sr-only">Close</span></button>
-				<h4 class="modal-title" id="modal-title">修改域名配置</h4>
-			</div>
-			<div class="modal-body">
-				<form class="form-horizontal" id="form-store2">
-					<input type="hidden" name="id"/>
-					<div class="form-group">
-						<label class="col-sm-3 control-label">到期时间</label>
-						<div class="col-sm-9">
-							<input type="text" class="form-control" name="expiretime" placeholder="" value="">
-						</div>
-					</div>
-					<div class="form-group">
-						<label class="col-sm-3 control-label">到期提醒</label>
-						<div class="col-sm-9">
-							<div class="input-group">
-								<select name="is_notice" class="form-control">
-									<option value="0">否</option>
-									<option value="1">是</option>
-								</select>
-								<a tabindex="0" class="input-group-addon" role="button" data-toggle="popover" data-trigger="focus" title="" data-placement="bottom" data-content="域名到期提醒，其他设置在“到期提醒设置”里面" data-original-title="说明"><span class="glyphicon glyphicon-info-sign"></span></a>
-							</div>
-						</div>
-					</div>
-					<div class="form-group">
-						<label class="col-sm-3 control-label">是否隐藏</label>
-						<div class="col-sm-9">
-							<div class="input-group">
-								<select name="is_hide" class="form-control">
-									<option value="0">否</option>
-									<option value="1">是</option>
-								</select>
-								<a tabindex="0" class="input-group-addon" role="button" data-toggle="popover" data-trigger="focus" title="" data-placement="bottom" data-content="隐藏后仅管理员可见，普通用户在列表不可见" data-original-title="说明"><span class="glyphicon glyphicon-info-sign"></span></a>
-							</div>
-						</div>
-					</div>
-					<div class="form-group">
-						<label class="col-sm-3 control-label">对接开关</label>
-						<div class="col-sm-9">
-							<div class="input-group">
-								<select name="is_sso" class="form-control">
-									<option value="0">否</option>
-									<option value="1">是</option>
-								</select>
-								<a tabindex="0" class="input-group-addon" role="button" data-toggle="popover" data-trigger="focus" title="" data-placement="bottom" data-content="对接开关开启后，将允许通过API接口一键登录该域名独立管理面板" data-original-title="说明"><span class="glyphicon glyphicon-info-sign"></span></a>
-							</div>
-						</div>
-					</div>
-					<div class="form-group">
-						<label class="col-sm-3 control-label no-padding-right">备注</label>
-						<div class="col-sm-9">
-							<input type="text" class="form-control" name="remark" placeholder="">
-						</div>
-					</div>
-				</form>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
-				<button type="button" class="btn btn-primary" id="store" onclick="saveEdit()">保存</button>
-			</div>
-		</div>
-	</div>
-</div>
-<div class="row">
-	<div class="col-xs-12 center-block" style="float: none;">
-	<div class="panel panel-default panel-intro">
-	<div class="panel-body">
-	
-<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
-  <div class="form-group">
-	<label>搜索</label>
-    <input type="text" class="form-control" name="kw" placeholder="域名或备注">
-  </div>
-  <div class="form-group">
-	<select name="type" class="form-control"><option value="">所有平台</option>{foreach $types as $k=>$v}
-		<option value="{$k}">{$v}</option>
-	{/foreach}</select>
-  </div>
-  <div class="form-group">
-	<select name="status" class="form-control"><option value="">所有状态</option><option value="1">即将到期</option><option value="2">已到期</option></select>
-  </div>
-  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
-  <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名列表"><i class="fa fa-refresh"></i> 刷新</a>
-  {if request()->user['level'] eq 2}<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
-  <div class="btn-group" role="group">
-	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
-	<ul class="dropdown-menu"><li><a href="/domain/add">添加域名</a></li><li><a href="javascript:operation('editremark')">修改域名备注</a></li><li><a href="javascript:operation('opennotice')">开启到期提醒</a></li><li><a href="javascript:operation('closenotice')">关闭到期提醒</a></li><li><a href="javascript:operation('delete')">删除域名</a></li><li role="separator" class="divider"></li><li><a href="javascript:operation('addrecord')">添加解析</a></li><li><a href="javascript:operation('editrecord')">修改解析</a></li></ul>
-  </div>
-  <a href="/domain/expirenotice" class="btn btn-default">到期提醒设置</a>{/if}
-</form>
-
-      <table id="listTable">
-	  </table>
+<div aria-hidden="true" aria-labelledby="myModalLabel" class="modal" data-backdrop="static" id="modal-store" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close" data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="modal-title">添加域名</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" id="form-store">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">域名账户</label>
+                        <div class="col-sm-9">
+                            <select class="form-control" name="aid">
+                                {foreach $accounts as $item}
+                                    <option value="{$item.id}" data-type="{$item.type}" data-add="{$item.add}">{$item.name}</option>
+                                {/foreach}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" id="methodSelect" style="display: none;">
+                        <label class="col-sm-3 control-label"></label>
+                        <div class="col-sm-9">
+                            <label class="radio-inline"><input type="radio" name="method" value="0" checked> 已有域名</label>
+                            <label class="radio-inline"><input type="radio" name="method" value="1"> 新域名</label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="domainSelect">
+                        <label class="col-sm-3 control-label">选择域名</label>
+                        <div class="col-sm-9">
+                            <select class="form-control" id="domainList" name="domain"></select>
+                        </div>
+                    </div>
+                    <div class="form-group" id="domainInput" style="display: none;">
+                        <label class="col-sm-3 control-label">输入域名</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="adddomain" placeholder="输入要新增的域名" value="">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-white" data-dismiss="modal" type="button">关闭</button>
+                <button class="btn btn-primary" id="store" onclick="saveAdd()" type="button">添加</button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
+<div aria-hidden="true" aria-labelledby="myModalLabel" class="modal inmodal fade" data-backdrop="static" id="modal-store2" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close" data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="modal-title">修改域名配置</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" id="form-store2">
+                    <input name="id" type="hidden"/>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">到期时间</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="expiretime" placeholder="" value="">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">到期提醒</label>
+                        <div class="col-sm-9">
+                            <div class="input-group">
+                                <select name="is_notice" class="form-control">
+                                    <option value="0">否</option>
+                                    <option value="1">是</option>
+                                </select>
+                                <a tabindex="0" class="input-group-addon" role="button" data-toggle="popover" data-trigger="focus" title="" data-placement="bottom" data-content="域名到期提醒，其他设置在“到期提醒设置”里面" data-original-title="说明"><span class="glyphicon glyphicon-info-sign"></span></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">是否隐藏</label>
+                        <div class="col-sm-9">
+                            <div class="input-group">
+                                <select class="form-control" name="is_hide">
+                                    <option value="0">否</option>
+                                    <option value="1">是</option>
+                                </select>
+                                <a class="input-group-addon" data-content="隐藏后仅管理员可见，普通用户在列表不可见" data-original-title="说明" data-placement="bottom" data-toggle="popover" data-trigger="focus" role="button" tabindex="0" title=""><span class="glyphicon glyphicon-info-sign"></span></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">对接开关</label>
+                        <div class="col-sm-9">
+                            <div class="input-group">
+                                <select class="form-control" name="is_sso">
+                                    <option value="0">否</option>
+                                    <option value="1">是</option>
+                                </select>
+                                <a class="input-group-addon" data-content="对接开关开启后，将允许通过API接口一键登录该域名独立管理面板" data-original-title="说明" data-placement="bottom" data-toggle="popover" data-trigger="focus" role="button" tabindex="0" title=""><span class="glyphicon glyphicon-info-sign"></span></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right">备注</label>
+                        <div class="col-sm-9">
+                            <input class="form-control" name="remark" placeholder="" type="text">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-white" data-dismiss="modal" type="button">关闭</button>
+                <button class="btn btn-primary" id="store" onclick="saveEdit()" type="button">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    #orderItem .orderTitle{word-break:keep-all;}
+    #orderItem .orderContent{word-break:break-all;}
+    .fixed-table-toolbar,.fixed-table-pagination{padding: 15px;}
+</style>
+<div class="panel panel-default">
+    <div class="panel-heading font-bold">
+        <h3 class="panel-title">域名管理</h3>
+    </div>
+    <form class="form-inline" id="searchToolbar" method="GET" onsubmit="return searchSubmit()">
+        <div class="form-group">
+            <input class="form-control" name="kw" placeholder="域名或备注" type="text">
+        </div>
+        <div class="form-group">
+            <select class="form-control" name="type">
+                <option value="">所有平台</option>
+                {foreach $types as $k=>$v}
+                <option value="{$k}">{$v}</option>
+                {/foreach}
+            </select>
+        </div>
+        <div class="form-group">
+            <select name="status" class="form-control">
+                <option value="">所有状态</option>
+                <option value="1">即将到期</option>
+                <option value="2">已到期</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> 搜索</button>
+        <a class="btn btn-default" href="javascript:searchClear()" title="刷新域名列表"><i class="fa fa-refresh"></i> 刷新</a>
+        {if request()->user['level'] eq 2}
+            <a class="btn btn-success" href="javascript:addframe()"><i class="fa fa-plus"></i> 添加</a>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
+                <ul class="dropdown-menu"><li><a href="/domain/add">添加域名</a></li><li><a href="javascript:operation('editremark')">修改域名备注</a></li><li><a href="javascript:operation('delete')">删除域名</a></li><li role="separator" class="divider"></li><li><a href="javascript:operation('addrecord')">添加解析</a></li><li><a href="javascript:operation('editrecord')">修改解析</a></li></ul>
+            </div>
+            <a href="/domain/expirenotice" class="btn btn-default">到期提醒设置</a>
+        {/if}
+    </form>
+    <table id="listTable">
+    </table>
 </div>
 {/block}
 {block name="script"}
 <script src="{$cdnpublic}moment.js/2.29.4/moment.min.js"></script>
 <script src="{$cdnpublic}moment.js/2.29.4/locale/zh-cn.js"></script>
 <script src="{$cdnpublic}bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="{$cdnpublic}select2/4.0.13/js/select2.min.js"></script>
 <script src="{$cdnpublic}select2/4.0.13/js/i18n/zh-CN.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
-var userLevel = "{:request()->user['level']}";
-$(document).ready(function(){
-	updateToolbar();
-	const defaultPageSize = 15;
-	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+    var userLevel = "{:request()->user['level']}";
+    $(document).ready(function () {
+        updateToolbar();
+        const defaultPageSize = 15;
+        const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+        const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
-	$("#listTable").bootstrapTable({
-		url: '/domain/data',
-		pageNumber: pageNumber,
-		pageSize: pageSize,
-		classes: 'table table-striped table-hover table-bordered',
-		uniqueId: 'id',
-		columns: [
-			{
-				field: '',
-				checkbox: true
-			},
-			{
-				field: 'id',
-				title: 'ID'
-			},
-			{
-				field: 'typename',
-				title: '平台账户',
-				formatter: function(value, row, index) {
-					return '<img src="/static/images/'+row.type+'.ico" class="type-logo"></img>'+(row.aremark?row.aremark:value+'('+row.aid+')');
-				}
-			},
-            {
-				field: 'name',
-				title: '域名',
-				formatter: function(value, row, index) {
-					return '<a href="/record/'+row.id+'" title="进入解析记录管理" onclick="loading()">'+value+'</a>';
-				}
-			},
-			{
-				field: 'recordcount',
-				title: '记录数'
-			},
-			{
-				field: 'addtime',
-				title: '添加时间'
-			},
-			{
-				field: 'regtime',
-				title: '注册时间',
-				visible: false,
-				formatter: function(value, row, index) {
-					var html = '';
-					if(value == null) {
-						if (row.checkstatus == 0) {
-							html = '<font color="#bdbdbd">待查询</font>';
-						} else if (row.checkstatus == 2) {
-							html = '<font color="#bdbdbd">查询失败</font>';
-						}
-					} else {
-						html = value.slice(0,10);
-					}
-					return html;
-				}
-			},
-			{
-				field: 'expiretime',
-				title: '到期时间',
-				formatter: function(value, row, index) {
-					var html = '';
-					if(value == null) {
-						if (row.checkstatus == 0) {
-							html = '<font color="#bdbdbd">待查询</font>';
-						} else if (row.checkstatus == 2) {
-							html = '<font color="#bdbdbd">查询失败</font>';
-						}
-					} else {
-						var now = new Date().getTime();
-						var expiretime = new Date(value).getTime();
-						var days = parseInt((expiretime - now) / 1000 / 24 / 60 / 60);
-						if (days > 30) {
-							html += '<span title="还有'+days+'天到期" data-toggle="tooltip" data-placement="bottom">'+value.slice(0,10)+'</span>';
-						} else if (days > 0) {
-							html += '<b><span class="text-yellow" title="还有'+days+'天到期" data-toggle="tooltip" data-placement="bottom">'+value.slice(0,10)+'</span></b>';
-						} else {
-							html += '<b><span class="text-red" title="已到期" data-toggle="tooltip" data-placement="bottom">'+value.slice(0,10)+'</span></b>';
-						}
-					}
-					html += '&nbsp;<a href="javascript:updateDate('+row.id+')" title="刷新到期时间" class="text-green"><i class="fa fa-refresh"></i></a>';
-					return html;
-				}
-			},
-			{
-				field: 'is_notice',
-				title: '到期提醒',
-				formatter: function(value, row, index) {
-					return value==1?'<font color="green">是</font>':'<font color="blue">否</font>';
-				}
-			},
-			{
-				field: 'is_hide',
-				title: '是否隐藏',
-				visible: false,
-				formatter: function(value, row, index) {
-					return value==1?'<font color="grey">是</font>':'<font color="blue">否</font>';
-				}
-			},
-			{
-				field: 'is_sso',
-				title: '对接开关',
-				visible: false,
-				formatter: function(value, row, index) {
-					return value==1?'<font color="green">是</font>':'<font color="red">否</font>';
-				}
-			},
-			{
-				field: 'remark',
-				title: '备注'
-			},
-			{
-				field: 'action',
-				title: '操作',
-				formatter: function(value, row, index) {
-					var html = '<a href="/record/'+row.id+'" class="btn btn-success btn-xs" onclick="loading()">解析</a>';
-					if(userLevel == '2'){
-						html += ' <a href="javascript:editframe('+row.id+')" class="btn btn-info btn-xs">配置</a>';
-						html += ' <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a>';
-					}
-					return html;
-				}
-			},
-		],
-		onLoadSuccess: function(data) {
-			$('[data-toggle="tooltip"]').tooltip()
-		}
-	})
+        $("#listTable").bootstrapTable({
+            url: '/domain/data',
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            classes: 'table table-striped table-hover table-bordered',
+            uniqueId: 'id',
+            columns: [
+                {
+                    field: '',
+                    checkbox: true
+                },
+                {
+                    field: 'id',
+                    title: 'ID'
+                },
+                {
+                    field: 'typename',
+                    title: '平台账户',
+                    formatter: function (value, row, index) {
+                        return '<img src="/static/images/'+row.type+'.ico" class="type-logo"></img> '+(row.aremark?row.aremark:value+'('+row.aid+')');
+                    }
+                },
+                {
+                    field: 'name',
+                    title: '域名',
+                    formatter: function (value, row, index) {
+                        return '<a href="/record/' + row.id + '" title="进入解析记录管理" onclick="loading()">' + value + '</a>';
+                    }
+                },
+                {
+                    field: 'recordcount',
+                    title: '记录数'
+                },
+                {
+                    field: 'addtime',
+                    title: '添加时间'
+                },
+                {
+                    field: 'regtime',
+                    title: '注册时间',
+                    visible: false,
+                    formatter: function(value, row, index) {
+                        var html = '';
+                        if(value == null) {
+                            if (row.checkstatus == 0) {
+                                html = '<font color="#bdbdbd">待查询</font>';
+                            } else if (row.checkstatus == 2) {
+                                html = '<font color="#bdbdbd">查询失败</font>';
+                            }
+                        } else {
+                            html = value.slice(0,10);
+                        }
+                        return html;
+                    }
+                },
+                {
+                    field: 'expiretime',
+                    title: '到期时间',
+                    formatter: function(value, row, index) {
+                        var html = '';
+                        if(value == null) {
+                            if (row.checkstatus == 0) {
+                                html = '<font color="#bdbdbd">待查询</font>';
+                            } else if (row.checkstatus == 2) {
+                                html = '<font color="#bdbdbd">查询失败</font>';
+                            }
+                        } else {
+                            var now = new Date().getTime();
+                            var expiretime = new Date(value).getTime();
+                            var days = parseInt((expiretime - now) / 1000 / 24 / 60 / 60);
+                            if (days > 30) {
+                                html += '<span title="还有'+days+'天到期" data-toggle="tooltip" data-placement="bottom">'+value.slice(0,10)+'</span>';
+                            } else if (days > 0) {
+                                html += '<b><span class="text-yellow" title="还有'+days+'天到期" data-toggle="tooltip" data-placement="bottom">'+value.slice(0,10)+'</span></b>';
+                            } else {
+                                html += '<b><span class="text-red" title="已到期" data-toggle="tooltip" data-placement="bottom">'+value.slice(0,10)+'</span></b>';
+                            }
+                        }
+                        html += '&nbsp;<a href="javascript:updateDate('+row.id+')" title="刷新到期时间" class="text-green"><i class="fa fa-refresh"></i></a>';
+                        return html;
+                    }
+                },
+                {
+                    field: 'is_notice',
+                    title: '到期提醒',
+                    formatter: function(value, row, index) {
+                        return value==1?'<font color="green">是</font>':'<font color="blue">否</font>';
+                    }
+                },
+                {
+                    field: 'is_hide',
+                    title: '是否隐藏',
+                    visible: false,
+                    formatter: function(value, row, index) {
+                        return value==1?'<font color="grey">是</font>':'<font color="blue">否</font>';
+                    }
+                },
+                {
+                    field: 'is_sso',
+                    title: '对接开关',
+                    visible: false,
+                    formatter: function(value, row, index) {
+                        return value==1?'<font color="green">是</font>':'<font color="red">否</font>';
+                    }
+                },
+                {
+                    field: 'remark',
+                    title: '备注'
+                },
+                {
+                    field: 'action',
+                    title: '操作',
+                    formatter: function (value, row, index) {
+                        var html = '<a href="/record/' + row.id + '" class="btn btn-success btn-xs" onclick="loading()">解析</a>';
+                        if (userLevel == '2') {
+                            html += ' <a href="javascript:editframe(' + row.id + ')" class="btn btn-info btn-xs">配置</a>';
+                            html += ' <a href="javascript:delItem(' + row.id + ')" class="btn btn-danger btn-xs">删除</a>';
+                        }
+                        return html;
+                    }
+                },
+            ],
+            onLoadSuccess: function(data) {
+                $('[data-toggle="tooltip"]').tooltip()
+            }
+        })
 
-	$("#form-store select[name=aid]").change(function(){
-		if($(this).val() != ''){
-			$("#form-store input[name=method][value=0]").prop('checked', true);
-			$("#domainSelect").show();
-			$("#domainInput").hide();
-			var add = $(this).find('option:selected').data('add');
-			if(add == '1'){
-				$("#methodSelect").show();
-			}else{
-				$("#methodSelect").hide();
-			}
-			getDomainList();
-		}
-	})
-	$("#form-store input[name=method]").change(function(){
-		var value = $("#form-store input[name=method]:checked").val();
-		if(value == '0'){
-			$("#domainSelect").show();
-			$("#domainInput").hide();
-			getDomainList();
-		}else{
-			$("#domainSelect").hide();
-			$("#domainInput").show();
-			$('#domainList').empty();
-		}
-	})
+        $("#form-store select[name=aid]").change(function(){
+            if($(this).val() != ''){
+                $("#form-store input[name=method][value=0]").prop('checked', true);
+                $("#domainSelect").show();
+                $("#domainInput").hide();
+                var add = $(this).find('option:selected').data('add');
+                if(add == '1'){
+                    $("#methodSelect").show();
+                }else{
+                    $("#methodSelect").hide();
+                }
+                getDomainList();
+            }
+        })
+        $("#form-store input[name=method]").change(function(){
+            var value = $("#form-store input[name=method]:checked").val();
+            if(value == '0'){
+                $("#domainSelect").show();
+                $("#domainInput").hide();
+                getDomainList();
+            }else{
+                $("#domainSelect").hide();
+                $("#domainInput").show();
+                $('#domainList').empty();
+            }
+        })
 
-	$('[data-toggle="popover"]').popover()
-})
-function addframe(){
-	$("#modal-store").modal('show');
-	var aid = $("#form-store select[name=aid]").val();
-	if(aid != ''){
-		$("#form-store select[name=aid]").change();
-	}
-}
-function saveAdd(){
-	var aid = $("#form-store select[name=aid]").val();
-	if(aid == ''){
-		layer.alert('请选择域名账户！');return false;
-	}
-	var method = $("#form-store input[name=method]:checked").val();
-	if(method == '1'){
-		var name = $("#form-store input[name=adddomain]").val();
-		if(name == ''){
-			layer.alert('域名不能为空！');return false;
-		}
-	}else{
-		var select = $('#domainList').select2('data');
-		if(select.length == 0){
-			layer.alert('请选择域名！');return false;
-		}
-		var name = select[0].text;
-		var thirdid = select[0].id;
-		var recordcount = select[0].recordcount;
-		if(aid=='' || thirdid==''){
-			layer.alert('请确保各项不能为空！');return false;
-		}
-	}
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'POST',
-		url : '/domain/op/act/add',
-		data : {aid: aid, method: method, thirdid: thirdid, name: name, recordcount: recordcount},
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.alert(data.msg,{
-					icon: 1,
-					closeBtn: false
-				}, function(){
-					layer.closeAll();
-					$("#modal-store").modal('hide');
-					searchRefresh();
-				});
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
-		}
-	});
-}
-function editframe(id){
-	var row = $("#listTable").bootstrapTable('getRowByUniqueId', id);
-	$("#modal-store2").modal('show');
-	$("#form-store2 input[name=id]").val(row.id);
-	$("#form-store2 select[name=is_hide]").val(row.is_hide);
-	$("#form-store2 select[name=is_sso]").val(row.is_sso);
-	$("#form-store2 select[name=is_notice]").val(row.is_notice);
-	$("#form-store2 input[name=remark]").val(row.remark);
+        $('[data-toggle="popover"]').popover()
+    })
 
-	$("#form-store2 input[name=expiretime]").datetimepicker({
-		format: 'YYYY-MM-DD HH:mm:ss',
-		locale: 'zh-cn',
-		defaultDate: row.expiretime,
-	}).val(row.expiretime);
-}
-function saveEdit(){
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'POST',
-		url : '/domain/op/act/edit',
-		data : $("#form-store2").serialize(),
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.msg(data.msg, {icon:1, time:800});
-				$("#modal-store2").modal('hide');
-				searchRefresh();
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
-		}
-	});
-}
-function delItem(id) {
-	var confirmobj = layer.confirm('确定要删除此域名吗？删除域名不会影响已添加的解析', {
-	  btn: ['确定','取消']
-	}, function(){
-	  var ii = layer.load(2);
-	  $.ajax({
-		type : 'POST',
-		url : '/domain/op/act/del',
-		data : {id: id},
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.closeAll();
-				searchRefresh();
-			}else{
-				layer.alert(data.msg, {icon: 2});
-			}
-		}
-	  });
-	}, function(){
-		layer.close(confirmobj);
-	});
-}
-function getDomainList(){
-	$('#domainList').empty();
-	$('#domainList').select2({
-		placeholder: '请选择域名',
-		language: "zh-CN",
-		ajax:{
-			url: '/domain/list',
-			type: "post",
-			dataType: 'json',
-			delay: 300,
-			data: function(params) {
-				var aid = $("#form-store select[name=aid]").val();
-				var data = {
-					aid: aid,
-					kw: params.term,
-					page: params.page || 1,
-					pagesize: 10
-				};
-				return data;
-			},
-			processResults: function (data, params) {
-				params.page = params.page || 1
-				if(data.code == 0){
-					var resultData = [];
-					$.each(data.data.list, function(index, item){
-						resultData.push({'id': item.DomainId, 'text': item.Domain + (item.disabled ? ' (已添加)' : ''), 'recordcount': item.RecordCount, disabled:item.disabled});
-					})
-					return {
-						results: resultData,
-						pagination: {
-							more: data.data.total > params.page * 10
-						}
-					};
-				}else{
-					layer.alert(data.msg, {icon: 2});
-					return {
-		                results: []
-		            };
-				}
-			}
-		},
-		cache:false
-	});
-}
-function operation(action){
-	var rows = $("#listTable").bootstrapTable('getSelections');
-	if(rows.length == 0){
-		layer.msg('请选择要操作的域名');
-		return;
-	}
-	var ids = [];
-	$.each(rows, function(index, item){
-		ids.push(item.id);
-	})
-	if(action == 'editremark'){
-		batch_edit_remark(ids)
-		return;
-	}else if(action == 'addrecord'){
-		sessionStorage.setItem('domains', JSON.stringify(rows));
-		window.location.href = '/record/batchadd';
-		return;
-	}else if(action == 'editrecord'){
-		sessionStorage.setItem('domains', JSON.stringify(rows));
-		window.location.href = '/record/batchedit';
-		return;
-	}else if(action == 'delete'){
-		var confirmobj = layer.confirm('确定要删除所选域名吗？', {
-			btn: ['确定','取消']
-		}, function(){
-			var ii = layer.load(2);
-			$.ajax({
-				type : 'POST',
-				url : '/domain/op/act/batchdel',
-				data : {ids: ids},
-				dataType : 'json',
-				success : function(data) {
-					layer.close(ii);
-					if(data.code == 0){
-						layer.closeAll();
-						layer.alert(data.msg, {icon: 1});
-						searchRefresh();
-					}else{
-						layer.alert(data.msg, {icon: 2});
-					}
-				}
-			});
-		}, function(){
-			layer.close(confirmobj);
-		});
-	}else{
-		var is_notice = action == 'opennotice' ? 1 : 0;
-		var ii = layer.load(2);
-		$.ajax({
-			type : 'POST',
-			url : '/domain/op/act/batchsetnotice',
-			data : {ids: ids, is_notice: is_notice},
-			dataType : 'json',
-			success : function(data) {
-				layer.close(ii);
-				if(data.code == 0){
-					layer.closeAll();
-					layer.alert(data.msg, {icon: 1});
-					searchRefresh();
-				}else{
-					layer.alert(data.msg, {icon: 2});
-				}
-			}
-		});
-	}
-}
-function batch_edit_remark(ids) {
-	layer.open({
-		type: 1,
-		area: ['350px'],
-		closeBtn: 2,
-		title: '批量修改备注',
-		content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark2" value="" autocomplete="off" placeholder="备注信息"></div></div>',
-		btn: ['确认', '取消'],
-		yes: function(){
-			var remark = $("input[name='remark2']").val();
-			var ii = layer.load(2, {shade:[0.1,'#fff']});
-			$.ajax({
-				type : 'POST',
-				url : '/domain/op/act/batchedit',
-				data : {ids:ids, remark:remark},
-				dataType : 'json',
-				success : function(data) {
-					layer.close(ii);
-					layer.alert(data.msg,{
-						icon: 1,
-						closeBtn: false
-					}, function(){
-						layer.closeAll();
-						searchRefresh();
-					});
-				},
-				error:function(data){
-					layer.close(ii);
-					layer.msg('服务器错误');
-				}
-			});
-		}
-	});
-}
-function updateDate(id){
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'POST',
-		url : '/domain/updatedate',
-		data : {id: id},
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				layer.msg('刷新成功', {icon: 1, time: 600});
-				searchRefresh();
-			}else{
-				layer.alert(data.msg, {icon: 2});
-			}
-		}
-	});
-}
-function loading(){
-	layer.load(2);
-}
-document.addEventListener("visibilitychange", function() {
-	if (document.visibilityState === "visible") {
-		layer.closeAll();
-	}
-});
+    function addframe() {
+        $("#modal-store").modal('show');
+        var aid = $("#form-store select[name=aid]").val();
+        if (aid != '') {
+            getDomainList()
+        }
+    }
+
+    function saveAdd() {
+        var aid = $("#form-store select[name=aid]").val();
+        if (aid == '') {
+            layer.alert('请选择域名账户！');
+            return false;
+        }
+        var method = $("#form-store input[name=method]:checked").val();
+        if (method == '1') {
+            var name = $("#form-store input[name=adddomain]").val();
+            if (name == '') {
+                layer.alert('域名不能为空！');
+                return false;
+            }
+        } else {
+            var select = $('#domainList').select2('data');
+            if (select.length == 0) {
+                layer.alert('请选择域名！');
+                return false;
+            }
+            var name = select[0].text;
+            var thirdid = select[0].id;
+            var recordcount = select[0].recordcount;
+            if (aid == '' || thirdid == '') {
+                layer.alert('请确保各项不能为空！');
+                return false;
+            }
+        }
+        var ii = layer.load(2);
+        $.ajax({
+            type: 'POST',
+            url: '/domain/op/act/add',
+            data: {aid: aid, method: method, thirdid: thirdid, name: name, recordcount: recordcount},
+            dataType: 'json',
+            success: function (data) {
+                layer.close(ii);
+                if (data.code == 0) {
+                    layer.alert(data.msg, {
+                        icon: 1,
+                        closeBtn: false
+                    }, function () {
+                        layer.closeAll();
+                        $("#modal-store").modal('hide');
+                        searchRefresh();
+                    });
+                } else {
+                    layer.alert(data.msg, {icon: 2})
+                }
+            }
+        });
+    }
+
+    function editframe(id){
+        var row = $("#listTable").bootstrapTable('getRowByUniqueId', id);
+        $("#modal-store2").modal('show');
+        $("#form-store2 input[name=id]").val(row.id);
+        $("#form-store2 select[name=is_hide]").val(row.is_hide);
+        $("#form-store2 select[name=is_sso]").val(row.is_sso);
+        $("#form-store2 select[name=is_notice]").val(row.is_notice);
+        $("#form-store2 input[name=remark]").val(row.remark);
+
+        $("#form-store2 input[name=expiretime]").datetimepicker({
+            format: 'YYYY-MM-DD HH:mm:ss',
+            locale: 'zh-cn',
+            defaultDate: row.expiretime,
+        }).val(row.expiretime);
+    }
+    function saveEdit(){
+        var ii = layer.load(2);
+        $.ajax({
+            type : 'POST',
+            url : '/domain/op/act/edit',
+            data : $("#form-store2").serialize(),
+            dataType : 'json',
+            success : function(data) {
+                layer.close(ii);
+                if(data.code == 0){
+                    layer.msg(data.msg, {icon:1, time:800});
+                    $("#modal-store2").modal('hide');
+                    searchRefresh();
+                }else{
+                    layer.alert(data.msg, {icon: 2})
+                }
+            }
+        });
+    }
+
+    function delItem(id) {
+        var confirmobj = layer.confirm('确定要删除此域名吗？删除域名不会影响已添加的解析', {
+            btn: ['确定', '取消']
+        }, function () {
+            var ii = layer.load(2);
+            $.ajax({
+                type: 'POST',
+                url: '/domain/op/act/del',
+                data: {id: id},
+                dataType: 'json',
+                success: function (data) {
+                    layer.close(ii);
+                    if (data.code == 0) {
+                        layer.closeAll();
+                        searchRefresh();
+                    } else {
+                        layer.alert(data.msg, {icon: 2});
+                    }
+                }
+            });
+        }, function () {
+            layer.close(confirmobj);
+        });
+    }
+
+    function getDomainList() {
+        $('#domainList').empty();
+        $('#domainList').select2({
+            placeholder: '请选择域名',
+            language: "zh-CN",
+            ajax: {
+                url: '/domain/list',
+                type: "post",
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    var aid = $("#form-store select[name=aid]").val();
+                    var data = {
+                        aid: aid,
+                        kw: params.term,
+                        page: params.page || 1,
+                        pagesize: 10
+                    };
+                    return data;
+                },
+                processResults: function (data, params) {
+                    params.page = params.page || 1
+                    if (data.code == 0) {
+                        var resultData = [];
+                        $.each(data.data.list, function(index, item){
+                            resultData.push({'id': item.DomainId, 'text': item.Domain + (item.disabled ? ' (已添加)' : ''), 'recordcount': item.RecordCount, disabled:item.disabled});
+                        })
+                        return {
+                            results: resultData,
+                            pagination: {
+                                more: data.data.total > params.page * 10
+                            }
+                        };
+                    } else {
+                        layer.alert(data.msg, {icon: 2});
+                        return {
+                            results: []
+                        };
+                    }
+                }
+            },
+            cache: false
+        });
+    }
+
+    function operation(action){
+        var rows = $("#listTable").bootstrapTable('getSelections');
+        if(rows.length == 0){
+            layer.msg('请选择要操作的域名');
+            return;
+        }
+        var ids = [];
+        $.each(rows, function(index, item){
+            ids.push(item.id);
+        })
+        if(action == 'editremark'){
+            batch_edit_remark(ids)
+            return;
+        }else if(action == 'addrecord'){
+            sessionStorage.setItem('domains', JSON.stringify(rows));
+            window.location.href = '/record/batchadd';
+            return;
+        }else if(action == 'editrecord'){
+            sessionStorage.setItem('domains', JSON.stringify(rows));
+            window.location.href = '/record/batchedit';
+            return;
+        }else if(action == 'delete'){
+            var confirmobj = layer.confirm('确定要删除所选域名吗？', {
+                btn: ['确定','取消']
+            }, function(){
+                var ii = layer.load(2);
+                $.ajax({
+                    type : 'POST',
+                    url : '/domain/op/act/batchdel',
+                    data : {ids: ids},
+                    dataType : 'json',
+                    success : function(data) {
+                        layer.close(ii);
+                        if(data.code == 0){
+                            layer.closeAll();
+                            layer.alert(data.msg, {icon: 1});
+                            searchRefresh();
+                        }else{
+                            layer.alert(data.msg, {icon: 2});
+                        }
+                    }
+                });
+            }, function(){
+                layer.close(confirmobj);
+            });
+        }else{
+            var is_notice = action == 'opennotice' ? 1 : 0;
+            var ii = layer.load(2);
+            $.ajax({
+                type : 'POST',
+                url : '/domain/op/act/batchsetnotice',
+                data : {ids: ids, is_notice: is_notice},
+                dataType : 'json',
+                success : function(data) {
+                    layer.close(ii);
+                    if(data.code == 0){
+                        layer.closeAll();
+                        layer.alert(data.msg, {icon: 1});
+                        searchRefresh();
+                    }else{
+                        layer.alert(data.msg, {icon: 2});
+                    }
+                }
+            });
+        }
+    }
+    function batch_edit_remark(ids) {
+        layer.open({
+            type: 1,
+            area: ['350px'],
+            closeBtn: 2,
+            title: '批量修改备注',
+            content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark2" value="" autocomplete="off" placeholder="备注信息"></div></div>',
+            btn: ['确认', '取消'],
+            yes: function(){
+                var remark = $("input[name='remark2']").val();
+                var ii = layer.load(2, {shade:[0.1,'#fff']});
+                $.ajax({
+                    type : 'POST',
+                    url : '/domain/op/act/batchedit',
+                    data : {ids:ids, remark:remark},
+                    dataType : 'json',
+                    success : function(data) {
+                        layer.close(ii);
+                        layer.alert(data.msg,{
+                            icon: 1,
+                            closeBtn: false
+                        }, function(){
+                            layer.closeAll();
+                            searchRefresh();
+                        });
+                    },
+                    error:function(data){
+                        layer.close(ii);
+                        layer.msg('服务器错误');
+                    }
+                });
+            }
+        });
+    }
+
+    function updateDate(id){
+        var ii = layer.load(2);
+        $.ajax({
+            type : 'POST',
+            url : '/domain/updatedate',
+            data : {id: id},
+            dataType : 'json',
+            success : function(data) {
+                layer.close(ii);
+                if(data.code == 0){
+                    layer.msg('刷新成功', {icon: 1, time: 600});
+                    searchRefresh();
+                }else{
+                    layer.alert(data.msg, {icon: 2});
+                }
+            }
+        });
+    }
+
+    function loading() {
+        layer.load(2);
+    }
+
+    document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") {
+            layer.closeAll();
+        }
+    });
 </script>
 {/block}

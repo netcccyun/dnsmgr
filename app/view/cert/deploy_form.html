@@ -2,146 +2,171 @@
 {block name="title"}自动部署任务{/block}
 {block name="main"}
 <style>
-.tips{color: #f6a838; padding-left: 5px;}
-.input-note{color: green;}
-.control-label[is-required]:before {
-    content: "*";
-    color: #f56c6c;
-    margin-right: 4px;
-}
+    .tips{color: #f6a838; padding-left: 5px;}
+    .input-note{color: green;}
+    .control-label[is-required]:before {
+        content: "*";
+        color: #f56c6c;
+        margin-right: 4px;
+    }
 </style>
-<div class="row" id="app">
-<div class="col-xs-12 center-block" style="float: none;">
-<div class="panel panel-default">
-<div class="panel-heading"><h3 class="panel-title"><a href="/cert/deploytask" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{if $action=='edit'}编辑{else}添加{/if}自动部署任务</h3></div>
-<div class="panel-body">
-  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="accountform">
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right" is-required>自动部署账户</label>
-        <div class="col-sm-6"><select name="aid" v-model="set.aid" class="form-control" required :disabled="action=='edit'">
-            <option value="">--选择自动部署账户--</option>
-            {foreach $accounts as $k=>$v}
-                <option value="{$k}" data-type="{$v.type}">{$v.name}</option>
-            {/foreach}
-        </select></div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right" is-required>关联SSL证书</label>
-        <div class="col-sm-6"><select name="oid" v-model="set.oid" class="form-control select2" placeholder="选择要部署的SSL证书">
-            {foreach $orders as $k=>$v}
-                <option value="{$k}">{$v.name}</option>
-            {/foreach}
-        </select></div>
-    </div>
-    <div v-for="(item,name) in inputs" v-show="isShow(item.show)">
-        <div class="form-group" v-if="item.type=='input'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <input type="text" class="form-control" :name="name" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled" :data-bv-id="item.validator=='id'" :data-bv-phone="item.validator=='phone'" :data-bv-numeric="item.validator=='numeric'" :data-bv-digits="item.validator=='digits'" :data-bv-integer="item.validator=='integer'" :data-bv-email="item.validator=='email'" :data-bv-uri="item.validator=='uri'" :min="item.min" :max="item.max"><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
-        </div>
-        <div class="form-group" v-if="item.type=='textarea'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <textarea class="form-control" :name="name" rows="5" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled"></textarea><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
-        </div>
-        <div class="form-group" v-if="item.type=='select'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <select class="form-control" :name="name" v-model="config[name]" :required="item.required" :disabled="item.disabled" :placeholder="item.placeholder">
-                    <option v-for="option in item.options" :value="option.value">{{option.label}}</option>
-                </select><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
-        </div>
-        <div class="form-group" v-if="item.type=='radio'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <label class="radio-inline" v-for="(optionname, optionvalue) in item.options">
-                    <input type="radio" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
-                </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
-        </div>
-        <div class="form-group" v-if="item.type=='checkbox'">
-            <div class="col-sm-offset-3 col-sm-7">
-                <div class="checkbox">
-                    <label>
-                        <input type="checkbox" :name="name" v-model="config[name]" :disabled="item.disabled"> {{item.name}}
-                    </label> 
+<div id="app">
+    <div class="panel panel-default">
+        <div class="panel-heading font-bold"><h3 class="panel-title"><a href="/cert/deploytask" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{if $action=='edit'}编辑{else}添加{/if}自动部署任务</h3></div>
+        <div class="panel-body">
+            <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="accountform">
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right" is-required>自动部署账户</label>
+                    <div class="col-sm-6"><select name="aid" v-model="set.aid" class="form-control" required :disabled="action=='edit'">
+                        <option value="">--选择自动部署账户--</option>
+                        {foreach $accounts as $k=>$v}
+                        <option value="{$k}" data-type="{$v.type}">{$v.name}</option>
+                        {/foreach}
+                    </select></div>
                 </div>
-            </div>
-        </div>
-        <div class="form-group" v-if="item.type=='checkboxes'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <label class="checkbox-inline" v-for="(optionname, optionvalue) in item.options">
-                    <input type="checkbox" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
-                </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right" is-required>关联SSL证书</label>
+                    <div class="col-sm-6"><select name="oid" v-model="set.oid" class="form-control select2" placeholder="选择要部署的SSL证书">
+                        {foreach $orders as $k=>$v}
+                        <option value="{$k}">{$v.name}</option>
+                        {/foreach}
+                    </select></div>
+                </div>
+                <div v-for="(item,name) in inputs" v-show="isShow(item.show)">
+                    <div class="form-group" v-if="item.type=='input'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" :name="name" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled" :data-bv-id="item.validator=='id'" :data-bv-phone="item.validator=='phone'" :data-bv-numeric="item.validator=='numeric'" :data-bv-digits="item.validator=='digits'" :data-bv-integer="item.validator=='integer'" :data-bv-email="item.validator=='email'" :data-bv-uri="item.validator=='uri'" :min="item.min" :max="item.max"><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='textarea'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <textarea class="form-control" :name="name" rows="5" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled"></textarea><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='select'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <select class="form-control" :name="name" v-model="config[name]" :required="item.required" :disabled="item.disabled" :placeholder="item.placeholder">
+                                <option v-for="option in item.options" :value="option.value">{{option.label}}</option>
+                            </select><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='radio'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <label class="radio-inline" v-for="(optionname, optionvalue) in item.options">
+                                <input type="radio" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
+                            </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='checkbox'">
+                        <div class="col-sm-offset-3 col-sm-7">
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" :name="name" v-model="config[name]" :disabled="item.disabled"> {{item.name}}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='checkboxes'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <label class="checkbox-inline" v-for="(optionname, optionvalue) in item.options">
+                                <input type="checkbox" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
+                            </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">备注</label>
+                    <div class="col-sm-6">
+                        <input type="text" name="remark" v-model="set.remark" placeholder="可留空" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group" v-show="note">
+                    <div class="col-sm-offset-3 col-sm-6">
+                        <div class="alert alert-dismissible alert-info">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <strong>提示：</strong><span v-html="note"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
+                </div>
+            </form>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">备注</label>
-        <div class="col-sm-6">
-            <input type="text" name="remark" v-model="set.remark" placeholder="可留空" class="form-control">
-        </div>
-    </div>
-    <div class="form-group" v-show="note">
-        <div class="col-sm-offset-3 col-sm-6">
-            <div class="alert alert-dismissible alert-info">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <strong>提示：</strong><span v-html="note"></span>
-            </div>
-        </div>
-    </div>
-    <div class="form-group">
-        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
-    </div>
-  </form>
-</div>
 </div>
 {/block}
 {block name="script"}
 <script src="{$cdnpublic}vue/2.6.14/vue.min.js"></script>
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="{$cdnpublic}select2/4.0.13/js/select2.min.js"></script>
 <script src="{$cdnpublic}select2/4.0.13/js/i18n/zh-CN.min.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
 <script>
-var info = {$info|json_encode|raw};
-var typeList = {$typeList|json_encode|raw};
-new Vue({
-    el: '#app',
-    data: {
-        action: '{$action}',
-        set: {
-            id: '',
-            aid: '',
-            oid: '',
-            config : '',
-            remark: '',
-            type: '',
+    var info = {$info|json_encode|raw};
+    var typeList = {$typeList|json_encode|raw};
+    new Vue({
+        el: '#app',
+        data: {
+            action: '{$action}',
+            set: {
+                id: '',
+                aid: '',
+                oid: '',
+                config : '',
+                remark: '',
+                type: '',
+            },
+            inputs: {},
+            config: {},
+            typeList: typeList,
+            note: '',
         },
-        inputs: {},
-        config: {},
-        typeList: typeList,
-        note: '',
-    },
-    watch: {
-        'set.aid': function(val){
-            this.set.type = $('option:selected', 'select[name=aid]').data('type');
+        watch: {
+            'set.aid': function(val){
+                this.set.type = $('option:selected', 'select[name=aid]').data('type');
+            },
+            'set.type': function(val){
+                if(this.action == 'add' && val && typeList[val]){
+                    this.inputs = typeList[val].taskinputs;
+                    this.note = typeList[val].tasknote;
+                    this.config = {};
+                    $.each(this.inputs, (name, item) => {
+                        if(typeof item.value == 'undefined'){
+                            if(item.type == 'checkbox'){
+                                item.value = false;
+                            }else if(item.type == 'checkboxes'){
+                                item.value = [];
+                            }else{
+                                item.value = null;
+                            }
+                        }
+                        this.$set(this.config, name, item.value)
+                    })
+                }
+            }
         },
-        'set.type': function(val){
-            if(this.action == 'add' && val && typeList[val]){
-                this.inputs = typeList[val].taskinputs;
-                this.note = typeList[val].tasknote;
-                this.config = {};
+        mounted() {
+            if(this.action == 'edit'){
+                Object.keys(info).forEach((key) => {
+                    this.set[key] = info[key]
+                })
+                var config = JSON.parse(info.config);
+                this.inputs = typeList[this.set.type].taskinputs;
+                this.note = typeList[this.set.type].tasknote;
                 $.each(this.inputs, (name, item) => {
+                    if(typeof config[name] != 'undefined'){
+                        item.value = config[name];
+                    }
                     if(typeof item.value == 'undefined'){
                         if(item.type == 'checkbox'){
-                            item.value = false; 
+                            item.value = false;
                         }else if(item.type == 'checkboxes'){
-                            item.value = []; 
+                            item.value = [];
                         }else{
                             item.value = null;
                         }
@@ -149,107 +174,81 @@ new Vue({
                     this.$set(this.config, name, item.value)
                 })
             }
-        }
-    },
-    mounted() {
-        if(this.action == 'edit'){
-            Object.keys(info).forEach((key) => {
-                this.set[key] = info[key]
-            })
-            var config = JSON.parse(info.config);
-            this.inputs = typeList[this.set.type].taskinputs;
-            this.note = typeList[this.set.type].tasknote;
-            $.each(this.inputs, (name, item) => {
-                if(typeof config[name] != 'undefined'){
-                    item.value = config[name];
-                }
-                if(typeof item.value == 'undefined'){
-                    if(item.type == 'checkbox'){
-                        item.value = false; 
-                    }else if(item.type == 'checkboxes'){
-                        item.value = []; 
-                    }else{
-                        item.value = null;
-                    }
-                }
-                this.$set(this.config, name, item.value)
-            })
-        }
 
-        var that = this;
-        this.$nextTick(function () {
-            $('[data-toggle="tooltip"]').tooltip();
-            $('select[name=oid]').select2({placeholder: '选择要部署的SSL证书'}).on('select2:select', function(e){
-                that.set.oid = e.params.data.id
-            });
-            if(document.referrer.indexOf('&oid=') > 0){
-                var oid = document.referrer.split('&oid=')[1].split('&')[0];
-                if(oid){
-                    $('select[name=oid]').val(oid).trigger('change');
-                    that.set.oid = oid;
-                }
-            }
-        })
-    },
-    methods: {
-        submit(){
-            var that=this;
-            if(this.set.aid == ''){
-                layer.msg('请选择自动部署账户', {icon: 2, time:900});
-                return false;
-            }
-            if(this.set.oid == ''){
-                layer.msg('请选择要部署的SSL证书', {icon: 2, time:900});
-                return false;
-            }
-            Object.keys(this.config).forEach((key) => {
-                if(this.config[key] && typeof this.config[key] == 'string'){
-                    this.config[key] = this.trim(this.config[key]);
+            var that = this;
+            this.$nextTick(function () {
+                $('[data-toggle="tooltip"]').tooltip();
+                $('select[name=oid]').select2({placeholder: '选择要部署的SSL证书'}).on('select2:select', function(e){
+                    that.set.oid = e.params.data.id
+                });
+                if(document.referrer.indexOf('&oid=') > 0){
+                    var oid = document.referrer.split('&oid=')[1].split('&')[0];
+                    if(oid){
+                        $('select[name=oid]').val(oid).trigger('change');
+                        that.set.oid = oid;
+                    }
                 }
             })
-            this.set.config = JSON.stringify(this.config);
-            var ii = layer.load(2, {shade:[0.1,'#fff']});
-            $.ajax({
-                type: "POST",
-                url: "",
-                data: this.set,
-                dataType: 'json',
-                success: function(data) {
-                    layer.close(ii);
-                    if(data.code == 0){
-                        layer.alert(data.msg, {icon: 1}, function(){
-                            if(document.referrer.indexOf('/cert/deploytask?') > 0)
-                                window.location.href = document.referrer;
-                            else
-                                window.location.href = '/cert/deploytask';
-                        });
-                    }else{
-                        layer.alert(data.msg, {icon: 2});
-                    }
-                },
-                error: function(data){
-                    layer.close(ii);
-                    layer.msg('服务器错误');
-                }
-            });
         },
-        isShow(show){
-            if(typeof show == 'boolean' && show){
-                return show;
-            }else if(typeof show == 'string' && show){
+        methods: {
+            submit(){
                 var that=this;
+                if(this.set.aid == ''){
+                    layer.msg('请选择自动部署账户', {icon: 2, time:900});
+                    return false;
+                }
+                if(this.set.oid == ''){
+                    layer.msg('请选择要部署的SSL证书', {icon: 2, time:900});
+                    return false;
+                }
                 Object.keys(this.config).forEach((key) => {
-                    show = show.replace(new RegExp(key, 'g'), 'that.config["'+key+'"]')
+                    if(this.config[key] && typeof this.config[key] == 'string'){
+                        this.config[key] = this.trim(this.config[key]);
+                    }
                 })
-                return eval(show);
-            }else{
-                return true;
+                this.set.config = JSON.stringify(this.config);
+                var ii = layer.load(2, {shade:[0.1,'#fff']});
+                $.ajax({
+                    type: "POST",
+                    url: "",
+                    data: this.set,
+                    dataType: 'json',
+                    success: function(data) {
+                        layer.close(ii);
+                        if(data.code == 0){
+                            layer.alert(data.msg, {icon: 1}, function(){
+                                if(document.referrer.indexOf('/cert/deploytask?') > 0)
+                                    window.location.href = document.referrer;
+                                else
+                                    window.location.href = '/cert/deploytask';
+                            });
+                        }else{
+                            layer.alert(data.msg, {icon: 2});
+                        }
+                    },
+                    error: function(data){
+                        layer.close(ii);
+                        layer.msg('服务器错误');
+                    }
+                });
+            },
+            isShow(show){
+                if(typeof show == 'boolean' && show){
+                    return show;
+                }else if(typeof show == 'string' && show){
+                    var that=this;
+                    Object.keys(this.config).forEach((key) => {
+                        show = show.replace(new RegExp(key, 'g'), 'that.config["'+key+'"]')
+                    })
+                    return eval(show);
+                }else{
+                    return true;
+                }
+            },
+            trim(str){
+                return str.replace(/(^\s*)|(\s*$)/g, "");
             }
         },
-        trim(str){
-            return str.replace(/(^\s*)|(\s*$)/g, "");
-        }
-    },
-});
+    });
 </script>
 {/block}
