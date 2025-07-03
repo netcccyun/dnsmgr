@@ -2,339 +2,338 @@
 {block name="title"}{$title}{/block}
 {block name="main"}
 <style>
-.tips{color: #f6a838; padding-left: 5px;}
-.input-note{color: green;}
-.control-label[is-required]:before {
-    content: "*";
-    color: #f56c6c;
-    margin-right: 4px;
-}
-/* 账户类型卡片样式 */
-.account-type-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-.account-type-category {
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
-}
-.account-type-card {
-    width: calc(25% - 15px);
-    min-width: 200px;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s;
-    background: #fff;
-    height: 100px;
-    overflow: hidden;
-}
-.account-type-card:hover {
-    border-color: #409EFF;
-    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
-}
-.account-type-card .icon {
-    width: 30px;
-    margin: 11px 8px;
-    float: left;
-}
-.account-type-card .content {
-    margin-left: 38px;
-}
-.account-type-card .title {
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 3px;
-    color: #333;
-}
-.account-type-card .desc {
-    font-size: 12px;
-    color: #999;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-@media (max-width: 768px) {
-    .account-type-card {
-        width: calc(50% - 15px);
+    .tips{color: #f6a838; padding-left: 5px;}
+    .input-note{color: green;}
+    .control-label[is-required]:before {
+        content: "*";
+        color: #f56c6c;
+        margin-right: 4px;
     }
-}
-@media (max-width: 480px) {
-    .account-type-card {
+    /* 账户类型卡片样式 */
+    .account-type-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .account-type-category {
         width: 100%;
-        height: 78px;
+        margin-bottom: 10px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+    }
+    .account-type-card {
+        width: calc(25% - 15px);
+        min-width: 200px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: #fff;
+        height: 100px;
+        overflow: hidden;
+    }
+    .account-type-card:hover {
+        border-color: #409EFF;
+        box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+    }
+    .account-type-card .icon {
+        width: 30px;
+        margin: 11px 8px;
+        float: left;
+    }
+    .account-type-card .content {
+        margin-left: 38px;
+    }
+    .account-type-card .title {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 3px;
+        color: #333;
     }
     .account-type-card .desc {
-        -webkit-line-clamp: 1;
+        font-size: 12px;
+        color: #999;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-}
+    @media (max-width: 768px) {
+        .account-type-card {
+            width: calc(50% - 15px);
+        }
+    }
+    @media (max-width: 480px) {
+        .account-type-card {
+            width: 100%;
+            height: 78px;
+        }
+        .account-type-card .desc {
+            -webkit-line-clamp: 1;
+        }
+    }
 </style>
-<div class="row" id="app">
-<div class="col-xs-12 center-block" style="float: none;">
-<div class="panel panel-default">
-<div class="panel-heading"><h3 class="panel-title"><a href="javascript:window.history.back()" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{if $action=='edit'}编辑{else}添加{/if}{$title}</h3></div>
-<div class="panel-body">
-  <!-- 账户类型选择视图 -->
-  <div id="account-type-view" v-if="!selectedType">
-    <div v-for="(category, classId) in groupedTypes" :key="classId">
-      <div class="account-type-category">{{ category.label }}</div>
-      <div class="account-type-container">
-        <div class="account-type-card" v-for="type in category.types" :key="type.value" @click="selectType(type.value)">
-          <img class="icon" :src="'/static/images/' + typeList[type.value].icon" :alt="type.label">
-          <div class="content">
-            <div class="title">{{ type.label }}</div>
-            <div class="desc">{{ typeList[type.value].desc || ''}}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 表单视图 -->
-  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="accountform" v-if="selectedType">
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right" is-required>账户类型</label>
-        <div class="col-sm-6">
-            <div class="form-control-static">
-                {{ typeList[set.type].name }}
-                <a href="javascript:;" @click="selectedType = false" class="pull-right btn btn-default" v-if="action=='add'">重新选择</a>
-            </div>
-            <input type="hidden" name="type" v-model="set.type">
-        </div>
-    </div>
-    <div v-for="(item,name) in inputs" v-show="isShow(item.show)">
-        <div class="form-group" v-if="item.type=='input'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <input type="text" class="form-control" :name="name" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled" :data-bv-id="item.validator=='id'" :data-bv-phone="item.validator=='phone'" :data-bv-numeric="item.validator=='numeric'" :data-bv-digits="item.validator=='digits'" :data-bv-integer="item.validator=='integer'" :data-bv-email="item.validator=='email'" :data-bv-uri="item.validator=='uri'" :min="item.min" :max="item.max"><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
-        </div>
-        <div class="form-group" v-if="item.type=='textarea'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <textarea class="form-control" :name="name" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled"></textarea><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
-        </div>
-        <div class="form-group" v-if="item.type=='select'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <select class="form-control" :name="name" v-model="config[name]" :required="item.required" :disabled="item.disabled" :placeholder="item.placeholder">
-                    <option v-for="option in item.options" :value="option.value">{{option.label}}</option>
-                </select><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
-        </div>
-        <div class="form-group" v-if="item.type=='radio'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <label class="radio-inline" v-for="(optionname, optionvalue) in item.options">
-                    <input type="radio" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
-                </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
-        </div>
-        <div class="form-group" v-if="item.type=='checkbox'">
-            <div class="col-sm-offset-3 col-sm-7">
-                <div class="checkbox">
-                    <label>
-                        <input type="checkbox" :name="name" v-model="config[name]" :disabled="item.disabled"> {{item.name}}
-                    </label> 
+<div id="app">
+    <div class="panel panel-default">
+        <div class="panel-heading font-bold"><h3 class="panel-title"><a href="javascript:window.history.back()" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{if $action=='edit'}编辑{else}添加{/if}{$title}</h3></div>
+        <div class="panel-body">
+            <!-- 账户类型选择视图 -->
+            <div id="account-type-view" v-if="!selectedType">
+                <div v-for="(category, classId) in groupedTypes" :key="classId">
+                    <div class="account-type-category">{{ category.label }}</div>
+                    <div class="account-type-container">
+                        <div class="account-type-card" v-for="type in category.types" :key="type.value" @click="selectType(type.value)">
+                            <img class="icon" :src="'/static/images/' + typeList[type.value].icon" :alt="type.label">
+                            <div class="content">
+                                <div class="title">{{ type.label }}</div>
+                                <div class="desc">{{ typeList[type.value].desc || ''}}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="form-group" v-if="item.type=='checkboxes'">
-            <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
-            <div class="col-sm-6">
-                <label class="checkbox-inline" v-for="(optionname, optionvalue) in item.options">
-                    <input type="checkbox" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
-                </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
-            </div>
+            <!-- 表单视图 -->
+            <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="accountform" v-if="selectedType">
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right" is-required>账户类型</label>
+                    <div class="col-sm-6">
+                        <div class="form-control-static">
+                            {{ typeList[set.type].name }}
+                            <a href="javascript:;" @click="selectedType = false" class="pull-right btn btn-default" v-if="action=='add'">重新选择</a>
+                        </div>
+                        <input type="hidden" name="type" v-model="set.type">
+                    </div>
+                </div>
+                <div v-for="(item,name) in inputs" v-show="isShow(item.show)">
+                    <div class="form-group" v-if="item.type=='input'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" :name="name" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled" :data-bv-id="item.validator=='id'" :data-bv-phone="item.validator=='phone'" :data-bv-numeric="item.validator=='numeric'" :data-bv-digits="item.validator=='digits'" :data-bv-integer="item.validator=='integer'" :data-bv-email="item.validator=='email'" :data-bv-uri="item.validator=='uri'" :min="item.min" :max="item.max"><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='textarea'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <textarea class="form-control" :name="name" v-model="config[name]" :placeholder="item.placeholder" :required="item.required" :disabled="item.disabled"></textarea><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='select'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <select class="form-control" :name="name" v-model="config[name]" :required="item.required" :disabled="item.disabled" :placeholder="item.placeholder">
+                                <option v-for="option in item.options" :value="option.value">{{option.label}}</option>
+                            </select><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='radio'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <label class="radio-inline" v-for="(optionname, optionvalue) in item.options">
+                                <input type="radio" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
+                            </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='checkbox'">
+                        <div class="col-sm-offset-3 col-sm-7">
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" :name="name" v-model="config[name]" :disabled="item.disabled"> {{item.name}}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" v-if="item.type=='checkboxes'">
+                        <label class="col-sm-3 control-label no-padding-right" :is-required="item.required">{{item.name}}</label>
+                        <div class="col-sm-6">
+                            <label class="checkbox-inline" v-for="(optionname, optionvalue) in item.options">
+                                <input type="checkbox" :name="name" :value="optionvalue" v-model="config[name]" :disabled="item.disabled"> {{optionname}}
+                            </label><br/><span v-if="item.note" class="input-note" v-html="item.note"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">备注</label>
+                    <div class="col-sm-6">
+                        <input type="text" name="remark" v-model="set.remark" placeholder="可留空" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group" v-show="note">
+                    <div class="col-sm-offset-3 col-sm-6">
+                        <div class="alert alert-dismissible alert-info">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <strong>提示：</strong><span v-html="note"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
+                </div>
+            </form>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right">备注</label>
-        <div class="col-sm-6">
-            <input type="text" name="remark" v-model="set.remark" placeholder="可留空" class="form-control">
-        </div>
-    </div>
-    <div class="form-group" v-show="note">
-        <div class="col-sm-offset-3 col-sm-6">
-            <div class="alert alert-dismissible alert-info">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <strong>提示：</strong><span v-html="note"></span>
-            </div>
-        </div>
-    </div>
-    <div class="form-group">
-        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
-    </div>
-  </form>
-</div>
 </div>
 {/block}
 {block name="script"}
 <script src="{$cdnpublic}vue/2.6.14/vue.min.js"></script>
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
 <script>
-var info = {$info|json_encode|raw};
-var typeList = {$typeList|json_encode|raw};
-var classList = {$classList|json_encode|raw};
-new Vue({
-    el: '#app',
-    data: {
-        action: '{$action}',
-        selectedType: false,
-        set: {
-            deploy: '{$deploy}',
-            id: '',
-            type: '',
-            name: '',
-            config : '',
-            remark: '',
+    var info = {$info|json_encode|raw};
+    var typeList = {$typeList|json_encode|raw};
+    var classList = {$classList|json_encode|raw};
+    new Vue({
+        el: '#app',
+        data: {
+            action: '{$action}',
+            selectedType: false,
+            set: {
+                deploy: '{$deploy}',
+                id: '',
+                type: '',
+                name: '',
+                config : '',
+                remark: '',
+            },
+            inputs: {},
+            config: {},
+            typeList: typeList,
+            classList: classList,
+            note: '',
+            typeOption: [],
         },
-        inputs: {},
-        config: {},
-        typeList: typeList,
-        classList: classList,
-        note: '',
-        typeOption: [],
-    },
-    watch: {
-        'set.type': function(val){
-            if(this.action == 'add' && val && typeList[val]){
-                this.inputs = typeList[val].inputs;
-                this.note = typeList[val].note;
-                this.config = {};
+        watch: {
+            'set.type': function(val){
+                if(this.action == 'add' && val && typeList[val]){
+                    this.inputs = typeList[val].inputs;
+                    this.note = typeList[val].note;
+                    this.config = {};
+                    $.each(this.inputs, (name, item) => {
+                        if(typeof item.value == 'undefined'){
+                            if(item.type == 'checkbox'){
+                                item.value = false;
+                            }else if(item.type == 'checkboxes'){
+                                item.value = [];
+                            }else{
+                                item.value = null;
+                            }
+                        }
+                        this.$set(this.config, name, item.value)
+                    })
+                }
+            }
+        },
+        computed: {
+            groupedTypes() {
+                return Object.keys(classList).map((key) => {
+                    var tempList = [];
+                    Object.keys(typeList).forEach((key2) => {
+                        if(typeList[key2].class == key){
+                            tempList.push({label: typeList[key2].name, value: key2})
+                        }
+                    })
+                    return {label: classList[key], types: tempList}
+                })
+            }
+        },
+        mounted() {
+            this.typeOption = this.groupedTypes;
+            if(this.action == 'edit') {
+                this.selectedType = true;
+            }
+            if(this.action == 'edit'){
+                Object.keys(info).forEach((key) => {
+                    this.set[key] = info[key]
+                })
+                var config = JSON.parse(info.config);
+                this.inputs = typeList[this.set.type].inputs;
+                this.note = typeList[this.set.type].note;
                 $.each(this.inputs, (name, item) => {
+                    item.value = config[name];
                     if(typeof item.value == 'undefined'){
+                        if(typeof config[name] != 'undefined'){
+                            item.value = config[name];
+                        }
                         if(item.type == 'checkbox'){
-                            item.value = false; 
+                            item.value = false;
                         }else if(item.type == 'checkboxes'){
-                            item.value = []; 
+                            item.value = [];
                         }else{
                             item.value = null;
                         }
                     }
                     this.$set(this.config, name, item.value)
                 })
+            }else{
+                this.set.type = Object.keys(typeList)[0]
             }
-        }
-    },
-    computed: {
-        groupedTypes() {
-            return Object.keys(classList).map((key) => {
-                var tempList = [];
-                Object.keys(typeList).forEach((key2) => {
-                    if(typeList[key2].class == key){
-                        tempList.push({label: typeList[key2].name, value: key2})
-                    }
-                })
-                return {label: classList[key], types: tempList}
-            })
-        }
-    },
-    mounted() {
-        this.typeOption = this.groupedTypes;
-        if(this.action == 'edit') {
-            this.selectedType = true;
-        }
-        if(this.action == 'edit'){
-            Object.keys(info).forEach((key) => {
-                this.set[key] = info[key]
-            })
-            var config = JSON.parse(info.config);
-            this.inputs = typeList[this.set.type].inputs;
-            this.note = typeList[this.set.type].note;
-            $.each(this.inputs, (name, item) => {
-                if(typeof config[name] != 'undefined'){
-                    item.value = config[name];
-                }
-                if(typeof item.value == 'undefined'){
-                    if(item.type == 'checkbox'){
-                        item.value = false; 
-                    }else if(item.type == 'checkboxes'){
-                        item.value = []; 
-                    }else{
-                        item.value = null;
-                    }
-                }
-                this.$set(this.config, name, item.value)
-            })
-        }else{
-            this.set.type = Object.keys(typeList)[0]
-        }
 
-        this.$nextTick(function () {
-            $('[data-toggle="tooltip"]').tooltip();
-        })
-    },
-    methods: {
-        selectType(type) {
-            this.set.type = type;
-            this.selectedType = true;
-        },
-        submit(){
-            var that=this;
-            Object.keys(this.config).forEach((key) => {
-                if(this.config[key] && typeof this.config[key] == 'string'){
-                    this.config[key] = this.trim(this.config[key]);
-                }
+            this.$nextTick(function () {
+                $('[data-toggle="tooltip"]').tooltip();
             })
-            this.set.config = JSON.stringify(this.config);
-            this.set.name = this.config[Object.keys(this.config)[0]];
-            let loading = layer.msg('正在进行账户有效性检查', {icon: 16,shade: 0.1,time: 0});
-            $.ajax({
-                type: "POST",
-                url: "",
-                data: this.set,
-                dataType: 'json',
-                success: function(data) {
-                    layer.close(loading);
-                    if(data.code == 0){
-                        layer.alert(data.msg, {icon: 1}, function(){
-                            if(data.msg.indexOf('自动部署账户')>0){
-                                window.location.href = '/cert/deployaccount';
-                            }else{
-                                window.location.href = '/cert/certaccount';
-                            }
-                        });
-                    }else{
-                        layer.alert(data.msg, {icon: 2});
-                    }
-                },
-                error: function(data){
-                    layer.close(loading);
-                    layer.msg('服务器错误');
-                }
-            });
         },
-        isShow(show){
-            if(typeof show == 'boolean' && show){
-                return show;
-            }else if(typeof show == 'string' && show){
+        methods: {
+            selectType(type) {
+                this.set.type = type;
+                this.selectedType = true;
+            },
+            submit(){
                 var that=this;
                 Object.keys(this.config).forEach((key) => {
-                    show = show.replace(new RegExp(key, 'g'), 'that.config["'+key+'"]')
+                    if(this.config[key] && typeof this.config[key] == 'string'){
+                        this.config[key] = this.trim(this.config[key]);
+                    }
                 })
-                return eval(show);
-            }else{
-                return true;
+                this.set.config = JSON.stringify(this.config);
+                this.set.name = this.config[Object.keys(this.config)[0]];
+                let loading = layer.msg('正在进行账户有效性检查', {icon: 16,shade: 0.1,time: 0});
+                $.ajax({
+                    type: "POST",
+                    url: "",
+                    data: this.set,
+                    dataType: 'json',
+                    success: function(data) {
+                        layer.close(loading);
+                        if(data.code == 0){
+                            layer.alert(data.msg, {icon: 1}, function(){
+                                if(data.msg.indexOf('自动部署账户')>0){
+                                    window.location.href = '/cert/deployaccount';
+                                }else{
+                                    window.location.href = '/cert/certaccount';
+                                }
+                            });
+                        }else{
+                            layer.alert(data.msg, {icon: 2});
+                        }
+                    },
+                    error: function(data){
+                        layer.close(loading);
+                        layer.msg('服务器错误');
+                    }
+                });
+            },
+            isShow(show){
+                if(typeof show == 'boolean' && show){
+                    return show;
+                }else if(typeof show == 'string' && show){
+                    var that=this;
+                    Object.keys(this.config).forEach((key) => {
+                        show = show.replace(new RegExp(key, 'g'), 'that.config["'+key+'"]')
+                    })
+                    return eval(show);
+                }else{
+                    return true;
+                }
+            },
+            trim(str){
+                return str.replace(/(^\s*)|(\s*$)/g, "");
             }
         },
-        trim(str){
-            return str.replace(/(^\s*)|(\s*$)/g, "");
-        }
-    },
-});
+    });
 </script>
 {/block}

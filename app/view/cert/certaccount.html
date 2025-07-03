@@ -1,93 +1,91 @@
 {extend name="common/layout" /}
 {block name="title"}SSL证书账户管理{/block}
 {block name="main"}
-<div class="row">
-	<div class="col-xs-12 center-block" style="float: none;">
-	<div class="panel panel-default panel-intro">
-	<div class="panel-body">
-	
-<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
-  <div class="form-group">
-	<label>搜索</label>
-	<input type="text" class="form-control" name="kw" placeholder="账户名称或备注">
-  </div>
-  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
-  <a href="javascript:searchClear()" class="btn btn-default" title="刷新SSL证书账户列表"><i class="fa fa-refresh"></i> 刷新</a>
-  <a href="/cert/account/add?deploy=0" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
-</form>
-
-      <table id="listTable">
-	  </table>
+<style>
+    #orderItem .orderTitle{word-break:keep-all;}
+    #orderItem .orderContent{word-break:break-all;}
+    .fixed-table-toolbar,.fixed-table-pagination{padding: 15px;}
+</style>
+<div class="panel panel-default">
+    <div class="panel-heading font-bold">
+        <h3 class="panel-title">SSL证书账户管理</h3>
     </div>
-  </div>
-</div>
+    <form class="form-inline" id="searchToolbar" method="GET" onsubmit="return searchSubmit()">
+        <div class="form-group">
+            <input type="text" class="form-control" name="kw" placeholder="账户名称或备注">
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> 搜索</button>
+        <a class="btn btn-default" href="javascript:searchClear()" title="刷新SSL证书账户列表"><i class="fa fa-refresh"></i> 刷新</a>
+        <a class="btn btn-success" href="/cert/account/add?deploy=0"><i class="fa fa-plus"></i> 添加</a>
+    </form>
+    <table id="listTable">
+    </table>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
-$(document).ready(function(){
-	updateToolbar();
-	const defaultPageSize = 15;
-	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+    $(document).ready(function(){
+        updateToolbar();
+        const defaultPageSize = 15;
+        const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+        const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
-	$("#listTable").bootstrapTable({
-		url: '/cert/account/data?deploy=0',
-		pageNumber: pageNumber,
-		pageSize: pageSize,
-		classes: 'table table-striped table-hover table-bordered',
-		columns: [
-			{
-				field: 'id',
-				title: 'ID'
-			},
-			{
-				field: 'typename',
-				title: '所属平台',
-				formatter: function(value, row, index) {
-					return '<img src="/static/images/'+row.icon+'" class="type-logo"></img>'+value;
-				}
-			},
-			{
-				field: 'name',
-				title: '账户名称'
-			},
-			{
-				field: 'remark',
-				title: '备注'
-			},
-			{
-				field: 'addtime',
-				title: '添加时间'
-			},
-			{
-				field: 'action',
-				title: '操作',
-				formatter: function(value, row, index) {
-					var html = '<a href="/cert/account/edit?deploy=0&id='+row.id+'" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a> <a href="/cert/certorder?aid='+row.id+'" class="btn btn-default btn-xs">订单</a>';
-					return html;
-				}
-			},
-		]
-	})
-})
-function delItem(id){
-	layer.confirm('确定要删除此账户吗？', {
-		btn: ['确定','取消']
-	}, function(){
-		$.post('/cert/account/del', {id: id, deploy: 0}, function(data){
-			if(data.code == 0) {
-				layer.msg('删除成功', {icon: 1, time:800});
-				$('#listTable').bootstrapTable('refresh');
-			} else {
-				layer.alert(data.msg, {icon: 2});
-			}
-		}, 'json');
-	});
-}
+        $("#listTable").bootstrapTable({
+            url: '/cert/account/data?deploy=0',
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            classes: 'table table-striped table-hover table-bordered',
+            columns: [
+                {
+                    field: 'id',
+                    title: 'ID'
+                },
+                {
+                    field: 'typename',
+                    title: '所属平台',
+                    formatter: function(value, row, index) {
+                        return '<img src="/static/images/'+row.icon+'" class="type-logo"></img>'+value;
+                    }
+                },
+                {
+                    field: 'name',
+                    title: '账户名称'
+                },
+                {
+                    field: 'remark',
+                    title: '备注'
+                },
+                {
+                    field: 'addtime',
+                    title: '添加时间'
+                },
+                {
+                    field: 'action',
+                    title: '操作',
+                    formatter: function(value, row, index) {
+                        var html = '<a href="/cert/account/edit?deploy=0&id='+row.id+'" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a> <a href="/cert/certorder?aid='+row.id+'" class="btn btn-default btn-xs">订单</a>';
+                        return html;
+                    }
+                },
+            ]
+        })
+    })
+    function delItem(id){
+        layer.confirm('确定要删除此账户吗？', {
+            btn: ['确定','取消']
+        }, function(){
+            $.post('/cert/account/del', {id: id, deploy: 0}, function(data){
+                if(data.code == 0) {
+                    layer.msg('删除成功', {icon: 1, time:800});
+                    $('#listTable').bootstrapTable('refresh');
+                } else {
+                    layer.alert(data.msg, {icon: 2});
+                }
+            }, 'json');
+        });
+    }
 </script>
 {/block}

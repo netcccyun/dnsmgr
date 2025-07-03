@@ -2,19 +2,22 @@
 {block name="title"}CMAME代理记录管理{/block}
 {block name="main"}
 <style>
-.copy-btn{color:#52c41a;cursor:pointer;margin-right: 5px;}
-.copy-btn:hover{color:#85ef79;}
-.btn-refresh{margin-left:5px;font-size:10px;background-color:#6896cf}
-tbody tr>td:nth-child(3){word-break:break-all;max-width:180px;}
-tbody tr>td:nth-child(4){word-break:break-all;max-width:260px;}
+	#orderItem .orderTitle{word-break:keep-all;}
+	#orderItem .orderContent{word-break:break-all;}
+	.fixed-table-toolbar,.fixed-table-pagination{padding: 15px;}
+	.copy-btn{color:#52c41a;cursor:pointer;margin-right: 5px;}
+	.copy-btn:hover{color:#85ef79;}
+	.btn-refresh{margin-left:5px;font-size:10px;background-color:#6896cf}
+	tbody tr>td:nth-child(3){word-break:break-all;max-width:180px;}
+	tbody tr>td:nth-child(4){word-break:break-all;max-width:260px;}
 </style>
 <div class="modal" id="modal-store" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
-	<div class="modal-dialog">
-		<div class="modal-content animated flipInX">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
 			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal"><span
-							aria-hidden="true">&times;</span><span
-							class="sr-only">Close</span></button>
+				<button aria-label="Close" class="close" data-dismiss="modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button>
 				<h4 class="modal-title" id="modal-title">添加CNAME代理</h4>
 			</div>
 			<div class="modal-body">
@@ -29,13 +32,16 @@ tbody tr>td:nth-child(4){word-break:break-all;max-width:260px;}
 					</div>
 					<div class="form-group">
 						<label class="col-sm-3 control-label">CNAME记录值</label>
-						<div class="col-sm-9"><div class="input-group">
-						<input type="text" name="rr" placeholder="自定义主机记录" class="form-control" required><span class="input-group-addon">.</span>
-						<select name="did" class="form-control" required>
-							{foreach $domains as $k=>$v}
-								<option value="{$k}">{$v}</option>
-							{/foreach}
-						</select></div></div>
+						<div class="col-sm-9">
+							<div class="input-group">
+								<input type="text" name="rr" placeholder="自定义主机记录" class="form-control" required><span class="input-group-addon">.</span>
+								<select name="did" class="form-control" required>
+									{foreach $domains as $k=>$v}
+									<option value="{$k}">{$v}</option>
+									{/foreach}
+								</select>
+							</div>
+						</div>
 					</div>
 				</form>
 			</div>
@@ -46,200 +52,198 @@ tbody tr>td:nth-child(4){word-break:break-all;max-width:260px;}
 		</div>
 	</div>
 </div>
-<div class="panel panel-default"><div class="panel-body"><p>CNAME代理可以让未在本系统添加的域名自动申请SSL证书，支持所有DNS服务商。</p><p>注：仅支持基于ACME的证书类型，不支持腾讯云等云厂商SSL证书。</p></div></div>
-<div class="row">
-	<div class="col-xs-12 center-block" style="float: none;">
-	<div class="panel panel-default panel-intro">
+<div class="panel panel-default">
 	<div class="panel-body">
-	
-<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
-  <div class="form-group">
-	<label>搜索</label>
-	<input type="text" class="form-control" name="kw" placeholder="被代理域名">
-  </div>
-  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
-  <a href="javascript:searchClear()" class="btn btn-default" title="刷新列表"><i class="fa fa-refresh"></i> 刷新</a>
-  <a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
-</form>
-
-      <table id="listTable">
-	  </table>
-    </div>
-  </div>
+		<p>CNAME代理可以让未在本系统添加的域名自动申请SSL证书，支持所有DNS服务商。</p>
+		<p>注：仅支持基于ACME的证书类型，不支持腾讯云等云厂商SSL证书。</p>
+	</div>
 </div>
+<div class="panel panel-default">
+	<div class="panel-heading font-bold">
+		<h3 class="panel-title">CMAME代理记录管理</h3>
+	</div>
+	<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
+		<div class="form-group">
+			<input type="text" class="form-control" name="kw" placeholder="被代理域名">
+		</div>
+		<button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
+		<a href="javascript:searchClear()" class="btn btn-default" title="刷新列表"><i class="fa fa-refresh"></i> 刷新</a>
+		<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
+	</form>
+	<table id="listTable">
+	</table>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="{$cdnpublic}clipboard.js/1.7.1/clipboard.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
-$(document).ready(function(){
-	updateToolbar();
-	const defaultPageSize = 15;
-	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	$(document).ready(function(){
+		updateToolbar();
+		const defaultPageSize = 15;
+		const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+		const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
-	$("#listTable").bootstrapTable({
-		url: '/cert/cname/data',
-		pageNumber: pageNumber,
-		pageSize: pageSize,
-		classes: 'table table-striped table-hover table-bordered',
-		uniqueId: 'id',
-		columns: [
-			{
-				field: 'id',
-				title: 'ID'
-			},
-			{
-				field: 'domain',
-				title: '被代理域名'
-			},
-			{
-				field: 'host',
-				title: '主机记录',
-				formatter: function(value, row, index) {
-					return value + '<a href="javascript:;" data-clipboard-text="'+value+'" class="copy-btn pull-right"><i class="fa fa-copy"></i></a>';
-				}
-			},
-			{
-				field: 'record',
-				title: 'CNAME记录值',
-				formatter: function(value, row, index) {
-					return value + '<a href="javascript:;" data-clipboard-text="'+value+'" class="copy-btn pull-right"><i class="fa fa-copy"></i></a>';
-				}
-			},
-			{
-				field: 'status',
-				title: '状态',
-				formatter: function(value, row, index) {
-					var html = '';
-					if(value == 1) {
-						html += '<span class="label label-success">已验证</span>';
-					} else {
-						html += '<span class="label label-warning">未验证</span>';
+		$("#listTable").bootstrapTable({
+			url: '/cert/cname/data',
+			pageNumber: pageNumber,
+			pageSize: pageSize,
+			classes: 'table table-striped table-hover table-bordered',
+			uniqueId: 'id',
+			columns: [
+				{
+					field: 'id',
+					title: 'ID'
+				},
+				{
+					field: 'domain',
+					title: '被代理域名'
+				},
+				{
+					field: 'host',
+					title: '主机记录',
+					formatter: function(value, row, index) {
+						return value + '<a href="javascript:;" data-clipboard-text="'+value+'" class="copy-btn pull-right"><i class="fa fa-copy"></i></a>';
 					}
-					html += '<a href="javascript:checkItem('+row.id+')" title="立即验证" class="btn btn-primary btn-xs btn-refresh"><i class="fa fa-refresh"></i></a>';
-					return html;
-				}
-			},
-			{
-				field: 'addtime',
-				title: '添加时间'
-			},
-			{
-				field: 'action',
-				title: '操作',
-				formatter: function(value, row, index) {
-					var html = '<a href="javascript:editframe('+row.id+')" class="btn btn-primary btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a>';
-					return html;
-				}
-			},
-		],
-		onLoadSuccess: function(data){
-			var clipboard = new Clipboard('.copy-btn');
-			clipboard.on('success', function (e) {
-				layer.msg('复制成功！', {icon: 1, time: 600});
-			});
-			clipboard.on('error', function (e) {
-				layer.msg('复制失败', {icon: 2});
-			});
-		},
-	})
-})
-function addframe(){
-	$("#modal-store").modal('show');
-	$("#modal-title").html("添加CNAME代理");
-	$("#form-store input[name=action]").val("add");
-	$("#form-store input[name=id]").val('');
-	$("#form-store input[name=domain]").val('');
-	$("#form-store input[name=domain]").prop('readonly', false);
-	$("#form-store input[name=rr]").val('');
-	var defaultDid = getCookie('cname_did');
-	if(defaultDid){
-		$("#form-store select[name=did]").val(defaultDid);
-	}
-}
-function editframe(id){
-	var row = $("#listTable").bootstrapTable('getRowByUniqueId', id);
-	$("#modal-store").modal('show');
-	$("#modal-title").html("修改CNAME代理");
-	$("#form-store input[name=action]").val("edit");
-	$("#form-store input[name=id]").val(id);
-	$("#form-store input[name=domain]").val(row.domain);
-	$("#form-store input[name=domain]").prop('readonly', true);
-	$("#form-store input[name=rr]").val(row.rr);
-	$("#form-store select[name=did]").val(row.did);
-}
-function changeDomain(obj){
-	var domain = $(obj).val();
-	if(domain == '') {
-		$("#form-store input[name=rr]").val('');
-		return;
-	}
-	var rr = domain.replace(/\./g, '-') + '.cname';
-	$("#form-store input[name=rr]").val(rr);
-}
-function save(){
-	if($("#form-store input[name=domain]").val()=='' || $("#form-store input[name=rr]").val()==''){
-		layer.alert('请确保各项不能为空！');return false;
-	}
-	var act = $("#form-store input[name=action]").val();
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'POST',
-		url : '/cert/cname/'+act,
-		data : $("#form-store").serialize(),
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			if(data.code == 0){
-				setCookie('cname_did', $("#form-store select[name=did]").val(), 2562000);
-				layer.alert(data.msg,{
-					icon: 1,
-					closeBtn: false
-				}, function(){
-					layer.closeAll();
-					$("#modal-store").modal('hide');
-					searchRefresh();
+				},
+				{
+					field: 'record',
+					title: 'CNAME记录值',
+					formatter: function(value, row, index) {
+						return value + '<a href="javascript:;" data-clipboard-text="'+value+'" class="copy-btn pull-right"><i class="fa fa-copy"></i></a>';
+					}
+				},
+				{
+					field: 'status',
+					title: '状态',
+					formatter: function(value, row, index) {
+						var html = '';
+						if(value == 1) {
+							html += '<span class="label label-success">已验证</span>';
+						} else {
+							html += '<span class="label label-warning">未验证</span>';
+						}
+						html += '<a href="javascript:checkItem('+row.id+')" title="立即验证" class="btn btn-primary btn-xs btn-refresh"><i class="fa fa-refresh"></i></a>';
+						return html;
+					}
+				},
+				{
+					field: 'addtime',
+					title: '添加时间'
+				},
+				{
+					field: 'action',
+					title: '操作',
+					formatter: function(value, row, index) {
+						var html = '<a href="javascript:editframe('+row.id+')" class="btn btn-primary btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a>';
+						return html;
+					}
+				},
+			],
+			onLoadSuccess: function(data){
+				var clipboard = new Clipboard('.copy-btn');
+				clipboard.on('success', function (e) {
+					layer.msg('复制成功！', {icon: 1, time: 600});
 				});
-			}else{
-				layer.alert(data.msg, {icon: 2})
-			}
+				clipboard.on('error', function (e) {
+					layer.msg('复制失败', {icon: 2});
+				});
+			},
+		})
+	})
+	function addframe(){
+		$("#modal-store").modal('show');
+		$("#modal-title").html("添加CNAME代理");
+		$("#form-store input[name=action]").val("add");
+		$("#form-store input[name=id]").val('');
+		$("#form-store input[name=domain]").val('');
+		$("#form-store input[name=domain]").prop('readonly', false);
+		$("#form-store input[name=rr]").val('');
+		var defaultDid = getCookie('cname_did');
+		if(defaultDid){
+			$("#form-store select[name=did]").val(defaultDid);
 		}
-	});
-}
-function delItem(id){
-	layer.confirm('确定要删除此CNAME代理记录吗？', {
-		btn: ['确定','取消']
-	}, function(){
-		$.post('/cert/cname/del', {id: id}, function(data){
+	}
+	function editframe(id){
+		var row = $("#listTable").bootstrapTable('getRowByUniqueId', id);
+		$("#modal-store").modal('show');
+		$("#modal-title").html("修改CNAME代理");
+		$("#form-store input[name=action]").val("edit");
+		$("#form-store input[name=id]").val(id);
+		$("#form-store input[name=domain]").val(row.domain);
+		$("#form-store input[name=domain]").prop('readonly', true);
+		$("#form-store input[name=rr]").val(row.rr);
+		$("#form-store select[name=did]").val(row.did);
+	}
+	function changeDomain(obj){
+		var domain = $(obj).val();
+		if(domain == '') {
+			$("#form-store input[name=rr]").val('');
+			return;
+		}
+		var rr = domain.replace(/\./g, '-') + '.cname';
+		$("#form-store input[name=rr]").val(rr);
+	}
+	function save(){
+		if($("#form-store input[name=domain]").val()=='' || $("#form-store input[name=rr]").val()==''){
+			layer.alert('请确保各项不能为空！');return false;
+		}
+		var act = $("#form-store input[name=action]").val();
+		var ii = layer.load(2);
+		$.ajax({
+			type : 'POST',
+			url : '/cert/cname/'+act,
+			data : $("#form-store").serialize(),
+			dataType : 'json',
+			success : function(data) {
+				layer.close(ii);
+				if(data.code == 0){
+					setCookie('cname_did', $("#form-store select[name=did]").val(), 2562000);
+					layer.alert(data.msg,{
+						icon: 1,
+						closeBtn: false
+					}, function(){
+						layer.closeAll();
+						$("#modal-store").modal('hide');
+						searchRefresh();
+					});
+				}else{
+					layer.alert(data.msg, {icon: 2})
+				}
+			}
+		});
+	}
+	function delItem(id){
+		layer.confirm('确定要删除此CNAME代理记录吗？', {
+			btn: ['确定','取消']
+		}, function(){
+			$.post('/cert/cname/del', {id: id}, function(data){
+				if(data.code == 0) {
+					layer.msg('删除成功', {icon: 1, time:800});
+					searchRefresh();
+				} else {
+					layer.msg(data.msg, {icon: 2});
+				}
+			}, 'json');
+		});
+	}
+	function checkItem(id){
+		var ii = layer.load(2);
+		$.post('/cert/cname/check', {id: id}, function(data){
+			layer.close(ii);
 			if(data.code == 0) {
-				layer.msg('删除成功', {icon: 1, time:800});
+				if(data.status == 1){
+					layer.alert('验证已通过！', {icon: 6});
+				}else{
+					layer.alert('验证未通过，请按要求添加CNAME解析', {icon: 5});
+				}
 				searchRefresh();
 			} else {
-				layer.msg(data.msg, {icon: 2});
+				layer.alert(data.msg, {icon: 2});
 			}
 		}, 'json');
-	});
-}
-function checkItem(id){
-	var ii = layer.load(2);
-	$.post('/cert/cname/check', {id: id}, function(data){
-		layer.close(ii);
-		if(data.code == 0) {
-			if(data.status == 1){
-				layer.alert('验证已通过！', {icon: 6});
-			}else{
-				layer.alert('验证未通过，请按要求添加CNAME解析', {icon: 5});
-			}
-			searchRefresh();
-		} else {
-			layer.alert(data.msg, {icon: 2});
-		}
-	}, 'json');
-}
+	}
 </script>
 {/block}

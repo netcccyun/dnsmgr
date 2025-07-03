@@ -1,47 +1,46 @@
 {extend name="common/layout" /}
 {block name="title"}域名日志{/block}
 {block name="main"}
-
-<div class="row">
-	<div class="col-xs-12 center-block" style="float: none;">
-	<div class="panel panel-default panel-intro">
-	<div class="panel-body">
-
-      <table id="listTable">
-	  </table>
+<style>
+    #orderItem .orderTitle{word-break:keep-all;}
+    #orderItem .orderContent{word-break:break-all;}
+    .fixed-table-toolbar,.fixed-table-pagination{padding: 15px;}
+</style>
+<div class="panel panel-default">
+    <div class="panel-heading font-bold">
+        <h3 class="panel-title">域名日志</h3>
     </div>
-  </div>
-</div>
+    <table id="listTable">
+    </table>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
-$(document).ready(function(){
-	updateToolbar();
-	const defaultPageSize = 15;
-	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+    $(document).ready(function () {
+        updateToolbar();
+        const defaultPageSize = 15;
+        const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+        const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
-	$("#listTable").bootstrapTable({
-		url: '/record/log/{$domainId}',
-		pageNumber: pageNumber,
-		pageSize: pageSize,
-		classes: 'table table-striped table-hover table-bordered',
-		columns: [
-			{
-				field: 'time',
-				title: '操作时间'
-			},
-			{
-				field: 'data',
-				title: '操作行为'
-			}
-		],
-	})
-})
+        $("#listTable").bootstrapTable({
+            url: '/record/log/{$domainId}',
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            classes: 'table table-striped table-hover table-bordered',
+            columns: [
+                {
+                    field: 'time',
+                    title: '操作时间'
+                },
+                {
+                    field: 'data',
+                    title: '操作行为'
+                }
+            ],
+        })
+    })
 </script>
 {/block}

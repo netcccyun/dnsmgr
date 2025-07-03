@@ -1,158 +1,158 @@
 {extend name="common/layout" /}
 {block name="title"}批量添加域名{/block}
 {block name="main"}
-<div class="row" id="app">
-<div class="col-xs-12 col-sm-10 col-md-8 col-lg-6 center-block" style="float: none;">
-<div class="panel panel-default">
-<div class="panel-heading"><h3 class="panel-title"><a href="/domain" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>批量添加域名</h3></div>
-<div class="panel-body">
-  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="form-store">
-    <div class="form-group">
-		<label class="col-sm-3 control-label">域名账户</label>
-		<div class="col-sm-9">
-		<div class="input-group">
-			<select name="aid" class="form-control" v-model="aid">
-				{foreach $accounts as $k=>$v}
-					<option value="{$k}">{$v}</option>
-				{/foreach}
-			</select>
-			<div class="input-group-btn">
-                <button type="button" @click="getDomainList" class="btn btn-info">获取域名</button>
-            </div>
-		</div>
+<div id="app">
+	<div class="panel panel-default">
+		<div class="panel-heading font-bold"><h3 class="panel-title"><a href="/domain" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>批量添加域名</h3></div>
+		<div class="panel-body">
+			<form onsubmit="return false" method="post" class="form-horizontal" role="form" id="form-store">
+				<div class="form-group">
+					<label class="col-sm-3 control-label">域名账户</label>
+					<div class="col-sm-6">
+						<div class="input-group">
+							<select name="aid" class="form-control" v-model="aid">
+								{foreach $accounts as $k=>$v}
+								<option value="{$k}">{$v}</option>
+								{/foreach}
+							</select>
+							<div class="input-group-btn">
+								<button type="button" @click="getDomainList" class="btn btn-info">获取域名</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-3 control-label">选择域名</label>
+					<div class="col-sm-6">
+						<table class="table table-striped table-hover table-bordered">
+							<thead>
+							<tr>
+								<th><input type="checkbox" v-model="checkall"></th>
+								<th>域名</th>
+							</tr>
+							</thead>
+							<tbody>
+							<tr v-for="item in domainList">
+								<td><input type="checkbox" name="domain[]" :value="item.DomainId" v-model="item.checked" :disabled="item.disabled"></td>
+								<td><span :title="item.DomainId">{{item.Domain}}</span><font color="#888" v-if="item.disabled"> (已添加)</font></td>
+							</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">确定添加</button></div>
+				</div>
+			</form>
 		</div>
 	</div>
-	<div class="form-group">
-		<label class="col-sm-3 control-label">选择域名</label>
-		<div class="col-sm-9">
-			<table class="table table-striped table-hover table-bordered">
-				<thead>
-					<tr>
-						<th><input type="checkbox" v-model="checkall"></th>
-						<th>域名</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="item in domainList">
-						<td><input type="checkbox" name="domain[]" :value="item.DomainId" v-model="item.checked" :disabled="item.disabled"></td>
-						<td><span :title="item.DomainId">{{item.Domain}}</span><font color="#888" v-if="item.disabled"> (已添加)</font></td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-	</div>
-    <div class="form-group">
-        <div class="col-sm-offset-3 col-sm-9"><button type="button" class="btn btn-primary" @click="submit">确定添加</button></div>
-    </div>
-  </form>
-</div>
 </div>
 {/block}
 {block name="script"}
 <script src="{$cdnpublic}vue/2.6.14/vue.min.js"></script>
 <script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script>
-new Vue({
-    el: '#app',
-    data: {
-		aid: '',
-		domainList: [],
-		page: 1,
-		pagesize: 10,
-		checkall: false,
-    },
-    watch: {
-		aid: function(val){
-			this.domainList = [];
+	new Vue({
+		el: '#app',
+		data: {
+			aid: '',
+			domainList: [],
+			page: 1,
+			pagesize: 10,
+			checkall: false,
 		},
-		checkall: function(val){
-			this.domainList.forEach(function(item){
-				item.checked = val&&!item.disabled;
-			});
-		}
-    },
-    mounted() {
-		this.aid = '{$accounts|@key}';
-    },
-    methods: {
-		async getDomainListPaged(){
-			var that = this;
-			return new Promise((resolve, reject) => {
-				$.ajax({
-					type: "POST",
-					url: "/domain/list",
-					data: {aid: that.aid, page: that.page, pagesize: that.pagesize},
-					dataType: 'json',
-					success: function(data) {
-						if(data.code == 0){
-							resolve(data.data);
-						}else{
-							reject(data.msg);
+		watch: {
+			aid: function(val){
+				this.domainList = [];
+			},
+			checkall: function(val){
+				this.domainList.forEach(function(item){
+					item.checked = val&&!item.disabled;
+				});
+			}
+		},
+		mounted() {
+			this.aid = '{$accounts|@key}';
+		},
+		methods: {
+			async getDomainListPaged(){
+				var that = this;
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type: "POST",
+						url: "/domain/list",
+						data: {aid: that.aid, page: that.page, pagesize: that.pagesize},
+						dataType: 'json',
+						success: function(data) {
+							if(data.code == 0){
+								resolve(data.data);
+							}else{
+								reject(data.msg);
+							}
 						}
+					});
+				});
+			},
+			async getDomainList(){
+				this.domainList = [];
+				while(true){
+					try{
+						layer.msg('正在获取第'+this.page+'页域名', {icon: 16, shade: 0.01});
+						var data = await this.getDomainListPaged();
+						if(data.total == 0 || data.list.length == 0){
+							layer.closeAll();
+							break;
+						}
+						this.domainList = this.domainList.concat(data.list);
+						if(this.domainList.length >= data.total){
+							layer.closeAll();
+							break;
+						}
+						this.page++;
+					}catch(e){
+						layer.alert(e, {icon: 2});
+						break;
+					}
+				}
+			},
+			submit(){
+				var domains = [];
+				this.domainList.forEach(function(item){
+					if(item.checked && !item.disabled){
+						domains.push({name: item.Domain, id: item.DomainId, recordcount:item.RecordCount});
 					}
 				});
-			});
-		},
-		async getDomainList(){
-			this.domainList = [];
-			while(true){
-				try{
-					layer.msg('正在获取第'+this.page+'页域名', {icon: 16, shade: 0.01});
-					var data = await this.getDomainListPaged();
-					if(data.total == 0 || data.list.length == 0){
-						layer.closeAll();
-						break;
-					}
-					this.domainList = this.domainList.concat(data.list);
-					if(this.domainList.length >= data.total){
-						layer.closeAll();
-						break;
-					}
-					this.page++;
-				}catch(e){
-					layer.alert(e, {icon: 2});
-					break;
+				if(this.aid == ''){
+					layer.alert('请选择域名账户');
+					return;
 				}
+				if(domains.length == 0){
+					layer.alert('请选择要添加的域名');
+					return;
+				}
+				var ii = layer.load(2, {shade:[0.1,'#fff']});
+				$.ajax({
+					type: "POST",
+					url: "/domain/op/act/batchadd",
+					data: {aid: this.aid, domains: domains},
+					dataType: 'json',
+					success: function(data) {
+						layer.close(ii);
+						if(data.code == 0){
+							layer.alert(data.msg, {icon: 1}, function(){
+								window.location.href = '/domain';
+							});
+						}else{
+							layer.alert(data.msg, {icon: 2});
+						}
+					},
+					error: function(data){
+						layer.close(ii);
+						layer.msg('服务器错误');
+					}
+				});
 			}
 		},
-        submit(){
-            var domains = [];
-			this.domainList.forEach(function(item){
-				if(item.checked && !item.disabled){
-					domains.push({name: item.Domain, id: item.DomainId, recordcount:item.RecordCount});
-				}
-			});
-			if(this.aid == ''){
-				layer.alert('请选择域名账户');
-				return;
-			}
-			if(domains.length == 0){
-				layer.alert('请选择要添加的域名');
-				return;
-			}
-            var ii = layer.load(2, {shade:[0.1,'#fff']});
-            $.ajax({
-                type: "POST",
-                url: "/domain/op/act/batchadd",
-                data: {aid: this.aid, domains: domains},
-                dataType: 'json',
-                success: function(data) {
-                    layer.close(ii);
-                    if(data.code == 0){
-                        layer.alert(data.msg, {icon: 1}, function(){
-                            window.location.href = '/domain';
-                        });
-                    }else{
-                        layer.alert(data.msg, {icon: 2});
-                    }
-                },
-                error: function(data){
-                    layer.close(ii);
-                    layer.msg('服务器错误');
-                }
-            });
-        }
-    },
-});
+	});
 </script>
 {/block}

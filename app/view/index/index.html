@@ -1,240 +1,312 @@
 {extend name="common/layout" /}
-{block name="title"}聚合DNS管理系统{/block}
+{block name="title"}管理中心{/block}
 {block name="main"}
 <style>
-.table>tbody>tr>td{white-space: normal;}
-.query-title {
-    background-color:#f5fafe;
-    word-break: keep-all;
-}
-.query-result{
-    word-break: break-all;
-}
+    .round {
+        line-height: 53px;
+        color: #7266ba;
+        width: 58px;
+        height: 58px;
+        font-size: 26px;
+        margin-left:15px;
+        display: inline-block;
+        font-weight: 400;
+        border: 3px solid #f8f8fe;
+        text-align: center;
+        border-radius: 50%;
+        background: #e3dff9;
+    }
 </style>
-<div class="row">
-	<div class="col-md-3 col-xs-6">
-		<!-- small box -->
-		<div class="small-box bg-aqua">
-		<div class="inner">
-			<h3 id="count1">0</h3>
-			<p>域名数量</p>
-		</div>
-		<div class="icon">
-			<i class="fa fa-list-ul"></i>
-		</div>
-		<a href="/domain" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
-		</div>
-	</div>
-	<!-- ./col -->
-	<div class="col-md-3 col-xs-6">
-		<!-- small box -->
-		<div class="small-box bg-green">
-		<div class="inner">
-			<h3 id="count2">0</h3>
-			<p>容灾切换策略</p>
-		</div>
-		<div class="icon">
-			<i class="fa fa-heartbeat"></i>
-		</div>
-		<a href="/dmonitor/task" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
-		</div>
-	</div>
-	<!-- ./col -->
-	<div class="col-md-3 col-xs-6">
-		<!-- small box -->
-		<div class="small-box bg-yellow">
-		<div class="inner">
-			<h3 id="count3">0</h3>
-			<p>SSL证书订单</p>
-		</div>
-		<div class="icon">
-			<i class="fa fa-expeditedssl"></i>
-		</div>
-		<a href="/cert/certorder" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
-		</div>
-	</div>
-	<!-- ./col -->
-	<div class="col-md-3 col-xs-6">
-		<!-- small box -->
-		<div class="small-box bg-red">
-		<div class="inner">
-			<h3 id="count4">0</h3>
-			<p>SSL部署任务</p>
-		</div>
-		<div class="icon">
-			<i class="fa fa-connectdevelop"></i>
-		</div>
-		<a href="/cert/deploytask" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
-		</div>
-	</div>
-	<!-- ./col -->
+{if request()->user['level'] eq 2}
+<div class="row row-sm text-center">
+    <div class="col-xs-6 col-sm-3">
+        <div class="panel padder-v item">
+            <div class="top text-right w-full"><i class="fa fa-caret-down text-warning m-r-sm"></i></div>
+            <div class="row">
+                <div class="col-xs-3"><div class="round"><i class="fa fa-cubes fa-fw"></i></div></div>
+                <div class="col-xs-9"><div class="h1 text-primary-dk font-thin h1"><span id="count1"></span><span class="text-muted text-md"></span></div><span class="text-muted">域名数量</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xs-6 col-sm-3">
+        <div class="panel padder-v item">
+            <div class="top text-right w-full"><i class="fa fa-caret-down text-warning m-r-sm"></i></div>
+            <div class="row">
+                <div class="col-xs-3"><div class="round"><i class="fa fa-heartbeat fa-fw"></i></div></div>
+                <div class="col-xs-9"><div class="h1 text-dark-dk font-thin h1"><span id="count2"></span><span class="text-muted text-md"></span></div><span class="text-muted">容灾切换策略</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xs-6 col-sm-3">
+        <div class="panel padder-v item">
+            <div class="top text-right w-full"><i class="fa fa-caret-down text-warning m-r-sm"></i></div>
+            <div class="row">
+                <div class="col-xs-3"><div class="round"><i class="fa fa-expeditedssl fa-fw"></i></div></div>
+                <div class="col-xs-9"><div class="h1 text-success-dk font-thin h1"><span id="count3"></span><span class="text-muted text-md"></span></div><span class="text-muted">SSL证书订单</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xs-6 col-sm-3">
+        <div class="panel padder-v item">
+            <div class="top text-right w-full"><i class="fa fa-caret-down text-warning m-r-sm"></i></div>
+            <div class="row">
+                <div class="col-xs-3"><div class="round"><i class="fa fa-plus-circle fa-fw"></i></div></div>
+                <div class="col-xs-9"><div class="h1 text-info-dk font-thin h1"><span id="count4"></span><span class="text-muted text-md"></span></div><span class="text-muted">SSL部署任务</span></div>
+            </div>
+        </div>
+    </div>
 </div>
-<!-- /.row -->
 <div class="row">
     <div class="col-md-12">
         <div id="browser-notice"></div>
     </div>
     <div class="col-md-4 col-sm-12">
-        <div class="box box-primary">
-            <div class="box-header with-border">
-                <i class="fa fa-heartbeat fa-fw"></i>
-                <h3 class="box-title">容灾切换概览</h3>
-            </div>
-			<ul class="nav nav-pills nav-stacked">
-                <li><a href="/dmonitor/overview">运行状态<b><span class="pull-right" id="dmonitor_state"></span></b></a></li>
-                <li><a href="/dmonitor/task">切换策略(已开启)<span class="pull-right badge bg-blue" id="dmonitor_active">0</span></a>
+        <div class="panel panel-primary">
+            <div class="panel-heading font-bold"><h3 class="panel-title">容灾切换概览</h3></div>
+            <div class="panel-body">
+                <li href="/dmonitor/overview" class="list-group-item">
+                    <span class="badge badge-empty" id="dmonitor_state"></span>
+                    运行状态
                 </li>
-                <li><a href="/dmonitor/task?status=0">健康状况正常<span class="pull-right badge bg-green" id="dmonitor_status_0">0</span></a></li>
-				<li><a href="/dmonitor/task?status=1">健康状况异常<span class="pull-right badge bg-red" id="dmonitor_status_1">0</span></a></li>
-            </ul>
+                <li href="/dmonitor/task" class="list-group-item">
+                    <span class="badge bg-info" id="dmonitor_active">0</span>
+                    切换策略(已开启)
+                </li>
+                <li href="/dmonitor/task?status=0" class="list-group-item">
+                    <span class="badge bg-success" id="dmonitor_status_0">0</span>
+                    健康状况正常
+                </li>
+                <li href="/dmonitor/task?status=1" class="list-group-item">
+                    <span class="badge bg-danger" id="dmonitor_status_1">0</span>
+                    健康状况异常
+                </li>
+            </div>
         </div>
-		<div class="box box-info">
-            <div class="box-header with-border">
-                <i class="fa fa-globe fa-fw"></i>
-                <h3 class="box-title">CF优选IP概览</h3>
-            </div>
-			<ul class="nav nav-pills nav-stacked">
-                <li><a href="/optimizeip/opiplist">任务数量(已开启)<span class="pull-right badge bg-blue" id="optimizeip_active">0</span></a>
+        <div class="panel panel-info">
+            <div class="panel-heading font-bold"><h3 class="panel-title">CF优选IP概览</h3></div>
+            <div class="panel-body">
+                <li href="/dmonitor/task" class="list-group-item">
+                    <span class="badge bg-info" id="optimizeip_active">0</span>
+                    任务数量(已开启)
                 </li>
-                <li><a href="/optimizeip/opiplist?status=1">更新成功<span class="pull-right badge bg-green" id="optimizeip_status_1">0</span></a></li>
-				<li><a href="/optimizeip/opiplist?status=2">更新失败<span class="pull-right badge bg-red" id="optimizeip_status_2">0</span></a></li>
-            </ul>
-        </div>
-	</div>
-    <div class="col-md-4 col-sm-12">
-		<div class="box box-success">
-            <div class="box-header with-border">
-                <i class="fa fa-globe fa-fw"></i>
-                <h3 class="box-title">SSL证书概览</h3>
-            </div>
-			<ul class="nav nav-pills nav-stacked">
-				<li class="text-center"><a href="/cert/certorder"><b>SSL证书订单</b></a></li>
-                <li><a href="/cert/certorder?status=3">已签发<span class="pull-right badge bg-green" id="certorder_status_3">0</span></a>
+                <li href="/dmonitor/task?status=0" class="list-group-item">
+                    <span class="badge bg-success" id="optimizeip_status_1">0</span>
+                    更新成功
                 </li>
-                <li><a href="/cert/certorder?status=5">签发失败<span class="pull-right badge bg-red" id="certorder_status_5">0</span></a></li>
-				<li><a href="/cert/certorder?status=6">即将过期<span class="pull-right badge bg-orange" id="certorder_status_6">0</span></a></li>
-				<li><a href="/cert/certorder?status=7">已过期<span class="pull-right badge bg-gray" id="certorder_status_7">0</span></a></li>
-				<li class="text-center"><a href="/cert/deploytask"><b>自动部署任务</b></a></li>
-				<li><a href="/cert/deploytask?status=0">待处理<span class="pull-right badge bg-aqua" id="certdeploy_status_0">0</span></a></li>
-				<li><a href="/cert/deploytask?status=1">部署成功<span class="pull-right badge bg-green" id="certdeploy_status_1">0</span></a></li>
-				<li><a href="/cert/deploytask?status=-1">部署失败<span class="pull-right badge bg-red" id="certdeploy_status_2">0</span></a></li>
-            </ul>
+                <li href="/dmonitor/task?status=1" class="list-group-item">
+                    <span class="badge bg-danger" id="optimizeip_status_2">0</span>
+                    更新失败
+                </li>
+            </div>
         </div>
     </div>
     <div class="col-md-4 col-sm-12">
-		<div class="box box-primary">
-            <div class="box-header with-border">
-                <i class="fa fa-cloud"></i>
-                <h3 class="box-title">服务器信息</h3>
+        <div class="panel panel-success">
+            <div class="panel-heading font-bold"><h3 class="panel-title">SSL证书概览</h3></div>
+            <div class="panel-body">
+                <li class="list-group-item text-center">
+                    <a href="/cert/certorder"><b>SSL证书订单</b></a>
+                </li>
+                <li href="/cert/certorder?status=3" class="list-group-item">
+                    <span class="badge bg-success" id="certorder_status_3">0</span>
+                    已签发
+                </li>
+                <li href="/cert/certorder?status=5" class="list-group-item">
+                    <span class="badge bg-danger" id="certorder_status_5">0</span>
+                    签发失败
+                </li>
+                <li href="/cert/certorder?status=6" class="list-group-item">
+                    <span class="badge bg-warning" id="certorder_status_6">0</span>
+                    即将过期
+                </li>
+                <li href="/cert/certorder?status=7" class="list-group-item">
+                    <span class="badge badge-empty" id="certorder_status_7">0</span>
+                    已过期
+                </li>
+                <li class="list-group-item text-center">
+                    <a href="/cert/deploytask"><b>自动部署任务</b></a>
+                </li>
+                <li href="/cert/deploytask?status=0" class="list-group-item">
+                    <span class="badge bg-info" id="certdeploy_status_0">0</span>
+                    待处理
+                </li>
+                <li href="/cert/deploytask?status=1" class="list-group-item">
+                    <span class="badge bg-success" id="certdeploy_status_1">0</span>
+                    部署成功
+                </li>
+                <li href="/cert/deploytask?status=-1" class="list-group-item">
+                    <span class="badge bg-danger" id="certdeploy_status_2">0</span>
+                    部署失败
+                </li>
             </div>
-            <table class="table table-bordered">
-                <tbody>
-                <tr>
-                    <td class="query-title">框架版本</td>
-                    <td class="query-result">{$info.framework_version}</td>
-                </tr>
-                <tr>
-                    <td class="query-title">PHP版本</td>
-                    <td class="query-result">{$info.php_version}</td>
-                </tr>
-                <tr>
-                    <td class="query-title">数据库版本</td>
-                    <td class="query-result">{$info.mysql_version}</td>
-                </tr>
-                <tr>
-                    <td class="query-title">Web服务器</td>
-                    <td class="query-result">{$info.software}</td>
-                </tr>
-                <tr>
-                    <td class="query-title">服务器时间</td>
-                    <td class="query-result">{$info.date}</td>
-                </tr>
-                </tbody>
-            </table>
         </div>
-        <div class="box box-default">
-            <div class="box-header with-border">
-                <i class="fa fa-volume-up"></i>
-                <h3 class="box-title">版本信息</h3>
+    </div>
+    <div class="col-md-4 col-sm-12">
+        <div class="panel panel-info">
+            <div class="panel-heading font-bold"><h3 class="panel-title">服务器信息</h3></div>
+            <div class="panel-body">
+                <li class="list-group-item">
+                    <b>框架版本：</b>{$info.framework_version}
+                </li>
+                <li class="list-group-item">
+                    <b>PHP版本：</b>{$info.php_version}
+                </li>
+                <li class="list-group-item">
+                    <b>数据库版本：</b>{$info.mysql_version}
+                </li>
+                <li class="list-group-item">
+                    <b>Web服务器：</b>{$info.software}
+                </li>
+                <li class="list-group-item">
+                    <b>服务器时间：</b>{$info.date}
+                </li>
             </div>
-            <ul class="list-group text-dark" id="checkupdate"></ul>
         </div>
-		<button class="btn btn-default btn-block" onclick="cleancache()"><i class="fa fa-trash"></i>清理缓存</button><br/>
+        <div class="panel panel-default">
+            <div class="panel-heading font-bold"><h3 class="panel-title">版本信息</h3></div>
+            <div class="panel-body">
+                <ul class="list-group text-dark" id="checkupdate"></ul>
+            </div>
+            <div class="panel-footer">
+                <button class="btn btn-default btn-block" onclick="cleancache()"><i class="fa fa-trash"></i>清理缓存</button>
+            </div>
+        </div>
     </div>
 </div>
+{/if}
+{if request()->user['level'] eq 1}
+<div class="row">
+    <div class="col-md-6 col-sm-12">
+        <div class="panel padder-v item text-center">
+            <div class="top text-right w-full"><i class="fa fa-caret-down text-warning m-r-sm"></i></div>
+            <div class="row">
+                <div class="col-xs-3"><div class="round"><i class="fa fa-cubes fa-fw"></i></div></div>
+                <div class="col-xs-9"><div class="h1 text-primary-dk font-thin h1"><span id="count1"></span><span class="text-muted text-md"></span></div><span class="text-muted">域名数量</span></div>
+            </div>
+        </div>
+        <div class="panel b-a">
+            <div class="panel-heading bg-info dk no-border wrapper-lg">
+                <a class="btn btn-sm btn-rounded btn-info pull-right m-r" href="javascript:;"><i class="fa fa-cog fa-fw"></i></a>
+                <a class="btn btn-sm btn-rounded btn-info m-l" href="javascript:;"><i class="fa fa-lock fa-fw"></i></a>
+            </div>
+            <div class="text-center m-b clearfix">
+                <div class="thumb-lg avatar m-t-n-xxl">
+                    <img src="/static/images/user.png" alt="..." class="b b-3x b-white">
+                </div>
+                <div class="h2 font-thin m-t-sm">{$user.username}</div>
+            </div>
+            <div class="hbox text-center b-b b-light text-sm">
+                <a href="/setpwd" class="col padder-v text-muted b-r b-light">
+                    <i class="icon-settings block m-b-xs fa-2x"></i>
+                    <span>修改密码</span>
+                </a>
+                <a href="/domain" class="col padder-v text-muted b-r b-light">
+                    <i class="icon-list block m-b-xs fa-2x"></i>
+                    <span>域名列表</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-sm-12">
+        <div class="panel panel-default">
+            <div class="panel-heading font-bold"><h3 class="panel-title">系统信息</h3></div>
+            <div class="panel-body">
+                <ul class="list-group text-dark">
+                    <li class="list-group-item">
+                        <b>框架版本：</b>{$info.framework_version}
+                    </li>
+                    <li class="list-group-item">
+                        <b>PHP版本：</b>{$info.php_version}
+                    </li>
+                    <li class="list-group-item">
+                        <b>数据库版本：</b>{$info.mysql_version}
+                    </li>
+                    <li class="list-group-item">
+                        <b>Web服务器：</b>{$info.software}
+                    </li>
+                    <li class="list-group-item">
+                        <b>服务器时间：</b>{$info.date}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{/if}
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script>
-$(document).ready(function(){
-    $.ajax({
-		type : "POST",
-		url : "/",
-        data : {do: 'stat'},
-		dataType : 'json',
-		success : function(data) {
-            $('#count1').html(data.domains);
-			$('#count2').html(data.tasks);
-			$('#count3').html(data.certs);
-            $('#count4').html(data.deploys);
-			$('#dmonitor_state').html(data.dmonitor_state==1?'<font color="green">正在运行</font>':'<font color="red">已停止</font>');
-			$('#dmonitor_active').html(data.dmonitor_active);
-			$('#dmonitor_status_0').html(data.dmonitor_status_0);
-			$('#dmonitor_status_1').html(data.dmonitor_status_1);
-			$('#optimizeip_active').html(data.optimizeip_active);
-			$('#optimizeip_status_1').html(data.optimizeip_status_1);
-			$('#optimizeip_status_2').html(data.optimizeip_status_2);
-			$('#certorder_status_3').html(data.certorder_status_3);
-			$('#certorder_status_5').html(data.certorder_status_5);
-			$('#certorder_status_6').html(data.certorder_status_6);
-			$('#certorder_status_7').html(data.certorder_status_7);
-			$('#certdeploy_status_0').html(data.certdeploy_status_0);
-			$('#certdeploy_status_1').html(data.certdeploy_status_1);
-			$('#certdeploy_status_2').html(data.certdeploy_status_2);
-			$('.badge').each(function() {
-				if ($(this).text().trim() === '0') {
-					$(this).css('opacity', '0.4');
-				}
-			});
-            $.ajax({
-				url: '{$checkupdate}',
-				type: 'get',
-				dataType: 'jsonp',
-				jsonpCallback: 'callback'
-			}).done(function(data){
-				$("#checkupdate").html(data.msg);
-			})
-        }
+    $(document).ready(function () {
+        $.ajax({
+            type: "POST",
+            url: "/",
+            data: {do: 'stat'},
+            dataType: 'json',
+            success: function (data) {
+                $('#count1').html(data.domains);
+                $('#count2').html(data.tasks);
+                $('#count3').html(data.certs);
+                $('#count4').html(data.deploys);
+                $('#dmonitor_state').html(data.dmonitor_state==1?'<font color="green">正在运行</font>':'<font color="red">已停止</font>');
+                $('#dmonitor_active').html(data.dmonitor_active);
+                $('#dmonitor_status_0').html(data.dmonitor_status_0);
+                $('#dmonitor_status_1').html(data.dmonitor_status_1);
+                $('#optimizeip_active').html(data.optimizeip_active);
+                $('#optimizeip_status_1').html(data.optimizeip_status_1);
+                $('#optimizeip_status_2').html(data.optimizeip_status_2);
+                $('#certorder_status_3').html(data.certorder_status_3);
+                $('#certorder_status_5').html(data.certorder_status_5);
+                $('#certorder_status_6').html(data.certorder_status_6);
+                $('#certorder_status_7').html(data.certorder_status_7);
+                $('#certdeploy_status_0').html(data.certdeploy_status_0);
+                $('#certdeploy_status_1').html(data.certdeploy_status_1);
+                $('#certdeploy_status_2').html(data.certdeploy_status_2);
+                $('.badge').each(function() {
+                    if ($(this).text().trim() === '0') {
+                        $(this).css('opacity', '0.4');
+                    }
+                });
+                $.ajax({
+                    url: '{$checkupdate}',
+                    type: 'get',
+                    dataType: 'jsonp',
+                    jsonpCallback: 'callback'
+                }).done(function (data) {
+                    $("#checkupdate").html(data.msg);
+                })
+            }
+        })
     })
-})
-function cleancache(){
-	var ii = layer.load(2);
-	$.ajax({
-		type : 'GET',
-		url : '/cleancache',
-		dataType : 'json',
-		success : function(data) {
-			layer.close(ii);
-			layer.msg('清理缓存成功', {icon: 1});
-		},
-		error:function(data){
-            layer.close(ii);
-			layer.msg('服务器错误');
-		}
-	});
-}
+
+    function cleancache() {
+        var ii = layer.load(2);
+        $.ajax({
+            type: 'GET',
+            url: '/cleancache',
+            dataType: 'json',
+            success: function (data) {
+                layer.close(ii);
+                layer.msg('清理缓存成功', {icon: 1});
+            },
+            error: function (data) {
+                layer.close(ii);
+                layer.msg('服务器错误');
+            }
+        });
+    }
 </script>
 <script>
-function speedModeNotice(){
-    var ua = window.navigator.userAgent;
-    if(ua.indexOf('Windows NT')>-1 && ua.indexOf('Trident/')>-1){
-        var html = "<div class=\"panel panel-default\"><div class=\"panel-body\">当前浏览器是兼容模式，为确保后台功能正常使用，请切换到<b style='color:#51b72f'>极速模式</b>！<br>操作方法：点击浏览器地址栏右侧的IE符号<b style='color:#51b72f;'><i class='fa fa-internet-explorer fa-fw'></i></b>→选择“<b style='color:#51b72f;'><i class='fa fa-flash fa-fw'></i></b><b style='color:#51b72f;'>极速模式</b>”</div></div>";
-        $("#browser-notice").html(html)
-    }else if(window.location.protocol.indexOf("https")==-1){
-        var html = "<div class=\"panel panel-default\"><div class=\"panel-body\"><b style='color:#CC3022;'><i class='fa fa-info-circle fa-fw'></i></b>当前正在使用HTTP访问，可能存在被窃取敏感信息风险，请使用HTTPS访问！</div></div>";
-        $("#browser-notice").html(html)
+    function speedModeNotice() {
+        var ua = window.navigator.userAgent;
+        if (ua.indexOf('Windows NT') > -1 && ua.indexOf('Trident/') > -1) {
+            var html = "<div class=\"panel panel-default\"><div class=\"panel-body\">当前浏览器是兼容模式，为确保后台功能正常使用，请切换到<b style='color:#51b72f'>极速模式</b>！<br>操作方法：点击浏览器地址栏右侧的IE符号<b style='color:#51b72f;'><i class='fa fa-internet-explorer fa-fw'></i></b>→选择“<b style='color:#51b72f;'><i class='fa fa-flash fa-fw'></i></b><b style='color:#51b72f;'>极速模式</b>”</div></div>";
+            $("#browser-notice").html(html)
+        } else if (window.location.protocol.indexOf("https") == -1) {
+            var html = "<div class=\"panel panel-default\"><div class=\"panel-body\"><b style='color:#CC3022;'><i class='fa fa-info-circle fa-fw'></i></b>当前正在使用HTTP访问，可能存在被窃取敏感信息风险，请使用HTTPS访问！</div></div>";
+            $("#browser-notice").html(html)
+        }
     }
-}
-speedModeNotice();
+
+    speedModeNotice();
 </script>
 {/block}

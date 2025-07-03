@@ -2,186 +2,191 @@
 {block name="title"}CF优选IP任务管理{/block}
 {block name="main"}
 <style>
-tbody tr>td:nth-child(2){overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:180px;}
+    #orderItem .orderTitle{word-break:keep-all;}
+    #orderItem .orderContent{word-break:break-all;}
+    .fixed-table-toolbar,.fixed-table-pagination{padding: 15px;}
 </style>
-<div class="row">
-	<div class="col-xs-12 center-block" style="float: none;">
-	<div class="panel panel-default panel-intro">
-	<div class="panel-body">
-	
-<form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
-  <div class="form-group">
-	<label>搜索</label>
-	<div class="form-group">
-		<select name="type" class="form-control"><option value="1">域名</option><option value="2">备注</option></select>
-	</div>
-  </div>
-  <div class="form-group">
-	<input type="text" class="form-control" name="kw" placeholder="">
-  </div>
-  <div class="form-group">
-	<div class="form-group">
-		<select name="status" class="form-control"><option value="">更新结果</option><option value="1">成功</option><option value="2">失败</option></select>
-	</div>
-  </div>
-  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
-  <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名账户列表"><i class="fa fa-refresh"></i> 刷新</a>
-  <a href="/optimizeip/opipform/add" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
-</form>
-
-      <table id="listTable">
-	  </table>
+<div class="panel panel-default">
+    <div class="panel-heading font-bold">
+        <h3 class="panel-title">CF优选IP任务管理</h3>
     </div>
-  </div>
-</div>
+    <form class="form-inline" id="searchToolbar" method="GET" onsubmit="return searchSubmit()">
+        <div class="form-group">
+            <div class="form-group">
+                <select class="form-control" name="type">
+                    <option value="1">域名</option>
+                    <option value="2">备注</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <input class="form-control" name="kw" placeholder="" type="text">
+        </div>
+        <div class="form-group">
+            <div class="form-group">
+                <select name="status" class="form-control">
+                    <option value="">更新结果</option>
+                    <option value="1">成功</option>
+                    <option value="2">失败</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> 搜索</button>
+        <a class="btn btn-default" href="javascript:searchClear()" title="刷新CF优选IP任务列表"><i class="fa fa-refresh"></i> 刷新</a>
+        <a class="btn btn-success" href="/optimizeip/opipform/add"><i class="fa fa-plus"></i> 添加</a>
+    </form>
+    <table id="listTable">
+    </table>
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
 <script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
-$(document).ready(function(){
-	updateToolbar();
-	const defaultPageSize = 15;
-	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+    $(document).ready(function () {
+        updateToolbar();
+        const defaultPageSize = 15;
+        const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+        const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
-	$("#listTable").bootstrapTable({
-		url: '/optimizeip/opiplist/data',
-		pageNumber: pageNumber,
-		pageSize: pageSize,
-		classes: 'table table-striped table-hover table-bordered',
-		columns: [
-			{
-				field: 'id',
-				title: 'ID'
-			},
-			{
-				field: 'rr',
-				title: '域名',
-				formatter: function(value, row, index) {
-					return '<span title="'+row.remark+'" data-toggle="tooltip" data-placement="right">' + value + '.' + row.domain + '</span>';
-				}
-			},
-			{
-				field: 'cdn_type',
-				title: 'CDN运营商',
-				formatter: function(value, row, index) {
-					if(value == 1){
-						return 'CloudFlare';
-					}else if(value == 2){
-						return 'CloudFront';
-					}else if(value == 3){
-						return 'Gcore';
-					}else{
-						return '未知';
-					}
-				}
-			},
-			{
-				field: 'recordnum',
-				title: '解析数量',
-				formatter: function(value, row, index) {
-					return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="TTL：'+row.ttl+'" class="tips">'+value+'</span>';
-				}
-			},
-			{
-				field: 'ip_type',
-				title: '解析IP类型',
-				formatter: function(value, row, index) {
-					var value = value.split(',')
-					value.forEach((element, index) => {
-						if(element == 'v4') value[index] = 'IPv4'
-						else if(element == 'v6') value[index] = 'IPv6'
-					});
-					return value.join(',');
-				}
-			},
-			{
-				field: 'active',
-				title: '任务开关',
-				formatter: function(value, row, index) {
-					if(value == 1){
-						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
-					}else{
-						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
-					}
-				}
-			},
-			{
-				field: 'updatetime',
-				title: '上次更新时间',
-				formatter: function(value, row, index) {
-					return value ? value : '无';
-				}
-			},
-			{
-				field: 'status',
-				title: '上次更新结果',
-				formatter: function(value, row, index) {
-					if(value == 1) {
-						return '<span class="label label-success">成功</span>';
-					} else if(value == 2) {
-						return '<span class="label label-danger">失败</span> <span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="'+row.errmsg+'" class="tips"><i class="fa fa-info-circle"></i></span>';
-					} else {
-						return '<span class="label label-warning">未运行</span>';
-					}
-				}
-			},
-			{
-				field: 'action',
-				title: '操作',
-				formatter: function(value, row, index) {
-					var html = '<a href="javascript:runTask(\''+row.id+'\')" class="btn btn-success btn-xs">手动更新</a>&nbsp;&nbsp;';
-					html += '<a href="/optimizeip/opipform/edit?id='+row.id+'" class="btn btn-primary btn-xs">修改</a>&nbsp;&nbsp;';
-					html += '<a href="/record/'+row.did+'?keyword='+row.rr+'" class="btn btn-default btn-xs" target="_blank">解析</a>&nbsp;&nbsp;';
-					html += '<a href="javascript:delItem(\''+row.id+'\')" class="btn btn-danger btn-xs">删除</a>&nbsp;&nbsp;';
-					return html;
-				}
-			},
-		],
-		onLoadSuccess: function(data) {
-			$('[data-toggle="tooltip"]').tooltip()
-		}
-	})
-})
-function setActive(id, active){
-	$.post('/optimizeip/opipform/setactive', {id: id, active: active}, function(data){
-		if(data.code == 0) {
-			layer.msg('修改成功', {icon: 1, time:800});
-			$('#listTable').bootstrapTable('refresh');
-		} else {
-			layer.msg(data.msg, {icon: 2});
-		}
-	}, 'json');
-}
-function delItem(id){
-	layer.confirm('确定要删除此任务吗？', {
-		btn: ['确定','取消']
-	}, function(){
-		$.post('/optimizeip/opipform/del', {id: id}, function(data){
-			if(data.code == 0) {
-				layer.msg('删除成功', {icon: 1, time:800});
-				$('#listTable').bootstrapTable('refresh');
-			} else {
-				layer.msg(data.msg, {icon: 2});
-			}
-		}, 'json');
-	});
-}
-function runTask(id){
-	var ii = layer.msg('正在更新中...', {icon: 16,shade: 0.1,time: 0});
-	$.post('/optimizeip/opipform/run', {id: id}, function(data){
-		layer.close(ii);
-		if(data.code == 0) {
-			layer.alert(data.msg, {icon: 1});
-			$('#listTable').bootstrapTable('refresh');
-		} else {
-			layer.alert(data.msg, {icon: 2});
-		}
-	}, 'json');
-}
+        $("#listTable").bootstrapTable({
+            url: '/optimizeip/opiplist/data',
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            classes: 'table table-striped table-hover table-bordered',
+            columns: [
+                {
+                    field: 'id',
+                    title: 'ID'
+                },
+                {
+                    field: 'rr',
+                    title: '域名',
+                    formatter: function (value, row, index) {
+                        return '<span title="' + row.remark + '" data-toggle="tooltip" data-placement="right">' + value + '.' + row.domain + '</span>';
+                    }
+                },
+                {
+                    field: 'cdn_type',
+                    title: 'CDN运营商',
+                    formatter: function (value, row, index) {
+                        if (value == 1) {
+                            return 'CloudFlare';
+                        } else if (value == 2) {
+                            return 'CloudFront';
+                        } else if (value == 3) {
+                            return 'Gcore';
+                        } else {
+                            return '未知';
+                        }
+                    }
+                },
+                {
+                    field: 'recordnum',
+                    title: '解析数量',
+                    formatter: function (value, row, index) {
+                        return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="TTL：' + row.ttl + '" class="tips">' + value + '</span>';
+                    }
+                },
+                {
+                    field: 'ip_type',
+                    title: '解析IP类型',
+                    formatter: function (value, row, index) {
+                        var value = value.split(',')
+                        value.forEach((element, index) => {
+                            if (element == 'v4') value[index] = 'IPv4'
+                            else if (element == 'v6') value[index] = 'IPv6'
+                        });
+                        return value.join(',');
+                    }
+                },
+                {
+                    field: 'active',
+                    title: '任务开关',
+                    formatter: function(value, row, index) {
+                        if(value == 1){
+                            return '<div class="material-switch"><input id="active' + row.id + '" type="checkbox" checked onchange="setActive(' + row.id + ',0)"/><label for="active' + row.id + '" class="label-primary"></label></div>';
+                        }else{
+                            return '<div class="material-switch"><input id="active' + row.id + '" type="checkbox" onchange="setActive(' + row.id + ',1)"/><label for="active' + row.id + '" class="label-primary"></label></div>';
+                        }
+                    }
+                },
+                {
+                    field: 'updatetime',
+                    title: '上次更新时间',
+                    formatter: function (value, row, index) {
+                        return value ? value : '无';
+                    }
+                },
+                {
+                    field: 'status',
+                    title: '上次更新结果',
+                    formatter: function (value, row, index) {
+                        if (value == 1) {
+                            return '<span class="label label-success">成功</span>';
+                        } else if (value == 2) {
+                            return '<span class="label label-danger">失败</span> <span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="' + row.errmsg + '" class="tips"><i class="fa fa-info-circle"></i></span>';
+                        } else {
+                            return '<span class="label label-warning">未运行</span>';
+                        }
+                    }
+                },
+                {
+                    field: 'action',
+                    title: '操作',
+                    formatter: function (value, row, index) {
+                        var html = '<a href="javascript:runTask(\'' + row.id + '\')" class="btn btn-success btn-xs">手动更新</a>&nbsp;&nbsp;';
+                        html += '<a href="/optimizeip/opipform/edit?id=' + row.id + '" class="btn btn-primary btn-xs">修改</a>&nbsp;&nbsp;';
+                        html += '<a href="/record/' + row.did + '?keyword=' + row.rr + '" class="btn btn-default btn-xs" target="_blank">解析</a>&nbsp;&nbsp;';
+                        html += '<a href="javascript:delItem(\'' + row.id + '\')" class="btn btn-danger btn-xs">删除</a>&nbsp;&nbsp;';
+                        return html;
+                    }
+                },
+            ],
+            onLoadSuccess: function (data) {
+                $('[data-toggle="tooltip"]').tooltip()
+            }
+        })
+    })
+
+    function setActive(id, active) {
+        $.post('/optimizeip/opipform/setactive', {id: id, active: active}, function (data) {
+            if (data.code == 0) {
+                layer.msg('修改成功', {icon: 1, time: 800});
+                $('#listTable').bootstrapTable('refresh');
+            } else {
+                layer.msg(data.msg, {icon: 2});
+            }
+        }, 'json');
+    }
+
+    function delItem(id) {
+        layer.confirm('确定要删除此任务吗？', {
+            btn: ['确定', '取消']
+        }, function () {
+            $.post('/optimizeip/opipform/del', {id: id}, function (data) {
+                if (data.code == 0) {
+                    layer.msg('删除成功', {icon: 1, time: 800});
+                    $('#listTable').bootstrapTable('refresh');
+                } else {
+                    layer.msg(data.msg, {icon: 2});
+                }
+            }, 'json');
+        });
+    }
+
+    function runTask(id) {
+        var ii = layer.msg('正在更新中...', {icon: 16, shade: 0.1, time: 0});
+        $.post('/optimizeip/opipform/run', {id: id}, function (data) {
+            layer.close(ii);
+            if (data.code == 0) {
+                layer.alert(data.msg, {icon: 1});
+                $('#listTable').bootstrapTable('refresh');
+            } else {
+                layer.alert(data.msg, {icon: 2});
+            }
+        }, 'json');
+    }
 </script>
 {/block}

@@ -1,250 +1,250 @@
 <!DOCTYPE html>
-<html lang="zh-cn">
+<html lang="zh-CN">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="renderer" content="webkit">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>{block name="title"}标题{/block}</title>
-  <link href="{$cdnpublic}twitter-bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="{$cdnpublic}font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
-  <link href="{$cdnpublic}select2/4.0.13/css/select2.min.css" rel="stylesheet"/>
-  <link href="/static/css/app.min.css" rel="stylesheet">
-  <link href="/static/css/skins/{$skin}.css" rel="stylesheet">
-  <link href="/static/css/bootstrap-table.css?v=2" rel="stylesheet"/>
-  <script src="{$cdnpublic}jquery/3.6.4/jquery.min.js"></script>
-  <!--[if lt IE 9]>
+    <meta charset="utf-8" />
+    <title>{block name="title"}标题{/block} | 聚合DNS管理系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <link rel="stylesheet" href="{$cdnpublic}twitter-bootstrap/3.3.7/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="{$cdnpublic}animate.css/3.5.2/animate.min.css" type="text/css" />
+    <link rel="stylesheet" href="{$cdnpublic}font-awesome/4.7.0/css/font-awesome.min.css" type="text/css" />
+    <link rel="stylesheet" href="{$cdnpublic}simple-line-icons/2.4.1/css/simple-line-icons.min.css" type="text/css" />
+    <link rel="stylesheet" href="{$cdnpublic}select2/4.0.13/css/select2.min.css" type="text/css" />
+    <link rel="stylesheet" href="/static/css/font.css" type="text/css" />
+    <link rel="stylesheet" href="/static/css/app.css" type="text/css" />
+    <link rel="stylesheet" href="/static/css/bootstrap-table.css?v=2" />
+    <!--[if lt IE 9]>
     <script src="{$cdnpublic}html5shiv/3.7.3/html5shiv.min.js"></script>
     <script src="{$cdnpublic}respond.js/1.4.2/respond.min.js"></script>
-  <![endif]-->
-  <style>
-    .type-logo{width: 18px;margin-top: -2px;padding-right: 4px;}
-  </style>
+    <![endif]-->
+    <style>
+        .type-logo{width: 18px;margin-top: -2px;padding-right: 4px;}
+    </style>
 </head>
-
-<body class="hold-transition {$skin} sidebar-mini">
-  <div class="wrapper">
-    <header class="main-header">
-      <!-- Logo -->
-      <a href="javascript:;" class="logo">
-        <!-- mini logo for sidebar mini 50x50 pixels -->
-        <span class="logo-mini"><i class="fa fa-cube"></i></span>
-        <!-- logo for regular state and mobile devices -->
-        <span class="logo-lg"></span>聚合DNS管理系统
-      </a>
-      <!-- Header Navbar: style can be found in header.less -->
-      <nav class="navbar navbar-static-top">
-        <!-- Sidebar toggle button-->
-        <a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
-          <span class="visible-xs-inline">菜单</span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </a>
-  
-        <div class="navbar-custom-menu">
-          <ul class="nav navbar-nav">
-            <li>
-              <a href="/" title="平台首页"><i class="fa fa-home fa-fw"></i></a>
-            </li>
-            <li class="hidden-xs">
-              <a href="#" data-toggle="fullscreen" title="全屏"><i class="fa fa-arrows-alt fa-fw"></i></a>
-            </li>
-            <li class="hidden-xs">
-              <a href="#" data-toggle="control-sidebar" title="更换皮肤"><i class="fa fa-wrench fa-fw"></i></a>
-            </li>
-            <!-- User Account: style can be found in dropdown.less -->
-            <li class="dropdown user user-menu">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                <img src="/static/images/user.png" class="user-image" alt="User Image">
-                <span class="hidden-xs">{$user.username}</span>
-              </a>
-              <ul class="dropdown-menu">
-                <!-- User image -->
-                <li class="user-header">
-                  <img src="/static/images/user.png" class="img-circle" alt="User Image">
-                  <p>
-                    {$user.username}
-                    <small>{$user.regtime}</small>
-                  </p>
-                </li>
-                <!-- Menu Footer-->
-                <li class="user-footer">
-                  {if request()->user['type'] eq 'user'}<div class="pull-left">
-                    <a href="/setpwd" class="btn btn-primary"><i class="fa fa-lock"></i> 修改密码</a>
-                  </div>{/if}
-                  <div class="pull-right">
-                    <a href="/logout" class="btn btn-danger"><i class="fa fa-sign-out"></i> 退出登录</a>
-                  </div>
-                </li>
-              </ul>
-            </li>
-          </ul>
+<body>
+<div class="app app-header-fixed  ">
+    <!-- header -->
+    <header id="header" class="app-header navbar" role="menu">
+        <!-- navbar header -->
+        <div class="navbar-header bg-black">
+            <button class="pull-right visible-xs dk" ui-toggle="show" target=".navbar-collapse">
+                <i class="glyphicon glyphicon-cog"></i>
+            </button>
+            <button class="pull-right visible-xs" ui-toggle="off-screen" target=".app-aside" ui-scroll="app">
+                <i class="glyphicon glyphicon-align-justify"></i>
+            </button>
+            <!-- brand -->
+            <a href="./" class="navbar-brand text-lt">
+                <i class="fa fa-meetup"></i>
+                <span class="hidden-folded m-l-xs">聚合DNS管理</span>
+            </a>
+            <!-- / brand -->
         </div>
-      </nav>
+        <!-- / navbar header -->
+
+        <!-- navbar collapse -->
+        <div class="collapse pos-rlt navbar-collapse box-shadow bg-black">
+            <!-- buttons -->
+            <div class="nav navbar-nav hidden-xs">
+                <a href="#" class="btn no-shadow navbar-btn" ui-toggle="app-aside-folded" target=".app">
+                    <i class="fa fa-dedent fa-fw text"></i>
+                    <i class="fa fa-indent fa-fw text-active"></i>
+                </a>
+            </div>
+            <!-- / buttons -->
+            <!-- nabar right -->
+            <ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                    <a href="#" data-toggle="dropdown" class="dropdown-toggle clear" data-toggle="dropdown">
+                        <span class="thumb-sm avatar pull-right m-t-n-sm m-b-n-sm m-l-sm">
+                            <img src="/static/images/user.png">
+                            <i class="on md b-white bottom"></i>
+                        </span>
+                        <span class="hidden-sm hidden-md" style="text-transform:uppercase;">{$user.username}</span> <b class="caret"></b>
+                    </a>
+                    <!-- dropdown -->
+                    <ul class="dropdown-menu animated fadeInRight w">
+                        {if request()->user['type'] eq 'user'}
+                        <li>
+                            <a href="/setpwd">
+                                <span>修改密码</span>
+                            </a>
+                        </li>
+                        {/if}
+                        <li class="divider"></li>
+                        <li>
+                            <a ui-sref="access.signin" href="/logout">
+                                <span>退出登录</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <!-- / dropdown -->
+                </li>
+            </ul>
+            <!-- / navbar right -->
+        </div>
+        <!-- / navbar collapse -->
     </header>
-    <!-- Left side column. contains the logo and sidebar -->
-    <aside class="main-sidebar">
-      <!-- sidebar: style can be found in sidebar.less -->
-      <section class="sidebar">
-        <!-- Sidebar user panel -->
-        <div class="user-panel">
-          <div class="pull-left image">
-            <img src="/static/images/user.png" class="img-circle" alt="User Image">
-          </div>
-          <div class="pull-left info">
-            <p>{$user.username}</p>
-            <i class="fa fa-circle text-success"></i> Online
-          </div>
+    <!-- / header -->
+    <!-- aside -->
+    <aside id="aside" class="app-aside hidden-xs bg-white">
+        <div class="aside-wrap">
+            <div class="navi-wrap">
+                <!-- nav -->
+                <nav ui-nav class="navi clearfix">
+                    <ul class="nav">
+                        {if request()->user['type'] eq 'user'}
+                        <li class="hidden-folded padder m-t m-b-sm text-muted text-xs">
+                            <span>导航</span>
+                        </li>
+                        <li class="<?php echo checkIfActive('index')?>">
+                            <a href="/">
+                                <i class="fa fa-home fa-fw"></i>
+                                <span class="font-bold">管理中心</span>
+                            </a>
+                        </li>
+                        <li class="line dk"></li>
+                        {/if}
+                        <li class="hidden-folded padder m-t m-b-sm text-muted text-xs">
+                            <span>查询</span>
+                        </li>
+                        <li class="{:checkIfActive('domain,record,record_log,record_batch_add,domain_add,weight,record_batch_add2,record_batch_edit2,expire_notice')}">
+                            <a href="/domain"><i class="fa fa-list-ul fa-fw"></i> <span>域名管理</span></a>
+                        </li>
+                        {if request()->user['level'] eq 2}
+                        <li class="{:checkIfActive('account')}">
+                            <a href="/account"><i class="fa fa-lock fa-fw"></i> <span>域名账户</span></a>
+                        </li>
+                        <li class="{:checkIfActive('overview,task,taskinfo,taskform')}">
+                            <a href class="auto">
+                                <span class="pull-right text-muted">
+                                    <i class="fa fa-fw fa-angle-right text"></i>
+                                    <i class="fa fa-fw fa-angle-down text-active"></i>
+                                </span>
+                                <i class="fa fa-heartbeat fa-fw"></i>
+                                <span>容灾切换</span>
+                            </a>
+                            <ul class="nav nav-sub dk">
+                                <li><a href="/dmonitor/overview">运行概览</a></li>
+                                <li><a href="/dmonitor/task">切换策略</a></li>
+                            </ul>
+                        </li>
+                        <li class="{:checkIfActive('opipset,opiplist,opipform')}">
+                            <a href class="auto">
+                                <span class="pull-right text-muted">
+                                    <i class="fa fa-fw fa-angle-right text"></i>
+                                    <i class="fa fa-fw fa-angle-down text-active"></i>
+                                </span>
+                                <i class="fa fa-globe fa-fw"></i>
+                                <span>CF优选IP</span>
+                            </a>
+                            <ul class="nav nav-sub dk">
+                                <li><a href="/optimizeip/opipset">优选设置</a></li>
+                                <li><a href="/optimizeip/opiplist">任务管理</a></li>
+                            </ul>
+                        </li>
+                        <li class="{:checkIfActive('certaccount,account_form,certorder,order_form,order_import,deployaccount,deploytask,deploy_form,certset,cname')}">
+                            <a href class="auto">
+                                <span class="pull-right text-muted">
+                                    <i class="fa fa-fw fa-angle-right text"></i>
+                                    <i class="fa fa-fw fa-angle-down text-active"></i>
+                                </span>
+                                <i class="fa fa-expeditedssl fa-fw"></i>
+                                <span>SSL证书</span>
+                            </a>
+                            <ul class="nav nav-sub dk">
+                                <li><a href="/cert/certaccount">SSL证书账户</a></li>
+                                <li><a href="/cert/certorder">SSL证书订单</a></li>
+                                <li><a href="/cert/deployaccount">自动部署账户</a></li>
+                                <li><a href="/cert/deploytask">自动部署任务</a></li>
+                                <li><a href="/cert/cname">CNAME代理</a></li>
+                                <li><a href="/cert/certset">计划任务设置</a></li>
+                            </ul>
+                        </li>
+                        <li class="{:checkIfActive('loginset,noticeset,proxyset')}">
+                            <a href class="auto">
+                                <span class="pull-right text-muted">
+                                    <i class="fa fa-fw fa-angle-right text"></i>
+                                    <i class="fa fa-fw fa-angle-down text-active"></i>
+                                </span>
+                                <i class="fa fa-cogs fa-fw"></i>
+                                <span>系统设置</span>
+                            </a>
+                            <ul class="nav nav-sub dk">
+                                <li><a href="/system/loginset">登录设置</a></li>
+                                <li><a href="/system/noticeset">通知设置</a></li>
+                                <li><a href="/system/proxyset">代理设置</a></li>
+                                <li><a href="https://www.showdoc.com.cn/dnsmgr/11058996709621562" target="_blank" rel="noreferrer">接口文档</a></li>
+                            </ul>
+                        </li>
+                        <li class="{:checkIfActive('user')}">
+                            <a href="/user"><i class="fa fa-user fa-fw"></i> <span>用户管理</span></a>
+                        </li>
+                        {/if}
+                        <li class="line dk hidden-folded"></li>
+                        <li class="hidden-folded padder m-t m-b-sm text-muted text-xs">
+                            <span>其他</span>
+                        </li>
+                        <li class="{:checkIfActive('log')}">
+                            <a href="/log"><i class="fa fa-list fa-fw"></i> <span>操作日志</span></a>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- nav -->
+                <!-- aside footer -->
+                <div class="wrapper m-t">
+                    <div class="text-center-folded">
+                        <span class="pull-right pull-none-folded">60%</span>
+                        <span class="hidden-folded">Milestone</span>
+                    </div>
+                    <div class="progress progress-xxs m-t-sm dk">
+                        <div class="progress-bar progress-bar-info" style="width: 60%;">
+                        </div>
+                    </div>
+                    <div class="text-center-folded">
+                        <span class="pull-right pull-none-folded">35%</span>
+                        <span class="hidden-folded">Release</span>
+                    </div>
+                    <div class="progress progress-xxs m-t-sm dk">
+                        <div class="progress-bar progress-bar-primary" style="width: 35%;">
+                        </div>
+                    </div>
+                </div>
+                <!-- / aside footer -->
+            </div>
         </div>
-        <!-- sidebar menu: : style can be found in sidebar.less -->
-        <ul class="sidebar-menu" data-widget="tree">
-          <li class="header">功能导航</li>
-          {if request()->user['type'] eq 'user'}<li class="{:checkIfActive('index')}">
-            <a href="/"><i class="fa fa-home fa-fw"></i> <span>后台首页</span></a>
-          </li>{/if}
-          <li class="{:checkIfActive('domain,record,record_log,record_batch_add,domain_add,weight,record_batch_add2,record_batch_edit2,expire_notice')}">
-            <a href="/domain"><i class="fa fa-list-ul fa-fw"></i> <span>域名管理</span></a>
-          </li>
-          {if request()->user['level'] eq 2}
-          <li class="{:checkIfActive('account')}">
-            <a href="/account"><i class="fa fa-lock fa-fw"></i> <span>域名账户</span></a>
-          </li>
-          <li class="treeview {:checkIfActive('overview,task,taskinfo,taskform')}">
-            <a href="javascript:;">
-              <i class="fa fa-heartbeat fa-fw"></i>
-              <span>容灾切换</span>
-              <span class="pull-right-container">
-                <i class="fa fa-angle-left pull-right"></i>
-              </span>
-            </a>
-            <ul class="treeview-menu">
-              <li class="{:checkIfActive('overview')}"><a href="/dmonitor/overview"><i class="fa fa-circle-o"></i> 运行概览</a></li>
-              <li class="{:checkIfActive('task,taskform')}"><a href="/dmonitor/task"><i class="fa fa-circle-o"></i> 切换策略</a></li>
-            </ul>
-          </li>
-          <li class="treeview {:checkIfActive('opipset,opiplist,opipform')}">
-            <a href="javascript:;">
-              <i class="fa fa-globe fa-fw"></i>
-              <span>CF优选IP</span>
-              <span class="pull-right-container">
-                <i class="fa fa-angle-left pull-right"></i>
-              </span>
-            </a>
-            <ul class="treeview-menu">
-              <li class="{:checkIfActive('opipset')}"><a href="/optimizeip/opipset"><i class="fa fa-circle-o"></i> 优选设置</a></li>
-              <li class="{:checkIfActive('opiplist,opipform')}"><a href="/optimizeip/opiplist"><i class="fa fa-circle-o"></i> 任务管理</a></li>
-            </ul>
-          </li>
-          <li class="treeview {:checkIfActive('certaccount,account_form,certorder,order_form,order_import,deployaccount,deploytask,deploy_form,certset,cname')}">
-            <a href="javascript:;">
-              <i class="fa fa-expeditedssl fa-fw"></i>
-              <span>SSL证书</span>
-              <span class="pull-right-container">
-                <i class="fa fa-angle-left pull-right"></i>
-              </span>
-            </a>
-            <ul class="treeview-menu">
-              <li class="{:checkIfActive('certaccount')}"><a href="/cert/certaccount"><i class="fa fa-circle-o"></i> SSL证书账户</a></li>
-              <li class="{:checkIfActive('certorder,order_form,order_import')}"><a href="/cert/certorder"><i class="fa fa-circle-o"></i> SSL证书订单</a></li>
-              <li class="{:checkIfActive('deployaccount')}"><a href="/cert/deployaccount"><i class="fa fa-circle-o"></i> 自动部署账户</a></li>
-              <li class="{:checkIfActive('deploytask,deploy_form')}"><a href="/cert/deploytask"><i class="fa fa-circle-o"></i> 自动部署任务</a></li>
-              <li class="{:checkIfActive('cname')}"><a href="/cert/cname"><i class="fa fa-circle-o"></i> CNAME代理</a></li>
-              <li class="{:checkIfActive('certset')}"><a href="/cert/certset"><i class="fa fa-circle-o"></i> 计划任务设置</a></li>
-            </ul>
-          </li>
-          <li class="treeview {:checkIfActive('loginset,noticeset,proxyset')}">
-            <a href="javascript:;">
-              <i class="fa fa-cogs fa-fw"></i>
-              <span>系统设置</span>
-              <span class="pull-right-container">
-                <i class="fa fa-angle-left pull-right"></i>
-              </span>
-            </a>
-            <ul class="treeview-menu">
-              <li class="{:checkIfActive('loginset')}"><a href="/system/loginset"><i class="fa fa-circle-o"></i> 登录设置</a></li>
-              <li class="{:checkIfActive('noticeset')}"><a href="/system/noticeset"><i class="fa fa-circle-o"></i> 通知设置</a></li>
-              <li class="{:checkIfActive('proxyset')}"><a href="/system/proxyset"><i class="fa fa-circle-o"></i> 代理设置</a></li>
-              <li><a href="https://www.showdoc.com.cn/dnsmgr/11058996709621562" target="_blank" rel="noreferrer"><i class="fa fa-circle-o"></i> <span>接口文档</span></a></li>
-            </ul>
-          </li>
-          <li class="{:checkIfActive('user')}">
-            <a href="/user"><i class="fa fa-user fa-fw"></i> <span>用户管理</span></a>
-          </li>{/if}
-          <li class="{:checkIfActive('log')}">
-            <a href="/log"><i class="fa fa-list fa-fw"></i> <span>操作日志</span></a>
-          </li>
-        </ul>
-      </section>
-      <!-- /.sidebar -->
     </aside>
-  
-    <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper">
-      <!-- Main content -->
-      <section class="content">
-{block name="main"}主内容{/block}
-</section>
-<!-- /.content -->
+    <!-- / aside -->
+    <!-- content -->
+    <div id="content" class="app-content" role="main">
+        <div class="app-content-body ">
+            <div class="bg-light lter b-b wrapper-md hidden-print">
+                <h1 class="m-n font-thin h3">{block name="title"}标题{/block}</h1>
+            </div>
+            <div class="wrapper-md control">
+                {block name="main"}主内容{/block}
+            </div>
+        </div>
+    </div>
+    <!-- / content -->
+    <!-- footer -->
+    <footer id="footer" class="app-footer" role="footer">
+        <div class="wrapper b-t bg-light">
+            <span class="pull-right">Powered by <a href="/" target="_blank">聚合DNS管理系统</a></span>
+            &copy; 2016-2024 Copyright.
+        </div>
+    </footer>
+    <!-- / footer -->
 </div>
-<!-- Control Sidebar -->
-<aside class="control-sidebar control-sidebar-dark" style="display: none;">
-<!-- Tab panes -->
-<div class="tab-content">
-  <!-- Home tab content -->
-  <div class="tab-pane active">
-  <h4 class="control-sidebar-heading">皮肤</h4>
-    <ul class="list-unstyled clearfix skin-list">
-        <li><a href="javascript:;" data-skin="skin-blue" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #4e73df;"></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Blue</p></li>
-        <li><a href="javascript:;" data-skin="skin-black" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black</p></li>
-        <li><a href="javascript:;" data-skin="skin-purple" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #605ca8;"></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Purple</p></li>
-        <li><a href="javascript:;" data-skin="skin-green" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 7px;" class="bg-green-active"></span><span class="bg-green" style="width: 80%; height: 7px;"></span></div><div><span style="width: 20%; height: 20px; background: #000;"></span><span style="width: 80%; height: 20px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Green</p></li>
-        <li><a href="javascript:;" data-skin="skin-red" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 7px;" class="bg-red-active"></span><span class="bg-red" style="width: 80%; height: 7px;"></span></div><div><span style="width: 20%; height: 20px; background: #000;"></span><span style="width: 80%; height: 20px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Red</p></li>
-        <li><a href="javascript:;" data-skin="skin-yellow" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 7px;" class="bg-yellow-active"></span><span class="bg-yellow" style="width: 80%; height: 7px;"></span></div><div><span style="width: 20%; height: 20px; background: #000;"></span><span style="width: 80%; height: 20px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Yellow</p></li>
 
-        <li><a href="javascript:;" data-skin="skin-blue-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px; background: #4e73df;"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Blue Light</p></li>
-        <li><a href="javascript:;" data-skin="skin-black-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px; background: #000;"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Black Light</p></li>
-        <li><a href="javascript:;" data-skin="skin-purple-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px; background: #605ca8;"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Purple Light</p></li>
-        <li><a href="javascript:;" data-skin="skin-green-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px;" class="bg-green"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Green Light</p></li>
-        <li><a href="javascript:;" data-skin="skin-red-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px;" class="bg-red"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Red Light</p></li>
-        <li><a href="javascript:;" data-skin="skin-yellow-light" class="clearfix full-opacity-hover"><div><span style="width: 100%; height: 7px;" class="bg-yellow"></span></div><div><span style="width: 100%; height: 20px; background: #f9fafc;"></span></div></a><p class="text-center no-margin" style="font-size: 12px">Yellow Light</p></li>
-
-        <li><a href="javascript:;" data-skin="skin-black-blue" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px; background: #4e73df;"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Blue</p></li>
-        <li><a href="javascript:;" data-skin="skin-black-purple" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px; background: #605ca8;"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Purple</p></li>
-        <li><a href="javascript:;" data-skin="skin-black-green" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px;" class="bg-green"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Green</p></li>
-        <li><a href="javascript:;" data-skin="skin-black-red" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px;" class="bg-red"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Red</p></li>
-        <li><a href="javascript:;" data-skin="skin-black-yellow" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px;" class="bg-yellow"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Yellow</p></li>
-        <li><a href="javascript:;" data-skin="skin-black-pink" class="clearfix full-opacity-hover"><div><span style="width: 20%; height: 27px; background: #000;"><span style="width: 100%; height: 3px; margin-top:10px; background: #f5549f;"></span></span><span style="width: 80%; height: 27px; background: #f4f5f7;"></span></div></a><p class="text-center no-margin">Black Pink</p></li>
-    </ul>
-  </div>
-  <!-- /.tab-pane -->
-</div>
-</aside>
-<!-- /.control-sidebar -->
-<!-- Add the sidebar's background. This div must be placed
-   immediately after the control sidebar -->
-<div class="control-sidebar-bg"></div>
-</div>
-<!-- ./wrapper -->
-
+<script src="{$cdnpublic}jquery/3.4.1/jquery.min.js"></script>
 <script src="{$cdnpublic}twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
-<script src="{$cdnpublic}fastclick/1.0.6/fastclick.min.js"></script>
-<script src="/static/js/app.js"></script>
-<script>
-  document.addEventListener('pointerdown', function(e) {
-    if (e.target.closest('table')) {
-        return;
-    }
-
-    startX = e.clientX;
-
-    // 如果触摸开始于屏幕左边缘的10%区域内
-    if (startX < window.innerWidth * 0.1) {
-        e.preventDefault(); // 尝试阻止默认行为
-    }
-}, false);
-
-</script>
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="/static/js/ui-load.js"></script>
+<script src="/static/js/ui-jp.config.js"></script>
+<script src="/static/js/ui-jp.js"></script>
+<script src="/static/js/ui-nav.js"></script>
+<script src="/static/js/ui-toggle.js"></script>
 {block name="script"}{/block}
 </body>
 </html>
