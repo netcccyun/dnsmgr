@@ -271,13 +271,7 @@ $(document).ready(function(){
 			},
 		   {
 			   field: 'Name',
-			   title: '主机记录',
-			   formatter: function(value, row, index) {
-				   var domain = value;
-				   if(domain === "@") domain = "{$domainName}";
-				   else domain = value + ".{$domainName}";
-				   return value + '<a href="http://' + domain + '" target="_blank" title="访问域名" style="padding-left:6px;"><i class="fa fa-external-link"></i></a>';
-			   }
+			   title: '主机记录'
 		   },
 			{
 				field: 'Type',
@@ -349,8 +343,12 @@ $(document).ready(function(){
 					}
 					html += '<a href="javascript:delItem(\''+row.RecordId+'\')" class="btn btn-danger btn-xs">删除</a>&nbsp;&nbsp;';
 					if(dnsconfig.remark == 1){
-						html += '<a href="javascript:setRemark(\''+row.RecordId+'\')" class="btn btn-info btn-xs">备注</a>';
+						html += '<a href="javascript:setRemark(\''+row.RecordId+'\')" class="btn btn-info btn-xs">备注</a>&nbsp;&nbsp;';
 					}
+					if(row.Name === "@") var domain = "{$domainName}";
+					else var domain = row.Name + ".{$domainName}";
+					domain = domain.replace(/\*/g, 'www');
+					html += '<a href="http://' + domain + '" target="_blank" title="访问域名" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i></a>';
 					return html;
 				}
 			},
@@ -746,11 +744,7 @@ function copyToClipboard(text, selector) {
 			setTimeout(function(){ icon.className = oldClass; }, 1000);
 		}
 	}
-	if(typeof layer !== 'undefined' && layer.msg){
-		layer.msg('已复制到剪贴板');
-	}else{
-		alert('已复制到剪贴板');
-	}
+	layer.msg('已复制到剪贴板', {icon: 1, time: 600});
 }
 </script>
 {/block}
