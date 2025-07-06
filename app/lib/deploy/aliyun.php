@@ -264,6 +264,12 @@ class aliyun implements DeployInterface
         $domain = $config['domain'];
         if (empty($domain)) throw new Exception('WAF绑定域名不能为空');
 
+        if ($config['region'] == 'ap-southeast-1') {
+            $cert_id .= '-ap-southeast-1';
+        } else {
+            $cert_id .= '-cn-hangzhou';
+        }
+
         $endpoint = 'wafopenapi.' . $config['region'] . '.aliyuncs.com';
 
         $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2021-10-01', $this->proxy);
@@ -298,14 +304,13 @@ class aliyun implements DeployInterface
 
         if (isset($data['Listen']['CertId'])) {
             $old_cert_id = $data['Listen']['CertId'];
-            if (strpos($old_cert_id, '-')) $old_cert_id = substr($old_cert_id, 0, strpos($old_cert_id, '-'));
             if (!empty($old_cert_id) && $old_cert_id == $cert_id) {
                 $this->log('WAF域名 ' . $domain . ' 证书已配置，无需重复操作');
                 return;
             }
         }
 
-        $data['Listen']['CertId'] = $cert_id . '-cn-hangzhou';
+        $data['Listen']['CertId'] = $cert_id;
         if (empty($data['Listen']['HttpsPorts'])) $data['Listen']['HttpsPorts'] = [443];
         $data['Redirect']['Backends'] = $data['Redirect']['AllBackends'];
         $param = [
