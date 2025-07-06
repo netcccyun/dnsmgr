@@ -292,6 +292,9 @@ class aliyun implements DeployInterface
         } catch (Exception $e) {
             throw new Exception('查询CNAME接入详情失败：' . $e->getMessage());
         }
+        if (!isset($data['Listen'])) {
+            throw new Exception('没有找到' . $domain . '监听器');
+        }
 
         if (isset($data['Listen']['CertId'])) {
             $old_cert_id = $data['Listen']['CertId'];

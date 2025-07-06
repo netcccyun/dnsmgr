@@ -23,6 +23,14 @@ class ssh implements DeployInterface
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
         $connection = $this->connect();
+        if (isset($config['cmd_pre']) && !empty($config['cmd_pre'])) {
+            $cmds = explode("\n", $config['cmd_pre']);
+            foreach ($cmds as $cmd) {
+                $cmd = trim($cmd);
+                if (empty($cmd)) continue;
+                $this->exec($connection, $cmd);
+            }
+        }
         $sftp = ssh2_sftp($connection);
         if ($config['format'] == 'pem') {
             $stream = fopen("ssh2.sftp://$sftp{$config['pem_cert_file']}", 'w');

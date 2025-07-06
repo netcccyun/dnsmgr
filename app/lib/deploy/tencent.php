@@ -60,6 +60,8 @@ class tencent implements DeployInterface
             return $this->deploy_clb($cert_id, $config);
         } elseif ($config['product'] == 'scf') {
             return $this->deploy_scf($cert_id, $config);
+        } elseif ($config['product'] == 'teo' && isset($config['site_id'])) {
+            return $this->deploy_teo($cert_id, $config);
         } else {
             if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
             if ($config['product'] == 'waf') {
@@ -122,11 +124,17 @@ class tencent implements DeployInterface
         } else {
             $instance_ids = [$instance_id];
         }
+        if ($product == 'cdn') {
+            $instance_ids = array_map(function ($id) {
+                return $id . '|on';
+            }, $instance_ids);
+        }
         $param = [
             'CertificateId' => $cert_id,
             'InstanceIdList' => $instance_ids,
             'ResourceType' => $product,
         ];
+        if ($product == 'live') $param['Status'] = 1;
         $data = $this->client->request('DeployCertificateInstance', $param);
         $this->log(json_encode($data));
         $this->log(strtoupper($product) . '实例 ' . $instance_id . ' 部署证书成功！');
@@ -251,6 +259,26 @@ class tencent implements DeployInterface
         ];
         $data = $client->request('UpdateCustomDomain', $param);
         $this->log('云函数自定义域名 ' . $config['domain'] . ' 部署证书成功！');
+    }
+
+    private function deploy_teo($cert_id, $config)
+    {
+        if (empty($config['site_id'])) throw new Exception('站点ID不能为空');
+        if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
+
+        $endpoint = isset($config['site_type']) && $config['site_type'] == 'intl' ? 'teo.intl.tencentcloudapi.com' : 'teo.tencentcloudapi.com';
+        $client = new TencentCloud($this->SecretId, $this->SecretKey, $endpoint, 'teo', '2022-09-01', null, $this->proxy);
+        $hosts = explode(',', $config['domain']);
+        $param = [
+            'ZoneId' => $config['site_id'],
+            'Hosts' => $hosts,
+            'Mode' => 'sslcert',
+            'ServerCertInfo' => [[
+                'CertId' => $cert_id
+            ]]
+        ];
+        $data = $client->request('ModifyHostsCertificate', $param);
+        $this->log('边缘安全加速域名 ' . $config['domain'] . ' 部署证书成功！');
     }
 
     public function setLogger($func)

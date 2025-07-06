@@ -998,6 +998,24 @@ class DeployHelper
                     'show' => 'product==\'lighthouse\'||product==\'ddos\'',
                     'required' => true,
                 ],
+                'site_type' => [
+                    'name' => '站点类型',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'cn', 'label'=>'国内站'],
+                        ['value'=>'intl', 'label'=>'国际站'],
+                    ],
+                    'value' => 'cn',
+                    'show' => 'product==\'teo\'',
+                    'required' => true,
+                ],
+                'site_id' => [
+                    'name' => '站点ID',
+                    'type' => 'input',
+                    'placeholder' => '类似于zone-xxxx，在站点列表或概览页面查看',
+                    'show' => 'product==\'teo\'',
+                    'required' => true,
+                ],
                 'domain' => [
                     'name' => '绑定的域名',
                     'type' => 'input',
@@ -1865,6 +1883,12 @@ class DeployHelper
                     'value' => '0',
                     'show' => 'format==\'pfx\'',
                     'required' => true,
+                ],
+                'cmd_pre' => [
+                    'name' => '上传前执行命令',
+                    'type' => 'textarea',
+                    'show' => 'format==\'pem\'||uptype==0',
+                    'placeholder' => '可留空，上传前执行脚本命令',
                 ],
                 'cmd' => [
                     'name' => '上传完执行命令',

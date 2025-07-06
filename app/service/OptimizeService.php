@@ -39,9 +39,7 @@ class OptimizeService
     public function get_ip_address($cdn_type = 1, $ip_type = 'v4')
     {
         $api = config_get('optimize_ip_api', 0);
-        if ($api == 2) {
-            $url = 'https://api.345673.xyz/get_data';
-        } elseif ($api == 1) {
+        if ($api == 1) {
             $url = 'https://api.hostmonit.com/get_optimization_ip';
         } else {
             $url = 'https://www.wetest.vip/api/cf2dns/';
@@ -51,6 +49,8 @@ class OptimizeService
                 $url .= 'get_cloudfront_ip';
             } elseif ($cdn_type == 3) {
                 $url .= 'get_gcore_ip';
+            } elseif ($cdn_type == 4) {
+                $url .= 'get_edgeone_ip';
             }
         }
         $params = [
