@@ -280,6 +280,23 @@ $(document).ready(function(){
 				}
 			},
 			{
+                field: 'record_number',
+                title: '备案信息',
+                formatter: function(value, row, index) {
+                    if (row.record_status == 1) {
+                        html = '<font color="green">' + value + '</font>';
+                    } else if (row.record_status == 2) {
+                        html = '<font color="red">暂无备案</font>';
+                    } else if (row.record_status == 3) {
+                        html = '<font color="info">查询失败</font>';
+                    } else {
+						html = '<font color="#bdbdbd">待查询</font>';
+                    }
+                    html += '&nbsp;<a href="javascript:refreshRecord('+row.id+')" title="由于API问题有时可能检测不到请 换个时间段重新检测" data-toggle="tooltip" data-placement="bottom" class="text-info"><i class="fa fa-refresh"></i></a>';
+					return html;
+                }
+            },
+			{
 				field: 'remark',
 				title: '备注'
 			},
@@ -602,6 +619,28 @@ function updateDate(id){
 			}
 		}
 	});
+}
+function refreshRecord(id) {
+    var ii = layer.load(2);
+    $.ajax({
+        type: 'POST',
+        url: '/domain/refresh-record',
+        data: { id: id },
+        dataType: 'json',
+        success: function (res) {
+            layer.close(ii);
+            if (res.code === 0) {
+                layer.msg('备案信息已更新', { icon: 1 });
+                searchRefresh();
+            } else {
+                layer.alert(res.msg || '刷新失败', { icon: 2 });
+            }
+        },
+        error: function () {
+            layer.close(ii);
+            layer.alert('请求失败，请重试', { icon: 2 });
+        }
+    });
 }
 function loading(){
 	layer.load(2);
