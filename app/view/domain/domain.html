@@ -170,7 +170,7 @@
 var userLevel = "{:request()->user['level']}";
 $(document).ready(function(){
 	updateToolbar();
-	const defaultPageSize = 15;
+	const defaultPageSize = getCookie('domain_pagesize') ? getCookie('domain_pagesize') : 15;
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
 	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
 
@@ -298,7 +298,13 @@ $(document).ready(function(){
 		],
 		onLoadSuccess: function(data) {
 			$('[data-toggle="tooltip"]').tooltip()
-		}
+		},
+		onPageChange: function(number, size){
+			if(size != defaultPageSize){
+				defaultPageSize = size;
+				setCookie('domain_pagesize', size);
+			}
+		},
 	})
 
 	$("#form-store select[name=aid]").change(function(){
