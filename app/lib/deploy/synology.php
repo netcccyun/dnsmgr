@@ -109,19 +109,30 @@ class synology implements DeployInterface
             '_sid' => $this->token['sid'],
             'SynoToken' => $this->token['synotoken'],
         ];
-        $privatekey_file = tempnam(sys_get_temp_dir(), 'privatekey');
-        file_put_contents($privatekey_file, $privatekey);
-        $fullchain_file = tempnam(sys_get_temp_dir(), 'fullchain');
-        file_put_contents($fullchain_file, $fullchain);
-        $post = [
-            'key' => new \CURLFile($privatekey_file),
-            'cert' => new \CURLFile($fullchain_file),
-            'id' => $id,
-            'desc' => $config['desc'],
+        $headers = [
+            'X-Content-Type' => 'multipart/form-data'
         ];
-        $response = http_request($url . '?' . http_build_query($params), $post, null, null, null, $this->proxy, null, 15);
-        unlink($privatekey_file);
-        unlink($fullchain_file);
+        $post = [
+            [
+                'name' => 'key',
+                'filename' => 'key.pem',
+                'contents' => $privatekey
+            ],
+            [
+                'name' => 'cert',
+                'filename' => 'cert.pem',
+                'contents' => $fullchain
+            ],
+            [
+                'name' => 'id',
+                'contents' => $id
+            ],
+            [
+                'name' => 'desc',
+                'contents' => $config['desc']
+            ]
+        ];
+        $response = http_request($url . '?' . http_build_query($params), $post, null, null, $headers, $this->proxy, null, 15);
         $result = json_decode($response['body'], true);
         if ($id) {
             if (isset($result['success']) && $result['success']) {

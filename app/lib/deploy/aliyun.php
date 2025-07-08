@@ -101,7 +101,7 @@ class aliyun implements DeployInterface
         $cert_id = null;
         if ($data['TotalCount'] > 0 && !empty($data['CertificateOrderList'])) {
             foreach ($data['CertificateOrderList'] as $cert) {
-                if (strtolower($cert['SerialNo']) == $serial_no) {
+                if (strtolower($cert['SerialNo']) == $serial_no || strpos(strtolower($cert['SerialNo']), $serial_no) !== false) {
                     $cert_id = $cert['CertificateId'];
                     $cert_name = $cert['Name'];
                     break;
