@@ -450,7 +450,7 @@ function http_request($url, $data = null, $referer = null, $cookie = null, $head
                     }
                 }
             } else if (is_array($data) || is_object($data)) {
-                if ($options['headers']['X-Content-Type'] == 'multipart/form-data') {
+                if (isset($options['headers']['X-Content-Type']) && $options['headers']['X-Content-Type'] == 'multipart/form-data') {
                     // 表单文件
                     unset($options['headers']['X-Content-Type']);
                     $options['multipart'] = $data;
