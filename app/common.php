@@ -450,25 +450,23 @@ function http_request($url, $data = null, $referer = null, $cookie = null, $head
                     }
                 }
             } else if (is_array($data) || is_object($data)) {
-                if (isset($options['headers']['X-Content-Type']) && $options['headers']['X-Content-Type'] == 'multipart/form-data') {
+                if (!isset($options['headers']['Content-Type'])) {
+                    // 默认为表单
+                    $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+                }
+                if ($options['headers']['Content-Type'] == 'application/x-www-form-urlencoded') {
+                    // 表单
+                    $options['form_params'] = $data;
+                } else if ($options['headers']['Content-Type'] == 'multipart/form-data') {
                     // 表单文件
-                    unset($options['headers']['X-Content-Type']);
                     $options['multipart'] = $data;
+                    unset($options['headers']['Content-Type']); // 由GuzzleHttp重新生成Content-Type头部
+                } else if ($options['headers']['Content-Type'] == 'application/json') {
+                    // json
+                    $options['json'] = $data;
                 } else {
-                    if (!isset($options['headers']['Content-Type'])) {
-                        // 默认为表单
-                        $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
-                    }
-                    if ($options['headers']['Content-Type'] == 'application/x-www-form-urlencoded') {
-                        // 表单
-                        $options['form_params'] = $data;
-                    } else if ($options['headers']['Content-Type'] == 'application/json') {
-                        // json
-                        $options['json'] = $data;
-                    } else {
-                        // 其他
-                        $options['body'] = http_build_query($data);
-                    }
+                    // 其他
+                    $options['body'] = http_build_query($data);
                 }
             } else {
                 $options['body'] = $data;

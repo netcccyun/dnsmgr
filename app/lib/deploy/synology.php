@@ -110,7 +110,7 @@ class synology implements DeployInterface
             'SynoToken' => $this->token['synotoken'],
         ];
         $headers = [
-            'X-Content-Type' => 'multipart/form-data'
+            'Content-Type' => 'multipart/form-data'
         ];
         $post = [
             [
