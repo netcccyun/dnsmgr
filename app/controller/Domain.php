@@ -6,8 +6,10 @@ use app\BaseController;
 use think\facade\Db;
 use think\facade\View;
 use think\facade\Cache;
+use think\facade\Request;
 use app\lib\DnsHelper;
 use app\service\ExpireNoticeService;
+use app\service\RecordCheckService;
 use Exception;
 
 class Domain extends BaseController
@@ -1093,5 +1095,36 @@ class Domain extends BaseController
         if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
         $result = (new ExpireNoticeService())->updateDomainDate($id, $drow['name']);
         return json($result);
+    }
+
+    public function refreshRecord()
+    {
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+    
+        if (!$drow) {
+            return json(['code' => 1, 'msg' => '域名不存在']);
+        }
+        
+        try {
+            $service = new RecordCheckService();
+            $result = $service->checkDomainRecord($drow['name'], $id);
+    
+            if ($result['code'] === 0 && isset($result['data'])) {
+                Db::name('domain')
+                    ->where('id', $id)
+                    ->strict(false)
+                    ->update([
+                        'record_status'   => $result['data']['record_status'],
+                        'record_number'   => $result['data']['record_number']
+                    ]);
+    
+                return json(['code' => 0, 'msg' => '刷新成功', 'data' => $result['data']]);
+            } else {
+                return json(['code' => 1, 'msg' => '查询失败']);
+            }
+        } catch (\Exception $e) {
+            return json(['code' => 1, 'msg' => '发生异常: ' . $e->getMessage()]);
+        }
     }
 }

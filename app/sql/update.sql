@@ -164,3 +164,7 @@ ADD COLUMN `expiretime` datetime DEFAULT NULL,
 ADD COLUMN `checktime` datetime DEFAULT NULL,
 ADD COLUMN `noticetime` datetime DEFAULT NULL,
 ADD COLUMN `checkstatus` tinyint(1) NOT NULL DEFAULT '0';
+
+ALTER TABLE `dnsmgr_domain` 
+ADD COLUMN `record_status` tinyint(1) NOT NULL DEFAULT '0',
+ADD COLUMN `record_number` varchar(255) DEFAULT NULL;
