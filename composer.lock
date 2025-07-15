@@ -1348,16 +1348,16 @@
         },
         {
             "name": "topthink/framework",
-            "version": "v8.1.2",
+            "version": "v8.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/framework.git",
-                "reference": "8faec5c9b7a7f2a66ca3140a57e81bd6cd37567c"
+                "reference": "e4207e98b66f92d26097ed6efd535930cba90e8f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/framework/zipball/8faec5c9b7a7f2a66ca3140a57e81bd6cd37567c",
-                "reference": "8faec5c9b7a7f2a66ca3140a57e81bd6cd37567c",
+                "url": "https://api.github.com/repos/top-think/framework/zipball/e4207e98b66f92d26097ed6efd535930cba90e8f",
+                "reference": "e4207e98b66f92d26097ed6efd535930cba90e8f",
                 "shasum": ""
             },
             "require": {
@@ -1409,9 +1409,9 @@
             ],
             "support": {
                 "issues": "https://github.com/top-think/framework/issues",
-                "source": "https://github.com/top-think/framework/tree/v8.1.2"
+                "source": "https://github.com/top-think/framework/tree/v8.1.3"
             },
-            "time": "2025-01-14T08:04:03+00:00"
+            "time": "2025-07-14T03:48:44+00:00"
         },
         {
             "name": "topthink/think-container",
@@ -1863,7 +1863,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
@@ -1877,6 +1877,6 @@
         "ext-sockets": "*",
         "ext-ssh2": "*"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }
