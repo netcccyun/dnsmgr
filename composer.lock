@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "39f34360e80abbce3e603a056ae6211a",
+    "content-hash": "876ad9987c672e0fa8d90dbe55321dc7",
     "packages": [
         {
             "name": "cccyun/php-whois",
@@ -1811,21 +1811,21 @@
         },
         {
             "name": "topthink/think-trace",
-            "version": "v1.6",
+            "version": "v2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/think-trace.git",
-                "reference": "136cd5d97e8bdb780e4b5c1637c588ed7ca3e142"
+                "reference": "4ba6da2945b37931d61900a6e55dc02b05e5a63f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/think-trace/zipball/136cd5d97e8bdb780e4b5c1637c588ed7ca3e142",
-                "reference": "136cd5d97e8bdb780e4b5c1637c588ed7ca3e142",
+                "url": "https://api.github.com/repos/top-think/think-trace/zipball/4ba6da2945b37931d61900a6e55dc02b05e5a63f",
+                "reference": "4ba6da2945b37931d61900a6e55dc02b05e5a63f",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.1.0",
-                "topthink/framework": "^6.0|^8.0"
+                "php": ">=8.0",
+                "topthink/framework": "^8.1"
             },
             "type": "library",
             "extra": {
@@ -1856,9 +1856,9 @@
             "description": "thinkphp debug trace",
             "support": {
                 "issues": "https://github.com/top-think/think-trace/issues",
-                "source": "https://github.com/top-think/think-trace/tree/v1.6"
+                "source": "https://github.com/top-think/think-trace/tree/v2.0"
             },
-            "time": "2023-02-07T08:36:32+00:00"
+            "time": "2025-06-12T09:18:19+00:00"
         }
     ],
     "aliases": [],
