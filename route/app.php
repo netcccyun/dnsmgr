@@ -73,6 +73,7 @@ Route::group(function () {
     Route::post('/record/weight/data/:id', 'domain/weight_data');
     Route::any('/record/weight/:id', 'domain/weight');
     Route::get('/record/:id', 'domain/record');
+    Route::post('domain/refresh-record', 'domain/refreshRecord');
 
     Route::get('/dmonitor/overview', 'dmonitor/overview');
     Route::post('/dmonitor/task/data', 'dmonitor/task_data');
