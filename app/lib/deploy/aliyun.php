@@ -216,7 +216,7 @@ class aliyun implements DeployInterface
                 if ($flag) {
                     $exist_cert_id = $cert['Id'];
                     $exist_cert_name = $cert['Name'];
-                    $exist_cert_casid = $cert['CasId'];
+                    $exist_cert_casid = isset($cert['CasId']) ? $cert['CasId'] : null;
                     break;
                 }
             }
