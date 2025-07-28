@@ -1507,16 +1507,16 @@
         },
         {
             "name": "topthink/think-orm",
-            "version": "v4.0.46",
+            "version": "v4.0.47",
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/think-orm.git",
-                "reference": "4bb0a5679a97db8de1c0eb02bbbe179cb3afd901"
+                "reference": "04b920632c943e8f4f88336ac558203bab7a8758"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/think-orm/zipball/4bb0a5679a97db8de1c0eb02bbbe179cb3afd901",
-                "reference": "4bb0a5679a97db8de1c0eb02bbbe179cb3afd901",
+                "url": "https://api.github.com/repos/top-think/think-orm/zipball/04b920632c943e8f4f88336ac558203bab7a8758",
+                "reference": "04b920632c943e8f4f88336ac558203bab7a8758",
                 "shasum": ""
             },
             "require": {
@@ -1524,7 +1524,7 @@
                 "ext-pdo": "*",
                 "php": ">=8.0.0",
                 "psr/log": ">=1.0",
-                "psr/simple-cache": ">=1.0",
+                "psr/simple-cache": "^3.0",
                 "topthink/think-helper": "^3.1",
                 "topthink/think-validate": "^3.0"
             },
@@ -1561,9 +1561,9 @@
             ],
             "support": {
                 "issues": "https://github.com/top-think/think-orm/issues",
-                "source": "https://github.com/top-think/think-orm/tree/v4.0.46"
+                "source": "https://github.com/top-think/think-orm/tree/v4.0.47"
             },
-            "time": "2025-06-26T06:05:35+00:00"
+            "time": "2025-07-24T09:41:24+00:00"
         },
         {
             "name": "topthink/think-template",
@@ -1863,7 +1863,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
@@ -1877,6 +1877,6 @@
         "ext-sockets": "*",
         "ext-ssh2": "*"
     },
-    "platform-dev": {},
+    "platform-dev": [],
     "plugin-api-version": "2.6.0"
 }

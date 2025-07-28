@@ -102,7 +102,7 @@ class OptimizeService
             return false;
         }
         $list = Db::name('optimizeip')->where('active', 1)->select();
-        if (empty($list)) {
+        if (count($list) == 0) {
             return false;
         }
         echo '开始执行IP优选任务，共获取到'.count($list).'个待执行任务'."\n";
