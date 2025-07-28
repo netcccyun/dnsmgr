@@ -126,7 +126,11 @@ class CheckUtils
             return ['status' => false, 'errmsg' => 'Invalid IP address', 'usetime' => 0];
         }
         $timeout = 1;
-        exec('ping -c 1 -w '.$timeout.' '.$target, $output, $return_var);
+        if (str_contains($target, ':')) {
+            exec('ping -6 -c 1 -w '.$timeout.' '.$target, $output, $return_var);
+        } else {
+            exec('ping -c 1 -w '.$timeout.' '.$target, $output, $return_var);
+        }
         if (!empty($output[1])) {
             if (strpos($output[1], '毫秒') !== false) {
                 $usetime = getSubstr($output[1], '时间=', ' 毫秒');

@@ -16,8 +16,7 @@
   <p><li>不支持对CloudFlare里的域名添加优选，必须使用其他DNS服务商。需开通Cloudflare for SaaS，且域名使用CNAME的方式解析到CloudFlare。</li></p>
   <p><li>数据接口：<a href="https://www.wetest.vip/" target="_blank" rel="noreferrer">wetest.vip</a> 数据接口支持CloudFlare、CloudFront、EdgeOne；<a href="https://stock.hostmonit.com/" target="_blank" rel="noreferrer">HostMonit</a> 只支持CloudFlare。</li></p>
   <p><li>接口密钥：默认o1zrmHAF为免费KEY可永久免费使用。</li></p>
-  <p><li>计划任务：将以下命令添加到计划任务，周期设置为15分钟以上</li></p>
-  <p><code>cd {:app()->getRootPath()} && php think opiptask</code></p>
+  <p><li>自动更新：可查看<a href="/system/cronset">计划任务设置</a></p>
 </div>
 </div>
 </div>
@@ -38,6 +37,22 @@
 	  <div class="col-sm-offset-3 col-sm-9">
 		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
 		<a href="javascript:queryapi()" class="btn btn-default btn-block">查询积分</a>
+	  </div>
+	</div>
+  </form>
+</div>
+</div>
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">自动更新设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">自动更新时间间隔（分钟）</label>
+	  <div class="col-sm-9"><input type="text" name="optimize_ip_min" value="{:config_get('optimize_ip_min', '30')}" class="form-control" placeholder="单位：分钟"/></div>
+	</div>
+	<div class="form-group">
+	  <div class="col-sm-offset-3 col-sm-9">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
 	  </div>
 	</div>
   </form>

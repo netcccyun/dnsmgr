@@ -20,6 +20,9 @@ class Optimizeip extends BaseController
                 if (empty($key)) {
                     continue;
                 }
+                if ($key == 'optimize_ip_min' && intval($value) < 10) {
+                    return json(['code' => -1, 'msg' => '自动更新时间间隔不能小于10分钟']);
+                }
                 config_set($key, $value);
                 Cache::delete('configs');
             }

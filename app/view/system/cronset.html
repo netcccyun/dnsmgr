@@ -1,0 +1,126 @@
+{extend name="common/layout" /}
+{block name="title"}计划任务{/block}
+{block name="main"}
+<div class="row">
+<div class="col-xs-12 col-sm-8 col-lg-6 center-block" style="float: none;">
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">计划任务说明</h3></div>
+<div class="panel-body">
+{if config_get('cron_type', '0') == '1'}
+  <p><li>需定时访问以下URL，频率；1分钟1次</li></p>
+  <p><code>{$siteurl}/cron?key={:config_get('cron_key')}</code></p>
+{else}
+  <p><li>将以下Shell命令添加到计划任务，频率；1分钟1次</li></p>
+  <p><code>cd {:app()->getRootPath()} && php think certtask</code></p>
+  {if $is_user_www}<p><li><b>注：计划任务执行用户必须选择www用户</b></li></p>{/if}
+  <p><li>采用Docker镜像部署的会自动添加计划任务，无需手动添加。</li></p>
+{/if}
+</div>
+</div>
+
+<div class="panel panel-intro">
+<div class="panel-heading"><h3 class="panel-title">计划任务设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">计划任务执行方式</label>
+	  <div class="col-sm-9"><select class="form-control" name="cron_type" default="{:config_get('cron_type', '0')}"><option value="0">Shell命令（推荐）</option><option value="1">访问URL</option></select></div>
+	</div>
+    <div class="form-group" id="cron_url" {:config_get('cron_type', '0') == 0 ? 'style="display: none"' : ''}>
+		<label class="col-sm-3 control-label">访问密钥</label>
+		<div class="col-sm-9"><input type="text" name="cron_key" value="{:config_get('cron_key')}" class="form-control" requ/></div>
+	</div>
+	<div class="form-group">
+	  <div class="col-sm-offset-3 col-sm-9">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+	  </div>
+	</div>
+  </form>
+</div>
+<div class="panel-footer">
+  <p>优先推荐使用Shell命令方式执行计划任务，访问URL方式可能会请求超时导致执行失败。</p><p>如果是虚拟主机环境无法执行命令，则可以使用访问URL方式。</p>
+</div>
+</div>
+
+<div class="panel panel-success mt-3">
+<div class="panel-heading"><h3 class="panel-title">计划任务运行状态</h3></div>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>任务名称</th>
+            <th>上次运行时间</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>SSL证书续签</td>
+            <td><font color="green">{:config_get('certtask_time', '未运行', true)}</font></td>
+        </tr>
+        <tr>
+            <td>SSL证书部署</td>
+            <td><font color="green">{:config_get('certdeploy_time', '未运行', true)}</font></td>
+        </tr>
+        <tr>
+            <td>域名到期提醒</td>
+            <td><font color="green">{:config_get('domain_expire_time', '未运行', true)}</font></td>
+        </tr>
+        <tr>
+            <td>CF优选IP更新</td>
+            <td><font color="green">{:config_get('optimize_ip_time', '未运行', true)}</font></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script>
+var items = $("select[default]");
+for (i = 0; i < items.length; i++) {
+	$(items[i]).val($(items[i]).attr("default")||0);
+}
+function saveSetting(obj){
+    var cron_type = $("select[name='cron_type']").val();
+    var cron_key = $("input[name='cron_key']").val();
+    if(cron_type == 1 && cron_key == ''){
+        layer.alert('访问密钥不能为空！', {icon: 2});
+        return false;
+    }
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'POST',
+		url : '/system/set',
+		data : {cron_type:cron_type, cron_key:cron_key},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert('设置保存成功！', {
+					icon: 1,
+					closeBtn: false
+				}, function(){
+				  window.location.reload()
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+	return false;
+}
+$("select[name='cron_type']").change(function(){
+    if($(this).val() == 0){
+        $("#cron_url").hide();
+    }else{
+        $("#cron_url").show();
+    }
+});
+</script>
+{/block}

@@ -11,15 +11,17 @@ class CertTaskService
 
     public function execute()
     {
-        $this->execute_deploy();
-        $this->execute_order();
-        (new ExpireNoticeService())->task();
-        config_set('certtask_time', date("Y-m-d H:i:s"));
-        echo 'done'.PHP_EOL;
+        if ($this->execute_deploy()) {
+            config_set('certdeploy_time', date("Y-m-d H:i:s"));
+        }
+        if ($this->execute_order()) {
+            config_set('certtask_time', date("Y-m-d H:i:s"));
+        }
     }
 
     private function execute_order()
     {
+        echo '开始执行SSL证书签发任务...'.PHP_EOL;
         $days = config_get('cert_renewdays', 7);
         $list = Db::name('cert_order')->field('id,aid,status,issend')->whereRaw('status NOT IN (3,4) AND (retrytime IS NULL OR retrytime<NOW()) OR status=3 AND isauto=1 AND expiretime<:expiretime', ['expiretime' => date('Y-m-d H:i:s', time() + $days * 86400)])->select();
         //print_r($list);exit;
@@ -55,6 +57,7 @@ class CertTaskService
             if ($failcount >= 3) break;
             sleep(1);
         }
+        return true;
     }
 
     private function execute_deploy()
@@ -64,14 +67,15 @@ class CertTaskService
         $hour = date('H');
         if($start <= $end){
             if($hour < $start || $hour > $end){
-                echo '不在部署任务运行时间范围内'.PHP_EOL; return;
+                echo '不在部署任务运行时间范围内'.PHP_EOL; return false;
             }
         }else{
             if($hour < $start && $hour > $end){
-                echo '不在部署任务运行时间范围内'.PHP_EOL; return;
+                echo '不在部署任务运行时间范围内'.PHP_EOL; return false;
             }
         }
 
+        echo '开始执行SSL证书部署任务...'.PHP_EOL;
         $list = Db::name('cert_deploy')->field('id,status,issend')->whereRaw('active=1 AND status IN (0,-1) AND (retrytime IS NULL OR retrytime<NOW())')->select();
         //print_r($list);exit;
         $count = 0;
@@ -95,5 +99,6 @@ class CertTaskService
             if ($count >= 3) break;
             sleep(1);
         }
+        return true;
     }
 }

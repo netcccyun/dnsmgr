@@ -153,10 +153,10 @@
               <li class="{:checkIfActive('deployaccount')}"><a href="/cert/deployaccount"><i class="fa fa-circle-o"></i> 自动部署账户</a></li>
               <li class="{:checkIfActive('deploytask,deploy_form')}"><a href="/cert/deploytask"><i class="fa fa-circle-o"></i> 自动部署任务</a></li>
               <li class="{:checkIfActive('cname')}"><a href="/cert/cname"><i class="fa fa-circle-o"></i> CNAME代理</a></li>
-              <li class="{:checkIfActive('certset')}"><a href="/cert/certset"><i class="fa fa-circle-o"></i> 计划任务设置</a></li>
+              <li class="{:checkIfActive('certset')}"><a href="/cert/certset"><i class="fa fa-circle-o"></i> 自动续签设置</a></li>
             </ul>
           </li>
-          <li class="treeview {:checkIfActive('loginset,noticeset,proxyset')}">
+          <li class="treeview {:checkIfActive('cronset,loginset,noticeset,proxyset')}">
             <a href="javascript:;">
               <i class="fa fa-cogs fa-fw"></i>
               <span>系统设置</span>
@@ -165,6 +165,7 @@
               </span>
             </a>
             <ul class="treeview-menu">
+              <li class="{:checkIfActive('cronset')}"><a href="/system/cronset"><i class="fa fa-circle-o"></i> 计划任务</a></li>
               <li class="{:checkIfActive('loginset')}"><a href="/system/loginset"><i class="fa fa-circle-o"></i> 登录设置</a></li>
               <li class="{:checkIfActive('noticeset')}"><a href="/system/noticeset"><i class="fa fa-circle-o"></i> 通知设置</a></li>
               <li class="{:checkIfActive('proxyset')}"><a href="/system/proxyset"><i class="fa fa-circle-o"></i> 代理设置</a></li>

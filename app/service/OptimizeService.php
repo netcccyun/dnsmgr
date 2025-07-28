@@ -96,7 +96,15 @@ class OptimizeService
     //批量执行优选任务
     public function execute()
     {
+        $minute = config_get('optimize_ip_min', '30');
+        $last = config_get('optimize_ip_time', null, true);
+        if ($last && strtotime($last) > time() - $minute * 60) {
+            return false;
+        }
         $list = Db::name('optimizeip')->where('active', 1)->select();
+        if (empty($list)) {
+            return false;
+        }
         echo '开始执行IP优选任务，共获取到'.count($list).'个待执行任务'."\n";
         foreach ($list as $row) {
             try {
@@ -108,6 +116,8 @@ class OptimizeService
                 echo '优选任务'.$row['id'].'执行失败：'.$e->getMessage()."\n";
             }
         }
+        config_set('optimize_ip_time', date("Y-m-d H:i:s"));
+        return true;
     }
 
     //执行单个优选任务

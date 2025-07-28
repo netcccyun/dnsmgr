@@ -29,6 +29,7 @@ Route::get('/logout', 'auth/logout');
 Route::any('/quicklogin', 'auth/quicklogin');
 Route::any('/dmtask/status', 'dmonitor/status');
 Route::any('/optimizeip/status', 'optimizeip/status');
+Route::get('/cron', 'system/cron');
 
 Route::group(function () {
     Route::any('/', 'index/index');
@@ -120,6 +121,7 @@ Route::group(function () {
     Route::get('/system/tgbottest', 'system/tgbottest');
     Route::get('/system/webhooktest', 'system/webhooktest');
     Route::post('/system/proxytest', 'system/proxytest');
+    Route::get('/system/cronset', 'system/cronset');
 
 })->middleware(CheckLogin::class)
 ->middleware(ViewOutput::class);

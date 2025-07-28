@@ -26,6 +26,8 @@ class ExpireNoticeService
 
     public function task()
     {
+        echo '开始执行域名到期提醒任务...' . PHP_EOL;
+        config_set('domain_expire_time', date("Y-m-d H:i:s"));
         $count = $this->refreshDomainList();
         if ($count > 0) return;
 

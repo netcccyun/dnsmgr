@@ -7,6 +7,9 @@ use Exception;
 use think\facade\Db;
 use think\facade\View;
 use think\facade\Cache;
+use app\service\OptimizeService;
+use app\service\CertTaskService;
+use app\service\ExpireNoticeService;
 
 class System extends BaseController
 {
@@ -106,5 +109,39 @@ class System extends BaseController
             }
         }
         return json(['code' => 0]);
+    }
+
+    public function cronset()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        if (config_get('cron_key') === null) {
+            config_set('cron_key', random(10));
+            Cache::delete('configs');
+        }
+        View::assign('is_user_www', isset($_SERVER['USER']) && $_SERVER['USER'] == 'www');
+        View::assign('siteurl', request()->root(true));
+        return View::fetch();
+    }
+
+    public function cron()
+    {
+        if (function_exists("set_time_limit")) {
+            @set_time_limit(0);
+        }
+        if (function_exists("ignore_user_abort")) {
+            @ignore_user_abort(true);
+        }
+        if (isset($_SERVER['HTTP_USER_AGENT']) && str_contains($_SERVER['HTTP_USER_AGENT'], 'Baiduspider')) exit;
+        $key = input('get.key', '');
+        $cron_key = config_get('cron_key');
+        if (config_get('cron_type', '0') != '1' || empty($cron_key)) exit('未开启当前方式');
+        if ($key != $cron_key) exit('访问密钥错误');
+
+        $res = (new OptimizeService())->execute();
+        if (!$res) {
+            (new CertTaskService())->execute();
+            (new ExpireNoticeService())->task();
+        }
+        echo 'success!';
     }
 }

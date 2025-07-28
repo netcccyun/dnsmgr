@@ -12,7 +12,9 @@ use think\console\input\Option;
 use think\console\Output;
 use think\facade\Db;
 use think\facade\Config;
+use app\service\OptimizeService;
 use app\service\CertTaskService;
+use app\service\ExpireNoticeService;
 
 class Certtask extends Command
 {
@@ -20,7 +22,7 @@ class Certtask extends Command
     {
         // 指令配置
         $this->setName('certtask')
-            ->setDescription('证书申请与部署任务');
+            ->setDescription('SSL证书续签与部署、域名到期提醒、CF优选IP更新');
     }
 
     protected function execute(Input $input, Output $output)
@@ -28,6 +30,11 @@ class Certtask extends Command
         $res = Db::name('config')->cache('configs', 0)->column('value', 'key');
         Config::set($res, 'sys');
 
-        (new CertTaskService())->execute();
+        $res = (new OptimizeService())->execute();
+        if (!$res) {
+            (new CertTaskService())->execute();
+            (new ExpireNoticeService())->task();
+        }
+        echo 'done'.PHP_EOL;
     }
 }
