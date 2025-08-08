@@ -159,9 +159,9 @@ class tencent implements CertInterface
         if (!empty($data['RevokeDomainValidateAuths'])) {
             $dnsList = [];
             foreach ($data['RevokeDomainValidateAuths'] as $opts) {
-                $mainDomain = getMainDomain($opts['DomainValidateAuthDomain']);
-                $name = str_replace('.' . $mainDomain, '', $opts['DomainValidateAuthKey']);
-                $dnsList[$mainDomain][] = ['name' => $name, 'type' => 'CNAME', 'value' => $opts['DomainValidateAuthValue']];
+                $mainDomain = getMainDomain($opts['DomainValidateAuthKey']);
+                $name = substr($opts['DomainValidateAuthKey'], 0, -(strlen($mainDomain) + 1));
+                $dnsList[$mainDomain][] = ['name' => $name, 'type' => 'TXT', 'value' => $opts['DomainValidateAuthValue']];
             }
             \app\utils\CertDnsUtils::addDns($dnsList, function ($txt) {
                 $this->log($txt);
