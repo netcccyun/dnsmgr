@@ -98,7 +98,6 @@ docker pull swr.cn-east-3.myhuaweicloud.com/netcccyun/dnsmgr:latest
 ### docker-compose 部署
 
 ```
-version: '3'
 services:
   dnsmgr-web:
     container_name: dnsmgr-web
@@ -107,7 +106,7 @@ services:
     ports:
       - 8081:80
     volumes:
-      - /volume1/docker/dnsmgr/web:/app/www
+      - ./web:/app/www
     image: netcccyun/dnsmgr
     depends_on:
       - dnsmgr-mysql
@@ -206,4 +205,5 @@ SSL证书自动部署功能
 
 - [彩虹云主机 - 免备案CDN/虚拟主机](https://www.cccyun.net/)
 - [小白云高防云服务器](https://www.xiaobaiyun.cn/aff/GMLPMFOV)
+
 
