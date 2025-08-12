@@ -43,7 +43,7 @@ class safeline implements DeployInterface
             if (empty($row['domains'])) continue;
             $flag = false;
             foreach ($row['domains'] as $domain) {
-                if (in_array($domain, $domains)) {
+                if (in_array($domain, $domains) || in_array('*' . substr($domain, strpos($domain, '.')), $domains)) {
                     $flag = true;
                     break;
                 }

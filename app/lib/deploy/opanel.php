@@ -48,7 +48,7 @@ class opanel implements DeployInterface
                 if (!empty($row['domains'])) $cert_domains += explode(',', $row['domains']);
                 $flag = false;
                 foreach ($cert_domains as $domain) {
-                    if (in_array($domain, $domains)) {
+                    if (in_array($domain, $domains) || in_array('*' . substr($domain, strpos($domain, '.')), $domains)) {
                         $flag = true;
                         break;
                     }
