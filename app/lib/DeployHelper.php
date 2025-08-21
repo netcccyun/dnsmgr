@@ -139,12 +139,12 @@ class DeployHelper
             'class' => 1,
             'icon' => 'host.png',
             'desc' => '支持虚拟主机与CDN站点',
-            'note' => '以上登录地址需填写Easypanel管理员面板地址，非用户面板。',
+            'note' => '以上登录信息为Easypanel管理员面板的，非用户面板。',
             'inputs' => [
                 'url' => [
                     'name' => '面板地址',
                     'type' => 'input',
-                    'placeholder' => 'Easypanel管理员面板地址',
+                    'placeholder' => 'Easypanel面板地址',
                     'note' => '填写规则如：http://192.168.1.100:3312 ，不要带其他后缀',
                     'required' => true,
                 ],
@@ -288,17 +288,43 @@ class DeployHelper
                     'note' => '填写示例：http://demo.cdnfly.cn',
                     'required' => true,
                 ],
+                'auth' => [
+                    'name' => '认证方式',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '接口密钥',
+                        '1' => '模拟登录',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
                 'api_key' => [
                     'name' => 'api_key',
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                    'show' => 'auth==0',
                 ],
                 'api_secret' => [
                     'name' => 'api_secret',
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                    'show' => 'auth==0',
+                ],
+                'username' => [
+                    'name' => '登录账号',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                    'show' => 'auth==1',
+                ],
+                'password' => [
+                    'name' => '登录密码',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                    'show' => 'auth==1',
                 ],
                 'proxy' => [
                     'name' => '使用代理服务器',
@@ -1632,6 +1658,61 @@ class DeployHelper
                     'type' => 'input',
                     'placeholder' => '',
                     'note' => '在SSL证书->我的证书页面查看，注意域名是否与证书匹配',
+                    'required' => true,
+                ],
+            ],
+        ],
+        'unicloud' => [
+            'name' => 'uniCloud',
+            'class' => 2,
+            'icon' => 'unicloud.png',
+            'desc' => '部署到uniCloud服务空间',
+            'note' => null,
+            'inputs' => [
+                'username' => [
+                    'name' => '账号',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '密码',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'spaceId' => [
+                    'name' => '服务空间ID',
+                    'type' => 'input',
+                    'placeholder' => 'spaceId',
+                    'required' => true,
+                ],
+                'provider' => [
+                    'name' => '空间提供商',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'aliyun', 'label'=>'阿里云'],
+                        ['value'=>'tencent', 'label'=>'腾讯云'],
+                        ['value'=>'alipay', 'label'=>'支付宝云'],
+                    ],
+                    'value' => 'aliyun',
+                    'required' => true,
+                ],
+                'domains' => [
+                    'name' => '空间域名',
+                    'type' => 'input',
+                    'placeholder' => '多个域名可使用,分隔',
                     'required' => true,
                 ],
             ],
