@@ -5,7 +5,7 @@ CREATE TABLE `dnsmgr_config` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `dnsmgr_config` VALUES ('version', '1033');
+INSERT INTO `dnsmgr_config` VALUES ('version', '1040');
 INSERT INTO `dnsmgr_config` VALUES ('notice_mail', '0');
 INSERT INTO `dnsmgr_config` VALUES ('notice_wxtpl', '0');
 INSERT INTO `dnsmgr_config` VALUES ('mail_smtp', 'smtp.qq.com');
@@ -230,4 +230,27 @@ CREATE TABLE `dnsmgr_cert_cname` (
   `addtime` datetime DEFAULT NULL,
   `status` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_sctask`;
+CREATE TABLE `dnsmgr_sctask` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `did` int(11) unsigned NOT NULL,
+  `rr` varchar(128) NOT NULL,
+  `recordid` varchar(60) NOT NULL,
+  `type` tinyint(1) NOT NULL DEFAULT 0,
+  `cycle` tinyint(1) NOT NULL DEFAULT 0,
+  `switchtype` tinyint(1) NOT NULL DEFAULT 0,
+  `switchdate` varchar(10) DEFAULT NULL,
+  `switchtime` varchar(20) DEFAULT NULL,
+  `value` varchar(128) DEFAULT NULL,
+  `line` varchar(20) DEFAULT NULL,
+  `addtime` int(11) NOT NULL DEFAULT 0,
+  `updatetime` int(11) NOT NULL DEFAULT 0,
+  `nexttime` int(11) NOT NULL DEFAULT 0,
+  `active` tinyint(1) NOT NULL DEFAULT 0,
+  `recordinfo` varchar(200) DEFAULT NULL,
+  `remark` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `did` (`did`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

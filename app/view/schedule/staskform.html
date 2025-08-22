@@ -1,0 +1,269 @@
+{extend name="common/layout" /}
+{block name="title"}定时切换策略{/block}
+{block name="main"}
+<style>
+    .dselect::before{
+        content: '.';
+        position: absolute;
+        left: 0;
+    }
+    .control-label[is-required]:before {
+        content: "*";
+        color: #f56c6c;
+        margin-right: 4px;
+    }
+    .tips{color: #f6a838; padding-left: 5px;}
+</style>
+<div class="row" id="app">
+<div class="col-xs-12 center-block" style="float: none;">
+<div class="panel panel-default">
+<div class="panel-heading"><h3 class="panel-title"><a href="/schedule/stask" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{if $action=='edit'}编辑{else}添加{/if}定时切换策略</h3></div>
+<div class="panel-body">
+  <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="taskform">
+    <div class="form-group">
+        <label class="col-sm-3 col-xs-12 control-label no-padding-right" is-required>域名选择</label>
+        <div class="col-sm-6">
+            <div class="input-group">
+                <input type="text" name="rr" v-model="set.rr" placeholder="主机记录" class="form-control" required>
+                <span class="input-group-addon">.</span>
+                <select name="did" v-model="set.did" class="form-control" required>
+                    <option value="">--主域名--</option>
+                    <option v-for="option in domainList" :value="option.id">{{option.name}}</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right" is-required>解析记录</label>
+        <div class="col-sm-6"><div class="input-group">
+            <select name="recordid" v-model="set.recordid" id="recordid" class="form-control" required>
+                <option v-for="option in recordList" :value="option.RecordId">{{option.Value}} (线路:{{option.LineName}})</option>
+            </select>
+            <div class="input-group-btn">
+                <button type="button" @click="getRecordList" class="btn btn-info">点击获取</button>
+            </div>
+        </div></div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right" is-required>执行方式</label>
+        <div class="col-sm-6">
+            <label class="radio-inline">
+                <input type="radio" name="type" value="0" v-model="set.type"> 单次执行
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="type" value="1" v-model="set.type"> 周期执行
+            </label>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.type==0">
+        <label class="col-sm-3 control-label no-padding-right" is-required>时间设置</label>
+        <div class="col-sm-6">
+            <input type="datetime-local" name="switchtime" v-model="set.switchtime" class="form-control" required>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.type==1">
+        <label class="col-sm-3 control-label no-padding-right" is-required>时间设置</label>
+        <div class="col-sm-6">
+            <div class="input-group">
+                <select name="cycle" v-model="set.cycle" class="form-control" required>
+                    <option value="0">每天</option>
+                    <option value="1">每周</option>
+                    <option value="2">每月</option>
+                </select>
+                <span class="input-group-addon" v-show="set.cycle!=0"></span>
+                <select name="switchdate" v-model="set.switchdate" class="form-control" required v-show="set.cycle==1">
+                    <option value="0">日</option>
+                    <option value="1">一</option>
+                    <option value="2">二</option>
+                    <option value="3">三</option>
+                    <option value="4">四</option>
+                    <option value="5">五</option>
+                    <option value="6">六</option>
+                </select>
+                <input type="number" name="switchdate" v-model="set.switchdate" class="form-control" required min="1" max="31" v-show="set.cycle==2" placeholder="日期1~31">
+                <span class="input-group-addon"></span>
+                <input type="time" name="switchtime" v-model="set.switchtime" class="form-control" required>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right" is-required>切换设置</label>
+        <div class="col-sm-6">
+            <label class="radio-inline">
+                <input type="radio" name="switchtype" value="0" v-model="set.switchtype"> 修改解析
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="switchtype" value="1" v-model="set.switchtype"> 启用解析
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="switchtype" value="2" v-model="set.switchtype"> 暂停解析
+            </label>
+            <label class="radio-inline" v-show="set.type==0">
+                <input type="radio" name="switchtype" value="3" v-model="set.switchtype"> 删除解析
+            </label>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.switchtype==0">
+        <label class="col-sm-3 control-label no-padding-right" is-required>记录值</label>
+        <div class="col-sm-6">
+            <input type="text" name="value" v-model="set.value" placeholder="支持填写IPv4或CNAME地址" class="form-control" required>
+        </div>
+    </div>
+    <div class="form-group" v-show="set.switchtype==0&&dnstype=='cloudflare'">
+        <label class="col-sm-3 control-label no-padding-right" is-required>线路</label>
+        <div class="col-sm-6">
+            <label class="radio-inline">
+                <input type="radio" name="line" value="" v-model="set.line"> 不修改
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="line" value="0" v-model="set.line"> 改为仅DNS模式
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="line" value="1" v-model="set.line"> 改为代理模式
+            </label>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label no-padding-right">备注</label>
+        <div class="col-sm-6">
+            <input type="text" name="remark" v-model="set.remark" placeholder="可留空" class="form-control">
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
+    </div>
+  </form>
+</div>
+<div class="panel-footer">
+  <p>添加定时切换策略后，还需要配置好<a href="/system/cronset">计划任务</a>，才能自动切换。</p>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="{$cdnpublic}vue/2.6.14/vue.min.js"></script>
+<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
+<script src="/static/js/bootstrapValidator.min.js"></script>
+<script>
+var action = '{$action}';
+var info = {$info|json_encode|raw};
+var domainList = {$domains|json_encode|raw};
+new Vue({
+    el: '#app',
+    data: {
+        action: '{$action}',
+        set: {
+            id: '',
+            remark: '',
+            rr: '',
+            did: '',
+            recordid: '',
+            recordinfo: '',
+            type: 0,
+            cycle: 0,
+            switchtype: 0,
+            switchdate: '',
+            switchtime: '',
+            value: '',
+            line: '',
+        },
+        dnstype: null,
+        domainList: domainList,
+        recordList: [],
+    },
+    watch: {
+        'set.recordid': function(val){
+            if(val == '') return;
+            var record = this.recordList.find(item => item.RecordId == val);
+            if(record){
+                this.set.recordinfo = JSON.stringify({Value:record.Value, Line:record.Line, LineName:record.LineName, TTL:record.TTL});
+            }
+        },
+        'set.did': function(val){
+            if(val == '') return;
+            this.dnstype = this.domainList.find(item => item.id == val).type;
+        }
+    },
+    mounted() {
+        if(this.action == 'edit'){
+            Object.keys(info).forEach((key) => {
+                this.$set(this.set, key, info[key])
+            })
+            var recordinfo = JSON.parse(this.set.recordinfo);
+            this.recordList = [{RecordId:this.set.recordid, Value:recordinfo.Value, Line:recordinfo.Line, LineName:recordinfo.LineName, TTL:recordinfo.TTL}];
+        }
+        $("#taskform").bootstrapValidator({
+            live: 'submitted',
+        });
+        $('[data-toggle="tooltip"]').tooltip();
+    },
+    methods: {
+        getRecordList(){
+            var that = this;
+            if(this.set.did == ''){
+                layer.msg('请先选择域名', {time: 800});return;
+            }
+            if(this.set.rr == ''){
+                layer.msg('主机记录不能为空', {time: 800});return;
+            }
+            var ii = layer.load(2, {shade:[0.1,'#fff']});
+            $.ajax({
+                type : 'POST',
+                url : '/record/list',
+                data : {id:this.set.did, rr:this.set.rr},
+                dataType : 'json',
+                success : function(data) {
+                    layer.close(ii);
+                    if(data.code == 0){
+                        layer.msg('成功获取到'+data.data.length+'条解析记录', {icon:1, time:800});
+                        that.recordList = data.data;
+                        if(that.set.recordid){
+                            var record = that.recordList.find(item => item.RecordId == that.set.recordid);
+                            if(record){
+                                that.set.recordinfo = JSON.stringify({Value:record.Value, Line:record.Line, LineName:record.LineName, TTL:record.TTL});
+                            }
+                        }
+                    }else{
+                        layer.alert(data.msg, {icon:2});
+                    }
+                },
+                error:function(data){
+                    layer.close(ii);
+                    layer.msg('服务器错误');
+                }
+            });
+        },
+        submit(){
+            var that=this;
+            $("#taskform").data("bootstrapValidator").validate();
+            if(!$("#taskform").data("bootstrapValidator").isValid()){
+                return false;
+            }
+            var ii = layer.load(2, {shade:[0.1,'#fff']});
+            $.ajax({
+                type: "POST",
+                url: "",
+                data: this.set,
+                dataType: 'json',
+                success: function(data) {
+                    layer.close(ii);
+                    if(data.code == 0){
+                        layer.alert(data.msg, {icon: 1}, function(){
+                            if(document.referrer.indexOf('task?') > 0)
+                                window.location.href = document.referrer;
+                            else
+                                window.location.href = '/dmonitor/task';
+                        });
+                    }else{
+                        layer.alert(data.msg, {icon: 2});
+                    }
+                },
+                error: function(data){
+                    layer.close(ii);
+                    layer.msg('服务器错误');
+                }
+            });
+        }
+    },
+});
+</script>
+{/block}

@@ -171,7 +171,7 @@ class User extends BaseController
             $select->where('domain', $this->request->user['name']);
         } elseif ($this->request->user['level'] == 1) {
             $select->where('uid', $this->request->user['id']);
-        } elseif (!empty($uid)) {
+        } elseif (!isNullOrEmpty($uid)) {
             $select->where('uid', $uid);
         }
         if (!empty($kw)) {

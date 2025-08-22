@@ -276,6 +276,7 @@ class Domain extends BaseController
             Db::name('domain')->where('id', $id)->delete();
             Db::name('dmtask')->where('did', $id)->delete();
             Db::name('optimizeip')->where('did', $id)->delete();
+            Db::name('sctask')->where('did', $id)->delete();
             return json(['code' => 0]);
         } elseif ($act == 'batchadd') {
             if (!checkPermission(2)) return $this->alert('error', '无权限');
@@ -318,6 +319,7 @@ class Domain extends BaseController
             Db::name('domain')->where('id', 'in', $ids)->delete();
             Db::name('dmtask')->where('did', 'in', $ids)->delete();
             Db::name('optimizeip')->where('did', 'in', $ids)->delete();
+            Db::name('sctask')->where('did', 'in', $ids)->delete();
             return json(['code' => 0, 'msg' => '成功删除' . count($ids) . '个域名！']);
         }
         return json(['code' => -3]);

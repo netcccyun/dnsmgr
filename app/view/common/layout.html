@@ -126,18 +126,8 @@
               <li class="{:checkIfActive('task,taskform')}"><a href="/dmonitor/task"><i class="fa fa-circle-o"></i> 切换策略</a></li>
             </ul>
           </li>
-          <li class="treeview {:checkIfActive('opipset,opiplist,opipform')}">
-            <a href="javascript:;">
-              <i class="fa fa-globe fa-fw"></i>
-              <span>CF优选IP</span>
-              <span class="pull-right-container">
-                <i class="fa fa-angle-left pull-right"></i>
-              </span>
-            </a>
-            <ul class="treeview-menu">
-              <li class="{:checkIfActive('opipset')}"><a href="/optimizeip/opipset"><i class="fa fa-circle-o"></i> 优选设置</a></li>
-              <li class="{:checkIfActive('opiplist,opipform')}"><a href="/optimizeip/opiplist"><i class="fa fa-circle-o"></i> 任务管理</a></li>
-            </ul>
+          <li class="{:checkIfActive('stask,staskform')}">
+            <a href="/schedule/stask"><i class="fa fa-calendar fa-fw"></i> <span>定时切换</span></a>
           </li>
           <li class="treeview {:checkIfActive('certaccount,account_form,certorder,order_form,order_import,deployaccount,deploytask,deploy_form,certset,cname')}">
             <a href="javascript:;">
@@ -154,6 +144,19 @@
               <li class="{:checkIfActive('deploytask,deploy_form')}"><a href="/cert/deploytask"><i class="fa fa-circle-o"></i> 自动部署任务</a></li>
               <li class="{:checkIfActive('cname')}"><a href="/cert/cname"><i class="fa fa-circle-o"></i> CNAME代理</a></li>
               <li class="{:checkIfActive('certset')}"><a href="/cert/certset"><i class="fa fa-circle-o"></i> 自动续签设置</a></li>
+            </ul>
+          </li>
+          <li class="treeview {:checkIfActive('opipset,opiplist,opipform')}">
+            <a href="javascript:;">
+              <i class="fa fa-globe fa-fw"></i>
+              <span>CF优选IP</span>
+              <span class="pull-right-container">
+                <i class="fa fa-angle-left pull-right"></i>
+              </span>
+            </a>
+            <ul class="treeview-menu">
+              <li class="{:checkIfActive('opipset')}"><a href="/optimizeip/opipset"><i class="fa fa-circle-o"></i> 优选设置</a></li>
+              <li class="{:checkIfActive('opiplist,opipform')}"><a href="/optimizeip/opiplist"><i class="fa fa-circle-o"></i> 任务管理</a></li>
             </ul>
           </li>
           <li class="treeview {:checkIfActive('cronset,loginset,noticeset,proxyset')}">

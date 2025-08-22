@@ -65,102 +65,125 @@ class Dmonitor extends BaseController
         $list = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name domain')->select()->toArray();
 
         foreach ($list as &$row) {
-            $row['checktimestr'] = date('Y-m-d H:i:s', $row['checktime']);
+            $row['addtimestr'] = date('Y-m-d H:i:s', $row['addtime']);
+            $row['checktimestr'] = $row['checktime'] > 0 ? date('Y-m-d H:i:s', $row['checktime']) : '未运行';
         }
 
         return json(['total' => $total, 'rows' => $list]);
+    }
+
+    public function task_op()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        $action = input('param.action');
+        if ($action == 'add') {
+            $task = [
+                'did' => input('post.did/d'),
+                'rr' => input('post.rr', null, 'trim'),
+                'recordid' => input('post.recordid', null, 'trim'),
+                'type' => input('post.type/d'),
+                'main_value' => input('post.main_value', null, 'trim'),
+                'backup_value' => input('post.backup_value', null, 'trim'),
+                'checktype' => input('post.checktype/d'),
+                'checkurl' => input('post.checkurl', null, 'trim'),
+                'tcpport' => !empty(input('post.tcpport')) ? input('post.tcpport/d') : null,
+                'frequency' => input('post.frequency/d'),
+                'cycle' => input('post.cycle/d'),
+                'timeout' => input('post.timeout/d'),
+                'proxy' => input('post.proxy/d'),
+                'cdn' => input('post.cdn') == 'true' || input('post.cdn') == '1' ? 1 : 0,
+                'remark' => input('post.remark', null, 'trim'),
+                'recordinfo' => input('post.recordinfo', null, 'trim'),
+                'addtime' => time(),
+                'active' => 1
+            ];
+
+            if (empty($task['did']) || empty($task['rr']) || empty($task['recordid']) || empty($task['main_value']) || empty($task['frequency']) || empty($task['cycle'])) {
+                return json(['code' => -1, 'msg' => '必填项不能为空']);
+            }
+            if ($task['checktype'] > 0 && $task['timeout'] > $task['frequency']) {
+                return json(['code' => -1, 'msg' => '为保障容灾切换任务正常运行，最大超时时间不能大于检测间隔']);
+            }
+            if ($task['type'] == 2 && $task['backup_value'] == $task['main_value']) {
+                return json(['code' => -1, 'msg' => '主备地址不能相同']);
+            }
+            if (Db::name('dmtask')->where('recordid', $task['recordid'])->find()) {
+                return json(['code' => -1, 'msg' => '当前容灾切换策略已存在']);
+            }
+            Db::name('dmtask')->insert($task);
+            return json(['code' => 0, 'msg' => '添加成功']);
+        } elseif ($action == 'edit') {
+            $id = input('post.id/d');
+            $task = [
+                'did' => input('post.did/d'),
+                'rr' => input('post.rr', null, 'trim'),
+                'recordid' => input('post.recordid', null, 'trim'),
+                'type' => input('post.type/d'),
+                'main_value' => input('post.main_value', null, 'trim'),
+                'backup_value' => input('post.backup_value', null, 'trim'),
+                'checktype' => input('post.checktype/d'),
+                'checkurl' => input('post.checkurl', null, 'trim'),
+                'tcpport' => !empty(input('post.tcpport')) ? input('post.tcpport/d') : null,
+                'frequency' => input('post.frequency/d'),
+                'cycle' => input('post.cycle/d'),
+                'timeout' => input('post.timeout/d'),
+                'proxy' => input('post.proxy/d'),
+                'cdn' => input('post.cdn') == 'true' || input('post.cdn') == '1' ? 1 : 0,
+                'remark' => input('post.remark', null, 'trim'),
+                'recordinfo' => input('post.recordinfo', null, 'trim'),
+            ];
+
+            if (empty($task['did']) || empty($task['rr']) || empty($task['recordid']) || empty($task['main_value']) || empty($task['frequency']) || empty($task['cycle'])) {
+                return json(['code' => -1, 'msg' => '必填项不能为空']);
+            }
+            if ($task['checktype'] > 0 && $task['timeout'] > $task['frequency']) {
+                return json(['code' => -1, 'msg' => '为保障容灾切换任务正常运行，最大超时时间不能大于检测间隔']);
+            }
+            if ($task['type'] == 2 && $task['backup_value'] == $task['main_value']) {
+                return json(['code' => -1, 'msg' => '主备地址不能相同']);
+            }
+            if (Db::name('dmtask')->where('recordid', $task['recordid'])->where('id', '<>', $id)->find()) {
+                return json(['code' => -1, 'msg' => '当前容灾切换策略已存在']);
+            }
+            Db::name('dmtask')->where('id', $id)->update($task);
+            return json(['code' => 0, 'msg' => '修改成功']);
+        } elseif ($action == 'setactive') {
+            $id = input('post.id/d');
+            $active = input('post.active/d');
+            Db::name('dmtask')->where('id', $id)->update(['active' => $active]);
+            return json(['code' => 0, 'msg' => '设置成功']);
+        } elseif ($action == 'del') {
+            $id = input('post.id/d');
+            Db::name('dmtask')->where('id', $id)->delete();
+            Db::name('dmlog')->where('taskid', $id)->delete();
+            return json(['code' => 0, 'msg' => '删除成功']);
+        } elseif ($action == 'operation') {
+            $ids = input('post.ids');
+            $success = 0;
+            foreach ($ids as $id) {
+                if (input('post.act') == 'delete') {
+                    Db::name('dmtask')->where('id', $id)->delete();
+                    Db::name('dmlog')->where('taskid', $id)->delete();
+                    $success++;
+                } elseif (input('post.act') == 'retry') {
+                    Db::name('dmtask')->where('id', $id)->update(['checknexttime' => time()]);
+                    $success++;
+                } elseif (input('post.act') == 'open' || input('post.act') == 'close') {
+                    $isauto = input('post.act') == 'open' ? 1 : 0;
+                    Db::name('dmtask')->where('id', $id)->update(['active' => $isauto]);
+                    $success++;
+                }
+            }
+            return json(['code' => 0, 'msg' => '成功操作' . $success . '个容灾切换策略']);
+        } else {
+            return json(['code' => -1, 'msg' => '参数错误']);
+        }
     }
 
     public function taskform()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');
         $action = input('param.action');
-        if ($this->request->isPost()) {
-            if ($action == 'add') {
-                $task = [
-                    'did' => input('post.did/d'),
-                    'rr' => input('post.rr', null, 'trim'),
-                    'recordid' => input('post.recordid', null, 'trim'),
-                    'type' => input('post.type/d'),
-                    'main_value' => input('post.main_value', null, 'trim'),
-                    'backup_value' => input('post.backup_value', null, 'trim'),
-                    'checktype' => input('post.checktype/d'),
-                    'checkurl' => input('post.checkurl', null, 'trim'),
-                    'tcpport' => !empty(input('post.tcpport')) ? input('post.tcpport/d') : null,
-                    'frequency' => input('post.frequency/d'),
-                    'cycle' => input('post.cycle/d'),
-                    'timeout' => input('post.timeout/d'),
-                    'proxy' => input('post.proxy/d'),
-                    'cdn' => input('post.cdn') == 'true' || input('post.cdn') == '1' ? 1 : 0,
-                    'remark' => input('post.remark', null, 'trim'),
-                    'recordinfo' => input('post.recordinfo', null, 'trim'),
-                    'addtime' => time(),
-                    'active' => 1
-                ];
-
-                if (empty($task['did']) || empty($task['rr']) || empty($task['recordid']) || empty($task['main_value']) || empty($task['frequency']) || empty($task['cycle'])) {
-                    return json(['code' => -1, 'msg' => '必填项不能为空']);
-                }
-                if ($task['checktype'] > 0 && $task['timeout'] > $task['frequency']) {
-                    return json(['code' => -1, 'msg' => '为保障容灾切换任务正常运行，最大超时时间不能大于检测间隔']);
-                }
-                if ($task['type'] == 2 && $task['backup_value'] == $task['main_value']) {
-                    return json(['code' => -1, 'msg' => '主备地址不能相同']);
-                }
-                if (Db::name('dmtask')->where('recordid', $task['recordid'])->find()) {
-                    return json(['code' => -1, 'msg' => '当前容灾切换策略已存在']);
-                }
-                Db::name('dmtask')->insert($task);
-                return json(['code' => 0, 'msg' => '添加成功']);
-            } elseif ($action == 'edit') {
-                $id = input('post.id/d');
-                $task = [
-                    'did' => input('post.did/d'),
-                    'rr' => input('post.rr', null, 'trim'),
-                    'recordid' => input('post.recordid', null, 'trim'),
-                    'type' => input('post.type/d'),
-                    'main_value' => input('post.main_value', null, 'trim'),
-                    'backup_value' => input('post.backup_value', null, 'trim'),
-                    'checktype' => input('post.checktype/d'),
-                    'checkurl' => input('post.checkurl', null, 'trim'),
-                    'tcpport' => !empty(input('post.tcpport')) ? input('post.tcpport/d') : null,
-                    'frequency' => input('post.frequency/d'),
-                    'cycle' => input('post.cycle/d'),
-                    'timeout' => input('post.timeout/d'),
-                    'proxy' => input('post.proxy/d'),
-                    'cdn' => input('post.cdn') == 'true' || input('post.cdn') == '1' ? 1 : 0,
-                    'remark' => input('post.remark', null, 'trim'),
-                    'recordinfo' => input('post.recordinfo', null, 'trim'),
-                ];
-
-                if (empty($task['did']) || empty($task['rr']) || empty($task['recordid']) || empty($task['main_value']) || empty($task['frequency']) || empty($task['cycle'])) {
-                    return json(['code' => -1, 'msg' => '必填项不能为空']);
-                }
-                if ($task['checktype'] > 0 && $task['timeout'] > $task['frequency']) {
-                    return json(['code' => -1, 'msg' => '为保障容灾切换任务正常运行，最大超时时间不能大于检测间隔']);
-                }
-                if ($task['type'] == 2 && $task['backup_value'] == $task['main_value']) {
-                    return json(['code' => -1, 'msg' => '主备地址不能相同']);
-                }
-                if (Db::name('dmtask')->where('recordid', $task['recordid'])->where('id', '<>', $id)->find()) {
-                    return json(['code' => -1, 'msg' => '当前容灾切换策略已存在']);
-                }
-                Db::name('dmtask')->where('id', $id)->update($task);
-                return json(['code' => 0, 'msg' => '修改成功']);
-            } elseif ($action == 'setactive') {
-                $id = input('post.id/d');
-                $active = input('post.active/d');
-                Db::name('dmtask')->where('id', $id)->update(['active' => $active]);
-                return json(['code' => 0, 'msg' => '设置成功']);
-            } elseif ($action == 'del') {
-                $id = input('post.id/d');
-                Db::name('dmtask')->where('id', $id)->delete();
-                Db::name('dmlog')->where('taskid', $id)->delete();
-                return json(['code' => 0, 'msg' => '删除成功']);
-            } else {
-                return json(['code' => -1, 'msg' => '参数错误']);
-            }
-        }
         $task = null;
         if ($action == 'edit') {
             $id = input('get.id/d');

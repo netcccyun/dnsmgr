@@ -79,7 +79,8 @@ Route::group(function () {
     Route::post('/dmonitor/task/data', 'dmonitor/task_data');
     Route::post('/dmonitor/task/log/data/:id', 'dmonitor/tasklog_data');
     Route::get('/dmonitor/task/info/:id', 'dmonitor/taskinfo');
-    Route::any('/dmonitor/task/:action', 'dmonitor/taskform');
+    Route::post('/dmonitor/task/:action', 'dmonitor/task_op');
+    Route::get('/dmonitor/task/:action', 'dmonitor/taskform');
     Route::get('/dmonitor/task', 'dmonitor/task');
     Route::post('/dmonitor/clean', 'dmonitor/clean');
 
@@ -112,6 +113,11 @@ Route::group(function () {
     Route::post('/cert/cname/:action', 'cert/cname_op');
     
     Route::get('/cert/certset', 'cert/certset');
+
+    Route::post('/schedule/stask/data', 'schedule/stask_data');
+    Route::post('/schedule/stask/:action', 'schedule/stask_op');
+    Route::get('/schedule/stask/:action', 'schedule/staskform');
+    Route::get('/schedule/stask', 'schedule/stask');
 
     Route::get('/system/loginset', 'system/loginset');
     Route::get('/system/noticeset', 'system/noticeset');

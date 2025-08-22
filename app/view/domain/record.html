@@ -359,7 +359,7 @@ $(document).ready(function(){
 		],
 		onPageChange: function(number, size){
 			if(size != defaultPageSize){
-				setCookie('record_pagesize', size);
+				setCookie('record_pagesize', size, 24 * 3600 * 30);
 			}
 		},
 	});

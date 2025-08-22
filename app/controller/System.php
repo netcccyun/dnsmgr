@@ -10,6 +10,7 @@ use think\facade\Cache;
 use app\service\OptimizeService;
 use app\service\CertTaskService;
 use app\service\ExpireNoticeService;
+use app\service\ScheduleService;
 
 class System extends BaseController
 {
@@ -137,6 +138,7 @@ class System extends BaseController
         if (config_get('cron_type', '0') != '1' || empty($cron_key)) exit('未开启当前方式');
         if ($key != $cron_key) exit('访问密钥错误');
 
+        (new ScheduleService())->execute();
         $res = (new OptimizeService())->execute();
         if (!$res) {
             (new CertTaskService())->execute();
