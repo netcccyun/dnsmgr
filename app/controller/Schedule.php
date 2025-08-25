@@ -67,7 +67,7 @@ class Schedule extends BaseController
                 'switchdate' => input('post.switchdate', null, 'trim'),
                 'switchtime' => input('post.switchtime', null, 'trim'),
                 'value' => input('post.value', null, 'trim'),
-                'line' => input('post.value', null, 'trim'),
+                'line' => input('post.line', null, 'trim'),
                 'remark' => input('post.remark', null, 'trim'),
                 'recordinfo' => input('post.recordinfo', null, 'trim'),
                 'addtime' => time(),
@@ -96,7 +96,7 @@ class Schedule extends BaseController
                 'switchdate' => input('post.switchdate', null, 'trim'),
                 'switchtime' => input('post.switchtime', null, 'trim'),
                 'value' => input('post.value', null, 'trim'),
-                'line' => input('post.value', null, 'trim'),
+                'line' => input('post.line', null, 'trim'),
                 'remark' => input('post.remark', null, 'trim'),
                 'recordinfo' => input('post.recordinfo', null, 'trim'),
             ];

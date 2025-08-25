@@ -11,7 +11,7 @@ class DeployHelper
             'name' => '宝塔面板',
             'class' => 1,
             'icon' => 'bt.png',
-            'desc' => '支持部署到宝塔面板搭建的站点、Docker、邮局与面板本身',
+            'desc' => '支持部署到宝塔面板&aaPanel搭建的站点、Docker、邮局与面板本身',
             'note' => null,
             'inputs' => [
                 'url' => [
@@ -26,6 +26,15 @@ class DeployHelper
                     'type' => 'input',
                     'placeholder' => '宝塔面板设置->面板设置->API接口',
                     'required' => true,
+                ],
+                'version' => [
+                    'name' => '面板版本',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => 'Linux面板+Win经典版',
+                        '1' => 'Win极速版',
+                    ],
+                    'value' => '0'
                 ],
                 'proxy' => [
                     'name' => '使用代理服务器',
@@ -54,9 +63,19 @@ class DeployHelper
                     'name' => '网站名称列表',
                     'type' => 'textarea',
                     'placeholder' => '填写要部署证书的网站名称，每行一个',
-                    'note' => 'PHP项目和反代项目填写创建时绑定的第一个域名，Java/Node/Go等其他项目填写项目名称，邮局填写域名',
+                    'note' => 'PHP项目和反代项目填写创建时绑定的第一个域名，Java/Node/Go等其他项目填写项目名称，邮局和IIS站点填写绑定的域名',
                     'show' => 'type==0||type==2||type==3',
                     'required' => true,
+                ],
+                'is_iis' => [
+                    'name' => '是否IIS站点',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'show' => 'type==0',
+                    'value' => '0'
                 ],
             ],
         ],
@@ -360,17 +379,36 @@ class DeployHelper
                     'note' => '填写示例：http://demo.xxxx.cn',
                     'required' => true,
                 ],
+                'auth' => [
+                    'name' => '认证方式',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '账号密码(旧版)',
+                        '1' => 'API访问令牌',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
+                'api_key' => [
+                    'name' => 'API访问令牌',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                    'show' => 'auth==1',
+                ],
                 'email' => [
                     'name' => '邮箱地址',
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                    'show' => 'auth==0',
                 ],
                 'password' => [
                     'name' => '密码',
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                    'show' => 'auth==0',
                 ],
                 'proxy' => [
                     'name' => '使用代理服务器',

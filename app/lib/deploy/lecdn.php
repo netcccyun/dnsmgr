@@ -11,6 +11,8 @@ class lecdn implements DeployInterface
     private $url;
     private $email;
     private $password;
+    private $auth;
+    private $apiKey;
     private $proxy;
     private $accessToken;
 
@@ -19,13 +21,22 @@ class lecdn implements DeployInterface
         $this->url = rtrim($config['url'], '/');
         $this->email = $config['email'];
         $this->password = $config['password'];
+        $this->auth = isset($config['auth']) ? intval($config['auth']) : 0;
+        if ($this->auth == 1) {
+            $this->apiKey = $config['api_key'];
+        }
         $this->proxy = $config['proxy'] == 1;
     }
 
     public function check()
     {
-        if (empty($this->url) || empty($this->email) || empty($this->password)) throw new Exception('账号和密码不能为空');
-        $this->login();
+        if ($this->auth == 1) {
+            if (empty($this->url) || empty($this->apiKey)) throw new Exception('API访问令牌不能为空');
+            $this->request('/prod-api/system/info');
+        } else {
+            if (empty($this->url) || empty($this->email) || empty($this->password)) throw new Exception('账号和密码不能为空');
+            $this->login();
+        }
     }
 
     public function deploy($fullchain, $privatekey, $config, &$info)
@@ -33,7 +44,9 @@ class lecdn implements DeployInterface
         $id = $config['id'];
         if (empty($id)) throw new Exception('证书ID不能为空');
 
-        $this->login();
+        if ($this->auth == 0) {
+            $this->login();
+        }
 
         try {
             $data = $this->request('/prod-api/certificate/' . $id);
@@ -77,6 +90,8 @@ class lecdn implements DeployInterface
         $body = null;
         if ($this->accessToken) {
             $headers['Authorization'] = 'Bearer ' . $this->accessToken;
+        } elseif ($this->auth == 1 && $this->apiKey) {
+            $headers['Authorization'] = $this->apiKey;
         }
         if ($params) {
             $headers['Content-Type'] = 'application/json;charset=UTF-8';
