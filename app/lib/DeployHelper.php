@@ -928,6 +928,24 @@ class DeployHelper
                     'note' => '进入NLB实例详情->监听列表，复制监听ID（只支持TCPSSL监听协议）',
                     'required' => true,
                 ],
+                'deploy_type' => [
+                    'name' => '部署证书类型',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'0', 'label'=>'默认证书'],
+                        ['value'=>'1', 'label'=>'扩展证书'],
+                    ],
+                    'value' => '0',
+                    'show' => 'product==\'clb\'||product==\'alb\'||product==\'nlb\'',
+                    'required' => true,
+                ],
+                'clb_domain' => [
+                    'name' => '扩展域名',
+                    'type' => 'input',
+                    'placeholder' => '多个域名可使用,分隔',
+                    'show' => 'product==\'clb\'&&deploy_type==1',
+                    'required' => true,
+                ],
                 'domain' => [
                     'name' => '绑定的域名',
                     'type' => 'input',

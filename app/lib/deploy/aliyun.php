@@ -568,36 +568,65 @@ class aliyun implements DeployInterface
             $this->log('找到已添加的服务器证书 ServerCertificateId=' . $ServerCertificateId);
         }
 
-        $param = [
-            'Action' => 'DescribeLoadBalancerHTTPSListenerAttribute',
-            'RegionId' => $config['regionid'],
-            'LoadBalancerId' => $config['clb_id'],
-            'ListenerPort' => $config['clb_port'],
-        ];
-        try {
-            $data = $client->request($param);
-        } catch (Exception $e) {
-            throw new Exception('HTTPS监听配置查询失败：' . $e->getMessage());
-        }
+        $deploy_type = isset($config['deploy_type']) ? intval($config['deploy_type']) : 0;
+        if ($deploy_type == 1) {
+            if (empty($config['clb_domain'])) throw new Exception('扩展域名不能为空');
+            $domains = explode(',', $config['clb_domain']);
+            $param = [
+                'Action' => 'DescribeDomainExtensions',
+                'RegionId' => $config['regionid'],
+                'LoadBalancerId' => $config['clb_id'],
+                'ListenerPort' => $config['clb_port'],
+            ];
+            try {
+                $data = $client->request($param);
+            } catch (Exception $e) {
+                throw new Exception('扩展域名列表查询失败：' . $e->getMessage());
+            }
+            foreach ($data['DomainExtensions']['DomainExtension'] as $item) {
+                if (in_array($item['Domain'], $domains)) {
+                    if ($ServerCertificateId == $item['ServerCertificateId']) {
+                        $this->log('负载均衡HTTPS扩展域名 ' . $item['Domain'] . ' 证书已配置');
+                    } else {
+                        $param = [
+                            'Action' => 'SetDomainExtensionAttribute',
+                            'RegionId' => $config['regionid'],
+                            'DomainExtensionId' => $item['DomainExtensionId'],
+                            'ServerCertificateId' => $ServerCertificateId,
+                        ];
+                        $client->request($param);
+                        $this->log('负载均衡HTTPS扩展域名 ' . $item['Domain'] . ' 证书更新成功');
+                    }
+                }
+            }
+        } else {
+            $param = [
+                'Action' => 'DescribeLoadBalancerHTTPSListenerAttribute',
+                'RegionId' => $config['regionid'],
+                'LoadBalancerId' => $config['clb_id'],
+                'ListenerPort' => $config['clb_port'],
+            ];
+            try {
+                $data = $client->request($param);
+            } catch (Exception $e) {
+                throw new Exception('HTTPS监听配置查询失败：' . $e->getMessage());
+            }
 
-        if ($data['ServerCertificateId'] == $ServerCertificateId) {
-            $this->log('负载均衡HTTPS监听已配置该证书，无需重复操作');
-            return;
-        }
+            if ($data['ServerCertificateId'] == $ServerCertificateId) {
+                $this->log('负载均衡HTTPS监听已配置该证书，无需重复操作');
+                return;
+            }
 
-        $param = [
-            'Action' => 'SetLoadBalancerHTTPSListenerAttribute',
-            'RegionId' => $config['regionid'],
-            'LoadBalancerId' => $config['clb_id'],
-            'ListenerPort' => $config['clb_port'],
-        ];
-        $keys = ['Bandwidth', 'XForwardedFor', 'Scheduler', 'StickySession', 'StickySessionType', 'CookieTimeout', 'Cookie', 'HealthCheck', 'HealthCheckMethod', 'HealthCheckDomain', 'HealthCheckURI', 'HealthyThreshold', 'UnhealthyThreshold', 'HealthCheckTimeout', 'HealthCheckInterval', 'HealthCheckConnectPort', 'HealthCheckHttpCode', 'ServerCertificateId', 'CACertificateId', 'VServerGroup', 'VServerGroupId', 'XForwardedFor_SLBIP', 'XForwardedFor_SLBID', 'XForwardedFor_proto', 'Gzip', 'AclId', 'AclType', 'AclStatus', 'IdleTimeout', 'RequestTimeout', 'EnableHttp2', 'TLSCipherPolicy', 'Description', 'XForwardedFor_SLBPORT', 'XForwardedFor_ClientSrcPort'];
-        foreach ($keys as $key) {
-            if (isset($data[$key])) $param[$key] = $data[$key];
+            $param = [
+                'Action' => 'SetLoadBalancerHTTPSListenerAttribute',
+                'RegionId' => $config['regionid'],
+                'LoadBalancerId' => $config['clb_id'],
+                'ListenerPort' => $config['clb_port'],
+                'ServerCertificateId' => $ServerCertificateId,
+            ];
+            $client->request($param);
+            $this->log('负载均衡HTTPS监听证书配置成功！');
         }
-        $param['ServerCertificateId'] = $ServerCertificateId;
-        $client->request($param);
-        $this->log('负载均衡HTTPS监听证书配置成功！');
     }
 
     private function deploy_alb($cert_id, $config)
@@ -606,33 +635,44 @@ class aliyun implements DeployInterface
 
         $endpoint = 'alb.' . $config['regionid'] . '.aliyuncs.com';
         $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2020-06-16', $this->proxy);
+        $cert_id = $cert_id . '-cn-hangzhou';
+        $deploy_type = isset($config['deploy_type']) ? intval($config['deploy_type']) : 0;
 
-        $param = [
-            'Action' => 'ListListenerCertificates',
-            'MaxResults' => 100,
-            'ListenerId' => $config['alb_listener_id'],
-            'CertificateType' => 'Server',
-        ];
-        try {
-            $data = $client->request($param);
-        } catch (Exception $e) {
-            throw new Exception('获取监听证书列表失败：' . $e->getMessage());
-        }
-        foreach ($data['Certificates'] as $cert) {
-            if (strpos($cert['CertificateId'], '-')) $cert['CertificateId'] = substr($cert['CertificateId'], 0, strpos($cert['CertificateId'], '-'));
-            if ($cert['CertificateId'] == $cert_id) {
-                $this->log('负载均衡监听证书已添加，无需重复操作');
-                return;
+        if ($deploy_type == 1) {
+            $param = [
+                'Action' => 'ListListenerCertificates',
+                'MaxResults' => 100,
+                'ListenerId' => $config['alb_listener_id'],
+                'CertificateType' => 'Server',
+            ];
+            try {
+                $data = $client->request($param);
+            } catch (Exception $e) {
+                throw new Exception('获取监听证书列表失败：' . $e->getMessage());
             }
-        }
+            foreach ($data['Certificates'] as $cert) {
+                if ($cert['CertificateId'] == $cert_id) {
+                    $this->log('负载均衡监听扩展证书已添加，无需重复操作');
+                    return;
+                }
+            }
 
-        $param = [
-            'Action' => 'AssociateAdditionalCertificatesWithListener',
-            'ListenerId' => $config['alb_listener_id'],
-            'Certificates.1.CertificateId' => $cert_id . '-cn-hangzhou',
-        ];
-        $client->request($param);
-        $this->log('应用型负载均衡监听证书添加成功！');
+            $param = [
+                'Action' => 'AssociateAdditionalCertificatesWithListener',
+                'ListenerId' => $config['alb_listener_id'],
+                'Certificates.1.CertificateId' => $cert_id,
+            ];
+            $client->request($param);
+            $this->log('应用型负载均衡监听扩展证书添加成功！');
+        } else {
+            $param = [
+                'Action' => 'UpdateListenerAttribute',
+                'ListenerId' => $config['alb_listener_id'],
+                'Certificates.1.CertificateId' => $cert_id,
+            ];
+            $client->request($param);
+            $this->log('应用型负载均衡监听默认证书更新成功！');
+        }
     }
 
     private function deploy_nlb($cert_id, $config)
@@ -641,33 +681,44 @@ class aliyun implements DeployInterface
 
         $endpoint = 'nlb.' . $config['regionid'] . '.aliyuncs.com';
         $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2022-04-30', $this->proxy);
+        $cert_id = $cert_id . '-cn-hangzhou';
+        $deploy_type = isset($config['deploy_type']) ? intval($config['deploy_type']) : 0;
 
-        $param = [
-            'Action' => 'ListListenerCertificates',
-            'MaxResults' => 50,
-            'ListenerId' => $config['nlb_listener_id'],
-            'CertificateType' => 'Server',
-        ];
-        try {
-            $data = $client->request($param);
-        } catch (Exception $e) {
-            throw new Exception('获取监听证书列表失败：' . $e->getMessage());
-        }
-        foreach ($data['Certificates'] as $cert) {
-            if (strpos($cert['CertificateId'], '-')) $cert['CertificateId'] = substr($cert['CertificateId'], 0, strpos($cert['CertificateId'], '-'));
-            if ($cert['CertificateId'] == $cert_id) {
-                $this->log('负载均衡监听证书已添加，无需重复操作');
-                return;
+        if ($deploy_type == 1) {
+            $param = [
+                'Action' => 'ListListenerCertificates',
+                'MaxResults' => 50,
+                'ListenerId' => $config['nlb_listener_id'],
+                'CertificateType' => 'Server',
+            ];
+            try {
+                $data = $client->request($param);
+            } catch (Exception $e) {
+                throw new Exception('获取监听证书列表失败：' . $e->getMessage());
             }
-        }
+            foreach ($data['Certificates'] as $cert) {
+                if ($cert['CertificateId'] == $cert_id) {
+                    $this->log('负载均衡监听扩展证书已添加，无需重复操作');
+                    return;
+                }
+            }
 
-        $param = [
-            'Action' => 'AssociateAdditionalCertificatesWithListener',
-            'ListenerId' => $config['nlb_listener_id'],
-            'AdditionalCertificateIds.1' => $cert_id . '-cn-hangzhou',
-        ];
-        $client->request($param);
-        $this->log('网络型负载均衡监听证书添加成功！');
+            $param = [
+                'Action' => 'AssociateAdditionalCertificatesWithListener',
+                'ListenerId' => $config['nlb_listener_id'],
+                'AdditionalCertificateIds.1' => $cert_id,
+            ];
+            $client->request($param);
+            $this->log('网络型负载均衡监听扩展证书添加成功！');
+        } else {
+            $param = [
+                'Action' => 'UpdateListenerAttribute',
+                'ListenerId' => $config['nlb_listener_id'],
+                'CertificateIds.1' => $cert_id,
+            ];
+            $client->request($param);
+            $this->log('网络型负载均衡监听默认证书更新成功！');
+        }
     }
 
     public function setLogger($func)
