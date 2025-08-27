@@ -1340,8 +1340,8 @@ class DeployHelper
             'name' => '百度云',
             'class' => 2,
             'icon' => 'baidu.ico',
-            'desc' => '支持部署到百度云CDN',
-            'note' => '支持部署到百度云CDN',
+            'desc' => '支持部署到百度云CDN、BLB',
+            'note' => '支持部署到百度云CDN、BLB',
             'inputs' => [
                 'AccessKeyId' => [
                     'name' => 'AccessKeyId',
@@ -1366,10 +1366,54 @@ class DeployHelper
                 ],
             ],
             'taskinputs' => [
+                'product' => [
+                    'name' => '要部署的产品',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'cdn', 'label'=>'CDN'],
+                        ['value'=>'blb', 'label'=>'普通型BLB'],
+                        ['value'=>'appblb', 'label'=>'应用型BLB'],
+                    ],
+                    'value' => 'cdn',
+                    'required' => true,
+                ],
                 'domain' => [
                     'name' => '绑定的域名',
                     'type' => 'input',
+                    'placeholder' => '多个域名可使用,分隔',
+                    'show' => 'product==\'cdn\'',
+                    'required' => true,
+                ],
+                'region' => [
+                    'name' => '所属地域',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'bj', 'label'=>'北京'],
+                        ['value'=>'gz', 'label'=>'广州'],
+                        ['value'=>'su', 'label'=>'苏州'],
+                        ['value'=>'hkg', 'label'=>'香港'],
+                        ['value'=>'fwh', 'label'=>'武汉'],
+                        ['value'=>'bd', 'label'=>'保定'],
+                        ['value'=>'fsh', 'label'=>'上海'],
+                        ['value'=>'sin', 'label'=>'新加坡'],
+                    ],
+                    'value' => 'bj',
+                    'show' => 'product==\'blb\'||product==\'appblb\'',
+                    'required' => true,
+                ],
+                'blb_id' => [
+                    'name' => '负载均衡实例ID',
+                    'type' => 'input',
                     'placeholder' => '',
+                    'show' => 'product==\'blb\'||product==\'appblb\'',
+                    'required' => true,
+                ],
+                'blb_port' => [
+                    'name' => 'HTTPS监听端口',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'value' => '443',
+                    'show' => 'product==\'blb\'||product==\'appblb\'',
                     'required' => true,
                 ],
             ],
@@ -1378,8 +1422,8 @@ class DeployHelper
             'name' => '火山引擎',
             'class' => 2,
             'icon' => 'huoshan.ico',
-            'desc' => '支持部署到火山引擎CDN',
-            'note' => '支持部署到火山引擎CDN',
+            'desc' => '支持部署到火山引擎CDN、CLB、TOS、直播、veImageX',
+            'note' => '支持部署到火山引擎CDN、CLB、TOS、直播、veImageX',
             'inputs' => [
                 'AccessKeyId' => [
                     'name' => 'AccessKeyId',

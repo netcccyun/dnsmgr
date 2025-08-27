@@ -38,6 +38,7 @@ class doge implements DeployInterface
         $cert_id = $this->get_cert_id($fullchain, $privatekey, $cert_name);
 
         foreach (explode(',', $domains) as $domain) {
+            if (empty($domain)) continue;
             $param = [
                 'id' => $cert_id,
                 'domain' => $domain,

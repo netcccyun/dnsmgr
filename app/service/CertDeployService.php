@@ -29,7 +29,7 @@ class CertDeployService
         $this->client = DeployHelper::getModel($this->aid);
         if (!$this->client) throw new Exception('该自动部署任务类型不存在', 102);
 
-        $this->info = $task['info'] ? json_decode($task['info'], true) : null;
+        $this->info = $task['info'] ? json_decode($task['info'], true) : [];
     }
 
     public function process($isManual = false)

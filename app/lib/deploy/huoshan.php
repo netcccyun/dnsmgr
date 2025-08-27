@@ -89,6 +89,7 @@ class huoshan implements DeployInterface
         if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
         $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, $config['bucket_domain'], 'tos', '2021-04-01', 'cn-beijing', $this->proxy);
         foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
             $param = [
                 'CustomDomainRule' => [
                     'Domain' => $domain,
@@ -122,6 +123,7 @@ class huoshan implements DeployInterface
         $this->log('上传证书成功 ChainID=' . $result['ChainID']);
 
         foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
             $param = [
                 'ChainID' => $result['ChainID'],
                 'Domain' => $domain,
@@ -138,6 +140,7 @@ class huoshan implements DeployInterface
         if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
         $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'imagex.volcengineapi.com', 'imagex', '2018-08-01', 'cn-north-1', $this->proxy);
         foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
             $param = [
                 [
                     'domain' => $domain,

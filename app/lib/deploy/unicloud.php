@@ -35,6 +35,7 @@ class unicloud implements DeployInterface
 
         $url = 'https://unicloud-api.dcloud.net.cn/unicloud/api/host/create-domain-with-cert';
         foreach (explode(',', $config['domains']) as $domain) {
+            if (empty($domain)) continue;
             $params = [
                 'appid' => '',
                 'provider' => $config['provider'],

@@ -59,6 +59,7 @@ class huawei implements DeployInterface
             ],
         ];
         foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
             $client->request('PUT', '/v1.1/cdn/configuration/domains/' . $domain . '/configs', null, $param);
             $this->log('CDN域名 ' . $domain . ' 部署证书成功！');
         }

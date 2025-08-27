@@ -39,6 +39,7 @@ class qiniu implements DeployInterface
         $cert_id = $this->get_cert_id($fullchain, $privatekey, $certInfo['subject']['CN'], $cert_name);
 
         foreach (explode(',', $domains) as $domain) {
+            if (empty($domain)) continue;
             if ($config['product'] == 'cdn') {
                 $this->deploy_cdn($domain, $cert_id);
             } elseif ($config['product'] == 'oss') {
