@@ -1527,16 +1527,16 @@
         },
         {
             "name": "topthink/think-orm",
-            "version": "v4.0.49",
+            "version": "v4.0.50",
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/think-orm.git",
-                "reference": "b04d227fefc7dbfd611f4b5e66975eee4791bba4"
+                "reference": "ddae72d5ff4d953d3d8cc526fd9c50e8862ce2cc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/think-orm/zipball/b04d227fefc7dbfd611f4b5e66975eee4791bba4",
-                "reference": "b04d227fefc7dbfd611f4b5e66975eee4791bba4",
+                "url": "https://api.github.com/repos/top-think/think-orm/zipball/ddae72d5ff4d953d3d8cc526fd9c50e8862ce2cc",
+                "reference": "ddae72d5ff4d953d3d8cc526fd9c50e8862ce2cc",
                 "shasum": ""
             },
             "require": {
@@ -1581,9 +1581,9 @@
             ],
             "support": {
                 "issues": "https://github.com/top-think/think-orm/issues",
-                "source": "https://github.com/top-think/think-orm/tree/v4.0.49"
+                "source": "https://github.com/top-think/think-orm/tree/v4.0.50"
             },
-            "time": "2025-08-10T14:08:31+00:00"
+            "time": "2025-08-26T05:32:22+00:00"
         },
         {
             "name": "topthink/think-template",
@@ -1886,7 +1886,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
@@ -1900,6 +1900,6 @@
         "ext-sockets": "*",
         "ext-ssh2": "*"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }
