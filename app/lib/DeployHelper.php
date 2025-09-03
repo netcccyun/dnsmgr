@@ -489,6 +489,59 @@ class DeployHelper
             ],
             'taskinputs' => [],
         ],
+        'uusec' => [
+            'name' => '南墙WAF',
+            'class' => 1,
+            'icon' => 'waf.png',
+            'desc' => '',
+            'note' => null,
+            'inputs' => [
+                'url' => [
+                    'name' => '控制台地址',
+                    'type' => 'input',
+                    'placeholder' => '南墙WAF控制台地址',
+                    'note' => '填写规则如：http://192.168.1.100:4443 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'username' => [
+                    'name' => '用户名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '密码',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'id' => [
+                    'name' => '证书ID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'note' => '在证书管理查看证书的ID，注意域名是否与证书匹配',
+                    'required' => true,
+                ],
+                'name' => [
+                    'name' => '证书名称',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'note' => '在证书管理查看证书的名称',
+                    'required' => true,
+                ],
+            ],
+        ],
         'opanel' => [
             'name' => '1Panel',
             'class' => 1,
@@ -645,6 +698,47 @@ class DeployHelper
                     'placeholder' => '填写要部署证书的网站名称，每行一个',
                     'note' => '填写创建网站时设置的网站唯一名称',
                     'show' => 'type==0',
+                    'required' => true,
+                ],
+            ],
+        ],
+        'xp' => [
+            'name' => '小皮面板',
+            'class' => 1,
+            'icon' => 'xp.png',
+            'desc' => '',
+            'note' => null,
+            'tasknote' => '',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => '小皮面板地址',
+                    'note' => '填写规则如：http://192.168.1.100:8888 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'apikey' => [
+                    'name' => '接口密钥',
+                    'type' => 'input',
+                    'placeholder' => '设置->OpenAPI接口',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'sites' => [
+                    'name' => '网站名称列表',
+                    'type' => 'textarea',
+                    'placeholder' => '填写要部署证书的网站名称，每行一个',
+                    'note' => '网站名称，即为网站创建时绑定的第一个域名',
                     'required' => true,
                 ],
             ],
