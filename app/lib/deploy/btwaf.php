@@ -35,6 +35,12 @@ class btwaf implements DeployInterface
 
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
+        if ($config['type'] == '1') {
+            $this->deployPanel($fullchain, $privatekey);
+            $this->log("面板证书部署成功");
+            return;
+        }
+
         $sites = explode("\n", $config['sites']);
         $success = 0;
         $errmsg = null;
@@ -93,6 +99,24 @@ class btwaf implements DeployInterface
                     'full_chain' => $fullchain,
                 ],
             ]
+        ];
+        $response = $this->request($path, $data);
+        $result = json_decode($response, true);
+        if (isset($result['code']) && $result['code'] == 0) {
+            return true;
+        } elseif (isset($result['res'])) {
+            throw new Exception($result['res']);
+        } else {
+            throw new Exception($response ? $response : '返回数据解析失败');
+        }
+    }
+
+    private function deployPanel($fullchain, $privatekey)
+    {
+        $path = '/api/config/set_cert';
+        $data = [
+            'certContent' => $fullchain,
+            'keyContent' => $privatekey,
         ];
         $response = $this->request($path, $data);
         $result = json_decode($response, true);

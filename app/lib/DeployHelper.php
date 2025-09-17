@@ -285,11 +285,22 @@ class DeployHelper
                 ],
             ],
             'taskinputs' => [
+                'type' => [
+                    'name' => '部署类型',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '网站的证书',
+                        '1' => '面板本身的证书',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
                 'sites' => [
                     'name' => '网站名称列表',
                     'type' => 'textarea',
                     'placeholder' => '填写要部署证书的网站名称，每行一个',
                     'required' => true,
+                    'show' => 'type==0',
                 ],
             ],
         ],
@@ -833,6 +844,47 @@ class DeployHelper
                         '1' => '是',
                     ],
                     'value' => '0'
+                ],
+            ],
+            'taskinputs' => [],
+        ],
+        'fnos' => [
+            'name' => '飞牛OS',
+            'class' => 1,
+            'icon' => 'fnos.png',
+            'desc' => '更新飞牛OS的证书',
+            'note' => '请先配置sudo免密：<br/>
+sudo visudo<br/>
+#在文件最后一行增加以下内容，需要将username替换成自己的用户名<br/>
+username ALL=(ALL) NOPASSWD: NOPASSWD: ALL<br/>
+ctrl+x 保存退出',
+            'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
+            'inputs' => [
+                'host' => [
+                    'name' => '主机地址',
+                    'type' => 'input',
+                    'placeholder' => '填写IP地址或域名，需开启SSH功能',
+                    'required' => true,
+                ],
+                'port' => [
+                    'name' => 'SSH端口',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'value' => '22',
+                    'required' => true,
+                ],
+                'username' => [
+                    'name' => '用户名',
+                    'type' => 'input',
+                    'placeholder' => '登录用户名',
+                    'value' => '',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '密码',
+                    'type' => 'input',
+                    'placeholder' => '登录密码',
+                    'required' => true,
                 ],
             ],
             'taskinputs' => [],
