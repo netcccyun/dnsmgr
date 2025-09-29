@@ -55,7 +55,7 @@
     <div class="form-group" v-show="set.type==2">
         <label class="col-sm-3 control-label no-padding-right" is-required>备用解析记录</label>
         <div class="col-sm-6">
-            <input type="text" name="backup_value" v-model="set.backup_value" placeholder="支持填写IPv4或CNAME地址" class="form-control" required>
+            <input type="text" name="backup_value" v-model="set.backup_value" placeholder="支持填写IP或CNAME地址" class="form-control" required>
         </div>
     </div>
     <div class="form-group" v-show="set.type==2&&dnstype=='cloudflare'">

@@ -1564,6 +1564,54 @@ ctrl+x 保存退出',
                 ],
             ],
         ],
+        'ksyun' => [
+            'name' => '金山云',
+            'class' => 2,
+            'icon' => 'ksyun.ico',
+            'desc' => '支持部署到金山云CDN',
+            'note' => '支持部署到金山云CDN',
+            'inputs' => [
+                'AccessKeyId' => [
+                    'name' => 'AccessKeyId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'SecretAccessKey' => [
+                    'name' => 'SecretAccessKey',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'product' => [
+                    'name' => '要部署的产品',
+                    'type' => 'select',
+                    'options' => [
+                        ['value'=>'cdn', 'label'=>'CDN'],
+                    ],
+                    'value' => 'cdn',
+                    'required' => true,
+                ],
+                'domain' => [
+                    'name' => '绑定的域名',
+                    'type' => 'input',
+                    'placeholder' => '多个域名可使用,分隔',
+                    'show' => 'product==\'cdn\'',
+                    'required' => true,
+                ],
+            ],
+        ],
         'huoshan' => [
             'name' => '火山引擎',
             'class' => 2,
