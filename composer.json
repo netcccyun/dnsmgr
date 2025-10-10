@@ -58,6 +58,7 @@
         "symfony/polyfill-mbstring": "^1.32",
         "symfony/polyfill-php81": "^1.32",
         "symfony/polyfill-php82": "^1.32",
+        "symfony/yaml": "^7.3",
         "topthink/framework": "^8.1.0",
         "topthink/think-orm": "^4.0",
         "topthink/think-view": "^2.0"
