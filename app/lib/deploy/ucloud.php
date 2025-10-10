@@ -37,34 +37,20 @@ class ucloud implements DeployInterface
         if (!$certInfo) throw new Exception('证书解析失败');
         $cert_name = str_replace(['*', '.'], '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
+        $param = [
+            'CertName' => $cert_name,
+            'UserCert' => $fullchain,
+            'PrivateKey' => $privatekey,
+        ];
         try {
-            $data = $this->client->request('GetCertificateV2', []);
+            $data = $this->client->request('AddCertificate', $param);
+            $this->log('添加证书成功，名称:' . $cert_name);
         } catch (Exception $e) {
-            throw new Exception('获取证书列表失败 ' . $e->getMessage());
-        }
-
-        $exist = false;
-        foreach ($data['CertList'] as $cert) {
-            if (trim($cert['UserCert']) == trim($fullchain)) {
-                $cert_name = $cert['CertName'];
-                $exist = true;
-            }
-        }
-
-        if (!$exist) {
-            $param = [
-                'CertName' => $cert_name,
-                'UserCert' => $fullchain,
-                'PrivateKey' => $privatekey,
-            ];
-            try {
-                $data = $this->client->request('AddCertificate', $param);
-            } catch (Exception $e) {
+            if (strpos($e->getMessage(), 'cert already exist') !== false) {
+                $this->log('证书已存在，名称:' . $cert_name);
+            } else {
                 throw new Exception('添加证书失败 ' . $e->getMessage());
             }
-            $this->log('添加证书成功，名称:' . $cert_name);
-        } else {
-            $this->log('获取到已添加的证书，名称:' . $cert_name);
         }
 
         try {

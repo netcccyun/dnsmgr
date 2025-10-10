@@ -935,6 +935,56 @@ ctrl+x 保存退出',
                 ],
             ],
         ],
+        'k8s' => [
+            'name' => 'K8S',
+            'class' => 1,
+            'icon' => 'server.png',
+            'desc' => '部署到K8S集群的Secret和Ingress',
+            'note' => '支持部署到K8S集群的Secret和Ingress',
+            'tasknote' => '',
+            'inputs' => [
+                'name' => [
+                    'name' => '名称',
+                    'type' => 'input',
+                    'placeholder' => '仅用于区分',
+                    'required' => true,
+                ],
+                'kubeconfig' => [
+                    'name' => 'kubeconfig',
+                    'type' => 'textarea',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'namespace' => [
+                    'name' => '命名空间',
+                    'type' => 'input',
+                    'value' => 'default',
+                    'required' => true,
+                ],
+                'secret_name' => [
+                    'name' => 'Secret名称',
+                    'type' => 'input',
+                    'placeholder' => '如果Secret不存在，则自动创建',
+                    'required' => true,
+                ],
+                'ingresses' => [
+                    'name' => 'Ingress名称',
+                    'type' => 'input',
+                    'placeholder' => '多个用英文逗号分隔，可留空，留空则只更新Secret',
+                ],
+            ],
+        ],
         'aliyun' => [
             'name' => '阿里云',
             'class' => 2,
