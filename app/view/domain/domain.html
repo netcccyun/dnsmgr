@@ -1,7 +1,7 @@
 {extend name="common/layout" /}
 {block name="title"}域名管理{/block}
 {block name="main"}
-<link href="{$cdnpublic}bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+<link href="/static/css/bootstrap-datetimepicker-4.17.47.min.css" rel="stylesheet">
 <div class="modal" id="modal-store" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
 	<div class="modal-dialog">
 		<div class="modal-content animated flipInX">
@@ -157,14 +157,14 @@
 </div>
 {/block}
 {block name="script"}
-<script src="{$cdnpublic}moment.js/2.29.4/moment.min.js"></script>
-<script src="{$cdnpublic}moment.js/2.29.4/locale/zh-cn.js"></script>
-<script src="{$cdnpublic}bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
-<script src="{$cdnpublic}layer/3.1.1/layer.js"></script>
-<script src="{$cdnpublic}bootstrap-table/1.21.4/bootstrap-table.min.js"></script>
-<script src="{$cdnpublic}bootstrap-table/1.21.4/extensions/page-jump-to/bootstrap-table-page-jump-to.min.js"></script>
-<script src="{$cdnpublic}select2/4.0.13/js/select2.min.js"></script>
-<script src="{$cdnpublic}select2/4.0.13/js/i18n/zh-CN.min.js"></script>
+<script src="/static/js/moment-2.29.4.min.js"></script>
+<script src="/static/js/moment-2.29.4-locale-zh-cn.js"></script>
+<script src="/static/js/bootstrap-datetimepicker-4.17.47.min.js"></script>
+<script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
+<script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
+<script src="/static/js/select2-4.0.13.min.js"></script>
+<script src="/static/js/select2-i18n-zh-CN-4.0.13.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
 var userLevel = "{:request()->user['level']}";
