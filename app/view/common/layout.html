@@ -6,19 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>{block name="title"}标题{/block}</title>
-  <link href="{$cdnpublic}twitter-bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="{$cdnpublic}font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
-  <link href="{$cdnpublic}select2/4.0.13/css/select2.min.css" rel="stylesheet"/>
+  <link href="/static/css/bootstrap-3.4.1.min.css" rel="stylesheet"/>
+  <link href="/static/css/font-awesome-4.7.0.min.css" rel="stylesheet"/>
+  <link href="/static/css/select2-4.0.13.min.css" rel="stylesheet"/>
   <link href="/static/css/app.min.css" rel="stylesheet">
   <link href="/static/css/skins/{$skin}.css" rel="stylesheet">
   <link href="/static/css/bootstrap-table.css?v=2" rel="stylesheet"/>
   {if file_exists(public_path() . 'static/css/custom.css')}
   <link href="/static/css/custom.css" rel="stylesheet">
   {/if}
-  <script src="{$cdnpublic}jquery/3.6.4/jquery.min.js"></script>
+  <script src="/static/js/jquery-3.6.4.min.js"></script>
   <!--[if lt IE 9]>
-    <script src="{$cdnpublic}html5shiv/3.7.3/html5shiv.min.js"></script>
-    <script src="{$cdnpublic}respond.js/1.4.2/respond.min.js"></script>
+    <script src="/static/js/html5shiv-3.7.3.min.js"></script>
+    <script src="/static/js/respond-1.4.2.min.js"></script>
   <![endif]-->
   <style>
     .type-logo{width: 18px;margin-top: -2px;padding-right: 4px;}
@@ -234,8 +234,8 @@
 </div>
 <!-- ./wrapper -->
 
-<script src="{$cdnpublic}twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
-<script src="{$cdnpublic}fastclick/1.0.6/fastclick.min.js"></script>
+<script src="/static/js/bootstrap-3.4.1.min.js"></script>
+<script src="/static/js/fastclick-1.0.6.min.js"></script>
 <script src="/static/js/app.js"></script>
 <script>
   document.addEventListener('pointerdown', function(e) {

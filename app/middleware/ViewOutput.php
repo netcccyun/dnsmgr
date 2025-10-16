@@ -19,7 +19,6 @@ class ViewOutput
     {
         View::assign('islogin', $request->islogin);
         View::assign('user', $request->user);
-        View::assign('cdnpublic', 'https://s4.zstatic.net/ajax/libs/');
         View::assign('skin', getAdminSkin());
         return $next($request);
     }
