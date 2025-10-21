@@ -162,6 +162,20 @@ class DnsHelper
             'page' => true,
             'add' => true,
         ],
+        'spaceship' => [
+            'name' => 'Spaceship',
+            'config' => [
+                'ak' => 'AccessKey',
+                'sk' => 'SecretKey',
+            ],
+            'remark' => 0,
+            'status' => false,
+            'redirect' => true,
+            'log' => false,
+            'weight' => false,
+            'page' => false,
+            'add' => true,
+        ],
     ];
 
     public static $line_name = [
@@ -176,6 +190,7 @@ class DnsHelper
         'cloudflare' => ['DEF' => '0'],
         'namesilo' => ['DEF' => 'default'],
         'powerdns' => ['DEF' => 'default'],
+        'spaceship' => ['DEF' => 'default'],
     ];
 
     public static function getList()
