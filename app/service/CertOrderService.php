@@ -342,7 +342,10 @@ class CertOrderService
             throw $e;
         }
         $this->order['issuer'] = $result['issuer'];
-        Db::name('cert_order')->where('id', $this->order['id'])->update(['fullchain' => $result['fullchain'], 'privatekey' => $result['private_key'], 'issuer' => $result['issuer'], 'issuetime' => date('Y-m-d H:i:s', $result['validFrom']), 'expiretime' => date('Y-m-d H:i:s', $result['validTo'])]);
+        
+        $private_key = CertHelper::ensureECPrivateKeyFormat($result['private_key']);
+        
+        Db::name('cert_order')->where('id', $this->order['id'])->update(['fullchain' => $result['fullchain'], 'privatekey' => $private_key, 'issuer' => $result['issuer'], 'issuetime' => date('Y-m-d H:i:s', $result['validFrom']), 'expiretime' => date('Y-m-d H:i:s', $result['validTo'])]);
         $this->saveResult(3);
         $this->resetRetry();
     }

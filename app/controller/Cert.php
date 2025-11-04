@@ -304,6 +304,8 @@ class Cert extends BaseController
                     }
                 }
 
+                $privatekey = CertHelper::ensureECPrivateKeyFormat($privatekey);
+                
                 $order = [
                     'aid' => 0,
                     'keytype' => $certInfo['keytype'],
@@ -367,6 +369,8 @@ class Cert extends BaseController
                 if ($certInfo['code'] == -1) return json($certInfo);
                 $domains = $certInfo['domains'];
 
+                $privatekey = CertHelper::ensureECPrivateKeyFormat($privatekey);
+                
                 $order = [
                     'aid' => 0,
                     'keytype' => $certInfo['keytype'],

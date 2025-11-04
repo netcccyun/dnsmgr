@@ -407,6 +407,24 @@ location / {
         return false;
     }
 
+    /**
+     * 确保ECC私钥使用EC专用格式标识
+     * 某些程序需要EC标识才能正确识别ECC私钥
+     */
+    public static function ensureECPrivateKeyFormat($private_key)
+    {
+        if (strpos($private_key, '-----BEGIN EC PRIVATE KEY-----') !== false) {
+            return $private_key;
+        }
+        
+        if (strpos($private_key, '-----BEGIN PRIVATE KEY-----') !== false) {
+            $private_key = preg_replace('/^-----BEGIN PRIVATE KEY-----$/m', '-----BEGIN EC PRIVATE KEY-----', $private_key);
+            $private_key = preg_replace('/^-----END PRIVATE KEY-----$/m', '-----END EC PRIVATE KEY-----', $private_key);
+        }
+        
+        return $private_key;
+    }
+
     public static function getPfx($fullchain, $privatekey, $pwd = '123456')
     {
         openssl_pkcs12_export($fullchain, $pfx, $privatekey, $pwd);
