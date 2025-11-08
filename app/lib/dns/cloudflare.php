@@ -78,6 +78,9 @@ class cloudflare implements DnsInterface
                 $name = $this->domain == $row['name'] ? '@' : str_replace('.'.$this->domain, '', $row['name']);
                 $status = str_ends_with($name, '_pause') ? '0' : '1';
                 $name = $status == '0' ? substr($name, 0, -6) : $name;
+                if ($row['type'] == 'SRV' && isset($row['priority'])) {
+                    $row['content'] = $row['priority'] . ' ' . $row['content'];
+                }
                 $list[] = [
                     'RecordId' => $row['id'],
                     'Domain' => $this->domain,
@@ -112,6 +115,9 @@ class cloudflare implements DnsInterface
             $name = $this->domain == $data['result']['name'] ? '@' : str_replace('.' . $this->domain, '', $data['result']['name']);
             $status = str_ends_with($name, '_pause') ? '0' : '1';
             $name = $status == '0' ? substr($name, 0, -6) : $name;
+            if ($data['result']['type'] == 'SRV' && isset($data['result']['priority'])) {
+                $data['result']['content'] = $data['result']['priority'] . ' ' . $data['result']['content'];
+            }
             return [
                 'RecordId' => $data['result']['id'],
                 'Domain' => $this->domain,
@@ -257,7 +263,7 @@ class cloudflare implements DnsInterface
     {
         $url = $this->baseUrl . $path;
 
-        if (preg_match('/^[0-9a-z]+$/i', $this->ApiKey)) {
+        if (preg_match('/^[0-9a-f]+$/i', $this->ApiKey)) {
             $headers = [
                 'X-Auth-Email: ' . $this->Email,
                 'X-Auth-Key: ' . $this->ApiKey,

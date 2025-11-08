@@ -11,6 +11,7 @@ class opanel implements DeployInterface
     private $url;
     private $key;
     private $proxy;
+    private $nodeName;
 
     public function __construct($config)
     {
@@ -27,6 +28,42 @@ class opanel implements DeployInterface
 
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
+        if (isset($config['type']) && $config['type'] == '3') {
+            $params = [
+                'cert' => $fullchain,
+                'key' => $privatekey,
+                'ssl' => 'Enable',
+                'sslID' => null,
+                'sslType' => 'import-paste',
+            ];
+            try {
+                $this->request('/core/settings/ssl/update', $params);
+                $this->log("面板证书更新成功！");
+                return;
+            } catch (Exception $e) {
+                throw new Exception("面板证书更新失败：" . $e->getMessage());
+            }
+        }
+
+        if (isset($config['node_name'])) $this->nodeName = $config['node_name'];
+
+        if (!empty($config['id'])) {
+            $params = [
+                'sslID' => intval($config['id']),
+                'type' => 'paste',
+                'certificate' => $fullchain,
+                'privateKey' => $privatekey,
+                'description' => '',
+            ];
+            try {
+                $this->request('/websites/ssl/upload', $params);
+                $this->log("证书ID:{$config['id']}更新成功！");
+                return;
+            } catch (Exception $e) {
+                throw new Exception("证书ID:{$config['id']}更新失败：" . $e->getMessage());
+            }
+        }
+
         $domains = $config['domainList'];
         if (empty($domains)) throw new Exception('没有设置要部署的域名');
 
@@ -73,7 +110,15 @@ class opanel implements DeployInterface
             }
         }
         if ($success == 0) {
-            throw new Exception($errmsg ? $errmsg : '没有要更新的证书');
+            $params = [
+                'sslID' => 0,
+                'type' => 'paste',
+                'certificate' => $fullchain,
+                'privateKey' => $privatekey,
+                'description' => '',
+            ];
+            $this->request('/websites/ssl/upload', $params);
+            $this->log("证书上传成功！");
         }
     }
 
@@ -97,8 +142,11 @@ class opanel implements DeployInterface
         $token = md5('1panel' . $this->key . $timestamp);
         $headers = [
             '1Panel-Token' => $token,
-            '1Panel-Timestamp' => $timestamp
+            '1Panel-Timestamp' => $timestamp,
         ];
+        if (!empty($this->nodeName)) {
+            $headers['CurrentNode'] = $this->nodeName;
+        }
         $body = $params ? json_encode($params) : '{}';
         if ($body) $headers['Content-Type'] = 'application/json';
         $response = http_request($url, $body, null, null, $headers, $this->proxy);

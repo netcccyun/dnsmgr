@@ -559,7 +559,7 @@ class DeployHelper
             'icon' => 'opanel.png',
             'desc' => '更新面板证书管理内的SSL证书',
             'note' => null,
-            'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
+            'tasknote' => '',
             'inputs' => [
                 'url' => [
                     'name' => '面板地址',
@@ -594,7 +594,32 @@ class DeployHelper
                     'value' => '0'
                 ],
             ],
-            'taskinputs' => [],
+            'taskinputs' => [
+                'type' => [
+                    'name' => '部署类型',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '更新已有证书',
+                        '3' => '面板本身的证书',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
+                'id' => [
+                    'name' => '证书ID',
+                    'type' => 'input',
+                    'placeholder' => '在证书列表查看ID',
+                    'note' => '留空为根据关联SSL证书的域名，自动更新对应证书',
+                    'show' => 'type==0',
+                ],
+                'node_name' => [
+                    'name' => '子节点名称',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'note' => '不填写时，将替换主控节点证书；否则，将替换被控节点证书',
+                    'show' => 'type==0',
+                ],
+            ],
         ],
         'mwpanel' => [
             'name' => 'MW面板',
