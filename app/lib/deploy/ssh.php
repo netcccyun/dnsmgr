@@ -50,7 +50,7 @@ class ssh implements DeployInterface
             fclose($stream);
             $this->log('私钥已保存到：' . $config['pem_key_file']);
         } elseif ($config['format'] == 'pfx') {
-            $pfx_pass = $config['pfx_pass'] ?: null;
+            $pfx_pass = $config['pfx_pass'] ?? null;
             $pfx = CertHelper::getPfx($fullchain, $privatekey, $pfx_pass);
 
             $stream = fopen("ssh2.sftp://$sftp{$config['pfx_file']}", 'w');
@@ -159,7 +159,7 @@ class ssh implements DeployInterface
             file_put_contents($privateKeyPath, $this->config['privatekey']);
             file_put_contents($publicKeyPath, $publicKey);
             umask($umask);
-            $passphrase = $this->config['passphrase'] ?: null; // 私钥密码
+            $passphrase = $this->config['passphrase'] ?? null; // 私钥密码
             if (!ssh2_auth_pubkey_file($connection, $this->config['username'], $publicKeyPath, $privateKeyPath, $passphrase)) {
                 throw new Exception('私钥认证失败');
             }
