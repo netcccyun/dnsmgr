@@ -2273,6 +2273,12 @@ ctrl+x 保存退出',
                     'required' => true,
                     'show' => 'auth==1',
                 ],
+                'passphrase' => [
+                    'name' => '私钥密码',
+                    'type' => 'input',
+                    'placeholder' => '若私钥有设置密码，请填写此项',
+                    'show' => 'auth==1',
+                ],
                 'windows' => [
                     'name' => '是否Windows',
                     'type' => 'radio',
