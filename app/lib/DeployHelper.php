@@ -581,7 +581,7 @@ class DeployHelper
                         'v1' => '1.x',
                         'v2' => '2.x',
                     ],
-                    'value' => 'v1',
+                    'value' => 'v2',
                     'required' => true,
                 ],
                 'proxy' => [

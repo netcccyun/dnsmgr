@@ -139,12 +139,15 @@
   <div class="form-group">
 	<select name="status" class="form-control"><option value="">所有状态</option><option value="1">即将到期</option><option value="2">已到期</option></select>
   </div>
+  <div class="form-group">
+	<select name="order" class="form-control"><option value="">默认排序</option><option value="1">注册时间↑</option><option value="2">注册时间↓</option><option value="3">到期时间↑</option><option value="4">到期时间↓</option></select>
+  </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名列表"><i class="fa fa-refresh"></i> 刷新</a>
   {if request()->user['level'] eq 2}<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
-	<ul class="dropdown-menu"><li><a href="/domain/add">添加域名</a></li><li><a href="javascript:operation('editremark')">修改域名备注</a></li><li><a href="javascript:operation('opennotice')">开启到期提醒</a></li><li><a href="javascript:operation('closenotice')">关闭到期提醒</a></li><li><a href="javascript:operation('delete')">删除域名</a></li><li role="separator" class="divider"></li><li><a href="javascript:operation('addrecord')">添加解析</a></li><li><a href="javascript:operation('editrecord')">修改解析</a></li></ul>
+	<ul class="dropdown-menu"><li><a href="/domain/add">添加域名</a></li><li><a href="javascript:operation('editremark')">修改域名备注</a></li><li><a href="javascript:operation('opennotice')">开启到期提醒</a></li><li><a href="javascript:operation('closenotice')">关闭到期提醒</a></li><li><a href="javascript:operation('updateexpire')">刷新到期时间</a></li><li><a href="javascript:operation('delete')">删除域名</a></li><li role="separator" class="divider"></li><li><a href="javascript:operation('addrecord')">添加解析</a></li><li><a href="javascript:operation('editrecord')">修改解析</a></li></ul>
   </div>
   <a href="/domain/expirenotice" class="btn btn-default">到期提醒设置</a>{/if}
 </form>
@@ -519,6 +522,30 @@ function operation(action){
 			$.ajax({
 				type : 'POST',
 				url : '/domain/op/act/batchdel',
+				data : {ids: ids},
+				dataType : 'json',
+				success : function(data) {
+					layer.close(ii);
+					if(data.code == 0){
+						layer.closeAll();
+						layer.alert(data.msg, {icon: 1});
+						searchRefresh();
+					}else{
+						layer.alert(data.msg, {icon: 2});
+					}
+				}
+			});
+		}, function(){
+			layer.close(confirmobj);
+		});
+	}else if(action == 'updateexpire'){
+		var confirmobj = layer.confirm('提交后将异步刷新所选域名的到期时间', {
+			btn: ['确定','取消']
+		}, function(){
+			var ii = layer.load(2);
+			$.ajax({
+				type : 'POST',
+				url : '/domain/op/act/updateexpire',
 				data : {ids: ids},
 				dataType : 'json',
 				success : function(data) {

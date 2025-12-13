@@ -182,6 +182,7 @@ class Domain extends BaseController
         $kw = input('post.kw', null, 'trim');
         $type = input('post.type', null, 'trim');
         $status = input('post.status', null, 'trim');
+        $order = input('post.order', null, 'trim');
         $offset = input('post.offset/d', 0);
         $limit = input('post.limit/d', 10);
 
@@ -203,7 +204,23 @@ class Domain extends BaseController
             }
         }
         $total = $select->count();
-        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->order('A.id', 'desc')->limit($offset, $limit)->select();
+        switch ($order) {
+            case '1':
+                $select->order('A.regtime', 'asc');
+                break;
+            case '2':
+                $select->order('A.regtime', 'desc');
+                break;
+            case '3':
+                $select->order('A.expiretime', 'asc');
+                break;
+            case '4':
+                $select->order('A.expiretime', 'desc');
+                break;
+            default:
+                $select->order('A.id', 'desc');
+        }
+        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->limit($offset, $limit)->select();
 
         $list = [];
         foreach ($rows as $row) {
@@ -321,6 +338,12 @@ class Domain extends BaseController
             Db::name('optimizeip')->where('did', 'in', $ids)->delete();
             Db::name('sctask')->where('did', 'in', $ids)->delete();
             return json(['code' => 0, 'msg' => '成功删除' . count($ids) . '个域名！']);
+        } elseif ($act == 'updateexpire') {
+            if (!checkPermission(2)) return $this->alert('error', '无权限');
+            $ids = input('post.ids');
+            if (empty($ids)) return json(['code' => -1, 'msg' => '参数不能为空']);
+            $count = Db::name('domain')->where('id', 'in', $ids)->update(['checkstatus' => 0]);
+            return json(['code' => 0, 'msg' => '已提交' . $count . '个域名，约' . ceil($count / 5) . '分钟后刷新完成。']);
         }
         return json(['code' => -3]);
     }

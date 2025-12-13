@@ -64,7 +64,7 @@ class Index extends BaseController
             'framework_version' => app()->version(),
             'php_version' => PHP_VERSION,
             'mysql_version' => $mysqlVersion,
-            'software' => $_SERVER['SERVER_SOFTWARE'],
+            'software' => $_SERVER['SERVER_SOFTWARE'] ?? '未知',
             'os' => php_uname(),
             'date' => date("Y-m-d H:i:s"),
         ];

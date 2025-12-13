@@ -48,7 +48,7 @@ class ExpireNoticeService
 
     private function refreshDomainList()
     {
-        $domainList = Db::name('domain')->field('id,name')->where('expiretime', null)->where('checkstatus', 0)->select();
+        $domainList = Db::name('domain')->field('id,name')->where('checkstatus', 0)->select();
         $count = 0;
         foreach ($domainList as $domain) {
             $res = $this->updateDomainDate($domain['id'], $domain['name']);

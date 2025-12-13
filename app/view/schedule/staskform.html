@@ -106,7 +106,7 @@
     <div class="form-group" v-show="set.switchtype==0">
         <label class="col-sm-3 control-label no-padding-right" is-required>记录值</label>
         <div class="col-sm-6">
-            <input type="text" name="value" v-model="set.value" placeholder="支持填写IPv4或CNAME地址" class="form-control" required>
+            <input type="text" name="value" v-model="set.value" placeholder="支持填写IP或CNAME地址" class="form-control" required>
         </div>
     </div>
     <div class="form-group" v-show="set.switchtype==0&&dnstype=='cloudflare'">
