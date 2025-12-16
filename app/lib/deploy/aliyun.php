@@ -311,7 +311,20 @@ class aliyun implements DeployInterface
         }
 
         $data['Listen']['CertId'] = $cert_id;
-        if (empty($data['Listen']['HttpsPorts'])) $data['Listen']['HttpsPorts'] = [443];
+        if (empty($data['Listen']['HttpsPorts'])) {
+            $data['Listen']['HttpsPorts'] = [443];
+            $data['Listen']['TLSVersion'] = 'tlsv1.1';
+            $data['Listen']['EnableTLSv3'] = true;
+            $data['Listen']['CipherSuite'] = 1;
+        }
+        if (count($data['Redirect']['BackendPorts']) == 1 && $data['Redirect']['BackendPorts'][0]['Protocol'] == 'http') {
+            $data['Redirect']['BackendPorts'][] = [
+                'ListenPort' => 443,
+                'Protocol' => 'https',
+                'BackendPort' => $data['Redirect']['BackendPorts'][0]['BackendPort'],
+            ];
+            $data['Redirect']['FocusHttpBackend'] = true;
+        }
         $data['Redirect']['Backends'] = $data['Redirect']['AllBackends'];
         $param = [
             'Action' => 'ModifyDomain',
