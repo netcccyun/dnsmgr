@@ -614,9 +614,9 @@ class DeployHelper
                 ],
                 'node_name' => [
                     'name' => '子节点名称',
-                    'type' => 'input',
-                    'placeholder' => '',
-                    'note' => '不填写时，将替换主控节点证书；否则，将替换被控节点证书',
+                    'type' => 'textarea',
+                    'placeholder' => '每行一个节点名称',
+                    'note' => '不填写时，将替换主控节点证书；否则，将替换被控节点证书。多个节点请每行填写一个',
                     'show' => 'type==0',
                 ],
             ],
