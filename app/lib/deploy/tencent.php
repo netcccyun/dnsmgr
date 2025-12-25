@@ -31,6 +31,9 @@ class tencent implements DeployInterface
 
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
+        if ($config['product'] == 'update') {
+            return $this->update_cert($fullchain, $privatekey, $config);
+        }
         $cert_id = $this->get_cert_id($fullchain, $privatekey);
         if (!$cert_id) throw new Exception('证书ID获取失败');
         if ($config['product'] == 'cos') {
@@ -279,6 +282,95 @@ class tencent implements DeployInterface
         ];
         $data = $client->request('ModifyHostsCertificate', $param);
         $this->log('边缘安全加速域名 ' . $config['domain'] . ' 部署证书成功！');
+    }
+
+    private function update_cert($fullchain, $privatekey, $config)
+    {
+        if (empty($config['cert_id'])) throw new Exception('证书ID不能为空');
+
+        $param = [
+            'CertificateIds' => [$config['cert_id']],
+            'IsCache' => 1,
+        ];
+        try {
+            $data = $this->client->request('CreateCertificateBindResourceSyncTask', $param);
+            if (empty($data['CertTaskIds'])) throw new Exception('返回任务ID为空');
+        } catch (Exception $e) {
+            throw new Exception('创建关联云资源查询任务失败：' . $e->getMessage());
+        }
+        $task_id = $data['CertTaskIds'][0]['TaskId'];
+        $this->log('创建关联云资源查询任务成功 TaskId=' . $task_id);
+
+        $retry = 0;
+        $resource_result = null;
+        while ($retry++ < 30) {
+            sleep(2);
+            $param = [
+                'TaskIds' => [$task_id],
+            ];
+            try {
+                $data = $this->client->request('DescribeCertificateBindResourceTaskResult', $param);
+                if (empty($data['SyncTaskBindResourceResult'])) throw new Exception('返回结果为空');
+            } catch (Exception $e) {
+                throw new Exception('查询关联云资源任务结果失败：' . $e->getMessage());
+            }
+            $taskResult = $data['SyncTaskBindResourceResult'][0];
+            if ($taskResult['Status'] == 1) {
+                $resource_result = $taskResult['BindResourceResult'];
+                break;
+            } elseif ($taskResult['Status'] == 2) {
+                throw new Exception('关联云资源查询任务执行失败：' . isset($taskResult['Error']) ? $taskResult['Error']['Message'] : '未知错误');
+            }
+        };
+        if (!$resource_result) {
+            throw new Exception('关联云资源查询任务超时未完成，请稍后重试');
+        }
+
+        $resourceTypes = [];
+        $resourceTypesRegions = [];
+        foreach ($resource_result as $res) {
+            if ($res['ResourceType'] != 'clb') continue;
+            $totalCount = 0;
+            $regions = [];
+            foreach ($res['BindResourceRegionResult'] as $regionRes) {
+                if ($regionRes['TotalCount'] > 0) {
+                    $totalCount += $regionRes['TotalCount'];
+                    if (!empty($regionRes['Region'])) {
+                        $regions[] = $regionRes['Region'];
+                    }
+                }
+            }
+            if ($totalCount > 0) {
+                $resourceTypes[] = $res['ResourceType'];
+                if (!empty($regions)) {
+                    $resourceTypesRegions[] = [
+                        'ResourceType' => $res['ResourceType'],
+                        'Regions' => $regions,
+                    ];
+                }
+            }
+        }
+
+        $param = [
+            'OldCertificateId' => $config['cert_id'],
+            'CertificatePublicKey' => $fullchain,
+            'CertificatePrivateKey' => $privatekey,
+            'ResourceTypes' => $resourceTypes,
+            'ResourceTypesRegions' => $resourceTypesRegions,
+        ];
+        $retry = 0;
+        while ($retry++ < 10) {
+            try {
+                $data = $this->client->request('UploadUpdateCertificateInstance', $param);
+            } catch (Exception $e) {
+                throw new Exception('更新证书内容失败：' . $e->getMessage());
+            }
+            if ($data['DeployStatus'] == 1) {
+                break;
+            }
+            sleep(1);
+        }
+        $this->log('更新证书内容成功，可能需要一些时间完成各资源的证书更新部署');
     }
 
     public function setLogger($func)
