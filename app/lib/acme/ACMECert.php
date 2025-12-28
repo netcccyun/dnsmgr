@@ -4,7 +4,6 @@ namespace app\lib\acme;
 
 use Exception;
 use stdClass;
-use app\lib\CertHelper;
 
 /**
  * ACMECert
@@ -369,12 +368,10 @@ class ACMECert extends ACMEv2
 		if (version_compare(PHP_VERSION, '7.1.0') < 0) throw new Exception('PHP >= 7.1.0 required for EC keys !');
 		$map = array('256' => 'prime256v1', '384' => 'secp384r1', '521' => 'secp521r1');
 		if (isset($map[$curve_name])) $curve_name = $map[$curve_name];
-		$pem = $this->generateKey(array(
+		return $this->generateKey(array(
 			'curve_name' => $curve_name,
 			'private_key_type' => OPENSSL_KEYTYPE_EC
 		));
-		
-		return CertHelper::ensureECPrivateKeyFormat($pem);
 	}
 
 	public function parseCertificate($cert_pem)

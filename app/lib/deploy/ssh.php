@@ -159,9 +159,14 @@ class ssh implements DeployInterface
             file_put_contents($privateKeyPath, $this->config['privatekey']);
             file_put_contents($publicKeyPath, $publicKey);
             umask($umask);
-            $passphrase = $this->config['passphrase'] ?? null; // 私钥密码
-            if (!ssh2_auth_pubkey_file($connection, $this->config['username'], $publicKeyPath, $privateKeyPath, $passphrase)) {
-                throw new Exception('私钥认证失败');
+            if (!empty($this->config['passphrase'])) {
+                if (!ssh2_auth_pubkey_file($connection, $this->config['username'], $publicKeyPath, $privateKeyPath, $this->config['passphrase'])) {
+                    throw new Exception('私钥认证失败');
+                }
+            } else {
+                if (!ssh2_auth_pubkey_file($connection, $this->config['username'], $publicKeyPath, $privateKeyPath)) {
+                    throw new Exception('私钥认证失败');
+                }
             }
         } else {
             if (!ssh2_auth_password($connection, $this->config['username'], $this->config['password'])) {
