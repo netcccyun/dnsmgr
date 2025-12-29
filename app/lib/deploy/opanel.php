@@ -41,18 +41,30 @@ class opanel implements DeployInterface
             ];
             
             if (empty($nodeNames)) {
-                // 没有指定节点，部署到主控节点
+                // 没有指定节点，只部署到主控节点
                 try {
                     $this->request('/core/settings/ssl/update', $params);
-                    $this->log("面板证书更新成功！");
+                    $this->log("主节点面板证书更新成功！");
                     return;
                 } catch (Exception $e) {
-                    throw new Exception("面板证书更新失败：" . $e->getMessage());
+                    throw new Exception("主节点面板证书更新失败：" . $e->getMessage());
                 }
             } else {
-                // 部署到多个子节点
+                // 同时部署到主节点和所有指定的子节点
                 $successCount = 0;
                 $failCount = 0;
+                
+                // 先更新主节点
+                try {
+                    $this->request('/core/settings/ssl/update', $params);
+                    $this->log("主节点面板证书更新成功！");
+                    $successCount++;
+                } catch (Exception $e) {
+                    $this->log("主节点面板证书更新失败：" . $e->getMessage());
+                    $failCount++;
+                }
+                
+                // 然后更新所有子节点
                 foreach ($nodeNames as $nodeName) {
                     try {
                         $this->request('/core/settings/ssl/update', $params, $nodeName);
@@ -70,13 +82,24 @@ class opanel implements DeployInterface
             }
         }
 
-        // 如果没有指定节点，则部署到主控节点
+        // 如果没有指定节点，则只部署到主控节点
         if (empty($nodeNames)) {
             $this->deployToNode($fullchain, $privatekey, $config, null);
         } else {
-            // 部署到多个子节点
+            // 同时部署到主节点和所有指定的子节点
             $successCount = 0;
             $failCount = 0;
+            
+            // 先更新主节点
+            try {
+                $this->deployToNode($fullchain, $privatekey, $config, null);
+                $successCount++;
+            } catch (Exception $e) {
+                $this->log("主节点部署失败：" . $e->getMessage());
+                $failCount++;
+            }
+            
+            // 然后更新所有子节点
             foreach ($nodeNames as $nodeName) {
                 try {
                     $this->deployToNode($fullchain, $privatekey, $config, $nodeName);
@@ -108,11 +131,11 @@ class opanel implements DeployInterface
             ];
             try {
                 $this->request('/websites/ssl/upload', $params, $nodeName);
-                $logMsg = $nodeName ? "节点 [{$nodeName}] 证书ID:{$config['id']}更新成功！" : "证书ID:{$config['id']}更新成功！";
+                $logMsg = $nodeName ? "节点 [{$nodeName}] 证书ID:{$config['id']}更新成功！" : "主节点 证书ID:{$config['id']}更新成功！";
                 $this->log($logMsg);
                 return;
             } catch (Exception $e) {
-                $logMsg = $nodeName ? "节点 [{$nodeName}] 证书ID:{$config['id']}更新失败：" : "证书ID:{$config['id']}更新失败：";
+                $logMsg = $nodeName ? "节点 [{$nodeName}] 证书ID:{$config['id']}更新失败：" : "主节点 证书ID:{$config['id']}更新失败：";
                 throw new Exception($logMsg . $e->getMessage());
             }
         }
@@ -124,10 +147,10 @@ class opanel implements DeployInterface
         $params = ['page' => 1, 'pageSize' => 500];
         try {
             $data = $this->request("/websites/ssl/search", $params, $nodeName);
-            $logMsg = $nodeName ? "节点 [{$nodeName}] " : "";
+            $logMsg = $nodeName ? "节点 [{$nodeName}] " : "主节点 ";
             $this->log($logMsg . '获取证书列表成功(total=' . $data['total'] . ')');
         } catch (Exception $e) {
-            $logMsg = $nodeName ? "节点 [{$nodeName}] " : "";
+            $logMsg = $nodeName ? "节点 [{$nodeName}] " : "主节点 ";
             throw new Exception($logMsg . '获取证书列表失败：' . $e->getMessage());
         }
 
@@ -156,12 +179,12 @@ class opanel implements DeployInterface
                     ];
                     try {
                         $this->request('/websites/ssl/upload', $params, $nodeName);
-                        $logMsg = $nodeName ? "节点 [{$nodeName}] 证书ID:{$row['id']}更新成功！" : "证书ID:{$row['id']}更新成功！";
+                        $logMsg = $nodeName ? "节点 [{$nodeName}] 证书ID:{$row['id']}更新成功！" : "主节点 证书ID:{$row['id']}更新成功！";
                         $this->log($logMsg);
                         $success++;
                     } catch (Exception $e) {
                         $errmsg = $e->getMessage();
-                        $logMsg = $nodeName ? "节点 [{$nodeName}] 证书ID:{$row['id']}更新失败：" : "证书ID:{$row['id']}更新失败：";
+                        $logMsg = $nodeName ? "节点 [{$nodeName}] 证书ID:{$row['id']}更新失败：" : "主节点 证书ID:{$row['id']}更新失败：";
                         $this->log($logMsg . $errmsg);
                     }
                 }
@@ -176,7 +199,7 @@ class opanel implements DeployInterface
                 'description' => '',
             ];
             $this->request('/websites/ssl/upload', $params, $nodeName);
-            $logMsg = $nodeName ? "节点 [{$nodeName}] 证书上传成功！" : "证书上传成功！";
+            $logMsg = $nodeName ? "节点 [{$nodeName}] 证书上传成功！" : "主节点 证书上传成功！";
             $this->log($logMsg);
         }
     }
@@ -228,6 +251,7 @@ class opanel implements DeployInterface
             '1Panel-Token' => $token,
             '1Panel-Timestamp' => $timestamp,
         ];
+        // 只有子节点时才设置 CurrentNode 头，主节点时不设置该头
         if (!empty($nodeName)) {
             $headers['CurrentNode'] = $nodeName;
         }
