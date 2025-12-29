@@ -70,8 +70,15 @@ class CertDeployService
             $this->saveResult(-1, $e->getMessage(), date('Y-m-d H:i:s', time() + (array_key_exists($this->task['retry'], self::$retry_interval) ? self::$retry_interval[$this->task['retry']] : 3600)));
             throw $e;
         } finally {
-            if($this->info){
-                Db::name('cert_deploy')->where('id', $this->task['id'])->update(['info' => json_encode($this->info)]);
+            if ($this->info && is_array($this->info)) {
+                if (isset($this->info['config']) && is_array($this->info['config'])) {
+                    $config = array_merge(json_decode($this->task['config'], true), $this->info['config']);
+                    Db::name('cert_deploy')->where('id', $this->task['id'])->update(['config' => json_encode($config)]);
+                    unset($this->info['config']);
+                }
+                if (!empty($this->info)) {
+                    Db::name('cert_deploy')->where('id', $this->task['id'])->update(['info' => json_encode($this->info)]);
+                }
             }
         }
     }

@@ -39,6 +39,7 @@ class baidu implements DeployInterface
                 $this->deploy_blb($cert_id, $config);
             } elseif ($config['product'] == 'appblb') {
                 $this->deploy_appblb($cert_id, $config);
+            } elseif ($config['product'] == 'upload') {
             } else {
                 throw new Exception('不支持的产品类型');
             }

@@ -92,8 +92,11 @@ class upyun implements DeployInterface
             }
         }
 
-        if ($i == 0) throw new Exception('未找到可迁移的证书');
-        $this->log('共迁移' . $i . '个证书,关联域名' . $d . '个');
+        if ($i == 0) {
+            $this->log('未找到可迁移的证书');
+        } else {
+            $this->log('共迁移' . $i . '个证书,关联域名' . $d . '个');
+        }
     }
 
     private function login()

@@ -41,11 +41,27 @@ class lecdn implements DeployInterface
 
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
-        $id = $config['id'];
-        if (empty($id)) throw new Exception('证书ID不能为空');
-
         if ($this->auth == 0) {
             $this->login();
+        }
+
+        $id = $config['id'];
+        if (empty($id)) {
+            $certInfo = openssl_x509_parse($fullchain, true);
+            if (!$certInfo) throw new Exception('证书解析失败');
+            $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
+            $params = [
+                'name' => $cert_name,
+                'type' => 'upload',
+                'ssl_pem' => base64_encode($fullchain),
+                'ssl_key' => base64_encode($privatekey),
+                'auto_renewal' => false,
+            ];
+            $data = $this->request('/prod-api/certificate', $params, 'POST');
+            $id = $data['id'];
+            $this->log("证书ID:{$id}添加成功！");
+            $info['config']['id'] = $id;
+            return;
         }
 
         try {

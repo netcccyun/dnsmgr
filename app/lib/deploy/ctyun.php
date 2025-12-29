@@ -39,6 +39,8 @@ class ctyun implements DeployInterface
             $this->deploy_icdn($fullchain, $privatekey, $config);
         } elseif ($config['product'] == 'accessone') {
             $this->deploy_accessone($fullchain, $privatekey, $config);
+        } elseif ($config['product'] == 'cf') {
+            $this->deploy_cf($fullchain, $privatekey, $config);
         }
     }
 
@@ -168,6 +170,44 @@ class ctyun implements DeployInterface
         }
 
         $this->log('边缘安全加速域名 ' . $config['domain'] . ' 部署证书成功！');
+    }
+
+    private function deploy_cf($fullchain, $privatekey, $config)
+    {
+        $client = new CtyunClient($this->AccessKeyId, $this->SecretAccessKey, 'cf-global.ctapi.ctyun.cn', $this->proxy);
+        try {
+            $data = $client->request('GET', '/openapi/v1/domains/customdomains/' . $config['domain'], null, null, ['regionId' => $config['region_id']]);
+        } catch (Exception $e) {
+            throw new Exception('获取自定义域名配置失败：' . $e->getMessage());
+        }
+
+        if (isset($data['certConfig']['certificate']) && trim($data['certConfig']['certificate']) == trim($fullchain)) {
+            $this->log('函数计算域名 ' . $config['domain'] . ' 证书已部署，无需重复操作！');
+            return;
+        }
+
+        if ($data['protocol'] == 'HTTP') $data['protocol'] = 'HTTP,HTTPS';
+        $param = [
+            'domainName' => $config['domain'],
+            'description' => $data['description'],
+            'protocol' => $data['protocol'],
+            'certConfig' => [
+                'certName' => 'cert' . substr($config['cert_name'], strpos($config['cert_name'], '-') + 1),
+                'certificate' => $fullchain,
+                'privateKey' => $privatekey,
+            ],
+            'authConfig' => $data['authConfig'],
+            'routeConfig' => $data['routeConfig'],
+        ];
+        try {
+            $client->request('PUT', '/openapi/v1/domains/customdomains/' . $config['domain'], null, $param, ['regionId' => $config['region_id']]);
+        } catch (Exception $e) {
+            if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
+                throw new Exception($e->getMessage());
+            }
+        }
+
+        $this->log('函数计算域名 ' . $config['domain'] . ' 部署证书成功！');
     }
 
     public function setLogger($func)

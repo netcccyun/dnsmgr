@@ -43,7 +43,39 @@ class cdnfly implements DeployInterface
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
         $id = $config['id'];
-        if (empty($id)) throw new Exception('证书ID不能为空');
+        if (empty($id)) {
+            $certInfo = openssl_x509_parse($fullchain, true);
+            if (!$certInfo) throw new Exception('证书解析失败');
+            $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
+            $params = [
+                'type' => 'custom',
+                'name' => $cert_name,
+                'cert' => $fullchain,
+                'key' => $privatekey,
+            ];
+            if ($this->auth == 1) {
+                $access_token = $this->login();
+                $url = $this->url . '/v1/certs';
+                $body = json_encode($params);
+                $headers = [
+                    'Access-Token' => $access_token,
+                ];
+                $response = http_request($url, $body, null, null, $headers, $this->proxy, 'POST');
+                $result = json_decode($response['body'], true);
+                if (isset($result['code']) && $result['code'] == 0) {
+                    $id = $result['data'];
+                } elseif (isset($result['msg'])) {
+                    throw new Exception('证书添加失败，' . $result['msg']);
+                } else {
+                    throw new Exception('证书添加失败，返回数据解析失败');
+                }
+            } else {
+                $id = $this->request('/v1/certs', $params, 'POST');
+            }
+            $this->log("证书ID:{$id}添加成功！");
+            $info['config']['id'] = $id;
+            return;
+        }
 
         $params = [
             'type' => 'custom',

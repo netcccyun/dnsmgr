@@ -30,7 +30,7 @@ class Ctyun
      * @return array
      * @throws Exception
      */
-    public function request($method, $path, $query = null, $params = null)
+    public function request($method, $path, $query = null, $params = null, $header = null)
     {
         if (!empty($query)) {
             $query = array_filter($query, function ($a) { return $a !== null;});
@@ -49,6 +49,11 @@ class Ctyun
         ];
         if ($body) {
             $headers['Content-Type'] = 'application/json';
+        }
+        if (!empty($header)) {
+            foreach ($header as $key => $value) {
+                $headers[$key] = $value;
+            }
         }
 
         $authorization = $this->generateSign($query, $headers, $body, $date);
@@ -151,7 +156,7 @@ class Ctyun
         curl_close($ch);
 
         $arr = json_decode($response, true);
-        if (isset($arr['statusCode']) && $arr['statusCode'] == 100000) {
+        if (isset($arr['statusCode']) && ($arr['statusCode'] == 100000 || $arr['statusCode'] == 0 && $this->endpoint == 'cf-global.ctapi.ctyun.cn')) {
             return isset($arr['returnObj']) ? $arr['returnObj'] : true;
         } elseif (isset($arr['errorMessage'])) {
             throw new Exception($arr['errorMessage']);

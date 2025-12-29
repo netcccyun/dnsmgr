@@ -4,6 +4,7 @@ namespace app\lib\deploy;
 
 use app\lib\DeployInterface;
 use app\lib\client\HuaweiCloud;
+use app\lib\client\HuaweiOBS;
 use Exception;
 
 class huawei implements DeployInterface
@@ -39,6 +40,11 @@ class huawei implements DeployInterface
             $this->deploy_elb($fullchain, $privatekey, $config);
         } elseif ($config['product'] == 'waf') {
             $this->deploy_waf($fullchain, $privatekey, $config);
+        } elseif ($config['product'] == 'obs') {
+            $this->deploy_obs($fullchain, $privatekey, $config);
+        } elseif ($config['product'] == 'upload') {
+            $cert_id = $this->get_cert_id($fullchain, $privatekey);
+            $info['cert_id'] = $cert_id;
         }
     }
 
@@ -115,6 +121,19 @@ class huawei implements DeployInterface
         ];
         $client->request('PUT', '/v1/' . $config['project_id'] . '/waf/certificates/' . $config['cert_id'], null, $param);
         $this->log('WAF证书ID ' . $config['cert_id'] . ' 更新证书成功！');
+    }
+
+    private function deploy_obs($fullchain, $privatekey, $config)
+    {
+        if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
+        if (empty($config['obs_endpoint'])) throw new Exception('OBS Endpoint不能为空');
+        if (empty($config['obs_bucket'])) throw new Exception('OBS 桶名称不能为空');
+        $obsClient = new HuaweiOBS($this->AccessKeyId, $this->SecretAccessKey, $config['obs_endpoint'], $this->proxy);
+        foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
+            $obsClient->setBucketCustomdomain($config['obs_bucket'], $domain, $config['cert_name'], $fullchain, $privatekey);
+            $this->log('OSS域名 ' . $domain . ' 部署证书成功！');
+        }
     }
 
     private function get_cert_id($fullchain, $privatekey)

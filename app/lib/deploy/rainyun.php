@@ -26,19 +26,43 @@ class rainyun implements DeployInterface
 
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
-        if (empty($config['id'])) throw new Exception('证书ID不能为空');
+        if (empty($config['id'])) {
+            $params = [
+                'cert' => $fullchain,
+                'key' => $privatekey,
+            ];
+            try {
+                $this->request('/product/sslcenter/', $params, 'POST');
+            } catch (Exception $e) {
+                throw new Exception('上传证书失败，' . $e->getMessage());
+            }
 
-        $params = [
-            'cert' => $fullchain,
-            'key' => $privatekey,
-        ];
-        try {
-            $this->request('/product/sslcenter/' . $config['id'], $params, 'PUT');
-        } catch (Exception $e) {
-            throw new Exception($e->getMessage());
+            $params = [
+                'options' => '{"columnFilters":{"Domain":""},"sort":[],"page":1,"perPage":1}',
+            ];
+            try {
+                $data = $this->request('/product/sslcenter/?' . http_build_query($params), null, 'GET');
+            } catch (Exception $e) {
+                throw new Exception('获取证书列表失败，' . $e->getMessage());
+            }
+            if (empty($data['Records'])) throw new Exception('未找到已上传的证书');
+            $cert_id = $data['Records'][0]['ID'];
+            $info['config']['id'] = $cert_id;
+
+            $this->log('证书ID:' . $cert_id . '添加成功！');
+        } else {
+            $params = [
+                'cert' => $fullchain,
+                'key' => $privatekey,
+            ];
+            try {
+                $this->request('/product/sslcenter/' . $config['id'], $params, 'PUT');
+            } catch (Exception $e) {
+                throw new Exception($e->getMessage());
+            }
+
+            $this->log('证书ID:' . $config['id'] . '更新成功！');
         }
-
-        $this->log('证书ID:' . $config['id'] . '更新成功！');
     }
 
     private function request($path, $params = null, $method = null)
@@ -55,7 +79,7 @@ class rainyun implements DeployInterface
         $response = http_request($url, $body, null, null, $headers, $this->proxy, $method);
         $result = json_decode($response['body'], true);
         if (isset($result['code']) && $result['code'] == 200) {
-            return $result;
+            return isset($result['data']) ? $result['data'] : null;
         } elseif (isset($result['message'])) {
             throw new Exception($result['message']);
         } else {

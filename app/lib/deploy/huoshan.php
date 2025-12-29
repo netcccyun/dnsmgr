@@ -191,7 +191,7 @@ class huoshan implements DeployInterface
         if (!$certInfo) throw new Exception('证书解析失败');
         $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
-        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'open.volcengineapi.com', 'certificate_service', '2024-10-01', 'cn-beijing', $this->proxy);
+        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'certificate-service.volcengineapi.com', 'certificate_service', '2024-10-01', 'cn-beijing', $this->proxy);
         $param = [
             'Tag' => $cert_name,
             'Repeatable' => false,
@@ -207,10 +207,20 @@ class huoshan implements DeployInterface
         }
         if (!empty($data['InstanceId'])) {
             $cert_id = $data['InstanceId'];
+            $this->log('上传证书成功 CertId=' . $cert_id);
+
+            $param = [
+                'InstanceId' => $cert_id,
+                'Options' => [
+                    'ExpiredNotice' => 'Disabled',
+                ],
+            ];
+            $client->request('POST', 'CertificateUpdateInstance', $param);
+
         } else {
             $cert_id = $data['RepeatId'];
+            $this->log('找到已上传的证书 CertId=' . $cert_id);
         }
-        $this->log('上传证书成功 CertId=' . $cert_id);
         return $cert_id;
     }
 

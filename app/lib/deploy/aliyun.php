@@ -66,6 +66,7 @@ class aliyun implements DeployInterface
                 $this->deploy_alb($cert_id, $config);
             } elseif ($config['product'] == 'nlb') {
                 $this->deploy_nlb($cert_id, $config);
+            } elseif ($config['product'] == 'upload') {
             } else {
                 throw new Exception('未知的产品类型');
             }

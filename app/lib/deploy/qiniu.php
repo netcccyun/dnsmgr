@@ -37,6 +37,9 @@ class qiniu implements DeployInterface
         $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
 
         $cert_id = $this->get_cert_id($fullchain, $privatekey, $certInfo['subject']['CN'], $cert_name);
+        $info['cert_id'] = $cert_id;
+        $info['cert_name'] = $cert_name;
+        if ($config['product'] == 'upload') return;
 
         foreach (explode(',', $domains) as $domain) {
             if (empty($domain)) continue;
@@ -50,8 +53,6 @@ class qiniu implements DeployInterface
                 throw new Exception('未知的产品类型');
             }
         }
-        $info['cert_id'] = $cert_id;
-        $info['cert_name'] = $cert_name;
     }
 
     private function deploy_cdn($domain, $cert_id)

@@ -36,6 +36,7 @@ class tencent implements DeployInterface
         }
         $cert_id = $this->get_cert_id($fullchain, $privatekey);
         if (!$cert_id) throw new Exception('证书ID获取失败');
+        $info['cert_id'] = $cert_id;
         if ($config['product'] == 'cos') {
             if (empty($config['regionid'])) throw new Exception('所属地域ID不能为空');
             if (empty($config['cos_bucket'])) throw new Exception('存储桶名称不能为空');
@@ -65,6 +66,8 @@ class tencent implements DeployInterface
             return $this->deploy_scf($cert_id, $config);
         } elseif ($config['product'] == 'teo' && isset($config['site_id'])) {
             return $this->deploy_teo($cert_id, $config);
+        } elseif ($config['product'] == 'upload') {
+            return;
         } else {
             if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
             if ($config['product'] == 'waf') {
@@ -77,7 +80,6 @@ class tencent implements DeployInterface
         }
         try {
             $record_id = $this->deploy_common($config['product'], $cert_id, $instance_id);
-            $info['cert_id'] = $cert_id;
             $info['record_id'] = $record_id;
         } catch (Exception $e) {
             if (isset($info['record_id'])) {
