@@ -119,6 +119,21 @@ class DnsHelper
             'page' => false,
             'add' => true,
         ],
+        'bt' => [
+            'name' => '宝塔域名',
+            'config' => [
+                'ak' => 'Access Key',
+                'sk' => 'Secret Key',
+                'ext' => 'Account ID',
+            ],
+            'remark' => 2,
+            'status' => true,
+            'redirect' => false,
+            'log' => false,
+            'weight' => true,
+            'page' => false,
+            'add' => true,
+        ],
         'cloudflare' => [
             'name' => 'Cloudflare',
             'config' => [
@@ -147,6 +162,20 @@ class DnsHelper
             'page' => true,
             'add' => false,
         ],
+        'spaceship' => [
+            'name' => 'Spaceship',
+            'config' => [
+                'ak' => 'API Key',
+                'sk' => 'Api Secret',
+            ],
+            'remark' => 0,
+            'status' => false,
+            'redirect' => true,
+            'log' => false,
+            'weight' => false,
+            'page' => false,
+            'add' => true,
+        ],
         'powerdns' => [
             'name' => 'PowerDNS',
             'config' => [
@@ -160,20 +189,6 @@ class DnsHelper
             'log' => false,
             'weight' => false,
             'page' => true,
-            'add' => true,
-        ],
-        'spaceship' => [
-            'name' => 'Spaceship',
-            'config' => [
-                'ak' => 'AccessKey',
-                'sk' => 'SecretKey',
-            ],
-            'remark' => 0,
-            'status' => false,
-            'redirect' => true,
-            'log' => false,
-            'weight' => false,
-            'page' => false,
             'add' => true,
         ],
     ];

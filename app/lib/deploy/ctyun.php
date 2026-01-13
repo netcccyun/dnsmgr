@@ -162,7 +162,7 @@ class ctyun implements DeployInterface
             }
         }
         try {
-            $client->request('POST', '/ctapi/v1/accessone/domain/modify_config', null, $result);
+            $client->request('POST', '/ctapi/v1/scdn/domain/modify_config', null, $result);
         } catch (Exception $e) {
             if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
                 throw new Exception($e->getMessage());

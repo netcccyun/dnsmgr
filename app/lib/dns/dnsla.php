@@ -60,19 +60,19 @@ class dnsla implements DnsInterface
     public function getDomainRecords($PageNumber = 1, $PageSize = 20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null)
     {
         $param = ['domainId' => $this->domainid, 'pageIndex' => $PageNumber, 'pageSize' => $PageSize];
-        if (!isNullOrEmpty(($KeyWord))) {
+        if (!isNullOrEmpty($KeyWord)) {
             $param['host'] = $KeyWord;
         }
-        if (!isNullOrEmpty(($Type))) {
+        if (!isNullOrEmpty($Type)) {
             $param['type'] = $this->convertType($Type);
         }
-        if (!isNullOrEmpty(($Line))) {
+        if (!isNullOrEmpty($Line)) {
             $param['lineId'] = $Line;
         }
-        if (!isNullOrEmpty(($SubDomain))) {
+        if (!isNullOrEmpty($SubDomain)) {
             $param['host'] = $SubDomain;
         }
-        if (!isNullOrEmpty(($Value))) {
+        if (!isNullOrEmpty($Value)) {
             $param['data'] = $Value;
         }
         $data = $this->execute('GET', '/api/recordList', $param);
