@@ -30,6 +30,16 @@ class LoadConfig
                 return $next($request);
             }
         }
+        if (!checkTableExists('config') && !checkTableExists('user')) {
+            if (strpos($request->url(), '/install') === false) {
+                return redirect((string)url('/install'))->header([
+                    'Cache-Control' => 'no-store, no-cache, must-revalidate',
+                    'Pragma' => 'no-cache',
+                ]);
+            } else {
+                return $next($request);
+            }
+        }
 
         try {
             $res = Db::name('config')->cache('configs', 0)->column('value', 'key');

@@ -13,7 +13,7 @@ class AuthUser
         $islogin = false;
         $cookie = cookie('user_token');
         $user = null;
-        if ($cookie && config_get('sys_key')) {
+        if ($cookie && config_get('sys_key') && strpos($request->url(), '/install') === false) {
             $token = authcode($cookie, 'DECODE', config_get('sys_key'));
             if ($token) {
                 list($type, $uid, $sid, $expiretime) = explode("\t", $token);

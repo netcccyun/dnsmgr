@@ -162,7 +162,7 @@
         <form method="post">
             <div id="error" style="display:none"></div>
             <div id="success" style="display:none"></div>
-
+            {if $dbconfig!='1'}
             <div class="form-group">
                 <div class="form-field">
                     <label>MySQL 数据库地址</label>
@@ -194,6 +194,7 @@
                     <input type="text" name="mysql_prefix" value="dnsmgr_">
                 </div>
             </div>
+            {/if}
 
             <div class="form-group">
                 <div class="form-field">
