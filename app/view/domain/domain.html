@@ -127,6 +127,8 @@
 	<div class="panel-body">
 	
 <form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
+	<input type="hidden" name="id" value="">
+	<input type="hidden" name="aid" value="">
   <div class="form-group">
 	<label>搜索</label>
     <input type="text" class="form-control" name="kw" placeholder="域名或备注">
@@ -196,7 +198,7 @@ $(document).ready(function(){
 				field: 'typename',
 				title: '平台账户',
 				formatter: function(value, row, index) {
-					return '<img src="/static/images/'+row.type+'.ico" class="type-logo"></img>'+(row.aremark?row.aremark:value+'('+row.aid+')');
+					return '<img src="/static/images/'+row.icon+'" class="type-logo"></img>'+(row.aremark?row.aremark:value+'('+row.aid+')');
 				}
 			},
             {

@@ -605,3 +605,10 @@ function getDomainDate($domain)
         throw new Exception('查询域名whois失败: ' . $e->getMessage());
     }
 }
+
+function checkTableExists($table)
+{
+    $prefix = env('database.prefix', 'dnsmgr_');
+    $res = Db::query("SHOW TABLES LIKE '" . $prefix . $table . "'");
+    return !empty($res);
+}

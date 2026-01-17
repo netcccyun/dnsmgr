@@ -23,8 +23,8 @@ class jdcloud implements DnsInterface
 
     public function __construct($config)
     {
-        $this->AccessKeyId = $config['ak'];
-        $this->AccessKeySecret = $config['sk'];
+        $this->AccessKeyId = $config['AccessKeyId'];
+        $this->AccessKeySecret = $config['AccessKeySecret'];
         $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
         $this->client = new JdcloudClient($this->AccessKeyId, $this->AccessKeySecret, $this->endpoint, $this->service, $this->region, $proxy);
         $this->domain = $config['domain'];

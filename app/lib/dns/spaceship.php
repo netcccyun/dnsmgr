@@ -18,8 +18,8 @@ class spaceship implements DnsInterface
 
     public function __construct($config)
     {
-        $this->apiKey = $config['ak'];
-        $this->apiSecret = $config['sk'];
+        $this->apiKey = $config['apikey'];
+        $this->apiSecret = $config['apisecret'];
         $this->domain = $config['domain'];
         $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }
@@ -60,8 +60,9 @@ class spaceship implements DnsInterface
     public function getDomainRecords($PageNumber = 1, $PageSize = 20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null)
     {
         $param = ['take' => $PageSize, 'skip' => ($PageNumber - 1) * $PageSize];
-        if (!isNullOrEmpty(($SubDomain))) {
-            $param['host'] = $SubDomain;
+        if (!isNullOrEmpty($SubDomain)) {
+            $param['take'] = 100;
+            $param['skip'] = 0;
         }
         $data = $this->send_reuqest('GET', '/dns/records/' . $this->domain, $param);
         if ($data) {
@@ -106,6 +107,11 @@ class spaceship implements DnsInterface
                     'UpdateTime' => null,
                 ];
             }
+            if(!isNullOrEmpty($SubDomain)){
+                $list = array_values(array_filter($list, function($v) use ($SubDomain){
+                    return strcasecmp($v['Name'], $SubDomain) === 0;
+                }));
+            }
             return ['total' => $data['total'], 'list' => $list];
         }
         return false;
@@ -124,7 +130,7 @@ class spaceship implements DnsInterface
         return false;
     }
 
-    private function convertRecordItem($Name, $Type, $Value, $MX = 1)
+    private function convertRecordItem($Name, $Type, $Value, $MX)
     {
         $item = [
             'type' => $Type,

@@ -19,8 +19,8 @@ class west implements DnsInterface
 
     public function __construct($config)
     {
-        $this->username = $config['ak'];
-        $this->api_password = $config['sk'];
+        $this->username = $config['username'];
+        $this->api_password = $config['api_password'];
         $this->domain = $config['domain'];
         $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }

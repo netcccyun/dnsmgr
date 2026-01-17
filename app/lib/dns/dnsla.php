@@ -17,8 +17,8 @@ class dnsla implements DnsInterface
 
     public function __construct($config)
     {
-        $this->apiid = $config['ak'];
-        $this->apisecret = $config['sk'];
+        $this->apiid = $config['apiid'];
+        $this->apisecret = $config['apisecret'];
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];
         $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;

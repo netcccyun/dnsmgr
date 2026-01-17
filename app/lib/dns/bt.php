@@ -18,9 +18,9 @@ class bt implements DnsInterface
 
     public function __construct($config)
     {
-        $this->accountId = $config['ext'];
-        $this->accessKey = $config['ak'];
-        $this->secretKey = $config['sk'];
+        $this->accountId = $config['AccountID'];
+        $this->accessKey = $config['AccessKey'];
+        $this->secretKey = $config['SecretKey'];
         $this->domain = $config['domain'];
         if ($config['domainid']) {
             $a = explode('|', $config['domainid']);

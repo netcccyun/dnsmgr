@@ -9,9 +9,30 @@ class DnsHelper
     public static $dns_config = [
         'aliyun' => [
             'name' => '阿里云',
+            'icon' => 'aliyun.png',
+            'note' => '',
             'config' => [
-                'ak' => 'AccessKeyId',
-                'sk' => 'AccessKeySecret',
+                'AccessKeyId' => [
+                    'name' => 'AccessKeyId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'AccessKeySecret' => [
+                    'name' => 'AccessKeySecret',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 1, //是否支持备注，1单独设置备注，2和记录一起设置
             'status' => true, //是否支持启用暂停
@@ -23,9 +44,30 @@ class DnsHelper
         ],
         'dnspod' => [
             'name' => '腾讯云',
+            'icon' => 'dnspod.ico',
+            'note' => '',
             'config' => [
-                'ak' => 'SecretId',
-                'sk' => 'SecretKey',
+                'SecretId' => [
+                    'name' => 'SecretId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'SecretKey' => [
+                    'name' => 'SecretKey',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 1,
             'status' => true,
@@ -37,9 +79,30 @@ class DnsHelper
         ],
         'huawei' => [
             'name' => '华为云',
+            'icon' => 'huawei.ico',
+            'note' => '',
             'config' => [
-                'ak' => 'AccessKeyId',
-                'sk' => 'SecretAccessKey',
+                'AccessKeyId' => [
+                    'name' => 'AccessKeyId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'SecretAccessKey' => [
+                    'name' => 'SecretAccessKey',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 2,
             'status' => true,
@@ -51,9 +114,30 @@ class DnsHelper
         ],
         'baidu' => [
             'name' => '百度云',
+            'icon' => 'baidu.ico',
+            'note' => '',
             'config' => [
-                'ak' => 'AccessKey',
-                'sk' => 'SecretKey',
+                'AccessKeyId' => [
+                    'name' => 'AccessKeyId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'SecretAccessKey' => [
+                    'name' => 'SecretAccessKey',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 2,
             'status' => false,
@@ -65,9 +149,30 @@ class DnsHelper
         ],
         'west' => [
             'name' => '西部数码',
+            'icon' => 'west.ico',
+            'note' => '',
             'config' => [
-                'ak' => '用户名',
-                'sk' => 'API密码',
+                'username' => [
+                    'name' => '用户名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'api_password' => [
+                    'name' => 'API密码',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 0,
             'status' => true,
@@ -79,9 +184,30 @@ class DnsHelper
         ],
         'huoshan' => [
             'name' => '火山引擎',
+            'icon' => 'huoshan.ico',
+            'note' => '',
             'config' => [
-                'ak' => 'AccessKeyId',
-                'sk' => 'SecretAccessKey',
+                'AccessKeyId' => [
+                    'name' => 'AccessKeyId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'SecretAccessKey' => [
+                    'name' => 'SecretAccessKey',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 2,
             'status' => true,
@@ -93,9 +219,30 @@ class DnsHelper
         ],
         'jdcloud' => [
             'name' => '京东云',
+            'icon' => 'jdcloud.ico',
+            'note' => '',
             'config' => [
-                'ak' => 'AccessKeyId',
-                'sk' => 'AccessKeySecret',
+                'AccessKeyId' => [
+                    'name' => 'AccessKeyId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'AccessKeySecret' => [
+                    'name' => 'AccessKeySecret',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 0,
             'status' => true,
@@ -107,9 +254,30 @@ class DnsHelper
         ],
         'dnsla' => [
             'name' => 'DNSLA',
+            'icon' => 'dnsla.ico',
+            'note' => '',
             'config' => [
-                'ak' => 'APIID',
-                'sk' => 'API密钥',
+                'apiid' => [
+                    'name' => 'APIID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'apisecret' => [
+                    'name' => 'API密钥',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 0,
             'status' => true,
@@ -121,10 +289,36 @@ class DnsHelper
         ],
         'bt' => [
             'name' => '宝塔域名',
+            'icon' => 'bt.png',
+            'note' => '',
             'config' => [
-                'ak' => 'Access Key',
-                'sk' => 'Secret Key',
-                'ext' => 'Account ID',
+                'AccessKey' => [
+                    'name' => 'Access Key',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'SecretKey' => [
+                    'name' => 'Secret Key',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'AccountID' => [
+                    'name' => 'Account ID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 2,
             'status' => true,
@@ -136,9 +330,30 @@ class DnsHelper
         ],
         'cloudflare' => [
             'name' => 'Cloudflare',
+            'icon' => 'cloudflare.ico',
+            'note' => '',
             'config' => [
-                'ak' => '邮箱地址',
-                'sk' => 'API密钥/令牌',
+                'email' => [
+                    'name' => '邮箱地址',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'apikey' => [
+                    'name' => 'API密钥/令牌',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 2,
             'status' => true,
@@ -150,9 +365,30 @@ class DnsHelper
         ],
         'namesilo' => [
             'name' => 'NameSilo',
+            'icon' => 'namesilo.ico',
+            'note' => '',
             'config' => [
-                'ak' => '账户名',
-                'sk' => 'API Key',
+                'username' => [
+                    'name' => '账户名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'apikey' => [
+                    'name' => 'API Key',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 0,
             'status' => false,
@@ -164,9 +400,30 @@ class DnsHelper
         ],
         'spaceship' => [
             'name' => 'Spaceship',
+            'icon' => 'spaceship.ico',
+            'note' => '',
             'config' => [
-                'ak' => 'API Key',
-                'sk' => 'Api Secret',
+                'apikey' => [
+                    'name' => 'API Key',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'apisecret' => [
+                    'name' => 'API Secret',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 0,
             'status' => false,
@@ -178,10 +435,36 @@ class DnsHelper
         ],
         'powerdns' => [
             'name' => 'PowerDNS',
+            'icon' => 'powerdns.ico',
+            'note' => '',
             'config' => [
-                'ak' => 'IP地址',
-                'sk' => '端口',
-                'ext' => 'API KEY',
+                'ip' => [
+                    'name' => 'IP地址',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'port' => [
+                    'name' => '端口',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'apikey' => [
+                    'name' => 'API KEY',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
             ],
             'remark' => 2,
             'status' => true,
@@ -190,6 +473,96 @@ class DnsHelper
             'weight' => false,
             'page' => true,
             'add' => true,
+        ],
+        'aliyunesa' => [
+            'name' => '阿里云ESA',
+            'icon' => 'aliyun.png',
+            'note' => '仅支持以NS方式接入阿里云ESA的域名',
+            'config' => [
+                'AccessKeyId' => [
+                    'name' => 'AccessKeyId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'AccessKeySecret' => [
+                    'name' => 'AccessKeySecret',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'region' => [
+                    'name' => 'API接入点',
+                    'type' => 'select',
+                    'options' => [
+                        ['value' => 'cn-hangzhou', 'label' => '中国内地'],
+                        ['value' => 'ap-southeast-1', 'label' => '非中国内地'],
+                    ],
+                    'value' => 'cn-hangzhou',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'remark' => 2,
+            'status' => false,
+            'redirect' => false,
+            'log' => false,
+            'weight' => false,
+            'page' => false,
+            'add' => false,
+        ],
+        'tencenteo' => [
+            'name' => '腾讯云EO',
+            'icon' => 'tencent.png',
+            'note' => '仅支持以NS方式接入腾讯云EO的域名',
+            'config' => [
+                'SecretId' => [
+                    'name' => 'SecretId',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'SecretKey' => [
+                    'name' => 'SecretKey',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'site_type' => [
+                    'name' => 'API接入点',
+                    'type' => 'select',
+                    'options' => [
+                        ['value' => 'cn', 'label' => '中国内地'],
+                        ['value' => 'intl', 'label' => '非中国内地'],
+                    ],
+                    'value' => 'cn',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'remark' => 0,
+            'status' => true,
+            'redirect' => false,
+            'log' => false,
+            'weight' => true,
+            'page' => false,
+            'add' => false,
         ],
     ];
 
@@ -202,10 +575,13 @@ class DnsHelper
         'huoshan' => ['DEF' => 'default', 'CT' => 'telecom', 'CU' => 'unicom', 'CM' => 'mobile', 'AB' => 'oversea'],
         'baidu' => ['DEF' => 'default', 'CT' => 'ct', 'CU' => 'cnc', 'CM' => 'cmnet', 'AB' => ''],
         'jdcloud' => ['DEF' => '-1', 'CT' => '1', 'CU' => '2', 'CM' => '3', 'AB' => '4'],
+        'bt' => ['DEF' => '0', 'CT' => '285344768', 'CU' => '285345792', 'CM' => '285346816'],
         'cloudflare' => ['DEF' => '0'],
         'namesilo' => ['DEF' => 'default'],
         'powerdns' => ['DEF' => 'default'],
         'spaceship' => ['DEF' => 'default'],
+        'aliyunesa' => ['DEF' => '0'],
+        'tencenteo' => ['DEF' => 'Default'],
     ];
 
     public static function getList()
@@ -225,11 +601,12 @@ class DnsHelper
      */
     public static function getModel($aid, $domain = null, $domainid = null)
     {
-        $config = self::getConfig($aid);
-        if (!$config) return false;
-        $dnstype = $config['type'];
+        $account = self::getConfig($aid);
+        if (!$account) return false;
+        $dnstype = $account['type'];
         $class = "\\app\\lib\\dns\\{$dnstype}";
         if (class_exists($class)) {
+            $config = json_decode($account['config'], true);
             $config['domain'] = $domain;
             $config['domainid'] = $domainid;
             $model = new $class($config);
@@ -241,13 +618,14 @@ class DnsHelper
     /**
      * @return DnsInterface|bool
      */
-    public static function getModel2($config)
+    public static function getModel2($account)
     {
-        $dnstype = $config['type'];
+        $dnstype = $account['type'];
         $class = "\\app\\lib\\dns\\{$dnstype}";
         if (class_exists($class)) {
-            $config['domain'] = $config['name'];
-            $config['domainid'] = $config['thirdid'];
+            $config = json_decode($account['config'], true);
+            $config['domain'] = $account['name'];
+            $config['domainid'] = $account['thirdid'];
             $model = new $class($config);
             return $model;
         }

@@ -110,7 +110,7 @@
             <a href="/domain"><i class="fa fa-list-ul fa-fw"></i> <span>域名管理</span></a>
           </li>
           {if request()->user['level'] eq 2}
-          <li class="{:checkIfActive('account')}">
+          <li class="{:checkIfActive('account,account_add')}">
             <a href="/account"><i class="fa fa-lock fa-fw"></i> <span>域名账户</span></a>
           </li>
           <li class="treeview {:checkIfActive('overview,task,taskinfo,taskform')}">

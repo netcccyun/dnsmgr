@@ -16,7 +16,6 @@ class Domain extends BaseController
     public function account()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');
-        View::assign('dnsconfig', DnsHelper::$dns_config);
         return view();
     }
 
@@ -29,7 +28,7 @@ class Domain extends BaseController
 
         $select = Db::name('account');
         if (!empty($kw)) {
-            $select->whereLike('ak|remark', '%' . $kw . '%');
+            $select->whereLike('name|remark', '%' . $kw . '%');
         }
         $total = $select->count();
         $rows = $select->order('id', 'desc')->limit($offset, $limit)->select();
@@ -37,39 +36,49 @@ class Domain extends BaseController
         $list = [];
         foreach ($rows as $row) {
             $row['typename'] = DnsHelper::$dns_config[$row['type']]['name'];
+            $row['icon'] = DnsHelper::$dns_config[$row['type']]['icon'];
             $list[] = $row;
         }
 
         return json(['total' => $total, 'rows' => $list]);
     }
 
+    public function account_add()
+    {
+        if (!checkPermission(2)) return json(['total' => 0, 'rows' => []]);
+        $action = input('param.action');
+
+        $account = null;
+        if ($action == 'edit') {
+            $id = input('get.id/d');
+            $account = Db::name('account')->where('id', $id)->find();
+            if (empty($account)) return $this->alert('error', '域名账户不存在');
+        }
+
+        View::assign('info', $account);
+        View::assign('typeList', DnsHelper::getList());
+        View::assign('action', $action);
+        return View::fetch();
+    }
+
     public function account_op()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');
-        $act = input('param.act');
-        if ($act == 'get') {
-            $id = input('post.id/d');
-            $row = Db::name('account')->where('id', $id)->find();
-            if (!$row) return json(['code' => -1, 'msg' => '域名账户不存在']);
-            return json(['code' => 0, 'data' => $row]);
-        } elseif ($act == 'add') {
+        $action = input('param.action');
+        if ($action == 'add') {
             $type = input('post.type');
-            $ak = input('post.ak', null, 'trim');
-            $sk = input('post.sk', null, 'trim');
-            $ext = input('post.ext', null, 'trim');
+            $name = input('post.name', null, 'trim');
+            $config = input('post.config', null, 'trim');
             $remark = input('post.remark', null, 'trim');
-            $proxy = input('post.proxy/d', 0);
-            if (empty($ak) || empty($sk)) return json(['code' => -1, 'msg' => 'AccessKey和SecretKey不能为空']);
-            if (Db::name('account')->where('type', $type)->where('ak', $ak)->find()) {
+            if (empty($name) || empty($config)) return json(['code' => -1, 'msg' => '必填参数不能为空']);
+            if (Db::name('account')->where('type', $type)->where('name', $name)->find()) {
                 return json(['code' => -1, 'msg' => '域名账户已存在']);
             }
             Db::startTrans();
             $id = Db::name('account')->insertGetId([
                 'type' => $type,
-                'ak' => $ak,
-                'sk' => $sk,
-                'ext' => $ext,
-                'proxy' => $proxy,
+                'name' => $name,
+                'config' => $config,
                 'remark' => $remark,
                 'addtime' => date('Y-m-d H:i:s'),
             ]);
@@ -86,27 +95,24 @@ class Domain extends BaseController
                 Db::rollback();
                 return json(['code' => -1, 'msg' => 'DNS模块(' . $type . ')不存在']);
             }
-        } elseif ($act == 'edit') {
+        } elseif ($action == 'edit') {
             $id = input('post.id/d');
             $row = Db::name('account')->where('id', $id)->find();
             if (!$row) return json(['code' => -1, 'msg' => '域名账户不存在']);
             $type = input('post.type');
-            $ak = input('post.ak', null, 'trim');
-            $sk = input('post.sk', null, 'trim');
-            $ext = input('post.ext', null, 'trim');
+            $name = input('post.name', null, 'trim');
+            $config = input('post.config', null, 'trim');
             $remark = input('post.remark', null, 'trim');
-            $proxy = input('post.proxy/d', 0);
-            if (empty($ak) || empty($sk)) return json(['code' => -1, 'msg' => 'AccessKey和SecretKey不能为空']);
-            if (Db::name('account')->where('type', $type)->where('ak', $ak)->where('id', '<>', $id)->find()) {
+            if (empty($name) || empty($config)) return json(['code' => -1, 'msg' => '必填参数不能为空']);
+            if (Db::name('account')->where('type', $type)->where('name', $name)->where('id', '<>', $id)->find()) {
                 return json(['code' => -1, 'msg' => '域名账户已存在']);
             }
             Db::startTrans();
             Db::name('account')->where('id', $id)->update([
                 'type' => $type,
-                'ak' => $ak,
-                'sk' => $sk,
-                'ext' => $ext,
-                'proxy' => $proxy,
+                'name' => $name,
+                'config' => $config,
+                'remark' => $remark,
                 'remark' => $remark,
             ]);
             $dns = DnsHelper::getModel($id);
@@ -122,7 +128,7 @@ class Domain extends BaseController
                 Db::rollback();
                 return json(['code' => -1, 'msg' => 'DNS模块(' . $type . ')不存在']);
             }
-        } elseif ($act == 'del') {
+        } elseif ($action == 'del') {
             $id = input('post.id/d');
             $dcount = DB::name('domain')->where('aid', $id)->count();
             if ($dcount > 0) return json(['code' => -1, 'msg' => '该域名账户下存在域名，无法删除']);
@@ -185,10 +191,17 @@ class Domain extends BaseController
         $order = input('post.order', null, 'trim');
         $offset = input('post.offset/d', 0);
         $limit = input('post.limit/d', 10);
+        $id = input('post.id');
+        $aid = input('post.aid', null, 'trim');
 
         $select = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id');
-        if (!empty($kw)) {
+        if (!empty($id)) {
+            $select->where('A.id', $id);
+        } elseif (!empty($kw)) {
             $select->whereLike('name|A.remark', '%' . $kw . '%');
+        }
+        if (!empty($aid)) {
+            $select->where('A.aid', $aid);
         }
         if (!empty($type)) {
             $select->whereLike('B.type', $type);
@@ -225,6 +238,7 @@ class Domain extends BaseController
         $list = [];
         foreach ($rows as $row) {
             $row['typename'] = DnsHelper::$dns_config[$row['type']]['name'];
+            $row['icon'] = DnsHelper::$dns_config[$row['type']]['icon'];
             $list[] = $row;
         }
 

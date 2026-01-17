@@ -186,3 +186,7 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_sctask` (
   PRIMARY KEY (`id`),
   KEY `did` (`did`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `dnsmgr_account`
+ADD COLUMN `config` text DEFAULT NULL,
+CHANGE COLUMN `ak` `name` varchar(255) NOT NULL;

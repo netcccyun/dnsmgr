@@ -21,8 +21,8 @@ class dnspod implements DnsInterface
 
     public function __construct($config)
     {
-        $this->SecretId = $config['ak'];
-        $this->SecretKey = $config['sk'];
+        $this->SecretId = $config['SecretId'];
+        $this->SecretKey = $config['SecretKey'];
         $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
         $this->client = new TencentCloud($this->SecretId, $this->SecretKey, $this->endpoint, $this->service, $this->version, null, $proxy);
         $this->domain = $config['domain'];

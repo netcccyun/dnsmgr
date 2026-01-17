@@ -16,8 +16,8 @@ class cloudflare implements DnsInterface
 
     function __construct($config)
     {
-        $this->Email = $config['ak'];
-        $this->ApiKey = $config['sk'];
+        $this->Email = $config['email'];
+        $this->ApiKey = $config['apikey'];
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];
         $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;

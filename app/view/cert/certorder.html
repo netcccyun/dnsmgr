@@ -124,7 +124,7 @@ $(document).ready(function(){
 				field: 'end_day',
 				title: '到期时间',
 				formatter: function(value, row, index) {
-					if(value){
+					if(value != null){
 						if(value > 7){
 							return '<span title="'+row.expiretime+'" data-toggle="tooltip" data-placement="right" style="color:green">剩余' + value + '天<span>';
 						}else if(value > 0){

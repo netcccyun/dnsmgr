@@ -17,8 +17,8 @@ class powerdns implements DnsInterface
 
     function __construct($config)
     {
-        $this->url = 'http://' . $config['ak'] . ':' . $config['sk'] . '/api/v1';
-        $this->apikey = $config['ext'];
+        $this->url = 'http://' . $config['ip'] . ':' . $config['port'] . '/api/v1';
+        $this->apikey = $config['apikey'];
         $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];

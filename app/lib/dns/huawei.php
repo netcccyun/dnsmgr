@@ -18,8 +18,8 @@ class huawei implements DnsInterface
 
     public function __construct($config)
     {
-        $this->AccessKeyId = $config['ak'];
-        $this->SecretAccessKey = $config['sk'];
+        $this->AccessKeyId = $config['AccessKeyId'];
+        $this->SecretAccessKey = $config['SecretAccessKey'];
         $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
         $this->client = new HuaweiCloud($this->AccessKeyId, $this->SecretAccessKey, $this->endpoint, $proxy);
         $this->domain = $config['domain'];
@@ -77,12 +77,13 @@ class huawei implements DnsInterface
         if ($data) {
             $list = [];
             foreach ($data['recordsets'] as $row) {
-                if ($row['name'] == $row['zone_name']) $row['name'] = '@';
+                $name = substr($row['name'], 0, -(strlen($row['zone_name']) + 1));
+                if ($name == '') $name = '@';
                 if ($row['type'] == 'MX') list($row['mx'], $row['records']) = explode(' ', $row['records'][0]);
                 $list[] = [
                     'RecordId' => $row['id'],
                     'Domain' => rtrim($row['zone_name'], '.'),
-                    'Name' => str_replace('.'.$row['zone_name'], '', $row['name']),
+                    'Name' => $name,
                     'Type' => $row['type'],
                     'Value' => $row['records'],
                     'Line' => $row['line'],
@@ -110,12 +111,13 @@ class huawei implements DnsInterface
     {
         $data = $this->send_request('GET', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId);
         if ($data) {
-            if ($data['name'] == $data['zone_name']) $data['name'] = '@';
+            $name = substr($data['name'], 0, -(strlen($data['zone_name']) + 1));
+            if ($name == '') $name = '@';
             if ($data['type'] == 'MX') list($data['mx'], $data['records']) = explode(' ', $data['records'][0]);
             return [
                 'RecordId' => $data['id'],
                 'Domain' => rtrim($data['zone_name'], '.'),
-                'Name' => str_replace('.'.$data['zone_name'], '', $data['name']),
+                'Name' => $name,
                 'Type' => $data['type'],
                 'Value' => $data['records'],
                 'Line' => $data['line'],

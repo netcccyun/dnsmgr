@@ -16,7 +16,7 @@ class namesilo implements DnsInterface
 
     function __construct($config)
     {
-        $this->apikey = $config['sk'];
+        $this->apikey = $config['apikey'];
         $this->domain = $config['domain'];
         $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
     }

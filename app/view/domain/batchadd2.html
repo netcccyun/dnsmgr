@@ -81,7 +81,7 @@ tbody tr>td:nth-child(3){min-width:300px;word-break:break-all;}
 			<tbody>
 				<tr v-for="item in domainList">
 					<td>{{item.id}}</td>
-					<td><img :src="'/static/images/'+item.type+'.ico'" class="type-logo"></img><a :href="'/record/'+item.id" target="_blank">{{item.name}}</a></td>
+					<td><img :src="'/static/images/'+item.icon+''" class="type-logo"></img><a :href="'/record/'+item.id" target="_blank">{{item.name}}</a></td>
 					<td v-html="item.result"></td>
 				</tr>
 			</tbody>

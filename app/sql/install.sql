@@ -5,7 +5,7 @@ CREATE TABLE `dnsmgr_config` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `dnsmgr_config` VALUES ('version', '1040');
+INSERT INTO `dnsmgr_config` VALUES ('version', '1045');
 INSERT INTO `dnsmgr_config` VALUES ('notice_mail', '0');
 INSERT INTO `dnsmgr_config` VALUES ('notice_wxtpl', '0');
 INSERT INTO `dnsmgr_config` VALUES ('mail_smtp', 'smtp.qq.com');
@@ -15,10 +15,8 @@ DROP TABLE IF EXISTS `dnsmgr_account`;
 CREATE TABLE `dnsmgr_account` (
   `id` int(11) unsigned NOT NULL auto_increment,
   `type` varchar(20) NOT NULL,
-  `ak` varchar(256) DEFAULT NULL,
-  `sk` varchar(256) DEFAULT NULL,
-  `ext` varchar(256) DEFAULT NULL,
-  `proxy` tinyint(1) NOT NULL DEFAULT '0',
+  `name` varchar(255) NOT NULL,
+  `config` text DEFAULT NULL,
   `remark` varchar(100) DEFAULT NULL,
   `addtime` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)

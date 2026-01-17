@@ -87,6 +87,26 @@ class Index extends BaseController
             } catch (Exception $e) {
             }
         }
+        if(Db::name('account')->count() > 0 && Db::name('account')->whereNotNull('config')->count() == 0) {
+            Cache::clear();
+            $accounts = Db::name('account')->select();
+            foreach ($accounts as $account) {
+                if (!empty($account['config']) || !isset(\app\lib\DnsHelper::$dns_config[$account['type']])) continue;
+                $config = [];
+                $account_fields = ['name', 'sk', 'ext'];
+                $i = 0;
+                foreach(\app\lib\DnsHelper::$dns_config[$account['type']]['config'] as $field => $item) {
+                    if ($field == 'proxy') {
+                        $config[$field] = $account['proxy'];
+                        break;
+                    }
+                    if ($i >= 3) break;
+                    $account_field = $account_fields[$i++];
+                    $config[$field] = isset($account[$account_field]) ? $account[$account_field] : '';
+                }
+                Db::name('account')->where('id', $account['id'])->update(['config' => json_encode($config)]);
+            }
+        }
     }
 
     public function changeskin()

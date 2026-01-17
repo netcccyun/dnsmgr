@@ -33,7 +33,7 @@ class ScheduleService
 
     public function execute_one($row)
     {
-        $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.id', $row['did'])->field('A.*,B.type,B.ak,B.sk,B.ext')->find();
+        $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.id', $row['did'])->field('A.*,B.type,B.config')->find();
         if (!$drow) throw new Exception('域名不存在');
 
         Db::name('sctask')->where('id', $row['id'])->update(['updatetime' => time()]);

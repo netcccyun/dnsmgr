@@ -20,8 +20,8 @@ class aliyun implements DnsInterface
 
     public function __construct($config)
     {
-        $this->AccessKeyId = $config['ak'];
-        $this->AccessKeySecret = $config['sk'];
+        $this->AccessKeyId = $config['AccessKeyId'];
+        $this->AccessKeySecret = $config['AccessKeySecret'];
         $proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
         $this->client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $this->Endpoint, $this->Version, $proxy);
         $this->domain = $config['domain'];
