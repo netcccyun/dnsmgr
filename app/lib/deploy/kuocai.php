@@ -70,7 +70,7 @@ class kuocai implements DeployInterface
 
     private function request($path, $params = null, $json = false)
     {
-        $url = 'https://kuocai.cn' . $path;
+        $url = 'https://www.kuocaicdn.com' . $path;
         $body = $json ? json_encode($params) : $params;
         $headers = [];
         if ($json) $headers['Content-Type'] = 'application/json';

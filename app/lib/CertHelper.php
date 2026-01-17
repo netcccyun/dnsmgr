@@ -174,6 +174,44 @@ location / {
                 ],
             ]
         ],
+        'litessl' => [
+            'name' => 'LiteSSL',
+            'class' => 1,
+            'icon' => 'litessl.ico',
+            'wildcard' => true,
+            'max_domains' => 100,
+            'cname' => true,
+            'note' => '<a href="https://freessl.cn/automation/eab-manager" target="_blank" rel="noreferrer">LiteSSL密钥获取</a>',
+            'inputs' => [
+                'email' => [
+                    'name' => '邮箱地址',
+                    'type' => 'input',
+                    'placeholder' => 'EAB申请邮箱',
+                    'required' => true,
+                ],
+                'kid' => [
+                    'name' => 'EAB KID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'key' => [
+                    'name' => 'EAB HMAC Key',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ]
+        ],
         'tencent' => [
             'name' => '腾讯云免费SSL',
             'class' => 2,
