@@ -837,6 +837,7 @@ class Domain extends BaseController
             $line = input('post.line', null, 'trim');
             $ttl = input('post.ttl/d', 600);
             $mx = input('post.mx/d', 1);
+            $remark = input('post.remark', null, 'trim');
             $recordlist = explode("\n", $record);
 
             if (empty($record) || empty($recordlist)) {
@@ -858,7 +859,7 @@ class Domain extends BaseController
                 $arr = explode(' ', $record);
                 if (empty($record) || empty($arr[0]) || empty($arr[1])) continue;
                 $thistype = empty($type) ? getDnsType($arr[1]) : $type;
-                $recordid = $dns->addDomainRecord($arr[0], $thistype, $arr[1], $line, $ttl, $mx);
+                $recordid = $dns->addDomainRecord($arr[0], $thistype, $arr[1], $line, $ttl, $mx, null, $remark);
                 if ($recordid) {
                     $this->add_log($drow['name'], '添加解析', $arr[0].' ['.$thistype.'] '.$arr[1].' (线路:'.$line.' TTL:'.$ttl.')');
                     $success++;

@@ -54,8 +54,6 @@ class Index extends BaseController
 
         if (config('app.dbversion') && config_get('version') != config('app.dbversion')) {
             $this->db_update();
-            config_set('version', config('app.dbversion'));
-            Cache::clear();
         }
 
         $tmp = 'version()';
@@ -87,8 +85,9 @@ class Index extends BaseController
             } catch (Exception $e) {
             }
         }
+        config_set('version', config('app.dbversion'));
+        Cache::clear();
         if(Db::name('account')->count() > 0 && Db::name('account')->whereNotNull('config')->count() == 0) {
-            Cache::clear();
             $accounts = Db::name('account')->select();
             foreach ($accounts as $account) {
                 if (!empty($account['config']) || !isset(\app\lib\DnsHelper::$dns_config[$account['type']])) continue;

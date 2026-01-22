@@ -48,6 +48,12 @@
             <input type="text" class="form-control" name="ttl" value="600" placeholder="指解析结果在DNS服务器中的缓存时间" required min="{$minTTL}">
         </div>
     </div>
+	{if $dnsconfig.remark == 2}<div class="form-group">
+		<label class="col-sm-3 control-label no-padding-right">备注</label>
+		<div class="col-sm-6">
+			<input type="text" class="form-control" name="remark" placeholder="">
+		</div>
+	</div>{/if}
     <div class="form-group">
         <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" onclick="save()">添加</button></div>
     </div>
