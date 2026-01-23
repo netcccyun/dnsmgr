@@ -63,11 +63,10 @@ class namesilo implements DnsInterface
         if ($data) {
             $list = [];
             foreach ($data['resource_record'] as $row) {
-                $name = $row['host'] == $this->domain ? '@' : str_replace('.'.$this->domain, '', $row['host']);
                 $list[] = [
                     'RecordId' => $row['record_id'],
                     'Domain' => $this->domain,
-                    'Name' => $name,
+                    'Name' => $row['host'],
                     'Type' => $row['type'],
                     'Value' => $row['value'],
                     'Line' => 'default',

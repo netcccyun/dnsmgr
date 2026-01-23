@@ -1,0 +1,493 @@
+{extend name="common/layout" /}
+{block name="title"}解析管理 - {$domainName}{/block}
+{block name="main"}
+<style>
+td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;}
+.dns-parent-row { cursor: pointer; }
+.dns-child-row td { background: #fafafa; }
+.dns-child-row td:nth-child(4) { padding-left: 24px; }
+.dns-child-empty td { background:#fafafa; }
+.glyphicon-spin { animation: spin 1s infinite linear; }
+@keyframes spin { from {transform:rotate(0deg);} to {transform:rotate(360deg);} }
+.form-group .radio-inline {position: unset;}
+.tips {color: #f6a838;padding-left: 5px;}
+.text-remark {margin-left: 10px;color: #329a29;font-size: 12px;}
+</style>
+<div class="row" id="app">
+<div class="modal" id="modal-store" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content animated flipInX">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span
+                            aria-hidden="true">&times;</span><span
+                            class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="modal-title">{{form.action=='add'?'添加解析':'修改解析'}}</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" id="form-store">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right">主机记录</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="name" placeholder="填写域名前缀，支持多级" v-model="form.name" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">记录类型</label>
+                        <div class="col-sm-9">
+                            <select name="type" class="form-control" v-model="form.type">
+                                <option value="A">A</option>
+                                <option value="CNAME">CNAME</option>
+                                <option value="AAAA">AAAA</option>
+                                <option value="NS">NS</option>
+                                <option value="MX">MX</option>
+                                <option value="TXT">TXT</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">线路类型</label>
+                        <div class="col-sm-9" id="line_list">
+                            <select name="line" class="form-control" v-model="form.line">
+                                <option v-for="line in recordLine" :value="line.id">{{line.name}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" v-show="form.type=='A' || form.type=='CNAME'">
+                        <label class="col-sm-3 control-label">模式</label>
+                        <div class="col-sm-9" id="line_list">
+                            <label class="radio-inline"><input type="radio" name="mode" value="1" v-model="form.mode"> 普通<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="每次权威 DNS 查询都将按您填写的顺序返回解析结果，查询性能更好。" class="tips"><i class="fa fa-question-circle"></i></span></label>
+                            <label class="radio-inline" v-show="form.type=='A'"><input type="radio" name="mode" value="2" v-model="form.mode"> 轮询<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="每次权威 DNS 查询的解析结果排序都将会较上一次发生变化，业务负载更均衡。" class="tips"><i class="fa fa-question-circle"></i></span></label>
+                            <label class="radio-inline" v-show="form.type=='A'"><input type="radio" name="mode" value="4" v-model="form.mode"> 智能<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="根据访问来源的运营商及地理位置将解析结果按匹配度排序并最多返回前 5 个，可减少您对精细化线路配置的烦恼。" class="tips"><i class="fa fa-question-circle"></i></span></label>
+                            <label class="radio-inline"><input type="radio" name="mode" value="3" v-model="form.mode"> 权重<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="每次权威 DNS 查询都将根据每组解析结果的权值按比例返回，使得业务负载可以随心所欲。" class="tips"><i class="fa fa-question-circle"></i></span></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right">记录值</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="value" :placeholder="'输入记录值' + (form.type=='A'&&form.action=='add'?'（多个IP用,间隔）':'')" v-model="form.value" required>
+                        </div>
+                    </div>
+                    <div class="form-group" v-show="form.type=='MX'">
+                        <label class="col-sm-3 control-label no-padding-right">MX优先级</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="mx" v-model="form.mx">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right">TTL</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="ttl" v-model="form.ttl" placeholder="指解析结果在DNS服务器中的缓存时间" required min="{$minTTL}">
+                        </div>
+                    </div>
+                    <div class="form-group" v-show="(form.type=='A' || form.type=='CNAME') && form.mode=='3'">
+                        <label class="col-sm-3 control-label no-padding-right">权重</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="weight" v-model="form.weight" placeholder="权重值(1-99)" min="1" max="99">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="store" @click="save">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+    <div class="col-xs-12 center-block" style="float: none;">
+    <div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">{if request()->user['type'] eq 'user'}<a href="/domain" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{/if}{$domainName}</h3>
+    </div>
+    <div class="panel-body">
+    
+<form class="form-inline" id="searchToolbar" @submit.prevent>
+  <div class="form-group">
+    <label>搜索</label>
+    <input type="text" class="form-control" name="keyword" placeholder="输入主机记录" v-model="keyword" @keyup.enter="loadParents">
+  </div>
+  <button type="button" class="btn btn-primary" @click="loadParents"><i class="fa fa-search"></i> 搜索</button>
+  <button type="button" class="btn btn-default" title="刷新解析记录列表" @click="keyword=null;loadParents()"><i class="fa fa-refresh"></i> 刷新</button>
+  <button type="button" class="btn btn-success" @click="addRecord"><i class="fa fa-plus"></i> 添加记录</button>
+  <div class="btn-group" role="group">
+    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
+    <ul class="dropdown-menu"><li><a href="/record/batchadd/{$domainId}">添加</a></li></ul>
+  </div>
+  <div class="btn-group" role="group">
+	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">日志 <span class="caret"></span></button>
+    <ul class="dropdown-menu"><li><a href="/log?domain={$domainName}">本站日志</a></li></ul>
+  </div>
+</form>
+<div class="table-responsive" style="margin-top:15px;">
+  <table class="table table-striped table-hover table-bordered">
+    <thead>
+      <tr>
+        <th>主机记录</th>
+        <th>线路类型</th>
+        <th>记录类型</th>
+        <th>模式</th>
+        <th>记录值</th>
+        <th>TTL</th>
+        <th>状态</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <template v-if="loading">
+        <tr>
+          <td colspan="8" class="text-muted text-center"><i class="glyphicon glyphicon-refresh glyphicon-spin"></i> 正在加载...</td>
+        </tr>
+      </template>
+      <template v-if="!loading && parents.length === 0">
+        <tr>
+          <td colspan="8" class="text-muted text-center">暂无记录</td>
+        </tr>
+      </template>
+      <template v-if="!loading" v-for="p in parents">
+
+        <tr :key="'p-' + p.RecordId" class="dns-parent-row" @click="toggleParent(p)">
+          <td colspan="7">
+            <span class="text-muted" style="display:inline-block;width:18px;">
+              <i class="glyphicon"
+                 :class="expandedMap[p.RecordId] ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right'"></i>
+            </span>
+            <strong>{{ p.Name }}</strong><span class="text-muted">（共 {{ p.Count }} 条记录）</span><span class="text-remark" v-if="p.Remark"><i class="glyphicon glyphicon-list-alt"></i> {{ p.Remark }}</span>
+          </td>
+          <td @click.stop>
+            <button class="btn btn-xs btn-success" @click="addRecord(p)">添加</button>
+            <button class="btn btn-xs btn-info" @click="editHostRemark(p)">备注</button>
+            <button class="btn btn-xs btn-danger" @click="deleteHost(p)">删除</button>
+          </td>
+        </tr>
+
+        <tr v-if="expandedMap[p.RecordId] && loadingMap[p.RecordId]" class="dns-child-empty">
+          <td colspan="8" class="text-muted text-center"><i class="glyphicon glyphicon-refresh glyphicon-spin"></i> 正在加载...</td>
+        </tr>
+
+        <tr v-for="c in (expandedMap[p.RecordId] ? (childrenMap[p.RecordId] || []) : [])"
+            :key="'c-' + c.RecordId"
+            v-if="expandedMap[p.RecordId] && !loadingMap[p.RecordId]"
+            class="dns-child-row">
+          <td></td>
+          <td>{{ c.LineName }}</td>
+          <td>{{ c.Type }}</td>
+          <td>{{ c.Type == 'A' || c.Type == 'CNAME' ? modeList[c.Mode] : '-' }} <span class="label label-info" v-if="(c.Type == 'A' || c.Type == 'CNAME') && c.Mode == 3">{{c.Weight}}</span></td>
+          <td>{{ c.Value + (c.Type == 'MX' ? ' | ' + c.MX : '') }}<a href="javascript:void(0);" title="复制记录值" @click="copyToClipboard(c, $event)" style="padding-left:6px;"><i class="fa fa-copy"></i></a></td>
+          <td>{{ c.TTL }}</td>
+          <td><font color="green" v-if="c.Status=='1'"><i class="fa fa-check-circle"></i>启用</font><font color="orange" v-if="c.Status!='1'"><i class="fa fa-pause-circle"></i>暂停</font></td>
+          <td>
+            <button class="btn btn-xs btn-primary" @click="editRecord(c, p.RecordId)">修改</button>
+            <button class="btn btn-xs btn-warning" @click="setRecordStatus(c, p.RecordId, '0')" v-if="c.Status=='1'">暂停</button>
+            <button class="btn btn-xs btn-success" @click="setRecordStatus(c, p.RecordId, '1')" v-if="c.Status!='1'">启用</button>
+            <button class="btn btn-xs btn-danger" @click="deleteRecord(c, p.RecordId)">删除</button>
+          </td>
+        </tr>
+
+        <tr v-if="expandedMap[p.RecordId] && !loadingMap[p.RecordId] && (childrenMap[p.RecordId] || []).length === 0"
+            :key="'empty-' + p.RecordId"
+            class="dns-child-empty">
+          <td colspan="8" class="text-muted text-center">暂无记录</td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+
+    </div>
+  </div>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/vue-2.7.16.min.js"></script>
+<script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/bootstrapValidator.min.js"></script>
+<script>
+var recordLine = {$recordLine|json_encode|raw};
+var dnsconfig = {$dnsconfig|json_encode|raw};
+var defaultLine = recordLine[0].id;
+new Vue({
+  el: '#app',
+  data: function () {
+    return {
+      loading: false,
+      recordLine: recordLine,
+      form: {
+        action: '',
+        recordid: '',
+        recordinfo: '',
+        parentid: '',
+        name: '',
+        type: '',
+        line: '',
+        mode: '',
+        value: '',
+        ttl: 600,
+        weight: '',
+        mx: 10,
+      },
+      keyword: '',
+      parents: [],
+      expandedMap: {},   // {pid: true/false}
+      loadingMap: {},    // {pid: true/false}
+      childrenMap: {},   // {pid: []} 缓存子列表
+      modeList: [
+        '默认',
+        '普通',
+        '轮询',
+        '权重',
+        '智能',
+      ]
+    };
+  },
+  mounted: function () {
+    this.loadParents();
+    $('[data-toggle="tooltip"]').tooltip();
+    $("#form-store").bootstrapValidator();
+  },
+  methods: {
+    loadParents: function () {
+      var vm = this;
+      vm.loading = true;
+      vm.expandedMap = {};
+      vm.childrenMap = {};
+      $.ajax({
+        url: '/record/data/{$domainId}',
+        method: 'POST',
+        data: { keyword: vm.keyword },
+        dataType: 'json'
+      }).done(function (res) {
+        vm.loading = false;
+        vm.parents = (res && res.rows) ? res.rows : [];
+      }).fail(function () {
+        layer.msg('加载父级列表失败');
+      });
+    },
+
+    toggleParent: function (p) {
+      var pid = p.RecordId;
+
+      // 收起
+      if (this.expandedMap[pid]) {
+        this.$set(this.expandedMap, pid, false);
+        return;
+      }
+
+      // 展开
+      this.$set(this.expandedMap, pid, true);
+
+      // 已有缓存就不再请求
+      if (this.childrenMap[pid]) return;
+
+      this.loadChildren(pid);
+    },
+
+    loadChildren: function (pid) {
+      var vm = this;
+      vm.$set(vm.loadingMap, pid, true);
+
+      $.ajax({
+        url: '/record/data/{$domainId}',
+        method: 'POST',
+        data: { subdomain: pid },
+        dataType: 'json'
+      }).done(function (res) {
+        vm.$set(vm.childrenMap, pid, (res && res.rows) ? res.rows : []);
+      }).fail(function () {
+        layer.msg('加载子级列表失败');
+        vm.$set(vm.childrenMap, pid, []);
+      }).always(function () {
+        vm.$set(vm.loadingMap, pid, false);
+      });
+    },
+
+    addRecord: function (p) {
+      this.form.action = 'add';
+      this.form.recordid = '';
+      this.form.recordinfo = '';
+      this.form.parentid = p.RecordId || '';
+      this.form.name = p.Name || '';
+      this.form.type = 'A';
+      this.form.line = defaultLine;
+      this.form.mode = '1';
+      this.form.value = '';
+      this.form.ttl = 600;
+      this.form.weight = '';
+      this.form.mx = 10;
+      $("#modal-store").modal('show');
+      $("#form-store").data("bootstrapValidator").resetForm();
+    },
+    editRecord: function (c, parentid) {
+      this.form.action = 'update';
+      this.form.recordid = c.RecordId;
+      this.form.recordinfo = JSON.stringify(c);
+      this.form.parentid = parentid || '';
+      this.form.name = c.Name;
+      this.form.type = c.Type;
+      this.form.line = c.Line;
+      this.form.mode = c.Mode;
+      this.form.value = c.Value;
+      this.form.ttl = c.TTL;
+      this.form.weight = c.Weight;
+      this.form.mx = c.MX || 10;
+      $("#modal-store").modal('show');
+      $("#form-store").data("bootstrapValidator").resetForm();
+    },
+    save: function () {
+      $("#form-store").data("bootstrapValidator").validate();
+      if(!$("#form-store").data("bootstrapValidator").isValid()){
+        return;
+      }
+      var vm = this;
+      var ii = layer.load(2);
+      $.ajax({
+        type : 'POST',
+        url : '/record/'+vm.form.action+'/{$domainId}',
+        data : vm.form,
+        dataType : 'json',
+        success : function(data) {
+          layer.close(ii);
+          if(data.code == 0){
+            layer.alert(data.msg,{
+              icon: 1,
+              closeBtn: false
+            }, function(){
+              layer.closeAll();
+              $("#modal-store").modal('hide');
+              if(vm.form.parentid){
+                vm.loadChildren(vm.form.parentid);
+              }else{
+                vm.loadParents();
+              }
+            });
+          }else{
+            layer.alert(data.msg, {icon: 2})
+          }
+        }
+      });
+    },
+
+    setRecordStatus: function (c, parentid, status) {
+      var vm = this;
+      var ii = layer.load(2);
+      $.ajax({
+        type : 'POST',
+        url : '/record/status/{$domainId}',
+        data : { recordid: c.RecordId, status: status, recordinfo: JSON.stringify(c) },
+        dataType : 'json',
+        success : function(data) {
+          layer.close(ii);
+          if(data.code == 0){
+            layer.closeAll();
+				    layer.msg(status=='1'?'开启成功':'暂停成功', {icon: 1, time:500});
+            vm.loadChildren(parentid);
+          }else{
+            layer.alert(data.msg, {icon: 2})
+          }
+        }
+      });
+    },
+
+    deleteRecord: function (c, parentid) {
+      var vm = this;
+      layer.confirm('确定要删除此解析记录吗？', {title: '提示', icon: 0}, function(){
+        var ii = layer.load(2);
+        $.ajax({
+          type : 'POST',
+          url : '/record/delete/{$domainId}',
+          data : { recordid: c.RecordId, recordinfo: JSON.stringify(c) },
+          dataType : 'json',
+          success : function(data) {
+            layer.close(ii);
+            if(data.code == 0){
+              layer.closeAll();
+  				    layer.msg('删除成功', {icon: 1, time:800});
+              vm.loadChildren(parentid);
+            }else{
+              layer.alert(data.msg, {icon: 2})
+            }
+          }
+        });
+      });
+    },
+
+    deleteHost: function (p) {
+      var vm = this;
+      layer.confirm('确定要删除此主机名下所有解析记录吗？', {title: '提示', icon: 0}, function(){
+        var ii = layer.load(2);
+        $.ajax({
+          type : 'POST',
+          url : '/record/delete/{$domainId}',
+          data : { recordid: p.RecordId },
+          dataType : 'json',
+          success : function(data) {
+            layer.close(ii);
+            if(data.code == 0){
+              layer.closeAll();
+  				    layer.msg('删除成功', {icon: 1, time:800});
+              vm.loadParents();
+            }else{
+              layer.alert(data.msg, {icon: 2})
+            }
+          }
+        });
+      });
+    },
+
+    editHostRemark: function (p) {
+      var vm = this;
+      layer.open({
+        type: 1,
+        area: ['350px'],
+        closeBtn: 2,
+        title: '编辑备注',
+        content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark" value="'+(p.Remark==null?'':p.Remark)+'" autocomplete="off" placeholder="备注信息"></div></div>',
+        btn: ['确认', '取消'],
+        yes: function(){
+          var remark = $("input[name='remark']").val();
+          var ii = layer.load(2, {shade:[0.1,'#fff']});
+          $.ajax({
+            type : 'POST',
+            url : '/record/remark/{$domainId}',
+            data : {recordid:p.RecordId, remark:remark},
+            dataType : 'json',
+            success : function(data) {
+              layer.close(ii);
+              if(data.code == 0){
+                layer.closeAll();
+                layer.msg('保存成功', {icon: 1, time:800});
+                vm.loadParents();
+              }else{
+                layer.alert(data.msg, {icon:2});
+              }
+            },
+            error:function(data){
+              layer.close(ii);
+              layer.msg('服务器错误');
+            }
+          });
+        }
+      });
+    },
+
+    copyToClipboard: function (c, event) {
+      var text = c.Value;
+      var tempInput = document.createElement('input');
+      tempInput.style.position = 'absolute';
+      tempInput.style.left = '-9999px';
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      $(event.target).toggleClass('fa-copy fa-check');
+      setTimeout(function(){
+        $(event.target).toggleClass('fa-check fa-copy');
+      }, 1000);
+      layer.msg('已复制到剪贴板', {icon: 1, time: 600});
+    },
+  }
+});
+</script>
+{/block}

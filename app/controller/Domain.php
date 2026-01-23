@@ -457,6 +457,9 @@ class Domain extends BaseController
         View::assign('recordLine', $recordLineArr);
         View::assign('minTTL', $minTTL ? $minTTL : 1);
         View::assign('dnsconfig', $dnsconfig);
+        if ($dnstype == 'qingcloud') {
+            return view('qingcloud');
+        }
         return view();
     }
 

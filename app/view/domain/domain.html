@@ -428,9 +428,7 @@ function saveEdit(){
 	});
 }
 function delItem(id) {
-	var confirmobj = layer.confirm('确定要删除此域名吗？删除域名不会影响已添加的解析', {
-	  btn: ['确定','取消']
-	}, function(){
+	layer.confirm('确定要删除此域名吗？删除域名不会影响已添加的解析', {title: '提示', icon: 0}, function(){
 	  var ii = layer.load(2);
 	  $.ajax({
 		type : 'POST',
@@ -447,8 +445,6 @@ function delItem(id) {
 			}
 		}
 	  });
-	}, function(){
-		layer.close(confirmobj);
 	});
 }
 function getDomainList(){
@@ -517,9 +513,7 @@ function operation(action){
 		window.location.href = '/record/batchedit';
 		return;
 	}else if(action == 'delete'){
-		var confirmobj = layer.confirm('确定要删除所选域名吗？', {
-			btn: ['确定','取消']
-		}, function(){
+		layer.confirm('确定要删除所选域名吗？', {title: '提示', icon: 0}, function(){
 			var ii = layer.load(2);
 			$.ajax({
 				type : 'POST',
@@ -537,13 +531,9 @@ function operation(action){
 					}
 				}
 			});
-		}, function(){
-			layer.close(confirmobj);
 		});
 	}else if(action == 'updateexpire'){
-		var confirmobj = layer.confirm('提交后将异步刷新所选域名的到期时间', {
-			btn: ['确定','取消']
-		}, function(){
+		layer.confirm('提交后将异步刷新所选域名的到期时间', {title: '提示', icon: 0}, function(){
 			var ii = layer.load(2);
 			$.ajax({
 				type : 'POST',
@@ -561,8 +551,6 @@ function operation(action){
 					}
 				}
 			});
-		}, function(){
-			layer.close(confirmobj);
 		});
 	}else{
 		var is_notice = action == 'opennotice' ? 1 : 0;

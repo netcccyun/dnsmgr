@@ -8,6 +8,7 @@ class cloudflare implements DnsInterface
 {
     private $Email;
     private $ApiKey;
+    private $auth;
     private $baseUrl = 'https://api.cloudflare.com/client/v4';
     private $error;
     private $domain;
@@ -21,6 +22,7 @@ class cloudflare implements DnsInterface
         $this->domain = $config['domain'];
         $this->domainid = $config['domainid'];
         $this->proxy = isset($config['proxy']) ? $config['proxy'] == 1 : false;
+        $this->auth = isset($config['auth']) ? intval($config['auth']) : (preg_match('/^[0-9a-f]+$/i', $this->ApiKey) ? 0 : 1);
     }
 
     public function getError()
@@ -75,7 +77,7 @@ class cloudflare implements DnsInterface
         if ($data) {
             $list = [];
             foreach ($data['result'] as $row) {
-                $name = $this->domain == $row['name'] ? '@' : str_replace('.'.$this->domain, '', $row['name']);
+                $name = $this->domain == $row['name'] ? '@' : substr($row['name'], 0, -(strlen($this->domain) + 1));
                 $status = str_ends_with($name, '_pause') ? '0' : '1';
                 $name = $status == '0' ? substr($name, 0, -6) : $name;
                 if ($row['type'] == 'SRV' && isset($row['priority'])) {
@@ -112,7 +114,7 @@ class cloudflare implements DnsInterface
     {
         $data = $this->send_reuqest('GET', '/zones/'.$this->domainid.'/dns_records/'.$RecordId);
         if ($data) {
-            $name = $this->domain == $data['result']['name'] ? '@' : str_replace('.' . $this->domain, '', $data['result']['name']);
+            $name = $this->domain == $data['result']['name'] ? '@' : substr($data['result']['name'], 0, -(strlen($this->domain) + 1));
             $status = str_ends_with($name, '_pause') ? '0' : '1';
             $name = $status == '0' ? substr($name, 0, -6) : $name;
             if ($data['result']['type'] == 'SRV' && isset($data['result']['priority'])) {
@@ -263,14 +265,14 @@ class cloudflare implements DnsInterface
     {
         $url = $this->baseUrl . $path;
 
-        if (preg_match('/^[0-9a-f]+$/i', $this->ApiKey)) {
+        if ($this->auth == 0) {
             $headers = [
-                'X-Auth-Email: ' . $this->Email,
-                'X-Auth-Key: ' . $this->ApiKey,
+                'X-Auth-Email' => $this->Email,
+                'X-Auth-Key' => $this->ApiKey,
             ];
         } else {
             $headers = [
-                'Authorization: Bearer ' . $this->ApiKey,
+                'Authorization' => 'Bearer ' . $this->ApiKey,
             ];
         }
 
@@ -281,39 +283,17 @@ class cloudflare implements DnsInterface
             }
         } else {
             $body = json_encode($params);
-            $headers[] = 'Content-Type: application/json';
+            $headers['Content-Type'] = 'application/json';
         }
 
-        $ch = curl_init($url);
-        if ($this->proxy) {
-            curl_set_proxy($ch);
+        try {
+            $response = http_request($url, $body, null, null, $headers, $this->proxy, $method);
+        } catch (\Exception $e) {
+            $this->setError($e->getMessage());
+            return false;
         }
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        if ($method == 'POST') {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        } elseif ($method == 'PUT') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        } elseif ($method == 'PATCH') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        } elseif ($method == 'DELETE') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-        }
-        $response = curl_exec($ch);
-        $errno = curl_errno($ch);
-        if ($errno) {
-            $this->setError('Curl error: ' . curl_error($ch));
-        }
-        curl_close($ch);
-        if ($errno) return false;
 
-        $arr = json_decode($response, true);
+        $arr = json_decode($response['body'], true);
         if ($arr) {
             if ($arr['success']) {
                 return $arr;

@@ -235,7 +235,10 @@ class dnsla implements DnsInterface
     private function execute($method, $path, $params = null)
     {
         $token = base64_encode($this->apiid.':'.$this->apisecret);
-        $header = ['Authorization: Basic '.$token, 'Content-Type: application/json; charset=utf-8'];
+        $header = [
+            'Authorization' => 'Basic '.$token,
+            'Content-Type' => 'application/json; charset=utf-8'
+        ];
         if ($method == 'POST' || $method == 'PUT') {
             $response = $this->curl($method, $path, $header, json_encode($params));
         } else {
@@ -264,34 +267,19 @@ class dnsla implements DnsInterface
     private function curl($method, $path, $header, $body = null)
     {
         $url = $this->baseUrl . $path;
-        $ch = curl_init($url);
-        if ($this->proxy) {
-            curl_set_proxy($ch);
+        try {
+            $response = http_request($url, $body, null, null, $header, $this->proxy, $method);
+        } catch (\Exception $e) {
+            $this->setError($e->getMessage());
+            return false;
         }
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-        if ($body) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        }
-        $response = curl_exec($ch);
-        $errno = curl_errno($ch);
-        if ($errno) {
-            $this->setError('Curl error: ' . curl_error($ch));
-        }
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        if ($errno) return false;
-        if ($httpCode == 200) {
-            return $response;
-        } elseif ($httpCode == 401) {
+        if ($response['code'] == 200) {
+            return $response['body'];
+        } elseif ($response['code'] == 401) {
             $this->setError('认证失败');
             return false;
         } else {
-            $this->setError('http code: '.$httpCode);
+            $this->setError('http code: '.$response['code']);
             return false;
         }
     }

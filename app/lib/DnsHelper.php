@@ -287,6 +287,41 @@ class DnsHelper
             'page' => false,
             'add' => true,
         ],
+        'qingcloud' => [
+            'name' => '青云',
+            'icon' => 'qingcloud.ico',
+            'note' => '',
+            'config' => [
+                'access_key_id' => [
+                    'name' => 'Access Key ID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'secret_access_key' => [
+                    'name' => 'Secret Access Key',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'remark' => 0,
+            'status' => true,
+            'redirect' => false,
+            'log' => false,
+            'weight' => true,
+            'page' => false,
+            'add' => true,
+        ],
         'bt' => [
             'name' => '宝塔域名',
             'icon' => 'bt.png',
@@ -338,6 +373,15 @@ class DnsHelper
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                ],
+                'auth' => [
+                    'name' => '认证方式',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => 'API密钥',
+                        '1' => 'API令牌',
+                    ],
+                    'value' => '0'
                 ],
                 'apikey' => [
                     'name' => 'API密钥/令牌',

@@ -279,9 +279,7 @@ function setStatus(id,status) {
 	});
 }
 function delItem(id) {
-	var confirmobj = layer.confirm('确定要删除此用户吗？', {
-	  btn: ['确定','取消']
-	}, function(){
+	layer.confirm('确定要删除此用户吗？', {title: '提示', icon: 0}, function(){
 	  var ii = layer.load(2);
 	  $.ajax({
 		type : 'POST',
@@ -298,8 +296,6 @@ function delItem(id) {
 			}
 		}
 	  });
-	}, function(){
-	  layer.close(confirmobj);
 	});
 }
 var CreatePassword = function (len)
