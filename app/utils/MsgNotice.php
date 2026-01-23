@@ -257,6 +257,7 @@ class MsgNotice
     public static function send_webhook($title, $content)
     {
         $url = config_get('webhook_url');
+        $atuser = config_get('webhook_user');
         if (!$url || !parse_url($url)) return false;
         if (strpos($url, 'oapi.dingtalk.com')) {
             $content = '### '.$title."  \n ".str_replace("\n", "  \n ", $content);
@@ -267,6 +268,14 @@ class MsgNotice
                     'text' => $content,
                 ],
             ];
+            if (!empty($atuser)) {
+                if ($atuser == 'all') {
+                    $post['at'] = ['isAtAll' => true];
+                } else {
+                    $atusers = explode(',', $atuser);
+                    $post['at'] = ['atMobiles' => $atusers, 'isAtAll' => false];
+                }
+            }
         } elseif (strpos($url, 'qyapi.weixin.qq.com')) {
             $content = '## '.$title."\n".$content;
             $post = [
@@ -276,11 +285,63 @@ class MsgNotice
                 ],
             ];
         } elseif (strpos($url, 'open.feishu.cn') || strpos($url, 'open.larksuite.com')) {
-            $content = str_replace(['\*', '**'], ['*', ''], strip_tags($content));
+            $content = str_replace('<font color="warning">', '<font color="red">', $content);
+            if (!empty($atuser)) {
+                if ($atuser == 'all') {
+                    $content .= "\n".'<at id=all></at> ';
+                } else {
+                    $atusers = explode(',', $atuser);
+                    $content .= "\n";
+                    foreach ($atusers as $u) {
+                        $content .= '<at user_id="'.$u.'"></at> ';
+                    }
+                }
+            }
+            $template = 'blue';
+            if(strpos($title, '发生告警') !== false || strpos($title, '失败') !== false) $template = 'red';
+            else if(strpos($title, '恢复正常') !== false) $template = 'green';
+            else if(strpos($title, '到期提醒') !== false) $template = 'yellow';
             $post = [
-                'msg_type' => 'text',
-                'content' => [
-                    'text' => $content,
+                'msg_type' => 'interactive',
+                'card' => [
+                    'schema' => '2.0',
+                    'config' => [
+                        'update_multi' => true,
+                        'style' => [
+                            'text_size' => [
+                                'normal_v2' => [
+                                    'default' => 'normal',
+                                    'pc' => 'normal',
+                                    'mobile' => 'heading',
+                                ],
+                            ],
+                        ],
+                    ],
+                    'header' => [
+                        'title' => [
+                            'tag' => 'plain_text',
+                            'content' => $title,
+                        ],
+                        'subtitle' => [
+                            'tag' => 'plain_text',
+                            'content' => '',
+                        ],
+                        'template' => $template,
+                        'padding' => '12px 12px 12px 12px',
+                    ],
+                    'body' => [
+                        'direction' => 'vertical',
+                        'padding' => '12px 12px 12px 12px',
+                        'elements' => [
+                            [
+                                'tag' => 'markdown',
+                                'content' => $content,
+                                'text_align' => 'left',
+                                'text_size' => 'normal_v2',
+                                'margin' => '0px 0px 0px 0px',
+                            ]
+                        ],
+                    ],
                 ],
             ];
         } else {

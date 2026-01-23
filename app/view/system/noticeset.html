@@ -122,6 +122,10 @@
 	  <div class="col-sm-9"><input type="text" name="webhook_url" value="{:config_get('webhook_url')}" class="form-control"/></div>
 	</div>
 	<div class="form-group">
+	  <label class="col-sm-3 control-label">@用户手机号</label>
+	  <div class="col-sm-9"><input type="text" name="webhook_user" value="{:config_get('webhook_user')}" class="form-control" placeholder="非必填，可填写用户的手机号，@全体填写all"/></div>
+	</div>
+	<div class="form-group">
 	  <div class="col-sm-offset-3 col-sm-9">
 		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
 		<a href="javascript:webhooktest()" class="btn btn-default btn-block">发送测试消息</a>
@@ -130,7 +134,9 @@
   </form>
 </div>
 <div class="panel-footer">
-仅支持填写企业微信、钉钉、飞书群机器人的Webhook地址
+仅支持填写企业微信、钉钉、飞书群机器人的Webhook地址<br/>
+认证方式可以选自定义关键词“DNS”或IP白名单。<br/>
+@用户不支持企业微信，飞书用户手机号需要填写<a href="https://open.feishu.cn/document/home/user-identity-introduction/open-id" target="_blank" rel="noreferrer">用户ID</a>。
 </div>
 </div>
 </div>
