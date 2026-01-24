@@ -52,7 +52,7 @@ class fnos implements DeployInterface
                 $this->exec($connection, '上传证书文件', "sudo tee ".$certPath." > /dev/null <<'EOF'\n".$fullchain."\nEOF");
                 $this->exec($connection, '上传私钥文件', "sudo tee ".$keyPath." > /dev/null <<'EOF'\n".$privatekey."\nEOF");
                 $this->exec($connection, '刷新目录权限', 'sudo chmod 0755 "'.$certDir.'" -R');
-                $this->exec($connection, '更新数据表', 'sudo -u postgres psql -d trim_connect -c "UPDATE cert SET  valid_to='.$certInfo['validTo_time_t'].'000,valid_from='.$certInfo['validFrom_time_t'].'000,issued_by=\''.$certInfo['issuer']['CN'].'\',updated_time='.getMillisecond().' WHERE private_key=\''.$keyPath.'\'"');
+                $this->exec($connection, '更新数据表', 'cd /tmp && sudo -u postgres psql -d trim_connect -c "UPDATE cert SET  valid_to='.$certInfo['validTo_time_t'].'000,valid_from='.$certInfo['validFrom_time_t'].'000,issued_by=\''.$certInfo['issuer']['CN'].'\',updated_time='.getMillisecond().' WHERE private_key=\''.$keyPath.'\'"');
                 $this->log('证书 '.$row['domain'].' 更新成功');
                 $success++;
             }

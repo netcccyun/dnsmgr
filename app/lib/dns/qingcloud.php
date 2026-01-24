@@ -160,7 +160,7 @@ class qingcloud implements DnsInterface
 
         if ($Type == 'MX') {
             $Value = intval($MX).' '.$Value;
-        } elseif ($Type == 'TXT') {
+        } elseif ($Type == 'TXT' && substr($Value, 0, 1) != '"') {
             $Value = '"'.$Value.'"';
         }
 
@@ -184,7 +184,7 @@ class qingcloud implements DnsInterface
 
         if ($Type == 'MX') {
             $Value = intval($MX).' '.$Value;
-        } elseif ($Type == 'TXT') {
+        } elseif ($Type == 'TXT' && substr($Value, 0, 1) != '"') {
             $Value = '"'.$Value.'"';
         }
 

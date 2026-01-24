@@ -880,9 +880,7 @@ class DeployHelper
 sudo visudo<br/>
 #在文件最后一行增加以下内容，需要将username替换成自己的用户名<br/>
 username ALL=(ALL) NOPASSWD: NOPASSWD: ALL<br/>
-ctrl+x 保存退出<br/>
-sudo mkdir -p /home/<用户名><br/>
-sudo chown -R <用户名>: /home/<用户名><br/>',
+ctrl+x 保存退出<br/>',
             'tasknote' => '系统会根据关联SSL证书的域名，自动更新对应证书',
             'inputs' => [
                 'host' => [
