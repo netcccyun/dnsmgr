@@ -65,7 +65,8 @@ class qingcloud implements DnsInterface
         if ($SubDomain) {
             return $this->getHostRecords($SubDomain);
         }
-        $param = ['zone_name' => $this->domainid, 'offset' => 0, 'limit' => 100];
+        $offset = ($PageNumber - 1) * $PageSize;
+        $param = ['zone_name' => $this->domainid, 'offset' => $offset, 'limit' => $PageSize];
         if (!isNullOrEmpty($KeyWord)) {
             $param['search_word'] = $KeyWord;
         }

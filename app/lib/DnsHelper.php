@@ -320,7 +320,7 @@ class DnsHelper
             'log' => false,
             'weight' => true,
             'page' => false,
-            'add' => true,
+            'add' => false,
         ],
         'bt' => [
             'name' => '宝塔域名',
@@ -475,7 +475,7 @@ class DnsHelper
             'log' => false,
             'weight' => false,
             'page' => false,
-            'add' => true,
+            'add' => false,
         ],
         'powerdns' => [
             'name' => 'PowerDNS',
@@ -620,6 +620,7 @@ class DnsHelper
         'baidu' => ['DEF' => 'default', 'CT' => 'ct', 'CU' => 'cnc', 'CM' => 'cmnet', 'AB' => ''],
         'jdcloud' => ['DEF' => '-1', 'CT' => '1', 'CU' => '2', 'CM' => '3', 'AB' => '4'],
         'bt' => ['DEF' => '0', 'CT' => '285344768', 'CU' => '285345792', 'CM' => '285346816'],
+        'qingcloud' => ['DEF' => '0', 'CT' => '2', 'CU' => '3', 'CM' => '4', 'AB' => '8'],
         'cloudflare' => ['DEF' => '0'],
         'namesilo' => ['DEF' => 'default'],
         'powerdns' => ['DEF' => 'default'],

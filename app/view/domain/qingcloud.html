@@ -5,7 +5,6 @@
 td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;}
 .dns-parent-row { cursor: pointer; }
 .dns-child-row td { background: #fafafa; }
-.dns-child-row td:nth-child(4) { padding-left: 24px; }
 .dns-child-empty td { background:#fafafa; }
 .glyphicon-spin { animation: spin 1s infinite linear; }
 @keyframes spin { from {transform:rotate(0deg);} to {transform:rotate(360deg);} }
@@ -126,7 +125,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
         <th>线路类型</th>
         <th>记录类型</th>
         <th>模式</th>
-        <th>记录值</th>
+        <th style="min-width:150px">记录值</th>
         <th>TTL</th>
         <th>状态</th>
         <th>操作</th>
@@ -193,6 +192,33 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
     </tbody>
   </table>
 </div>
+  <div class="row" style="margin-top:10px;">
+    <div class="col-sm-6 text-muted" style="padding-top:6px;">
+      共 {{ total }} 条，当前第 {{ currentPage }} / {{ totalPages }} 页
+    </div>
+
+    <div class="col-sm-6 text-right">
+      <ul class="pagination pagination-sm" style="margin:0;">
+        <li :class="{disabled: currentPage === 1}">
+          <a href="javascript:;" @click="goPage(1)">&laquo;</a>
+        </li>
+        <li :class="{disabled: currentPage === 1}">
+          <a href="javascript:;" @click="goPage(currentPage - 1)">上一页</a>
+        </li>
+
+        <li v-for="n in pageList" :key="'pg-' + n" :class="{active: n === currentPage}">
+          <a href="javascript:;" @click="goPage(n)">{{ n }}</a>
+        </li>
+
+        <li :class="{disabled: currentPage === totalPages}">
+          <a href="javascript:;" @click="goPage(currentPage + 1)">下一页</a>
+        </li>
+        <li :class="{disabled: currentPage === totalPages}">
+          <a href="javascript:;" @click="goPage(totalPages)">&raquo;</a>
+        </li>
+      </ul>
+    </div>
+  </div>
 
     </div>
   </div>
@@ -228,6 +254,9 @@ new Vue({
         mx: 10,
       },
       keyword: '',
+      total: 0,
+      offset: 0,
+      limit: 10,
       parents: [],
       expandedMap: {},   // {pid: true/false}
       loadingMap: {},    // {pid: true/false}
@@ -241,6 +270,29 @@ new Vue({
       ]
     };
   },
+  computed: {
+    currentPage: function () {
+      return Math.floor(this.offset / this.limit) + 1;
+    },
+    totalPages: function () {
+      return Math.max(1, Math.ceil(this.total / this.limit));
+    },
+    pageList: function () {
+      // 显示最多 5 个页码，居中
+      var totalPages = this.totalPages;
+      var cur = this.currentPage;
+      var windowSize = 5;
+      var half = Math.floor(windowSize / 2);
+
+      var start = Math.max(1, cur - half);
+      var end = Math.min(totalPages, start + windowSize - 1);
+      start = Math.max(1, end - windowSize + 1);
+
+      var arr = [];
+      for (var i = start; i <= end; i++) arr.push(i);
+      return arr;
+    }
+  },
   mounted: function () {
     this.loadParents();
     $('[data-toggle="tooltip"]').tooltip();
@@ -251,18 +303,29 @@ new Vue({
       var vm = this;
       vm.loading = true;
       vm.expandedMap = {};
+      vm.loadingMap = {};
       vm.childrenMap = {};
       $.ajax({
         url: '/record/data/{$domainId}',
         method: 'POST',
-        data: { keyword: vm.keyword },
+        data: { keyword: vm.keyword, offset: vm.offset, limit: vm.limit },
         dataType: 'json'
       }).done(function (res) {
         vm.loading = false;
-        vm.parents = (res && res.rows) ? res.rows : [];
+        vm.total = res.total || 0;
+        vm.parents = res.rows || [];
       }).fail(function () {
         layer.msg('加载父级列表失败');
       });
+    },
+
+    goPage: function (page) {
+      if (!page) return;
+      page = Math.max(1, Math.min(this.totalPages, page));
+      if (page === this.currentPage) return;
+
+      this.offset = (page - 1) * this.limit;
+      this.loadParents();
     },
 
     toggleParent: function (p) {
