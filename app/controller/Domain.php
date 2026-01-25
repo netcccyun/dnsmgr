@@ -198,7 +198,7 @@ class Domain extends BaseController
         if (!empty($id)) {
             $select->where('A.id', $id);
         } elseif (!empty($kw)) {
-            $select->whereLike('name|A.remark', '%' . $kw . '%');
+            $select->whereLike('A.name|A.remark', '%' . $kw . '%');
         }
         if (!empty($aid)) {
             $select->where('A.aid', $aid);

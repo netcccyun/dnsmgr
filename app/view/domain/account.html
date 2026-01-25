@@ -9,7 +9,7 @@
 <form onsubmit="return searchSubmit()" method="GET" class="form-inline" id="searchToolbar">
   <div class="form-group">
 	<label>搜索</label>
-    <input type="text" class="form-control" name="kw" placeholder="AccessKey或备注">
+    <input type="text" class="form-control" name="kw" placeholder="账户名称或备注">
   </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名账户列表"><i class="fa fa-refresh"></i> 刷新</a>
@@ -54,7 +54,7 @@ $(document).ready(function(){
 			},
             {
 				field: 'name',
-				title: 'AccessKey'
+				title: '账户名称'
 			},
 			{
 				field: 'remark',

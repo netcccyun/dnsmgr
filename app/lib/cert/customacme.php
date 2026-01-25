@@ -62,10 +62,14 @@ class customacme implements CertInterface
 
         $dnsList = [];
         if (!empty($order['challenges'])) {
+            $keys = [];
             foreach ($order['challenges'] as $opts) {
+                $key = $opts['key'] . '|' .$opts['value'];
+                if (in_array($key, $keys)) continue;
                 $mainDomain = getMainDomain($opts['domain']);
                 $name = substr($opts['key'], 0, -(strlen($mainDomain) + 1));
                 $dnsList[$mainDomain][] = ['name' => $name, 'type' => 'TXT', 'value' => $opts['value']];
+                $keys[] = $key;
             }
         }
 
