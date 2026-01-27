@@ -79,6 +79,7 @@ class cloudflare implements DnsInterface
             foreach ($data['result'] as $row) {
                 $name = $this->domain == $row['name'] ? '@' : substr($row['name'], 0, -(strlen($this->domain) + 1));
                 $status = str_ends_with($name, '_pause') ? '0' : '1';
+                $name = $name == '__root__' ? '@' : $name;
                 $name = $status == '0' ? substr($name, 0, -6) : $name;
                 if ($row['type'] == 'SRV' && isset($row['priority'])) {
                     $row['content'] = $row['priority'] . ' ' . $row['content'];
@@ -117,6 +118,7 @@ class cloudflare implements DnsInterface
             $name = $this->domain == $data['result']['name'] ? '@' : substr($data['result']['name'], 0, -(strlen($this->domain) + 1));
             $status = str_ends_with($name, '_pause') ? '0' : '1';
             $name = $status == '0' ? substr($name, 0, -6) : $name;
+            $name = $name == '__root__' ? '@' : $name;
             if ($data['result']['type'] == 'SRV' && isset($data['result']['priority'])) {
                 $data['result']['content'] = $data['result']['priority'] . ' ' . $data['result']['content'];
             }
@@ -182,6 +184,12 @@ class cloudflare implements DnsInterface
     {
         $info = $this->getDomainRecordInfo($RecordId);
         $Name = $Status == '1' ? str_replace('_pause', '', $info['Name']) : $info['Name'] . '_pause';
+        // @ 作为特殊字符不能设置为解析, 故设置暂停解析的时候, 替换为 __root__
+        if ($Name == '__root__') {
+            $Name = '@';
+        } elseif ($Name == '@_pause') {
+            $Name = '__root___pause';
+        }
         return $this->updateDomainRecord($RecordId, $Name, $info['Type'], $info['Value'], $info['Line'], $info['TTL'], $info['MX'], $info['Weight'], $info['Remark']);
     }
 
