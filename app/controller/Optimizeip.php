@@ -109,6 +109,9 @@ class Optimizeip extends BaseController
                 if (empty($task['did']) || empty($task['rr']) || empty($task['ip_type']) || empty($task['recordnum']) || empty($task['ttl'])) {
                     return json(['code' => -1, 'msg' => '必填项不能为空']);
                 }
+                if ($task['recordnum'] < 1) {
+                    return json(['code' => -1, 'msg' => '解析数量不能少于1个']);
+                }
                 if ($task['recordnum'] > 50) {
                     return json(['code' => -1, 'msg' => '解析数量不能超过50个']);
                 }
