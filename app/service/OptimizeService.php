@@ -90,6 +90,9 @@ class OptimizeService
             $url = 'https://raw.githubusercontent.com/xingpingcn/enhanced-FaaS-in-China/refs/heads/main/Cf.json';
         }
         $response = get_curl($url);
+        if ($response === '') {
+            throw new Exception('获取优选IP数据失败，网络请求失败，请检查网络连接或代理地址');
+        }
         $arr = json_decode($response, true);
         if (isset($arr['Cf']['result'])) {
             $result = $arr['Cf']['result'];
