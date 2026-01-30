@@ -85,6 +85,14 @@ class OptimizeService
         }
         $proxy = config_get('optimize_ip_proxy', '');
         if (!empty($proxy)) {
+            $proxy = trim($proxy);
+            if (filter_var($proxy, FILTER_VALIDATE_URL) === false) {
+                throw new Exception('无效的代理地址配置：URL 格式错误');
+            }
+            $scheme = parse_url($proxy, PHP_URL_SCHEME);
+            if (!in_array($scheme, ['http', 'https'], true)) {
+                throw new Exception('无效的代理地址配置：仅支持 http 和 https 协议');
+            }
             $url = rtrim($proxy, '/') . '/xingpingcn/enhanced-FaaS-in-China/refs/heads/main/Cf.json';
         } else {
             $url = 'https://raw.githubusercontent.com/xingpingcn/enhanced-FaaS-in-China/refs/heads/main/Cf.json';
