@@ -677,6 +677,65 @@ class DeployHelper
                 ],
             ],
         ],
+        'acepanel' => [
+            'name' => 'AcePanel',
+            'class' => 1,
+            'icon' => 'acepanel.svg',
+            'desc' => '支持 AcePanel 3.0+ 版本使用',
+            'note' => '支持 AcePanel 3.0+ 版本使用',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'AcePanel 地址',
+                    'note' => '填写规则如：https://192.168.1.100:8888/xxxxxx ，带访问入口但不要带其他后缀',
+                    'required' => true,
+                ],
+                'id' => [
+                    'name' => '访问令牌ID',
+                    'type' => 'input',
+                    'placeholder' => '1',
+                    'note' => 'AcePanel 设置->用户->访问令牌',
+                    'required' => true,
+                ],
+                'token' => [
+                    'name' => '访问令牌',
+                    'type' => 'input',
+                    'note' => 'AcePanel 设置->用户->访问令牌',
+                    'placeholder' => '32位字符串',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'type' => [
+                    'name' => '部署类型',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => 'AcePanel 网站的证书',
+                        '1' => 'AcePanel 本身的证书',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
+                'sites' => [
+                    'name' => '网站名称列表',
+                    'type' => 'textarea',
+                    'placeholder' => '填写要部署证书的网站名称，每行一个',
+                    'note' => '填写创建网站时设置的网站唯一名称',
+                    'show' => 'type==0',
+                    'required' => true,
+                ],
+            ],
+        ],
         'ratpanel' => [
             'name' => '耗子面板',
             'class' => 1,
@@ -773,6 +832,53 @@ class DeployHelper
                     'type' => 'textarea',
                     'placeholder' => '填写要部署证书的网站名称，每行一个',
                     'note' => '网站名称，即为网站创建时绑定的第一个域名',
+                    'required' => true,
+                ],
+            ],
+        ],
+        'amh' => [
+            'name' => 'AMH面板',
+            'class' => 1,
+            'icon' => 'amh.ico',
+            'desc' => '',
+            'note' => null,
+            'tasknote' => '',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'AMH面板地址',
+                    'note' => '填写规则如：http://192.168.1.100:8888 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'apikey' => [
+                    'name' => 'API接口密钥',
+                    'type' => 'input',
+                    'placeholder' => '安装amapi软件后查看，是密钥不是私钥',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'env_name' => [
+                    'name' => '环境名称',
+                    'type' => 'input',
+                    'placeholder' => '如：lnmp01',
+                    'required' => true,
+                ],
+                'vhost_name' => [
+                    'name' => '网站名称列表',
+                    'type' => 'textarea',
+                    'placeholder' => '填写要部署证书的网站标识域名，每行一个',
+                    'note' => '网站标识域名一列的值，并非绑定域名',
                     'required' => true,
                 ],
             ],
