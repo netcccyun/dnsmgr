@@ -95,11 +95,12 @@ class System extends BaseController
     public function proxytest()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');
-        $proxy_server = trim($_POST['proxy_server']);
-        $proxy_port = $_POST['proxy_port'];
-        $proxy_user = trim($_POST['proxy_user']);
-        $proxy_pwd = trim($_POST['proxy_pwd']);
-        $proxy_type = $_POST['proxy_type'];
+        $proxy_server = input('post.proxy_server', '', 'trim');
+        $proxy_port = input('post.proxy_port/d', 0);
+        $proxy_user = input('post.proxy_user', '', 'trim');
+        $proxy_pwd = input('post.proxy_pwd', '', 'trim');
+        $proxy_type = input('post.proxy_type', 'http', 'trim');
+        
         try {
             check_proxy('https://dl.amh.sh/ip.htm', $proxy_server, $proxy_port, $proxy_type, $proxy_user, $proxy_pwd);
         } catch (Exception $e) {
