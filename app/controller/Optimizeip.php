@@ -85,8 +85,11 @@ class Optimizeip extends BaseController
                 if (empty($task['did']) || empty($task['rr']) || empty($task['ip_type']) || empty($task['recordnum']) || empty($task['ttl'])) {
                     return json(['code' => -1, 'msg' => '必填项不能为空']);
                 }
-                if ($task['recordnum'] > 5) {
-                    return json(['code' => -1, 'msg' => '解析数量不能超过5个']);
+                if ($task['recordnum'] < 1) {
+                    return json(['code' => -1, 'msg' => '解析数量不能少于1个']);
+                }
+                if ($task['recordnum'] > 50) {
+                    return json(['code' => -1, 'msg' => '解析数量不能超过50个']);
                 }
                 if (Db::name('optimizeip')->where('did', $task['did'])->where('rr', $task['rr'])->find()) {
                     return json(['code' => -1, 'msg' => '当前域名的优选IP任务已存在']);
@@ -109,8 +112,11 @@ class Optimizeip extends BaseController
                 if (empty($task['did']) || empty($task['rr']) || empty($task['ip_type']) || empty($task['recordnum']) || empty($task['ttl'])) {
                     return json(['code' => -1, 'msg' => '必填项不能为空']);
                 }
-                if ($task['recordnum'] > 5) {
-                    return json(['code' => -1, 'msg' => '解析数量不能超过5个']);
+                if ($task['recordnum'] < 1) {
+                    return json(['code' => -1, 'msg' => '解析数量不能少于1个']);
+                }
+                if ($task['recordnum'] > 50) {
+                    return json(['code' => -1, 'msg' => '解析数量不能超过50个']);
                 }
                 if (Db::name('optimizeip')->where('did', $task['did'])->where('rr', $task['rr'])->where('id', '<>', $id)->find()) {
                     return json(['code' => -1, 'msg' => '当前域名的优选IP任务已存在']);

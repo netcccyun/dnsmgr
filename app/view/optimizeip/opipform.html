@@ -54,14 +54,14 @@
         <label class="col-sm-3 control-label no-padding-right">解析IP类型<span class="tips" title="" data-toggle="tooltip" data-placement="bottom" data-original-title="同时开启IPv6&IPv4将会请求2次接口消耗双倍积分"><i class="fa fa-question-circle"></i></span></label>
         <div class="col-sm-6">
             <label class="checkbox-inline" v-for="option in iptypeList">
-                <input type="checkbox" name="ip_type" :value="option.value" v-model="set.ip_type_select" required> {{option.label}}
+                <input type="checkbox" name="ip_type" :value="option.value" v-model="set.ip_type_select" :disabled="option.value=='v6' && isXingpingcn" required> {{option.label}}<span v-if="option.value=='v6' && isXingpingcn" class="text-muted">(xingpingcn.top不支持)</span>
             </label><br/>
         </div>
     </div>
     <div class="form-group">
         <label class="col-sm-3 control-label no-padding-right">每线路解析数量<span class="tips" title="" data-toggle="tooltip" data-placement="bottom" data-original-title="数量不要超过当前域名套餐允许的最大数量，否则会添加解析失败"><i class="fa fa-question-circle"></i></span></label>
         <div class="col-sm-6">
-            <input type="text" name="recordnum" v-model="set.recordnum" placeholder="填写每线路解析数量" class="form-control" data-bv-integer="true" min="1" max="5" required>
+            <input type="text" name="recordnum" v-model="set.recordnum" placeholder="填写每线路解析数量" class="form-control" data-bv-integer="true" min="1" max="50" required>
         </div>
     </div>
     <div class="form-group">
@@ -110,6 +110,7 @@ new Vue({
     el: '#app',
     data: {
         action: '{$action}',
+        optimize_ip_api: '{:config_get("optimize_ip_api", 0)}',
         set: {
             id: '',
             remark: '',
@@ -132,8 +133,18 @@ new Vue({
             4:'EdgeOne'
         },
     },
+    computed: {
+        isXingpingcn: function() {
+            return this.optimize_ip_api == '2';
+        }
+    },
     watch: {
         'set.ip_type_select': function(val){
+            // 如果使用xingpingcn.top接口，自动移除v6
+            if(this.isXingpingcn && val.includes('v6')){
+                this.set.ip_type_select = val.filter(v => v !== 'v6');
+                return;
+            }
             this.set.ip_type = val.join(',');
         }
     },

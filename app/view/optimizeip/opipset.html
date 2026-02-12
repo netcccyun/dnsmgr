@@ -14,8 +14,9 @@
 <div class="panel-heading"><h3 class="panel-title">使用说明</h3></div>
 <div class="panel-body">
   <p><li>不支持对CloudFlare里的域名添加优选，必须使用其他DNS服务商。需开通Cloudflare for SaaS，且域名使用CNAME的方式解析到CloudFlare。</li></p>
-  <p><li>数据接口：<a href="https://www.wetest.vip/" target="_blank" rel="noreferrer">wetest.vip</a> 数据接口支持CloudFlare、CloudFront、EdgeOne；<a href="https://stock.hostmonit.com/" target="_blank" rel="noreferrer">HostMonit</a> 只支持CloudFlare。</li></p>
+  <p><li>数据接口：<a href="https://www.wetest.vip/" target="_blank" rel="noreferrer">wetest.vip</a> 数据接口支持CloudFlare、CloudFront、EdgeOne；<a href="https://stock.hostmonit.com/" target="_blank" rel="noreferrer">HostMonit</a> 只支持CloudFlare；<a href="https://github.com/xingpingcn/enhanced-FaaS-in-China" target="_blank" rel="noreferrer">xingpingcn.top</a> 只支持CloudFlare（免费、无需密钥）。</li></p>
   <p><li>接口密钥：默认o1zrmHAF为免费KEY可永久免费使用。</li></p>
+  <p><li>代理地址：如 https://ghfast.top/https://raw.githubusercontent.com/ ，留空则直接访问 https://raw.githubusercontent.com/。</li></p>
   <p><li>自动更新：可查看<a href="/system/cronset">计划任务设置</a></p>
 </div>
 </div>
@@ -24,19 +25,23 @@
 <div class="panel panel-info">
 <div class="panel-heading"><h3 class="panel-title">数据接口设置</h3></div>
 <div class="panel-body">
-  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form" id="apiSettingForm">
 	<div class="form-group">
 	  <label class="col-sm-3 control-label">数据接口</label>
-	  <div class="col-sm-9"><select class="form-control" name="optimize_ip_api" default="{:config_get('optimize_ip_api')}"><option value="0">wetest.vip</option><option value="1">HostMonit</option></select></div>
+	  <div class="col-sm-9"><select class="form-control" name="optimize_ip_api" id="optimize_ip_api" default="{:config_get('optimize_ip_api')}"><option value="0">wetest.vip</option><option value="1">HostMonit</option><option value="2">xingpingcn.top</option></select></div>
 	</div>
-	<div class="form-group">
+	<div class="form-group" id="keyGroup">
 		<label class="col-sm-3 control-label">接口密钥</label>
 		<div class="col-sm-9"><input type="text" name="optimize_ip_key" value="{:config_get('optimize_ip_key', 'o1zrmHAF')}" class="form-control"/></div>
+	  </div>
+	<div class="form-group" id="proxyGroup" style="display:none;">
+		<label class="col-sm-3 control-label">代理地址</label>
+		<div class="col-sm-9"><input type="text" name="optimize_ip_proxy" value="{:config_get('optimize_ip_proxy', '')}" class="form-control" placeholder="留空则直接访问GitHub"/></div>
 	  </div>
 	<div class="form-group">
 	  <div class="col-sm-offset-3 col-sm-9">
 		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
-		<a href="javascript:queryapi()" class="btn btn-default btn-block">查询积分</a>
+		<a href="javascript:queryapi()" class="btn btn-default btn-block" id="queryBtn">查询积分</a>
 	  </div>
 	</div>
   </form>
@@ -69,6 +74,25 @@ var items = $("select[default]");
 for (i = 0; i < items.length; i++) {
 	$(items[i]).val($(items[i]).attr("default")||0);
 }
+// 切换接口时显示/隐藏对应设置项
+function toggleApiSettings(){
+	var api = $("#optimize_ip_api").val();
+	if(api == '2'){
+		$("#keyGroup").hide();
+		$("#proxyGroup").show();
+		$("#queryBtn").hide();
+	}else{
+		$("#keyGroup").show();
+		$("#proxyGroup").hide();
+		$("#queryBtn").show();
+	}
+}
+$("#optimize_ip_api").change(function(){
+	toggleApiSettings();
+});
+// 页面加载时初始化
+toggleApiSettings();
+$('[data-toggle="tooltip"]').tooltip();
 function saveSetting(obj){
 	var ii = layer.load(2, {shade:[0.1,'#fff']});
 	$.ajax({

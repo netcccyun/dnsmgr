@@ -19,7 +19,7 @@ class OptimizeService
     public static function get_license($api, $key)
     {
         if ($api == 2) {
-            throw new Exception('当前接口暂不支持');
+            throw new Exception('xingpingcn.top 接口免费使用，无需密钥，无积分限制');
         } elseif ($api == 1) {
             $url = 'https://api.hostmonit.com/get_license?license='.$key;
         } else {
@@ -39,7 +39,9 @@ class OptimizeService
     public function get_ip_address($cdn_type = 1, $ip_type = 'v4')
     {
         $api = config_get('optimize_ip_api', 0);
-        if ($api == 1) {
+        if ($api == 2) {
+            return $this->get_ip_address_xingpingcn($ip_type);
+        } elseif ($api == 1) {
             $url = 'https://api.hostmonit.com/get_optimization_ip';
         } else {
             $url = 'https://www.wetest.vip/api/cf2dns/';
@@ -67,6 +69,59 @@ class OptimizeService
             throw new Exception('获取优选IP数据失败，'.$arr['msg']);
         } else {
             throw new Exception('获取优选IP数据失败，原因未知');
+        }
+    }
+
+    /**
+     * 从 xingpingcn.top 获取优选IP数据
+     * @param string $ip_type IP类型 v4/v6
+     * @return array
+     * @throws Exception
+     */
+    private function get_ip_address_xingpingcn($ip_type = 'v4')
+    {
+        if ($ip_type == 'v6') {
+            throw new Exception('xingpingcn.top 接口暂不支持IPv6');
+        }
+        $proxy = config_get('optimize_ip_proxy', '');
+        if (!empty($proxy)) {
+            $proxy = trim($proxy);
+            if (filter_var($proxy, FILTER_VALIDATE_URL) === false) {
+                throw new Exception('无效的代理地址配置：URL 格式错误');
+            }
+            $scheme = parse_url($proxy, PHP_URL_SCHEME);
+            if (!in_array($scheme, ['http', 'https'], true)) {
+                throw new Exception('无效的代理地址配置：仅支持 http 和 https 协议');
+            }
+            $url = rtrim($proxy, '/') . '/xingpingcn/enhanced-FaaS-in-China/refs/heads/main/Cf.json';
+        } else {
+            $url = 'https://raw.githubusercontent.com/xingpingcn/enhanced-FaaS-in-China/refs/heads/main/Cf.json';
+        }
+        $response = get_curl($url);
+        if ($response === '') {
+            throw new Exception('获取优选IP数据失败，网络请求失败，请检查网络连接或代理地址');
+        }
+        $arr = json_decode($response, true);
+        if (isset($arr['Cf']['result'])) {
+            $result = $arr['Cf']['result'];
+            $info = [];
+            // 转换格式：dianxin->CT, liantong->CU, yidong->CM, default->DEF
+            if (isset($result['dianxin']) && is_array($result['dianxin'])) {
+                $info['CT'] = array_map(function($ip) { return ['ip' => $ip]; }, $result['dianxin']);
+            }
+            if (isset($result['liantong']) && is_array($result['liantong'])) {
+                $info['CU'] = array_map(function($ip) { return ['ip' => $ip]; }, $result['liantong']);
+            }
+            if (isset($result['yidong']) && is_array($result['yidong'])) {
+                $info['CM'] = array_map(function($ip) { return ['ip' => $ip]; }, $result['yidong']);
+            }
+            // 不使用他的默认线路数据, 因为这真的是默认. 由后续逻辑自己决定是否把CT线路当DEF来用
+            // if (isset($result['default']) && is_array($result['default'])) {
+            //     $info['DEF'] = array_map(function($ip) { return ['ip' => $ip]; }, $result['default']);
+            // }
+            return $info;
+        } else {
+            throw new Exception('获取优选IP数据失败，接口返回数据格式错误');
         }
     }
 
