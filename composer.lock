@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "cccyun/php-whois",
-            "version": "1.2",
+            "version": "1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/netcccyun/php-whois.git",
-                "reference": "c631f1c5e26e7150501a14cd25a2380f8a077ca1"
+                "reference": "f02627ba0bef005aa9e336d63541f9fd288675b5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/netcccyun/php-whois/zipball/c631f1c5e26e7150501a14cd25a2380f8a077ca1",
-                "reference": "c631f1c5e26e7150501a14cd25a2380f8a077ca1",
+                "url": "https://api.github.com/repos/netcccyun/php-whois/zipball/f02627ba0bef005aa9e336d63541f9fd288675b5",
+                "reference": "f02627ba0bef005aa9e336d63541f9fd288675b5",
                 "shasum": ""
             },
             "require": {
@@ -62,9 +62,9 @@
                 "црщшы"
             ],
             "support": {
-                "source": "https://github.com/netcccyun/php-whois/tree/1.2"
+                "source": "https://github.com/netcccyun/php-whois/tree/1.3"
             },
-            "time": "2025-06-25T06:54:23+00:00"
+            "time": "2026-02-12T05:56:18+00:00"
         },
         {
             "name": "cccyun/think-captcha",
