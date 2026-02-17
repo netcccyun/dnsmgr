@@ -66,6 +66,8 @@ class aliyun implements DeployInterface
                 $this->deploy_alb($cert_id, $config);
             } elseif ($config['product'] == 'nlb') {
                 $this->deploy_nlb($cert_id, $config);
+            } elseif ($config['product'] == 'ga') {
+                $this->deploy_ga($cert_id, $config);
             } elseif ($config['product'] == 'upload') {
             } else {
                 throw new Exception('未知的产品类型');
@@ -761,6 +763,84 @@ class aliyun implements DeployInterface
             ];
             $client->request($param);
             $this->log('网络型负载均衡监听默认证书更新成功！');
+        }
+    }
+
+    private function deploy_ga($cert_id, $config)
+    {
+        if (empty($config['ga_id'])) throw new Exception('全球加速实例ID不能为空');
+        if (empty($config['ga_listener_id'])) throw new Exception('全球加速监听ID不能为空');
+
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'ga.cn-hangzhou.aliyuncs.com', '2019-11-20', $this->proxy);
+        $cert_id = $cert_id . '-cn-hangzhou';
+        $deploy_type = isset($config['deploy_type']) ? intval($config['deploy_type']) : 0;
+
+        if ($deploy_type == 1) {
+            if (empty($config['clb_domain'])) throw new Exception('扩展域名不能为空');
+            $param = [
+                'Action' => 'ListListenerCertificates',
+                'RegionId' => 'cn-hangzhou',
+                'AcceleratorId' => $config['ga_id'],
+                'ListenerId' => $config['ga_listener_id'],
+            ];
+            try {
+                $data = $client->request($param);
+            } catch (Exception $e) {
+                throw new Exception('扩展域名列表查询失败：' . $e->getMessage());
+            }
+            $need_add = [];
+            foreach (explode(',', $config['clb_domain']) as $domain) {
+                $domainExists = false;
+                $exist_cert_id = null;
+                foreach ($data['Certificates'] as $cert) {
+                    if (isset($cert['Domain']) && $domain == $cert['Domain']) {
+                        $domainExists = true;
+                        $exist_cert_id = $cert['CertificateId'];
+                    }
+                }
+                if ($domainExists) {
+                    if ($exist_cert_id == $cert_id) {
+                        $this->log('全球加速实例监听扩展域名 ' . $domain . ' 证书已配置');
+                        continue;
+                    }
+                    $param = [
+                        'Action' => 'UpdateAdditionalCertificateWithListener',
+                        'RegionId' => 'cn-hangzhou',
+                        'AcceleratorId' => $config['ga_id'],
+                        'ListenerId' => $config['ga_listener_id'],
+                        'Domain' => $domain,
+                        'CertificateId' => $cert_id,
+                    ];
+                    $client->request($param);
+                    $this->log('全球加速实例监听扩展域名 ' . $domain . ' 替换证书成功！');
+                } else {
+                    $need_add[] = $domain;
+                }
+            }
+            if (count($need_add) > 0) {
+                $param = [
+                    'Action' => 'AssociateAdditionalCertificatesWithListener',
+                    'RegionId' => 'cn-hangzhou',
+                    'AcceleratorId' => $config['ga_id'],
+                    'ListenerId' => $config['ga_listener_id'],
+                ];
+                foreach ($need_add as $index => $domain) {
+                    $param['Certificates.' . ($index + 1) . '.Id'] = $cert_id;
+                    $param['Certificates.' . ($index + 1) . '.Domain'] = $domain;
+                }
+                $client->request($param);
+                $this->log('全球加速实例监听扩展域名 ' . implode(',', $need_add) . ' 绑定证书成功！');
+            }
+        } else {
+            $param = [
+                'Action' => 'UpdateListener',
+                'RegionId' => 'cn-hangzhou',
+                'AcceleratorId' => $config['ga_id'],
+                'ListenerId' => $config['ga_listener_id'],
+                'Certificates.1.Id' => $cert_id,
+            ];
+            $client->request($param);
+            $this->log('全球加速实例监听默认证书更新成功！');
         }
     }
 
