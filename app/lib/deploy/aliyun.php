@@ -201,11 +201,11 @@ class aliyun implements DeployInterface
         }
         $this->log('ESA站点 ' . $sitename . ' 查询到' . $data['TotalCount'] . '个SSL证书');
 
-        $exist_cert_id = null;
-        $exist_cert_name = null;
-        $exist_cert_casid = null;
+        $exist_cert = null;
+        $oldest_cert = null;
         if ($data['TotalCount'] > 0) {
             foreach ($data['Result'] as $cert) {
+                if ($cert['Type'] == 'free') continue;
                 $domains = explode(',', $cert['SAN']);
                 $flag = true;
                 foreach ($domains as $domain) {
@@ -215,10 +215,39 @@ class aliyun implements DeployInterface
                     }
                 }
                 if ($flag) {
-                    $exist_cert_id = $cert['Id'];
-                    $exist_cert_name = $cert['Name'];
-                    $exist_cert_casid = isset($cert['CasId']) ? $cert['CasId'] : null;
+                    $exist_cert = $cert;
                     break;
+                }
+                if (!$oldest_cert) {
+                    $oldest_cert = $cert;
+                } elseif (strtotime($cert['CreateTime']) < strtotime($oldest_cert['CreateTime'])) {
+                    $oldest_cert = $cert;
+                }
+            }
+        }
+
+        if (!$exist_cert) { //新增证书时，若配额已满，则删除最旧的证书
+            $param = [
+                'Action' => 'ListInstanceQuotasWithUsage',
+                'SiteId' => $site_id,
+                'QuotaNames' => 'customHttpCert',
+            ];
+            try {
+                $data = $client->request($param, 'GET');
+            } catch (Exception $e) {
+                throw new Exception('查询ESA站点证书配额失败：' . $e->getMessage());
+            }
+            if (!empty($data['Quotas']) && intval($data['Quotas'][0]['Usage']) >= intval($data['Quotas'][0]['QuotaValue']) && $oldest_cert) {
+                $param = [
+                    'Action' => 'DeleteCertificate',
+                    'SiteId' => $site_id,
+                    'Id' => $oldest_cert['Id'],
+                ];
+                try {
+                    $client->request($param, 'GET');
+                    $this->log('ESA站点 ' . $sitename . ' 删除证书 ' . $oldest_cert['Name'] . ' 成功');
+                } catch (Exception $e) {
+                    throw new Exception('ESA站点 ' . $sitename . ' 删除证书' . $oldest_cert['Name'] . '失败：' . $e->getMessage());
                 }
             }
         }
@@ -232,10 +261,10 @@ class aliyun implements DeployInterface
             'Region' => $config['region'],
         ];
 
-        if ($exist_cert_id) {
-            $param['Id'] = $exist_cert_id;
+        if ($exist_cert) {
+            $param['Id'] = $exist_cert['Id'];
 
-            if ($exist_cert_casid == $cas_id) {
+            if (isset($exist_cert['CasId']) && $exist_cert['CasId'] == $cas_id) {
                 $this->log('ESA站点 ' . $sitename . ' 证书已配置，无需重复操作');
                 return;
             }
@@ -243,8 +272,8 @@ class aliyun implements DeployInterface
 
         $client->request($param);
 
-        if ($exist_cert_name) {
-            $this->log('ESA站点 ' . $sitename . ' 证书 ' . $exist_cert_name . ' 更新成功');
+        if ($exist_cert) {
+            $this->log('ESA站点 ' . $sitename . ' 证书 ' . $exist_cert['Name'] . ' 更新成功');
         } else {
             $this->log('ESA站点 ' . $sitename . ' 证书添加成功！');
         }

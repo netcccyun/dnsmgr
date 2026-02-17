@@ -374,6 +374,12 @@ class DnsHelper
                     'placeholder' => '',
                     'required' => true,
                 ],
+                'apikey' => [
+                    'name' => 'API密钥/令牌',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
                 'auth' => [
                     'name' => '认证方式',
                     'type' => 'radio',
@@ -382,12 +388,6 @@ class DnsHelper
                         '1' => 'API令牌',
                     ],
                     'value' => '0'
-                ],
-                'apikey' => [
-                    'name' => 'API密钥/令牌',
-                    'type' => 'input',
-                    'placeholder' => '',
-                    'required' => true,
                 ],
                 'proxy' => [
                     'name' => '使用代理服务器',

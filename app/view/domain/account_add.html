@@ -20,7 +20,7 @@
         <label class="col-sm-3 control-label no-padding-right" is-required>账户类型</label>
         <div class="col-sm-6">
             <select name="type" class="form-control" v-model="set.type">
-				<option v-for="(item, key) in typeList" :value="key">{{item.name}}</option>
+				<option v-for="(item, key) in typeList" :value="key" :data-icon="item.icon">{{item.name}}</option>
 			</select>
         </div>
     </div>
@@ -95,6 +95,8 @@
 {block name="script"}
 <script src="/static/js/vue-2.7.16.min.js"></script>
 <script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/select2-4.0.13.min.js"></script>
+<script src="/static/js/select2-i18n-zh-CN-4.0.13.min.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
 <script>
 var info = {$info|json_encode|raw};
@@ -163,8 +165,28 @@ new Vue({
             this.set.type = Object.keys(typeList)[0]
         }
 
+        var that = this;
         this.$nextTick(function () {
             $('[data-toggle="tooltip"]').tooltip();
+            function formatType(option) {
+                if (!option.id) return option.text;
+                var icon = $(option.element).data('icon');
+                if (icon) {
+                    return $('<span><img src="/static/images/' + icon + '" class="type-logo" />' + option.text + '</span>');
+                }
+                return option.text;
+            }
+            $('select[name=type]').select2({
+                templateResult: formatType,
+                templateSelection: formatType,
+                minimumResultsForSearch: Infinity,
+                width: '100%'
+            }).on('select2:select', function(e){
+                that.set.type = e.params.data.id;
+            });
+            if(that.action == 'edit'){
+                $('select[name=type]').val(that.set.type).trigger('change.select2');
+            }
         })
     },
     methods: {

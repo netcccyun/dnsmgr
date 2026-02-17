@@ -257,7 +257,7 @@ location / {
             'wildcard' => false,
             'max_domains' => 1,
             'cname' => false,
-            'note' => '每个自然年有20张免费证书额度，证书到期或吊销不释放额度。需要先进入阿里云控制台-<a href="https://yundun.console.aliyun.com/?p=cas#/certExtend/free/cn-hangzhou" target="_blank" rel="noreferrer">数字证书管理服务</a>，购买个人测试证书资源包。',
+            'note' => '每个自然年有20张免费证书额度，证书到期或吊销不释放额度。需要先进入阿里云控制台-<a href="https://yundun.console.aliyun.com/?p=cas#/instance/TEST/cn-hangzhou" target="_blank" rel="noreferrer">数字证书管理服务</a>，购买个人测试证书资源包。',
             'inputs' => [
                 'AccessKeyId' => [
                     'name' => 'AccessKeyId',
