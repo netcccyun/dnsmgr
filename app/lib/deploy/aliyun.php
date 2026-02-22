@@ -66,9 +66,11 @@ class aliyun implements DeployInterface
                 $this->deploy_alb($cert_id, $config);
             } elseif ($config['product'] == 'nlb') {
                 $this->deploy_nlb($cert_id, $config);
+            } elseif($config['product'] == 'esa_saas'){
+                $this->deploy_esa_saas($cert_id, $config);
             } elseif ($config['product'] == 'ga') {
                 $this->deploy_ga($cert_id, $config);
-            } elseif ($config['product'] == 'upload') {
+            }elseif ($config['product'] == 'upload') {
             } else {
                 throw new Exception('未知的产品类型');
             }
@@ -164,6 +166,66 @@ class aliyun implements DeployInterface
         ];
         $client->request($param);
         $this->log('DCDN域名 ' . $domain . ' 部署证书成功！');
+    }
+
+    private function deploy_esa_saas($cas_id, $config)
+    {
+        $sitename = $config['esa_sitename'];
+        $saas_sitename = $config['esa_saas_sitename'];
+        if (empty($sitename)) throw new Exception('ESA站点名称不能为空');
+        if (empty($saas_sitename)) throw new Exception('ESA SAAS域名不能为空');
+
+        if ($config['region'] == 'ap-southeast-1') {
+            $endpoint = 'esa.ap-southeast-1.aliyuncs.com';
+        } else {
+            $endpoint = 'esa.cn-hangzhou.aliyuncs.com';
+        }
+
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2024-09-10');
+        $param = [
+            'Action' => 'ListSites',
+            'SiteName' => $sitename,
+            'SiteSearchType' => 'exact',
+        ];
+        try {
+            $data = $client->request($param, 'GET');
+        } catch (Exception $e) {
+            throw new Exception('查询ESA站点列表失败：' . $e->getMessage());
+        }
+        if ($data['TotalCount'] == 0) throw new Exception('ESA站点 ' . $sitename . ' 不存在');
+        $this->log('成功查询到' . $data['TotalCount'] . '个ESA站点');
+        $site_id = $data['Sites'][0]['SiteId'];
+        // 查询对应的saas域名
+        $param =[
+            'Action' => 'ListCustomHostnames',
+            'SiteName' => $saas_sitename,
+            'SiteId' => $site_id,
+            'SiteSearchType' => 'exact',
+        ];
+        try {
+            $saas_data = $client->request($param, 'GET');
+        } catch (Exception $e) {
+            throw new Exception('查询ESA saas域名失败：' . $e->getMessage());
+        }
+        if ($saas_data['TotalCount'] == 0) throw new Exception('ESA saas站点 ' . $saas_sitename . ' 不存在');
+        $saas_hostname_id = $saas_data['Hostnames'][0]['HostnameId'];
+
+        $param = [
+            'Action' => 'UpdateCustomHostname',
+            'HostnameId'=> $saas_hostname_id,
+            'SslFlag' => 'on',
+            'CertType' => 'cas',
+            'CasId' => $cas_id,
+            'CasRegion' => $config['region'],
+        ];
+        $this->log('ESA SAAS站点部署参数 ' . json_encode($param));
+        try{
+            $saas_deploy_result = $client->request($param);
+            $this->log('ESA SAAS站点部署结果 ' . json_encode($saas_deploy_result));
+        }catch(Exception $e){
+             throw new Exception('部署失败：' . $e->getMessage());
+        }
+        $this->log('ESA SAAS站点 ' . $saas_sitename . ' 证书添加成功！');
     }
 
     private function deploy_esa($cas_id, $cert_name, $config)
