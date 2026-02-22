@@ -68,6 +68,8 @@ class aliyun implements DeployInterface
                 $this->deploy_nlb($cert_id, $config);
             } elseif($config['product'] == 'esa_saas'){
                 $this->deploy_esa_saas($cert_id, $config);
+            } elseif ($config['product'] == 'ga') {
+                $this->deploy_ga($cert_id, $config);
             }elseif ($config['product'] == 'upload') {
             } else {
                 throw new Exception('未知的产品类型');
@@ -263,11 +265,11 @@ class aliyun implements DeployInterface
         }
         $this->log('ESA站点 ' . $sitename . ' 查询到' . $data['TotalCount'] . '个SSL证书');
 
-        $exist_cert_id = null;
-        $exist_cert_name = null;
-        $exist_cert_casid = null;
+        $exist_cert = null;
+        $oldest_cert = null;
         if ($data['TotalCount'] > 0) {
             foreach ($data['Result'] as $cert) {
+                if ($cert['Type'] == 'free') continue;
                 $domains = explode(',', $cert['SAN']);
                 $flag = true;
                 foreach ($domains as $domain) {
@@ -277,10 +279,39 @@ class aliyun implements DeployInterface
                     }
                 }
                 if ($flag) {
-                    $exist_cert_id = $cert['Id'];
-                    $exist_cert_name = $cert['Name'];
-                    $exist_cert_casid = isset($cert['CasId']) ? $cert['CasId'] : null;
+                    $exist_cert = $cert;
                     break;
+                }
+                if (!$oldest_cert) {
+                    $oldest_cert = $cert;
+                } elseif (strtotime($cert['CreateTime']) < strtotime($oldest_cert['CreateTime'])) {
+                    $oldest_cert = $cert;
+                }
+            }
+        }
+
+        if (!$exist_cert) { //新增证书时，若配额已满，则删除最旧的证书
+            $param = [
+                'Action' => 'ListInstanceQuotasWithUsage',
+                'SiteId' => $site_id,
+                'QuotaNames' => 'customHttpCert',
+            ];
+            try {
+                $data = $client->request($param, 'GET');
+            } catch (Exception $e) {
+                throw new Exception('查询ESA站点证书配额失败：' . $e->getMessage());
+            }
+            if (!empty($data['Quotas']) && intval($data['Quotas'][0]['Usage']) >= intval($data['Quotas'][0]['QuotaValue']) && $oldest_cert) {
+                $param = [
+                    'Action' => 'DeleteCertificate',
+                    'SiteId' => $site_id,
+                    'Id' => $oldest_cert['Id'],
+                ];
+                try {
+                    $client->request($param, 'GET');
+                    $this->log('ESA站点 ' . $sitename . ' 删除证书 ' . $oldest_cert['Name'] . ' 成功');
+                } catch (Exception $e) {
+                    throw new Exception('ESA站点 ' . $sitename . ' 删除证书' . $oldest_cert['Name'] . '失败：' . $e->getMessage());
                 }
             }
         }
@@ -294,10 +325,10 @@ class aliyun implements DeployInterface
             'Region' => $config['region'],
         ];
 
-        if ($exist_cert_id) {
-            $param['Id'] = $exist_cert_id;
+        if ($exist_cert) {
+            $param['Id'] = $exist_cert['Id'];
 
-            if ($exist_cert_casid == $cas_id) {
+            if (isset($exist_cert['CasId']) && $exist_cert['CasId'] == $cas_id) {
                 $this->log('ESA站点 ' . $sitename . ' 证书已配置，无需重复操作');
                 return;
             }
@@ -305,8 +336,8 @@ class aliyun implements DeployInterface
 
         $client->request($param);
 
-        if ($exist_cert_name) {
-            $this->log('ESA站点 ' . $sitename . ' 证书 ' . $exist_cert_name . ' 更新成功');
+        if ($exist_cert) {
+            $this->log('ESA站点 ' . $sitename . ' 证书 ' . $exist_cert['Name'] . ' 更新成功');
         } else {
             $this->log('ESA站点 ' . $sitename . ' 证书添加成功！');
         }
@@ -794,6 +825,84 @@ class aliyun implements DeployInterface
             ];
             $client->request($param);
             $this->log('网络型负载均衡监听默认证书更新成功！');
+        }
+    }
+
+    private function deploy_ga($cert_id, $config)
+    {
+        if (empty($config['ga_id'])) throw new Exception('全球加速实例ID不能为空');
+        if (empty($config['ga_listener_id'])) throw new Exception('全球加速监听ID不能为空');
+
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'ga.cn-hangzhou.aliyuncs.com', '2019-11-20', $this->proxy);
+        $cert_id = $cert_id . '-cn-hangzhou';
+        $deploy_type = isset($config['deploy_type']) ? intval($config['deploy_type']) : 0;
+
+        if ($deploy_type == 1) {
+            if (empty($config['clb_domain'])) throw new Exception('扩展域名不能为空');
+            $param = [
+                'Action' => 'ListListenerCertificates',
+                'RegionId' => 'cn-hangzhou',
+                'AcceleratorId' => $config['ga_id'],
+                'ListenerId' => $config['ga_listener_id'],
+            ];
+            try {
+                $data = $client->request($param);
+            } catch (Exception $e) {
+                throw new Exception('扩展域名列表查询失败：' . $e->getMessage());
+            }
+            $need_add = [];
+            foreach (explode(',', $config['clb_domain']) as $domain) {
+                $domainExists = false;
+                $exist_cert_id = null;
+                foreach ($data['Certificates'] as $cert) {
+                    if (isset($cert['Domain']) && $domain == $cert['Domain']) {
+                        $domainExists = true;
+                        $exist_cert_id = $cert['CertificateId'];
+                    }
+                }
+                if ($domainExists) {
+                    if ($exist_cert_id == $cert_id) {
+                        $this->log('全球加速实例监听扩展域名 ' . $domain . ' 证书已配置');
+                        continue;
+                    }
+                    $param = [
+                        'Action' => 'UpdateAdditionalCertificateWithListener',
+                        'RegionId' => 'cn-hangzhou',
+                        'AcceleratorId' => $config['ga_id'],
+                        'ListenerId' => $config['ga_listener_id'],
+                        'Domain' => $domain,
+                        'CertificateId' => $cert_id,
+                    ];
+                    $client->request($param);
+                    $this->log('全球加速实例监听扩展域名 ' . $domain . ' 替换证书成功！');
+                } else {
+                    $need_add[] = $domain;
+                }
+            }
+            if (count($need_add) > 0) {
+                $param = [
+                    'Action' => 'AssociateAdditionalCertificatesWithListener',
+                    'RegionId' => 'cn-hangzhou',
+                    'AcceleratorId' => $config['ga_id'],
+                    'ListenerId' => $config['ga_listener_id'],
+                ];
+                foreach ($need_add as $index => $domain) {
+                    $param['Certificates.' . ($index + 1) . '.Id'] = $cert_id;
+                    $param['Certificates.' . ($index + 1) . '.Domain'] = $domain;
+                }
+                $client->request($param);
+                $this->log('全球加速实例监听扩展域名 ' . implode(',', $need_add) . ' 绑定证书成功！');
+            }
+        } else {
+            $param = [
+                'Action' => 'UpdateListener',
+                'RegionId' => 'cn-hangzhou',
+                'AcceleratorId' => $config['ga_id'],
+                'ListenerId' => $config['ga_listener_id'],
+                'Certificates.1.Id' => $cert_id,
+            ];
+            $client->request($param);
+            $this->log('全球加速实例监听默认证书更新成功！');
         }
     }
 
