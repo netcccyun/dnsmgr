@@ -69,6 +69,9 @@ $(document).ready(function(){
 				title: '操作',
 				formatter: function(value, row, index) {
 					var html = '<a href="/account/edit?id='+row.id+'" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a> <a href="/domain?aid='+row.id+'" class="btn btn-default btn-xs">域名</a>';
+					if(row.type === 'cloudflare'){
+						html += ' <a href="/cloudflare/tunnels/'+row.id+'" class="btn btn-primary btn-xs">Tunnels</a>';
+					}
 					return html;
 				}
 			},

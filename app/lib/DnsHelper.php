@@ -366,18 +366,19 @@ class DnsHelper
         'cloudflare' => [
             'name' => 'Cloudflare',
             'icon' => 'cloudflare.ico',
-            'note' => '',
+            'note' => '如需使用 Cloudflare 增强与 Tunnels，建议使用 <b>API令牌</b> 认证，并补充 <b>Account ID</b>。Fallback Origin / 自定义主机名还要求目标 Zone 已开通 Cloudflare for SaaS 能力。',
             'config' => [
                 'email' => [
                     'name' => '邮箱地址',
                     'type' => 'input',
                     'placeholder' => '',
                     'required' => true,
+                    'show' => 'auth=="0"',
                 ],
                 'apikey' => [
                     'name' => 'API密钥/令牌',
                     'type' => 'input',
-                    'placeholder' => '',
+                    'placeholder' => '建议填写 Cloudflare API Token',
                     'required' => true,
                 ],
                 'auth' => [
@@ -387,7 +388,15 @@ class DnsHelper
                         '0' => 'API密钥',
                         '1' => 'API令牌',
                     ],
-                    'value' => '0'
+                    'value' => '1'
+                ],
+                'account_id' => [
+                    'name' => 'Account ID',
+                    'type' => 'input',
+                    'placeholder' => '可留空，首次进入 Tunnels 时会尝试自动探测',
+                    'required' => false,
+                    'show' => 'auth=="1"',
+                    'note' => 'Cloudflare Tunnels 是账户级能力，建议填写 Account ID；留空时系统会尝试自动探测。'
                 ],
                 'proxy' => [
                     'name' => '使用代理服务器',

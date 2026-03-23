@@ -1,0 +1,782 @@
+<?php
+
+namespace app\controller;
+
+use app\BaseController;
+use app\service\CloudflareEnhanceService;
+use Exception;
+use think\facade\Db;
+use think\facade\View;
+
+class Cloudflare extends BaseController
+{
+    public function hostnames()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            View::assign('domainId', $context['domain']['id']);
+            View::assign('domainName', $context['domain']['name']);
+            return view();
+        } catch (Exception $e) {
+            return $this->alert('error', $e->getMessage());
+        }
+    }
+
+    public function hostnames_data()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $rows = [];
+            foreach ($context['service']->listCustomHostnames($context['domain']['thirdid']) as $row) {
+                $rows[] = $this->formatCustomHostnameRow($row);
+            }
+            return json(['code' => 0, 'total' => count($rows), 'rows' => $rows]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage(), 'total' => 0, 'rows' => []]);
+        }
+    }
+
+    public function hostnames_add()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $hostname = trim(input('post.hostname', '', 'trim'));
+            $origin = trim(input('post.custom_origin_server', '', 'trim'));
+            if (empty($hostname) || !checkDomain($hostname)) {
+                throw new Exception('主机名格式不正确');
+            }
+            if ($origin !== '') {
+                $this->validateCustomOrigin($origin);
+            }
+
+            $result = $context['service']->createCustomHostname($context['domain']['thirdid'], $hostname, $origin !== '' ? $origin : null);
+            $this->add_log($context['domain']['name'], '创建自定义主机名', $hostname . ($origin !== '' ? ' -> ' . $origin : ''));
+            return json(['code' => 0, 'msg' => '创建自定义主机名成功', 'data' => $this->formatCustomHostnameRow($result)]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function hostnames_delete()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $hostnameId = trim(input('post.hostname_id', '', 'trim'));
+            $hostname = trim(input('post.hostname', '', 'trim'));
+            if ($hostnameId === '') {
+                throw new Exception('缺少 hostname_id');
+            }
+
+            $context['service']->deleteCustomHostname($context['domain']['thirdid'], $hostnameId);
+            $this->add_log($context['domain']['name'], '删除自定义主机名', $hostname !== '' ? $hostname : $hostnameId);
+            return json(['code' => 0, 'msg' => '删除自定义主机名成功']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function fallback_get()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $origin = $context['service']->getFallbackOrigin($context['domain']['thirdid']);
+            return json(['code' => 0, 'data' => ['origin' => $origin]]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function fallback_set()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $origin = trim(input('post.origin', '', 'trim'));
+            if ($origin === '') {
+                throw new Exception('Fallback Origin 不能为空');
+            }
+            $this->validateCustomOrigin($origin);
+
+            $savedOrigin = $context['service']->updateFallbackOrigin($context['domain']['thirdid'], $origin);
+            $this->add_log($context['domain']['name'], '更新 Fallback Origin', $savedOrigin);
+            return json(['code' => 0, 'msg' => '更新 Fallback Origin 成功', 'data' => ['origin' => $savedOrigin]]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function fallback_delete()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $context['service']->deleteFallbackOrigin($context['domain']['thirdid']);
+            $this->add_log($context['domain']['name'], '删除 Fallback Origin', '清空成功');
+            return json(['code' => 0, 'msg' => '已清空 Fallback Origin']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function tunnels()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            View::assign('accountId', $context['account']['id']);
+            View::assign('accountName', $this->formatAccountDisplayName($context['account']));
+            View::assign('cfAccountId', $context['accountId']);
+            return view();
+        } catch (Exception $e) {
+            return $this->alert('error', $e->getMessage());
+        }
+    }
+
+    public function tunnels_data()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $rows = [];
+            foreach ($context['service']->listTunnels($context['accountId']) as $row) {
+                $rows[] = $this->formatTunnelRow($row);
+            }
+            return json(['code' => 0, 'total' => count($rows), 'rows' => $rows, 'account_id' => $context['accountId']]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage(), 'total' => 0, 'rows' => []]);
+        }
+    }
+
+    public function tunnels_add()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $name = trim(input('post.name', '', 'trim'));
+            if ($name === '') {
+                throw new Exception('Tunnel 名称不能为空');
+            }
+            $tunnel = $context['service']->createTunnel($context['accountId'], $name);
+            $this->add_log($this->formatAccountDisplayName($context['account']), '创建 Tunnel', $name . ' [' . ($tunnel['id'] ?? '-') . ']');
+            return json(['code' => 0, 'msg' => '创建 Tunnel 成功', 'data' => $this->formatTunnelRow($tunnel)]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function tunnels_delete()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            if ($tunnelId === '') {
+                throw new Exception('缺少 tunnel_id');
+            }
+            $context['service']->deleteTunnel($context['accountId'], $tunnelId);
+            $this->add_log($this->formatAccountDisplayName($context['account']), '删除 Tunnel', $tunnelId);
+            return json(['code' => 0, 'msg' => '删除 Tunnel 成功']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function tunnels_token()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            if ($tunnelId === '') {
+                throw new Exception('缺少 tunnel_id');
+            }
+            $token = $context['service']->getTunnelToken($context['accountId'], $tunnelId);
+            return json(['code' => 0, 'data' => ['token' => $token]]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function tunnels_public_hostnames_data()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            if ($tunnelId === '') {
+                throw new Exception('缺少 tunnel_id');
+            }
+            $config = $this->extractTunnelConfigObject($context['service']->getTunnelConfig($context['accountId'], $tunnelId));
+            $rows = [];
+            foreach ($this->extractPublicHostnames($config) as $row) {
+                $zone = $this->findBestMatchingDomain(intval($context['account']['id']), $row['hostname']);
+                $row['zone_name'] = $zone['name'] ?? '';
+                $row['zone_id'] = $zone['thirdid'] ?? '';
+                $rows[] = $row;
+            }
+            return json(['code' => 0, 'total' => count($rows), 'rows' => $rows]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage(), 'total' => 0, 'rows' => []]);
+        }
+    }
+
+    public function tunnels_public_hostnames_save()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            $hostname = trim(input('post.hostname', '', 'trim'));
+            $serviceValue = trim(input('post.service', '', 'trim'));
+            $path = trim(input('post.path', '', 'trim'));
+            if ($tunnelId === '' || $hostname === '' || $serviceValue === '') {
+                throw new Exception('Tunnel、主机名、服务地址不能为空');
+            }
+            if (!checkDomain($hostname)) {
+                throw new Exception('主机名格式不正确');
+            }
+
+            $zone = $this->findBestMatchingDomain(intval($context['account']['id']), $hostname);
+            if (empty($zone) || empty($zone['thirdid'])) {
+                throw new Exception('未找到匹配的本地域名，请先在当前 Cloudflare 账户下导入该主机名所属主域');
+            }
+
+            $config = $this->extractTunnelConfigObject($context['service']->getTunnelConfig($context['accountId'], $tunnelId));
+            $oldConfig = json_decode(json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), true);
+            $ingress = isset($config['ingress']) && is_array($config['ingress']) ? array_values($config['ingress']) : [];
+            $rule = [
+                'hostname' => $hostname,
+                'service' => $serviceValue,
+            ];
+            if ($path !== '') {
+                $rule['path'] = $path;
+            }
+
+            $existingIndex = $this->findPublicHostnameIndex($ingress, $hostname, $path);
+            if ($existingIndex >= 0) {
+                $next = array_merge($ingress[$existingIndex], $rule);
+                if ($path === '' && isset($next['path'])) {
+                    unset($next['path']);
+                }
+                $ingress[$existingIndex] = $next;
+            } else {
+                $fallbackIndex = $this->findFallbackIngressIndex($ingress);
+                if ($fallbackIndex >= 0) {
+                    array_splice($ingress, $fallbackIndex, 0, [$rule]);
+                } else {
+                    $ingress[] = $rule;
+                }
+            }
+
+            $config['ingress'] = $this->ensureFallbackIngress($ingress);
+            $context['service']->updateTunnelConfig($context['accountId'], $tunnelId, $config);
+
+            try {
+                $dns = $context['service']->upsertTunnelCnameRecord($zone['thirdid'], $hostname, $tunnelId);
+            } catch (Exception $e) {
+                $context['service']->updateTunnelConfig($context['accountId'], $tunnelId, $oldConfig);
+                throw new Exception('Public Hostname 已回滚：' . $e->getMessage());
+            }
+
+            $this->add_log($this->formatAccountDisplayName($context['account']), '配置 Tunnel 公网主机名', $hostname . ' -> ' . $serviceValue . ' [' . ($dns['action'] ?? '-') . ']');
+            return json(['code' => 0, 'msg' => '配置 Public Hostname 成功']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function tunnels_public_hostnames_delete()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            $hostname = trim(input('post.hostname', '', 'trim'));
+            $path = trim(input('post.path', '', 'trim'));
+            if ($tunnelId === '' || $hostname === '') {
+                throw new Exception('缺少 tunnel_id 或 hostname');
+            }
+
+            $config = $this->extractTunnelConfigObject($context['service']->getTunnelConfig($context['accountId'], $tunnelId));
+            $oldConfig = json_decode(json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), true);
+            $ingress = isset($config['ingress']) && is_array($config['ingress']) ? array_values($config['ingress']) : [];
+            $nextIngress = [];
+            foreach ($ingress as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $match = $this->normalizeHostname($row['hostname'] ?? '') === $this->normalizeHostname($hostname)
+                    && trim((string)($row['path'] ?? '')) === $path;
+                if (!$match) {
+                    $nextIngress[] = $row;
+                }
+            }
+
+            $config['ingress'] = $this->ensureFallbackIngress($nextIngress);
+            $context['service']->updateTunnelConfig($context['accountId'], $tunnelId, $config);
+
+            $zone = $this->findBestMatchingDomain(intval($context['account']['id']), $hostname);
+            if (!empty($zone['thirdid'])) {
+                try {
+                    $context['service']->deleteTunnelCnameRecordIfMatch($zone['thirdid'], $hostname, $tunnelId);
+                } catch (Exception $e) {
+                    $context['service']->updateTunnelConfig($context['accountId'], $tunnelId, $oldConfig);
+                    throw new Exception('删除 Public Hostname 时已回滚：' . $e->getMessage());
+                }
+            }
+
+            $this->add_log($this->formatAccountDisplayName($context['account']), '删除 Tunnel 公网主机名', $hostname . ($path !== '' ? ' [' . $path . ']' : ''));
+            return json(['code' => 0, 'msg' => '删除 Public Hostname 成功']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function tunnels_cidr_data()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            if ($tunnelId === '') {
+                throw new Exception('缺少 tunnel_id');
+            }
+            $rows = [];
+            foreach ($context['service']->listCidrRoutes($context['accountId'], $tunnelId) as $row) {
+                $mapped = $this->formatCidrRouteRow($row);
+                if ($mapped['id'] !== '' && $mapped['network'] !== '') {
+                    $rows[] = $mapped;
+                }
+            }
+            return json(['code' => 0, 'total' => count($rows), 'rows' => $rows]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage(), 'total' => 0, 'rows' => []]);
+        }
+    }
+
+    public function tunnels_cidr_add()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            $network = trim(input('post.network', '', 'trim'));
+            $comment = trim(input('post.comment', '', 'trim'));
+            if ($tunnelId === '' || $network === '') {
+                throw new Exception('Tunnel 和 CIDR 不能为空');
+            }
+            if (!$this->isValidCidr($network)) {
+                throw new Exception('CIDR 格式不正确');
+            }
+
+            $route = $context['service']->createCidrRoute($context['accountId'], $tunnelId, $network, $comment !== '' ? $comment : null);
+            $mapped = $this->formatCidrRouteRow($route);
+            $this->add_log($this->formatAccountDisplayName($context['account']), '创建 Tunnel CIDR 路由', $mapped['network']);
+            return json(['code' => 0, 'msg' => '创建 CIDR 路由成功', 'data' => $mapped]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function tunnels_cidr_delete()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            $routeId = trim(input('post.route_id', '', 'trim'));
+            if ($tunnelId === '' || $routeId === '') {
+                throw new Exception('缺少 tunnel_id 或 route_id');
+            }
+
+            $matched = false;
+            foreach ($context['service']->listCidrRoutes($context['accountId'], $tunnelId) as $row) {
+                if (trim((string)($row['id'] ?? '')) === $routeId) {
+                    $matched = true;
+                    break;
+                }
+            }
+            if (!$matched) {
+                throw new Exception('CIDR 路由不存在或不属于当前 Tunnel');
+            }
+
+            $context['service']->deleteCidrRoute($context['accountId'], $routeId);
+            $this->add_log($this->formatAccountDisplayName($context['account']), '删除 Tunnel CIDR 路由', $routeId);
+            return json(['code' => 0, 'msg' => '删除 CIDR 路由成功']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function tunnels_hostname_routes_data()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            if ($tunnelId === '') {
+                throw new Exception('缺少 tunnel_id');
+            }
+            $rows = [];
+            foreach ($context['service']->listHostnameRoutes($context['accountId'], $tunnelId) as $row) {
+                $mapped = $this->formatHostnameRouteRow($row);
+                if ($mapped['id'] !== '' && $mapped['hostname'] !== '') {
+                    $rows[] = $mapped;
+                }
+            }
+            return json(['code' => 0, 'total' => count($rows), 'rows' => $rows]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage(), 'total' => 0, 'rows' => []]);
+        }
+    }
+
+    public function tunnels_hostname_routes_add()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            $hostname = trim(input('post.hostname', '', 'trim'));
+            $comment = trim(input('post.comment', '', 'trim'));
+            if ($tunnelId === '' || $hostname === '') {
+                throw new Exception('Tunnel 和主机名不能为空');
+            }
+            if (!checkDomain($hostname)) {
+                throw new Exception('主机名格式不正确');
+            }
+
+            $route = $context['service']->createHostnameRoute($context['accountId'], $tunnelId, $hostname, $comment !== '' ? $comment : null);
+            $mapped = $this->formatHostnameRouteRow($route);
+            $this->add_log($this->formatAccountDisplayName($context['account']), '创建 Tunnel 主机名路由', $mapped['hostname']);
+            return json(['code' => 0, 'msg' => '创建主机名路由成功', 'data' => $mapped]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function tunnels_hostname_routes_delete()
+    {
+        try {
+            $context = $this->getCloudflareAccountContext(input('param.id/d'), true, true);
+            $tunnelId = trim(input('post.tunnel_id', '', 'trim'));
+            $routeId = trim(input('post.route_id', '', 'trim'));
+            if ($tunnelId === '' || $routeId === '') {
+                throw new Exception('缺少 tunnel_id 或 route_id');
+            }
+
+            $matched = false;
+            foreach ($context['service']->listHostnameRoutes($context['accountId'], $tunnelId) as $row) {
+                $id = trim((string)($row['id'] ?? $row['hostname_route_id'] ?? ''));
+                if ($id === $routeId) {
+                    $matched = true;
+                    break;
+                }
+            }
+            if (!$matched) {
+                throw new Exception('主机名路由不存在或不属于当前 Tunnel');
+            }
+
+            $context['service']->deleteHostnameRoute($context['accountId'], $routeId);
+            $this->add_log($this->formatAccountDisplayName($context['account']), '删除 Tunnel 主机名路由', $routeId);
+            return json(['code' => 0, 'msg' => '删除主机名路由成功']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    private function getCloudflareDomainContext(int $domainId): array
+    {
+        if (!checkPermission(2)) {
+            throw new Exception('无权限');
+        }
+        $row = Db::name('domain')->alias('A')
+            ->join('account B', 'A.aid = B.id')
+            ->where('A.id', $domainId)
+            ->field('A.*,B.type,B.config account_config,B.name account_name,B.remark account_remark')
+            ->find();
+        if (!$row) {
+            throw new Exception('域名不存在');
+        }
+        if (($row['type'] ?? '') !== 'cloudflare') {
+            throw new Exception('仅支持 Cloudflare 域名');
+        }
+        if (empty($row['thirdid'])) {
+            throw new Exception('当前域名缺少 Cloudflare Zone ID');
+        }
+
+        $config = json_decode($row['account_config'] ?? '', true);
+        if (!is_array($config)) {
+            $config = [];
+        }
+
+        return [
+            'domain' => $row,
+            'config' => $config,
+            'service' => new CloudflareEnhanceService($config),
+        ];
+    }
+
+    private function getCloudflareAccountContext(int $accountId, bool $requireAccountId = false, bool $requireTunnelApiToken = false): array
+    {
+        if (!checkPermission(2)) {
+            throw new Exception('无权限');
+        }
+        $account = Db::name('account')->where('id', $accountId)->find();
+        if (!$account) {
+            throw new Exception('域名账户不存在');
+        }
+        if (($account['type'] ?? '') !== 'cloudflare') {
+            throw new Exception('仅支持 Cloudflare 账户');
+        }
+
+        $config = json_decode($account['config'] ?? '', true);
+        if (!is_array($config)) {
+            $config = [];
+        }
+
+        $service = new CloudflareEnhanceService($config);
+        if ($requireTunnelApiToken && !$service->isApiTokenAuth()) {
+            throw new Exception('Cloudflare Tunnels 仅支持 API 令牌认证，请将当前账户的认证方式切换为 API令牌');
+        }
+
+        $resolvedAccountId = trim((string)($config['account_id'] ?? ''));
+        if ($requireAccountId && $resolvedAccountId === '') {
+            $resolvedAccountId = $service->getDefaultAccountId();
+            if ($resolvedAccountId !== '') {
+                $config['account_id'] = $resolvedAccountId;
+                Db::name('account')->where('id', $account['id'])->update([
+                    'config' => json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]);
+                $account['config'] = json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $service = new CloudflareEnhanceService($config);
+            }
+        }
+        if ($requireAccountId && $resolvedAccountId === '') {
+            throw new Exception('当前 Cloudflare 账户缺少 Account ID，且无法自动探测。请编辑账户并补充 Account ID 后重试');
+        }
+
+        return [
+            'account' => $account,
+            'config' => $config,
+            'service' => $service,
+            'accountId' => $resolvedAccountId,
+        ];
+    }
+
+    private function validateCustomOrigin(string $origin): void
+    {
+        if (preg_match('/^https?:\/\//i', $origin)) {
+            throw new Exception('自定义源站不支持填写 http:// 或 https://');
+        }
+        if (str_contains($origin, '*')) {
+            throw new Exception('自定义源站不支持通配符');
+        }
+        if (str_contains($origin, '/')) {
+            throw new Exception('自定义源站格式不正确');
+        }
+        if (preg_match('/:\d+$/', $origin)) {
+            throw new Exception('自定义源站不支持端口');
+        }
+        if (filter_var($origin, FILTER_VALIDATE_IP)) {
+            throw new Exception('自定义源站不支持 IP 地址，请填写域名');
+        }
+        if (!checkDomain($origin)) {
+            throw new Exception('自定义源站格式不正确');
+        }
+    }
+
+    private function formatCustomHostnameRow(array $row): array
+    {
+        $ssl = isset($row['ssl']) && is_array($row['ssl']) ? $row['ssl'] : [];
+        $ownership = isset($row['ownership_verification']) && is_array($row['ownership_verification']) ? $row['ownership_verification'] : [];
+        $verificationStatus = trim((string)($ownership['http']['status'] ?? $ownership['txt']['status'] ?? $ownership['status'] ?? ''));
+        $validationErrors = [];
+        if (!empty($ssl['validation_errors']) && is_array($ssl['validation_errors'])) {
+            foreach ($ssl['validation_errors'] as $item) {
+                $validationErrors[] = trim((string)($item['message'] ?? $item));
+            }
+        }
+
+        return [
+            'id' => trim((string)($row['id'] ?? '')),
+            'hostname' => trim((string)($row['hostname'] ?? '')),
+            'custom_origin_server' => trim((string)($row['custom_origin_server'] ?? '')),
+            'ssl_status' => trim((string)($ssl['status'] ?? '')),
+            'ssl_method' => trim((string)($ssl['method'] ?? '')),
+            'ssl_type' => trim((string)($ssl['type'] ?? '')),
+            'verification_status' => $verificationStatus !== '' ? $verificationStatus : '-',
+            'created_on' => trim((string)($row['created_at'] ?? $row['created_on'] ?? '')),
+            'validation_errors' => implode(' | ', array_filter($validationErrors)),
+        ];
+    }
+
+    private function formatTunnelRow(array $row): array
+    {
+        $connections = isset($row['connections']) && is_array($row['connections']) ? array_values($row['connections']) : [];
+        return [
+            'id' => trim((string)($row['id'] ?? '')),
+            'name' => trim((string)($row['name'] ?? '')),
+            'status' => trim((string)($row['status'] ?? 'unknown')),
+            'created_at' => trim((string)($row['created_at'] ?? '')),
+            'deleted_at' => trim((string)($row['deleted_at'] ?? '')),
+            'conns_active_at' => trim((string)($row['conns_active_at'] ?? '')),
+            'connection_count' => count($connections),
+            'connections' => $connections,
+        ];
+    }
+
+    private function formatCidrRouteRow(array $row): array
+    {
+        return [
+            'id' => trim((string)($row['id'] ?? '')),
+            'network' => trim((string)($row['network'] ?? '')),
+            'comment' => trim((string)($row['comment'] ?? '')),
+            'virtual_network_id' => trim((string)($row['virtual_network_id'] ?? '')),
+            'tunnel_id' => trim((string)($row['tunnel_id'] ?? '')),
+            'created_at' => trim((string)($row['created_at'] ?? '')),
+        ];
+    }
+
+    private function formatHostnameRouteRow(array $row): array
+    {
+        return [
+            'id' => trim((string)($row['id'] ?? $row['hostname_route_id'] ?? '')),
+            'hostname' => trim((string)($row['hostname'] ?? $row['hostname_pattern'] ?? '')),
+            'comment' => trim((string)($row['comment'] ?? '')),
+            'tunnel_id' => trim((string)($row['tunnel_id'] ?? '')),
+            'created_at' => trim((string)($row['created_at'] ?? '')),
+        ];
+    }
+
+    private function formatAccountDisplayName(array $account): string
+    {
+        $name = trim((string)($account['name'] ?? ''));
+        $remark = trim((string)($account['remark'] ?? ''));
+        if ($remark !== '') {
+            return $remark . ' (' . $name . ')';
+        }
+        return $name !== '' ? $name : ('Cloudflare账户#' . ($account['id'] ?? ''));
+    }
+
+    private function extractTunnelConfigObject(array $raw): array
+    {
+        if (isset($raw['config']) && is_array($raw['config'])) {
+            return $raw['config'];
+        }
+        return $raw;
+    }
+
+    private function extractPublicHostnames(array $config): array
+    {
+        $rows = [];
+        $ingress = isset($config['ingress']) && is_array($config['ingress']) ? array_values($config['ingress']) : [];
+        foreach ($ingress as $rule) {
+            if (!is_array($rule)) {
+                continue;
+            }
+            $hostname = trim((string)($rule['hostname'] ?? ''));
+            if ($hostname === '') {
+                continue;
+            }
+            $rows[] = [
+                'hostname' => $hostname,
+                'path' => trim((string)($rule['path'] ?? '')),
+                'service' => trim((string)($rule['service'] ?? '')),
+            ];
+        }
+        return $rows;
+    }
+
+    private function ensureFallbackIngress(array $ingress): array
+    {
+        $rows = [];
+        foreach ($ingress as $rule) {
+            if (is_array($rule)) {
+                $rows[] = $rule;
+            }
+        }
+        if (empty($rows) || !$this->isFallbackIngressRule($rows[count($rows) - 1])) {
+            $rows[] = ['service' => 'http_status:404'];
+        }
+        return $rows;
+    }
+
+    private function isFallbackIngressRule(array $rule): bool
+    {
+        return trim((string)($rule['hostname'] ?? '')) === '' && trim((string)($rule['path'] ?? '')) === '';
+    }
+
+    private function findFallbackIngressIndex(array $ingress): int
+    {
+        foreach ($ingress as $index => $rule) {
+            if (is_array($rule) && $this->isFallbackIngressRule($rule)) {
+                return $index;
+            }
+        }
+        return -1;
+    }
+
+    private function findPublicHostnameIndex(array $ingress, string $hostname, string $path): int
+    {
+        foreach ($ingress as $index => $rule) {
+            if (!is_array($rule)) {
+                continue;
+            }
+            $sameHostname = $this->normalizeHostname($rule['hostname'] ?? '') === $this->normalizeHostname($hostname);
+            $samePath = trim((string)($rule['path'] ?? '')) === trim($path);
+            if ($sameHostname && $samePath) {
+                return $index;
+            }
+        }
+        return -1;
+    }
+
+    private function findBestMatchingDomain(int $accountId, string $hostname): ?array
+    {
+        $hostname = preg_replace('/^\*\./', '', $this->normalizeHostname($hostname));
+        $domains = Db::name('domain')->where('aid', $accountId)->select()->toArray();
+        $best = null;
+        $bestLength = -1;
+        foreach ($domains as $domain) {
+            $domainName = $this->normalizeHostname($domain['name'] ?? '');
+            if ($domainName === '') {
+                continue;
+            }
+            if ($hostname === $domainName || str_ends_with($hostname, '.' . $domainName)) {
+                if (strlen($domainName) > $bestLength) {
+                    $best = $domain;
+                    $bestLength = strlen($domainName);
+                }
+            }
+        }
+        return $best;
+    }
+
+    private function normalizeHostname($hostname): string
+    {
+        $hostname = trim((string)$hostname);
+        if ($hostname === '') {
+            return '';
+        }
+        $hostname = convertDomainToAscii(rtrim($hostname, '.'));
+        return strtolower($hostname);
+    }
+
+    private function isValidCidr(string $network): bool
+    {
+        if (!str_contains($network, '/')) {
+            return false;
+        }
+        [$ip, $prefix] = explode('/', $network, 2);
+        if (!is_numeric($prefix)) {
+            return false;
+        }
+        $prefix = intval($prefix);
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $prefix >= 0 && $prefix <= 32;
+        }
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return $prefix >= 0 && $prefix <= 128;
+        }
+        return false;
+    }
+
+    private function add_log(string $domain, string $action, string $data): void
+    {
+        if (strlen($data) > 500) {
+            $data = substr($data, 0, 500);
+        }
+        Db::name('log')->insert([
+            'uid' => request()->user['id'],
+            'domain' => $domain,
+            'action' => $action,
+            'data' => $data,
+            'addtime' => date('Y-m-d H:i:s'),
+        ]);
+    }
+}
