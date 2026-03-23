@@ -641,12 +641,6 @@ class Cloudflare extends BaseController
         if ($payload['type'] === '') {
             $payload['type'] = 'dv';
         }
-        if (!empty($ssl['bundle_method'])) {
-            $payload['bundle_method'] = trim((string)$ssl['bundle_method']);
-        }
-        if (!empty($ssl['certificate_authority'])) {
-            $payload['certificate_authority'] = trim((string)$ssl['certificate_authority']);
-        }
         return $payload;
     }
 

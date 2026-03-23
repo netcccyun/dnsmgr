@@ -1,4 +1,5 @@
 var currentVerificationHostnameId = '';
+var currentDomainName = '6byj.cn';
 
 $(document).ready(function(){
   $("#form-store").bootstrapValidator();
@@ -191,6 +192,7 @@ function renderVerificationDialog(row){
       renderCopyInput('记录类型', ownership.type || 'txt', false)
       + renderCopyInput('TXT 名称', ownership.name || '', true)
       + renderCopyTextarea('TXT 值', ownership.value || '', true, 3)
+      + renderQuickAddTxtButton(ownership.name || '', ownership.value || '', '快速添加所有权 TXT')
     );
   }
 
@@ -213,6 +215,7 @@ function renderVerificationDialog(row){
       recordsHtml += '<div class="panel-body">';
       recordsHtml += renderCopyInput('TXT 名称', item.txt_name || '', true);
       recordsHtml += renderCopyTextarea('TXT 值', item.txt_value || '', true, 3);
+      recordsHtml += renderQuickAddTxtButton(item.txt_name || '', item.txt_value || '', '快速添加 TXT');
       recordsHtml += renderCopyInput('CNAME 名称', item.cname_name || '', true);
       recordsHtml += renderCopyTextarea('CNAME 目标', item.cname_target || '', true, 2);
       recordsHtml += renderCopyTextarea('HTTP URL', item.http_url || '', true, 2);
@@ -274,6 +277,15 @@ function renderCopyTextarea(label, value, copyable, rows){
   return html;
 }
 
+function renderQuickAddTxtButton(name, value, label){
+  var txtName = String(name || '').trim();
+  var txtValue = String(value || '').trim();
+  if(!txtName || !txtValue){
+    return '';
+  }
+  return '<div class="text-right" style="margin-top:8px;margin-bottom:12px;"><button type="button" class="btn btn-success btn-xs" data-name="' + encodeURIComponent(txtName) + '" data-value="' + encodeURIComponent(txtValue) + '" onclick="quickAddTxtRecord(this)">' + htmlEscape(label || '快速添加 TXT') + '</button></div>';
+}
+
 function formatStatusText(value){
   var text = value || '-';
   if(text === '-'){
@@ -314,6 +326,72 @@ function fallbackCopyText(text){
     layer.alert('复制失败，请手动复制', {icon: 2});
   }
   $temp.remove();
+}
+
+function quickAddTxtRecord(btn){
+  var fullName = decodeURIComponent($(btn).attr('data-name') || '');
+  var value = decodeURIComponent($(btn).attr('data-value') || '');
+  var rr = convertFullHostnameToRecordName(fullName);
+  if(rr === null){
+    layer.alert('TXT 记录名称与当前域名不匹配，无法自动添加，请手动到解析页添加', {icon: 2});
+    return;
+  }
+
+  layer.confirm('确定要快速添加 TXT 记录吗？<br><code>' + htmlEscape(fullName) + '</code>', {title: '提示', icon: 0}, function(){
+    var ii = layer.load(2);
+    $.ajax({
+      type: 'POST',
+      url: '/record/add/1',
+      data: {
+        name: rr,
+        type: 'TXT',
+        value: value,
+        line: '0',
+        ttl: 600,
+        mx: 1,
+        weight: 0,
+        remark: 'Cloudflare证书校验'
+      },
+      dataType: 'json',
+      success: function(res){
+        layer.close(ii);
+        if(res.code === 0){
+          layer.closeAll();
+          $("#modal-verification").modal('show');
+          layer.msg('TXT 记录添加成功', {icon: 1, time: 1200});
+        }else{
+          layer.alert(res.msg, {icon: 2});
+        }
+      },
+      error: function(){
+        layer.close(ii);
+        layer.alert('服务器错误', {icon: 2});
+      }
+    });
+  });
+}
+
+function convertFullHostnameToRecordName(fullName){
+  var name = String(fullName || '').trim().replace(/\.$/, '');
+  var domain = String(currentDomainName || '').trim().replace(/\.$/, '');
+  if(!name || !domain){
+    return null;
+  }
+  var lowerName = name.toLowerCase();
+  var lowerDomain = domain.toLowerCase();
+  if(lowerName === lowerDomain){
+    return '@';
+  }
+  if(lowerName.endsWith('.' + lowerDomain)){
+    return name.slice(0, name.length - domain.length - 1);
+  }
+  if(name === '@'){
+    return '@';
+  }
+  if(name.indexOf('.') === -1){
+    return name;
+  }
+  return null;
 }
 
 function deleteHostname(id, hostname){
