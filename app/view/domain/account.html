@@ -29,6 +29,7 @@
 <script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
+var userLevel = "{$user['level']|default=''}";
 $(document).ready(function(){
 	updateToolbar();
 	const defaultPageSize = 15;
@@ -69,7 +70,8 @@ $(document).ready(function(){
 				title: '操作',
 				formatter: function(value, row, index) {
 					var html = '<a href="/account/edit?id='+row.id+'" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a> <a href="/domain?aid='+row.id+'" class="btn btn-default btn-xs">域名</a>';
-					if(row.type === 'cloudflare'){
+					var rowType = String(row.type || '').toLowerCase();
+					if(userLevel == '2' && rowType === 'cloudflare'){
 						html += ' <a href="/cloudflare/tunnels/'+row.id+'" class="btn btn-primary btn-xs">Tunnels</a>';
 					}
 					return html;

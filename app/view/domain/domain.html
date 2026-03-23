@@ -146,7 +146,7 @@
   </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名列表"><i class="fa fa-refresh"></i> 刷新</a>
-  {if request()->user['level'] eq 2}<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
+  {if $user['level'] eq 2}<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
 	<ul class="dropdown-menu"><li><a href="/domain/add">添加域名</a></li><li><a href="javascript:operation('editremark')">修改域名备注</a></li><li><a href="javascript:operation('opennotice')">开启到期提醒</a></li><li><a href="javascript:operation('closenotice')">关闭到期提醒</a></li><li><a href="javascript:operation('updateexpire')">刷新到期时间</a></li><li><a href="javascript:operation('delete')">删除域名</a></li><li role="separator" class="divider"></li><li><a href="javascript:operation('addrecord')">添加解析</a></li><li><a href="javascript:operation('editrecord')">修改解析</a></li></ul>
@@ -172,7 +172,7 @@
 <script src="/static/js/select2-i18n-zh-CN-4.0.13.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
-var userLevel = "{:request()->user['level']}";
+var userLevel = "{$user['level']|default=''}";
 $(document).ready(function(){
 	updateToolbar();
 	const defaultPageSize = getCookie('domain_pagesize') ? getCookie('domain_pagesize') : 15;
@@ -293,6 +293,11 @@ $(document).ready(function(){
 				title: '操作',
 				formatter: function(value, row, index) {
 					var html = '<a href="/record/'+row.id+'" class="btn btn-success btn-xs" onclick="loading()">解析</a>';
+					var rowType = String(row.type || '').toLowerCase();
+					if(userLevel == '2' && rowType === 'cloudflare'){
+						html += ' <a href="/cloudflare/hostnames/'+row.id+'" class="btn btn-primary btn-xs">CF增强</a>';
+						html += ' <a href="/cloudflare/tunnels/'+row.aid+'" class="btn btn-warning btn-xs">Tunnels</a>';
+					}
 					if(userLevel == '2'){
 						html += ' <a href="javascript:editframe('+row.id+')" class="btn btn-info btn-xs">配置</a>';
 						html += ' <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a>';
