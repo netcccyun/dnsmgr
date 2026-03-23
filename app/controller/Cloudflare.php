@@ -57,6 +57,64 @@ class Cloudflare extends BaseController
         }
     }
 
+    public function hostnames_update()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $hostnameId = trim(input('post.hostname_id', '', 'trim'));
+            if ($hostnameId === '') {
+                throw new Exception('缺少 hostname_id');
+            }
+
+            $current = $context['service']->getCustomHostname($context['domain']['thirdid'], $hostnameId);
+            $hostname = trim((string)($current['hostname'] ?? ''));
+            $origin = trim(input('post.custom_origin_server', '', 'trim'));
+            if ($origin !== '') {
+                $this->validateCustomOrigin($origin);
+            }
+
+            $result = $context['service']->updateCustomHostname(
+                $context['domain']['thirdid'],
+                $hostnameId,
+                [
+                    'custom_origin_server' => $origin !== '' ? $origin : null,
+                    'ssl' => $this->extractCustomHostnameSslPayload($current),
+                ]
+            );
+            $this->add_log($context['domain']['name'], '编辑自定义主机名', $hostname . ' -> ' . ($origin !== '' ? $origin : '清空源站'));
+            return json(['code' => 0, 'msg' => '更新自定义主机名成功', 'data' => $this->formatCustomHostnameRow($result)]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function hostnames_refresh()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $hostnameId = trim(input('post.hostname_id', '', 'trim'));
+            if ($hostnameId === '') {
+                throw new Exception('缺少 hostname_id');
+            }
+
+            $current = $context['service']->getCustomHostname($context['domain']['thirdid'], $hostnameId);
+            $hostname = trim((string)($current['hostname'] ?? $hostnameId));
+            $origin = trim((string)($current['custom_origin_server'] ?? ''));
+            $result = $context['service']->updateCustomHostname(
+                $context['domain']['thirdid'],
+                $hostnameId,
+                [
+                    'custom_origin_server' => $origin !== '' ? $origin : null,
+                    'ssl' => $this->extractCustomHostnameSslPayload($current),
+                ]
+            );
+            $this->add_log($context['domain']['name'], '刷新自定义主机名校验', $hostname);
+            return json(['code' => 0, 'msg' => '已向 Cloudflare 重新发起校验', 'data' => $this->formatCustomHostnameRow($result)]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
     public function hostnames_delete()
     {
         try {
@@ -570,28 +628,135 @@ class Cloudflare extends BaseController
         }
     }
 
+    private function extractCustomHostnameSslPayload(array $row): array
+    {
+        $ssl = isset($row['ssl']) && is_array($row['ssl']) ? $row['ssl'] : [];
+        $payload = [
+            'method' => trim((string)($ssl['method'] ?? 'http')),
+            'type' => trim((string)($ssl['type'] ?? 'dv')),
+        ];
+        if ($payload['method'] === '') {
+            $payload['method'] = 'http';
+        }
+        if ($payload['type'] === '') {
+            $payload['type'] = 'dv';
+        }
+        if (!empty($ssl['bundle_method'])) {
+            $payload['bundle_method'] = trim((string)$ssl['bundle_method']);
+        }
+        if (!empty($ssl['certificate_authority'])) {
+            $payload['certificate_authority'] = trim((string)$ssl['certificate_authority']);
+        }
+        return $payload;
+    }
+
     private function formatCustomHostnameRow(array $row): array
     {
         $ssl = isset($row['ssl']) && is_array($row['ssl']) ? $row['ssl'] : [];
         $ownership = isset($row['ownership_verification']) && is_array($row['ownership_verification']) ? $row['ownership_verification'] : [];
+        $ownershipHttp = isset($row['ownership_verification_http']) && is_array($row['ownership_verification_http']) ? $row['ownership_verification_http'] : [];
         $verificationStatus = trim((string)($ownership['http']['status'] ?? $ownership['txt']['status'] ?? $ownership['status'] ?? ''));
+        if ($verificationStatus === '' && (
+            trim((string)($ownership['name'] ?? '')) !== ''
+            || trim((string)($ownership['value'] ?? '')) !== ''
+            || trim((string)($ownershipHttp['http_url'] ?? '')) !== ''
+            || trim((string)($ownershipHttp['http_body'] ?? '')) !== ''
+        )) {
+            $verificationStatus = 'pending';
+        }
+
         $validationErrors = [];
+        if (!empty($row['verification_errors']) && is_array($row['verification_errors'])) {
+            foreach ($row['verification_errors'] as $item) {
+                $message = trim((string)($item['message'] ?? $item));
+                if ($message !== '') {
+                    $validationErrors[] = $message;
+                }
+            }
+        }
         if (!empty($ssl['validation_errors']) && is_array($ssl['validation_errors'])) {
             foreach ($ssl['validation_errors'] as $item) {
-                $validationErrors[] = trim((string)($item['message'] ?? $item));
+                $message = trim((string)($item['message'] ?? $item));
+                if ($message !== '') {
+                    $validationErrors[] = $message;
+                }
             }
+        }
+
+        $sslValidationRecords = [];
+        if (!empty($ssl['validation_records']) && is_array($ssl['validation_records'])) {
+            foreach ($ssl['validation_records'] as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $sslValidationRecords[] = [
+                    'status' => trim((string)($item['status'] ?? '')),
+                    'txt_name' => trim((string)($item['txt_name'] ?? '')),
+                    'txt_value' => trim((string)($item['txt_value'] ?? '')),
+                    'cname_name' => trim((string)($item['cname_name'] ?? '')),
+                    'cname_target' => trim((string)($item['cname_target'] ?? '')),
+                    'http_url' => trim((string)($item['http_url'] ?? '')),
+                    'http_body' => trim((string)($item['http_body'] ?? '')),
+                    'emails' => !empty($item['emails']) && is_array($item['emails']) ? array_values(array_filter(array_map('strval', $item['emails']))) : [],
+                ];
+            }
+        }
+        if (empty($sslValidationRecords) && (
+            trim((string)($ssl['txt_name'] ?? '')) !== ''
+            || trim((string)($ssl['txt_value'] ?? '')) !== ''
+            || trim((string)($ssl['cname_name'] ?? '')) !== ''
+            || trim((string)($ssl['cname_target'] ?? '')) !== ''
+            || trim((string)($ssl['http_url'] ?? '')) !== ''
+            || trim((string)($ssl['http_body'] ?? '')) !== ''
+        )) {
+            $sslValidationRecords[] = [
+                'status' => trim((string)($ssl['status'] ?? '')),
+                'txt_name' => trim((string)($ssl['txt_name'] ?? '')),
+                'txt_value' => trim((string)($ssl['txt_value'] ?? '')),
+                'cname_name' => trim((string)($ssl['cname_name'] ?? '')),
+                'cname_target' => trim((string)($ssl['cname_target'] ?? '')),
+                'http_url' => trim((string)($ssl['http_url'] ?? '')),
+                'http_body' => trim((string)($ssl['http_body'] ?? '')),
+                'emails' => [],
+            ];
+        }
+
+        $sslValidationStatuses = [];
+        foreach ($sslValidationRecords as $item) {
+            $status = trim((string)($item['status'] ?? ''));
+            if ($status !== '') {
+                $sslValidationStatuses[] = $status;
+            }
+        }
+        $sslValidationStatuses = array_values(array_unique(array_filter($sslValidationStatuses)));
+        $sslValidationStatus = count($sslValidationStatuses) > 0 ? implode(' / ', $sslValidationStatuses) : trim((string)($ssl['status'] ?? ''));
+        if ($sslValidationStatus === '') {
+            $sslValidationStatus = '-';
         }
 
         return [
             'id' => trim((string)($row['id'] ?? '')),
             'hostname' => trim((string)($row['hostname'] ?? '')),
             'custom_origin_server' => trim((string)($row['custom_origin_server'] ?? '')),
+            'status' => trim((string)($row['status'] ?? '')),
             'ssl_status' => trim((string)($ssl['status'] ?? '')),
             'ssl_method' => trim((string)($ssl['method'] ?? '')),
             'ssl_type' => trim((string)($ssl['type'] ?? '')),
+            'ssl_validation_status' => $sslValidationStatus,
             'verification_status' => $verificationStatus !== '' ? $verificationStatus : '-',
             'created_on' => trim((string)($row['created_at'] ?? $row['created_on'] ?? '')),
-            'validation_errors' => implode(' | ', array_filter($validationErrors)),
+            'validation_errors' => implode(' | ', array_values(array_unique(array_filter($validationErrors)))),
+            'ownership_verification' => [
+                'type' => trim((string)($ownership['type'] ?? '')),
+                'name' => trim((string)($ownership['name'] ?? '')),
+                'value' => trim((string)($ownership['value'] ?? '')),
+                'status' => $verificationStatus !== '' ? $verificationStatus : '-',
+            ],
+            'ownership_verification_http' => [
+                'http_url' => trim((string)($ownershipHttp['http_url'] ?? '')),
+                'http_body' => trim((string)($ownershipHttp['http_body'] ?? '')),
+            ],
+            'ssl_validation_records' => $sslValidationRecords,
         ];
     }
 

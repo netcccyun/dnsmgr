@@ -82,6 +82,15 @@ class CloudflareEnhanceService
         }
     }
 
+    public function getCustomHostname(string $zoneId, string $hostnameId): array
+    {
+        try {
+            return $this->requestResult('GET', '/zones/' . $zoneId . '/custom_hostnames/' . trim($hostnameId));
+        } catch (Exception $e) {
+            $this->throwActionError('获取自定义主机名详情', $e, 'SSL and Certificates:Read');
+        }
+    }
+
     public function createCustomHostname(string $zoneId, string $hostname, ?string $customOriginServer = null): array
     {
         $hostname = $this->normalizeHostname($hostname);
@@ -101,6 +110,22 @@ class CloudflareEnhanceService
             return $this->requestResult('POST', '/zones/' . $zoneId . '/custom_hostnames', [], $payload);
         } catch (Exception $e) {
             $this->throwActionError('创建自定义主机名', $e, 'SSL and Certificates:Write');
+        }
+    }
+
+    public function updateCustomHostname(string $zoneId, string $hostnameId, array $payload): array
+    {
+        if (isset($payload['custom_origin_server']) && $payload['custom_origin_server'] !== null) {
+            $payload['custom_origin_server'] = $this->normalizeHostname($payload['custom_origin_server']);
+        }
+        if (isset($payload['hostname']) && $payload['hostname'] !== null) {
+            $payload['hostname'] = $this->normalizeHostname($payload['hostname']);
+        }
+
+        try {
+            return $this->requestResult('PATCH', '/zones/' . $zoneId . '/custom_hostnames/' . trim($hostnameId), [], $payload);
+        } catch (Exception $e) {
+            $this->throwActionError('更新自定义主机名', $e, 'SSL and Certificates:Write');
         }
     }
 

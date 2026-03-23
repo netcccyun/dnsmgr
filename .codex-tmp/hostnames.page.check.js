@@ -1,111 +1,10 @@
-{extend name="common/layout" /}
-{block name="title"}Cloudflare增强 - {$domainName}{/block}
-{block name="main"}
-<div class="row">
-  <div class="col-xs-12 center-block" style="float:none;">
-    <div class="panel panel-default panel-intro">
-      <div class="panel-heading">
-        <h3 class="panel-title">
-          <a href="/record/{$domainId}" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回解析</a>
-          Cloudflare增强 - {$domainName}
-        </h3>
-      </div>
-      <div class="panel-body">
-        <div class="alert alert-info">
-          <strong>说明：</strong> 这里管理 Cloudflare 自定义主机名、证书状态、证书校验与 Fallback Origin。
-        </div>
-
-        <div class="well well-sm">
-          <div class="form-inline">
-            <div class="form-group" style="width:70%;max-width:720px;">
-              <label>Fallback Origin</label>
-              <input type="text" id="fallbackOrigin" class="form-control" style="width:80%;" placeholder="例如 origin.example.com">
-            </div>
-            <button type="button" class="btn btn-primary" onclick="saveFallbackOrigin()">保存</button>
-            <button type="button" class="btn btn-default" onclick="loadFallbackOrigin()">刷新</button>
-            <button type="button" class="btn btn-danger" onclick="clearFallbackOrigin()">清空</button>
-          </div>
-        </div>
-
-        <div class="clearfix" style="margin-bottom:15px;">
-          <div class="pull-left">
-            <a href="javascript:refreshHostnameList()" class="btn btn-default" title="刷新自定义主机名列表"><i class="fa fa-refresh"></i> 刷新</a>
-            <a href="javascript:openAddDialog()" class="btn btn-success"><i class="fa fa-plus"></i> 添加自定义主机名</a>
-          </div>
-        </div>
-
-        <table id="listTable"></table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="modal-store" role="dialog" aria-hidden="true" data-backdrop="static">
-  <div class="modal-dialog">
-    <div class="modal-content animated flipInX">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-        <h4 class="modal-title" id="storeTitle">添加自定义主机名</h4>
-      </div>
-      <div class="modal-body">
-        <form class="form-horizontal" id="form-store">
-          <input type="hidden" name="hostname_id" value="">
-          <div class="form-group">
-            <label class="col-sm-3 control-label">主机名</label>
-            <div class="col-sm-9">
-              <input type="text" class="form-control" name="hostname" placeholder="例如 app.example.com 或 *.example.com" required>
-              <p class="help-block" id="hostnameHint">创建后主机名不能直接改名，如需改名请删除后重建。</p>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="col-sm-3 control-label">自定义源站</label>
-            <div class="col-sm-9">
-              <input type="text" class="form-control" name="custom_origin_server" placeholder="可留空，例如 origin.example.com">
-              <p class="help-block">留空表示清空当前自定义源站，回退到 Fallback Origin 或默认源站逻辑。</p>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
-        <button type="button" class="btn btn-primary" onclick="submitHostname()">保存</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="modal-verification" role="dialog" aria-hidden="true" data-backdrop="static">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content animated flipInX">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-        <h4 class="modal-title" id="verificationTitle">证书校验</h4>
-      </div>
-      <div class="modal-body">
-        <div id="verificationContent"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" onclick="refreshHostnameValidation()">刷新校验</button>
-        <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
-      </div>
-    </div>
-  </div>
-</div>
-{/block}
-{block name="script"}
-<script src="/static/js/layer/layer.js"></script>
-<script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
-<script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
-<script src="/static/js/bootstrapValidator.min.js"></script>
-<script src="/static/js/custom.js"></script>
-<script>
 var currentVerificationHostnameId = '';
 
 $(document).ready(function(){
   $("#form-store").bootstrapValidator();
   loadFallbackOrigin();
   $("#listTable").bootstrapTable({
-    url: '/cloudflare/hostnames/data/{$domainId}',
+    url: '/cloudflare/hostnames/data/1',
     method: 'post',
     toolbar: '',
     classes: 'table table-striped table-hover table-bordered',
@@ -202,7 +101,7 @@ function submitHostname(){
     return;
   }
   var hostnameId = $.trim($("#form-store input[name=hostname_id]").val());
-  var url = hostnameId ? '/cloudflare/hostnames/update/{$domainId}' : '/cloudflare/hostnames/add/{$domainId}';
+  var url = hostnameId ? '/cloudflare/hostnames/update/1' : '/cloudflare/hostnames/add/1';
   var successMsg = hostnameId ? '更新自定义主机名成功' : '创建自定义主机名成功';
   var ii = layer.load(2);
   $.ajax({
@@ -252,7 +151,7 @@ function refreshHostnameValidation(){
   var ii = layer.load(2);
   $.ajax({
     type: 'POST',
-    url: '/cloudflare/hostnames/refresh/{$domainId}',
+    url: '/cloudflare/hostnames/refresh/1',
     data: {hostname_id: currentVerificationHostnameId},
     dataType: 'json',
     success: function(res){
@@ -422,7 +321,7 @@ function deleteHostname(id, hostname){
     var ii = layer.load(2);
     $.ajax({
       type: 'POST',
-      url: '/cloudflare/hostnames/delete/{$domainId}',
+      url: '/cloudflare/hostnames/delete/1',
       data: {hostname_id: id, hostname: hostname},
       dataType: 'json',
       success: function(res){
@@ -446,7 +345,7 @@ function deleteHostname(id, hostname){
 function loadFallbackOrigin(){
   $.ajax({
     type: 'POST',
-    url: '/cloudflare/fallback/get/{$domainId}',
+    url: '/cloudflare/fallback/get/1',
     dataType: 'json',
     success: function(res){
       if(res.code === 0){
@@ -467,7 +366,7 @@ function saveFallbackOrigin(){
   var ii = layer.load(2);
   $.ajax({
     type: 'POST',
-    url: '/cloudflare/fallback/set/{$domainId}',
+    url: '/cloudflare/fallback/set/1',
     data: {origin: origin},
     dataType: 'json',
     success: function(res){
@@ -491,7 +390,7 @@ function clearFallbackOrigin(){
     var ii = layer.load(2);
     $.ajax({
       type: 'POST',
-      url: '/cloudflare/fallback/delete/{$domainId}',
+      url: '/cloudflare/fallback/delete/1',
       dataType: 'json',
       success: function(res){
         layer.close(ii);
@@ -519,5 +418,3 @@ function htmlEscape(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-</script>
-{/block}
