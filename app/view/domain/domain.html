@@ -296,7 +296,6 @@ $(document).ready(function(){
 					var rowType = String(row.type || '').toLowerCase();
 					if(userLevel == '2' && rowType === 'cloudflare'){
 						html += ' <a href="/cloudflare/hostnames/'+row.id+'" class="btn btn-primary btn-xs">CF增强</a>';
-						html += ' <a href="/cloudflare/tunnels/'+row.aid+'" class="btn btn-warning btn-xs">Tunnels</a>';
 					}
 					if(userLevel == '2'){
 						html += ' <a href="javascript:editframe('+row.id+')" class="btn btn-info btn-xs">配置</a>';
