@@ -25,6 +25,27 @@ class cloudflare implements DnsInterface
         $this->auth = isset($config['auth']) ? intval($config['auth']) : (preg_match('/^[0-9a-f]+$/i', $this->ApiKey) ? 0 : 1);
     }
 
+    /**
+     * 从 Cloudflare API 返回的完整域名中提取子域名（主机记录）
+     * 兼容 Emoji/IDN 域名：Cloudflare API 返回 Punycode 格式，数据库存储 UTF-8
+     */
+    private function extractName($fullName)
+    {
+        $domainAscii = idn_to_ascii($this->domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+        if ($domainAscii === false) $domainAscii = $this->domain;
+
+        if ($fullName === $domainAscii || $fullName === $this->domain) {
+            return '@';
+        }
+        if (str_ends_with($fullName, '.' . $domainAscii)) {
+            return substr($fullName, 0, -(strlen($domainAscii) + 1));
+        }
+        if (str_ends_with($fullName, '.' . $this->domain)) {
+            return substr($fullName, 0, -(strlen($this->domain) + 1));
+        }
+        return $fullName;
+    }
+
     public function getError()
     {
         return $this->error;
@@ -66,8 +87,9 @@ class cloudflare implements DnsInterface
         if (!isNullOrEmpty($Value)) $KeyWord = $Value;
         $param = ['type' => $Type, 'search' => $KeyWord, 'page' => $PageNumber, 'per_page' => $PageSize];
         if (!isNullOrEmpty($SubDomain)) {
-            if ($SubDomain == '@') $SubDomain = $this->domain;
-            else $SubDomain .= '.' . $this->domain;
+            $domainAscii = idn_to_ascii($this->domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46) ?: $this->domain;
+            if ($SubDomain == '@') $SubDomain = $domainAscii;
+            else $SubDomain .= '.' . $domainAscii;
             $param['name'] = $SubDomain;
         }
         if (!isNullOrEmpty($Line)) {
@@ -77,7 +99,7 @@ class cloudflare implements DnsInterface
         if ($data) {
             $list = [];
             foreach ($data['result'] as $row) {
-                $name = $this->domain == $row['name'] ? '@' : substr($row['name'], 0, -(strlen($this->domain) + 1));
+                $name = $this->extractName($row['name']);
                 $status = str_ends_with($name, '_pause') ? '0' : '1';
                 $name = $name == '__root__' ? '@' : $name;
                 $name = $status == '0' ? substr($name, 0, -6) : $name;
@@ -115,7 +137,7 @@ class cloudflare implements DnsInterface
     {
         $data = $this->send_reuqest('GET', '/zones/'.$this->domainid.'/dns_records/'.$RecordId);
         if ($data) {
-            $name = $this->domain == $data['result']['name'] ? '@' : substr($data['result']['name'], 0, -(strlen($this->domain) + 1));
+            $name = $this->extractName($data['result']['name']);
             $status = str_ends_with($name, '_pause') ? '0' : '1';
             $name = $status == '0' ? substr($name, 0, -6) : $name;
             $name = $name == '__root__' ? '@' : $name;
