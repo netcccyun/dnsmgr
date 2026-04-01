@@ -143,6 +143,23 @@ function initDomainQuickSwitch(options){
 	};
 }
 
+function quickSwitchDomain(basePath){
+	if(typeof $ === 'undefined'){
+		return false;
+	}
+	var targetId = $.trim($('#quickDomainSwitch').val());
+	if(targetId === ''){
+		if(typeof layer !== 'undefined'){
+			layer.msg('请先选择域名');
+		}else{
+			alert('请先选择域名');
+		}
+		return false;
+	}
+	window.location.href = String(basePath || '') + targetId;
+	return false;
+}
+
 if (typeof $.fn.bootstrapTable !== "undefined") {
     $.fn.bootstrapTable.custom = {
         method: 'post',

@@ -57,6 +57,7 @@ Route::group(function () {
     Route::post('/cloudflare/hostnames/update/:id', 'cloudflare/hostnames_update');
     Route::post('/cloudflare/hostnames/refresh/:id', 'cloudflare/hostnames_refresh');
     Route::post('/cloudflare/hostnames/delete/:id', 'cloudflare/hostnames_delete');
+    Route::post('/cloudflare/hostnames/txttargets/:id', 'cloudflare/hostnames_txt_targets');
     Route::post('/cloudflare/fallback/get/:id', 'cloudflare/fallback_get');
     Route::post('/cloudflare/fallback/set/:id', 'cloudflare/fallback_set');
     Route::post('/cloudflare/fallback/delete/:id', 'cloudflare/fallback_delete');

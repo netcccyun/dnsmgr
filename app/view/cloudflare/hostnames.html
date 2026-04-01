@@ -14,7 +14,7 @@
                 {/volist}
               </select>
             </div>
-            <button type="button" class="btn btn-sm btn-primary" id="quickDomainSwitchBtn" style="vertical-align:middle;margin-right:6px;"><i class="fa fa-random fa-fw"></i> 切换域名</button>
+            <button type="button" class="btn btn-sm btn-primary" id="quickDomainSwitchBtn" style="vertical-align:middle;margin-right:6px;" onclick="return quickSwitchDomain('/cloudflare/hostnames/')"><i class="fa fa-random fa-fw"></i> 切换域名</button>
             <a href="/record/{$domainId}" class="btn btn-sm btn-default" style="vertical-align:middle;"><i class="fa fa-reply fa-fw"></i> 返回解析</a>
           </div>
           <h3 class="panel-title" style="padding-top:4px;">Cloudflare增强 - {$domainName}</h3>
@@ -109,16 +109,16 @@
 <script src="/static/js/bootstrapValidator.min.js"></script>
 <script src="/static/js/select2-4.0.13.min.js"></script>
 <script src="/static/js/select2-i18n-zh-CN-4.0.13.min.js"></script>
-<script src="/static/js/custom.js"></script>
+<script src="/static/js/custom.js?v=1005"></script>
 <script>
 var currentVerificationHostnameId = '';
-var currentDomainName = '{$domainName}';
 
 $(document).ready(function(){
-  initDomainQuickSwitch({
-    currentId: '{$domainId}',
-    currentText: {$domainName|json_encode|raw},
-    type: 'cloudflare',
+    initDomainQuickSwitch({
+      buttonSelector: '',
+      currentId: '{$domainId}',
+      currentText: {$domainName|json_encode|raw},
+      type: 'cloudflare',
     buildUrl: function(id){
       return '/cloudflare/hostnames/' + id;
     }
@@ -452,65 +452,145 @@ function fallbackCopyText(text){
 function quickAddTxtRecord(btn){
   var fullName = decodeURIComponent($(btn).attr('data-name') || '');
   var value = decodeURIComponent($(btn).attr('data-value') || '');
-  var rr = convertFullHostnameToRecordName(fullName);
-  if(rr === null){
-    layer.alert('TXT 记录名称与当前域名不匹配，无法自动添加，请手动到解析页添加', {icon: 2});
-    return;
-  }
-
-  layer.confirm('确定要快速添加 TXT 记录吗？<br><code>' + htmlEscape(fullName) + '</code>', {title: '提示', icon: 0}, function(){
-    var ii = layer.load(2);
-    $.ajax({
-      type: 'POST',
-      url: '/record/add/{$domainId}',
-      data: {
-        name: rr,
-        type: 'TXT',
-        value: value,
-        line: '0',
-        ttl: 600,
-        mx: 1,
-        weight: 0,
-        remark: 'Cloudflare证书校验'
-      },
-      dataType: 'json',
-      success: function(res){
-        layer.close(ii);
-        if(res.code === 0){
-          layer.closeAll();
-          $("#modal-verification").modal('show');
-          layer.msg('TXT 记录添加成功', {icon: 1, time: 1200});
-        }else{
-          layer.alert(res.msg, {icon: 2});
-        }
-      },
-      error: function(){
-        layer.close(ii);
-        layer.alert('服务器错误', {icon: 2});
-      }
-    });
+  resolveTxtRecordTargets(fullName, function(targets){
+    if(!targets.length){
+      layer.alert('系统中未找到与该 TXT 主机名对应的托管域名，请手动到解析页添加', {icon: 2});
+      return;
+    }
+    if(targets.length === 1){
+      confirmQuickAddTxtRecord(fullName, value, targets[0]);
+      return;
+    }
+    openTxtTargetPicker(fullName, value, targets);
   });
 }
 
-function convertFullHostnameToRecordName(fullName){
-  var name = String(fullName || '').trim().replace(/\.$/, '');
-  var domain = String(currentDomainName || '').trim().replace(/\.$/, '');
-  if(!name || !domain){
-    return null;
+function resolveTxtRecordTargets(fullName, callback){
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/hostnames/txttargets/{$domainId}',
+    data: {hostname: fullName},
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        var targets = res.data && $.isArray(res.data.candidates) ? res.data.candidates : [];
+        callback(targets);
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function openTxtTargetPicker(fullName, value, targets){
+  var html = '<div style="padding:16px 18px 6px;">';
+  html += '<div class="alert alert-warning" style="margin-bottom:12px;">检测到多个可用解析域名，请确认要写入哪个服务商。</div>';
+  html += '<div class="form-group"><label>TXT 主机名</label><div><code>' + htmlEscape(fullName) + '</code></div></div>';
+  html += '<div class="form-group"><label>TXT 值</label><textarea class="form-control" rows="3" readonly>' + htmlEscape(value) + '</textarea></div>';
+  html += '<form id="txtTargetPickerForm">';
+  for(var i = 0; i < targets.length; i++){
+    var target = targets[i] || {};
+    var providerName = target.account_type_name || target.account_type || '-';
+    var accountName = target.account_display_name || ('账户#' + (target.account_id || ''));
+    html += '<div class="radio" style="margin:0 0 12px;border:1px solid #e5e5e5;border-radius:4px;padding:10px 12px;">';
+    html += '<label style="display:block;padding-left:22px;">';
+    html += '<input type="radio" name="txtTarget" value="' + htmlEscape(String(target.domain_id || '')) + '"' + (i === 0 ? ' checked' : '') + '>';
+    html += '<strong>' + htmlEscape(target.domain_name || '-') + '</strong>';
+    if(target.is_current_domain){
+      html += ' <span class="label label-primary">当前页</span>';
+    }
+    html += '<div class="help-block" style="margin:8px 0 0;">';
+    html += '主机记录：<code>' + htmlEscape(target.record_name || '@') + '</code><br>';
+    html += '服务商：' + htmlEscape(providerName) + '<br>';
+    html += '账户：' + htmlEscape(accountName);
+    html += '</div>';
+    html += '</label></div>';
   }
-  var lowerName = name.toLowerCase();
-  var lowerDomain = domain.toLowerCase();
-  if(lowerName === lowerDomain){
-    return '@';
-  }
-  if(lowerName.endsWith('.' + lowerDomain)){
-    return name.slice(0, name.length - domain.length - 1);
-  }
-  if(name === '@'){
-    return '@';
-  }
-  if(name.indexOf('.') === -1){
-    return name;
+  html += '</form></div>';
+  layer.open({
+    type: 1,
+    title: '选择解析服务商',
+    area: ['640px', 'auto'],
+    shadeClose: false,
+    content: html,
+    btn: ['添加 TXT', '取消'],
+    yes: function(index){
+      var selectedId = $('#txtTargetPickerForm input[name=txtTarget]:checked').val();
+      var target = findTxtTargetByDomainId(targets, selectedId);
+      if(!target){
+        layer.msg('请选择要写入的解析域名', {icon: 2});
+        return;
+      }
+      layer.close(index);
+      submitQuickAddTxtRecord(value, target);
+    }
+  });
+}
+
+function confirmQuickAddTxtRecord(fullName, value, target){
+  layer.confirm(buildQuickAddConfirmHtml(fullName, target), {title: '提示', icon: 0}, function(index){
+    layer.close(index);
+    submitQuickAddTxtRecord(value, target);
+  });
+}
+
+function buildQuickAddConfirmHtml(fullName, target){
+  var providerName = target.account_type_name || target.account_type || '-';
+  var accountName = target.account_display_name || ('账户#' + (target.account_id || ''));
+  return '确定要快速添加 TXT 记录吗？<br><br>'
+    + 'TXT 主机名：<code>' + htmlEscape(fullName) + '</code><br>'
+    + '解析域名：<code>' + htmlEscape(target.domain_name || '-') + '</code><br>'
+    + '主机记录：<code>' + htmlEscape(target.record_name || '@') + '</code><br>'
+    + '服务商：' + htmlEscape(providerName) + '<br>'
+    + '账户：' + htmlEscape(accountName);
+}
+
+function submitQuickAddTxtRecord(value, target){
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/record/add/' + target.domain_id,
+    data: {
+      name: target.record_name,
+      type: 'TXT',
+      value: value,
+      line: '0',
+      ttl: 600,
+      mx: 1,
+      weight: 0,
+      remark: 'Cloudflare证书校验'
+    },
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        layer.closeAll();
+        $("#modal-verification").modal('show');
+        layer.msg('TXT 记录已添加到 ' + (target.domain_name || '-'), {icon: 1, time: 1400});
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function findTxtTargetByDomainId(targets, domainId){
+  var selected = String(domainId || '');
+  for(var i = 0; i < targets.length; i++){
+    var item = targets[i] || {};
+    if(String(item.domain_id || '') === selected){
+      return item;
+    }
   }
   return null;
 }

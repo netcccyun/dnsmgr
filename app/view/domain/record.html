@@ -176,7 +176,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 						{/volist}
 					</select>
 				</div>
-				<button type="button" class="btn btn-sm btn-primary" id="quickDomainSwitchBtn" style="vertical-align:middle;margin-right:6px;"><i class="fa fa-random fa-fw"></i> 切换域名</button>
+				<button type="button" class="btn btn-sm btn-primary" id="quickDomainSwitchBtn" style="vertical-align:middle;margin-right:6px;" onclick="return quickSwitchDomain('/record/')"><i class="fa fa-random fa-fw"></i> 切换域名</button>
 				{if $user['type'] eq 'user'}<a href="/domain" class="btn btn-sm btn-default" style="vertical-align:middle;"><i class="fa fa-reply fa-fw"></i> 返回</a>{/if}
 			</div>
 			<h3 class="panel-title" style="padding-top:4px;">{$domainName}</h3>
@@ -256,7 +256,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 <script src="/static/js/bootstrapValidator.min.js"></script>
 <script src="/static/js/select2-4.0.13.min.js"></script>
 <script src="/static/js/select2-i18n-zh-CN-4.0.13.min.js"></script>
-<script src="/static/js/custom.js?v=1003"></script>
+<script src="/static/js/custom.js?v=1005"></script>
 <script>
 var recordLine = {$recordLine|json_encode|raw};
 var dnsconfig = {$dnsconfig|json_encode|raw};
@@ -264,13 +264,16 @@ var defaultLine = recordLine[0].id;
 var sidePagination = dnsconfig.page ? 'client' : 'server';
 var showWeight = dnsconfig.weight;
 $(document).ready(function(){
-	initDomainQuickSwitch({
-		currentId: '{$domainId}',
-		currentText: {$domainName|json_encode|raw},
-		buildUrl: function(id){
-			return '/record/' + id;
-		}
-	});
+	if(typeof initDomainQuickSwitch === 'function'){
+		initDomainQuickSwitch({
+			buttonSelector: '',
+			currentId: '{$domainId}',
+			currentText: {$domainName|json_encode|raw},
+			buildUrl: function(id){
+				return '/record/' + id;
+			}
+		});
+	}
 	updateToolbar();
 	let defaultPageSize = getCookie('record_pagesize') ? getCookie('record_pagesize') : 15;
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;

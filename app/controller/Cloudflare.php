@@ -3,6 +3,7 @@
 namespace app\controller;
 
 use app\BaseController;
+use app\lib\DnsHelper;
 use app\service\CloudflareEnhanceService;
 use Exception;
 use think\facade\Db;
@@ -140,6 +141,27 @@ class Cloudflare extends BaseController
             return json(['code' => 0, 'msg' => '删除自定义主机名成功']);
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function hostnames_txt_targets()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $hostname = trim(input('post.hostname', '', 'trim'));
+            if ($hostname === '') {
+                throw new Exception('缺少 TXT 主机名');
+            }
+
+            return json([
+                'code' => 0,
+                'data' => [
+                    'hostname' => $hostname,
+                    'candidates' => $this->findTxtRecordTargetDomains($context['domain'], $hostname),
+                ],
+            ]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage(), 'data' => ['candidates' => []]]);
         }
     }
 
@@ -802,6 +824,85 @@ class Cloudflare extends BaseController
         ];
     }
 
+    private function findTxtRecordTargetDomains(array $currentDomain, string $hostname): array
+    {
+        $rows = Db::name('domain')->alias('D')
+            ->join('account A', 'D.aid = A.id')
+            ->field('D.id,D.aid,D.name,A.type account_type,A.name account_name,A.remark account_remark')
+            ->select()
+            ->toArray();
+
+        $candidates = [];
+        $bestLength = -1;
+        foreach ($rows as $row) {
+            $recordName = $this->matchHostnameToDomainRecordName($hostname, $row['name'] ?? '');
+            if ($recordName === null) {
+                continue;
+            }
+            $domainName = $this->normalizeHostname($row['name'] ?? '');
+            $matchedLength = strlen($domainName);
+            if ($matchedLength > $bestLength) {
+                $bestLength = $matchedLength;
+                $candidates = [];
+            }
+            if ($matchedLength === $bestLength) {
+                $candidates[] = $this->formatTxtTargetCandidate($row, $recordName, intval($currentDomain['id'] ?? 0));
+            }
+        }
+
+        if (empty($candidates)) {
+            $fallbackRecordName = $this->matchHostnameToDomainRecordName($hostname, $currentDomain['name'] ?? '', true);
+            if ($fallbackRecordName !== null) {
+                $candidates[] = $this->formatTxtTargetCandidate([
+                    'id' => $currentDomain['id'] ?? 0,
+                    'aid' => $currentDomain['aid'] ?? 0,
+                    'name' => $currentDomain['name'] ?? '',
+                    'account_type' => $currentDomain['type'] ?? '',
+                    'account_name' => $currentDomain['account_name'] ?? '',
+                    'account_remark' => $currentDomain['account_remark'] ?? '',
+                ], $fallbackRecordName, intval($currentDomain['id'] ?? 0));
+            }
+        }
+
+        usort($candidates, function ($a, $b) {
+            if ($a['is_current_domain'] !== $b['is_current_domain']) {
+                return $a['is_current_domain'] ? -1 : 1;
+            }
+            $providerCompare = strcmp($a['account_type_name'], $b['account_type_name']);
+            if ($providerCompare !== 0) {
+                return $providerCompare;
+            }
+            $accountCompare = strcmp($a['account_display_name'], $b['account_display_name']);
+            if ($accountCompare !== 0) {
+                return $accountCompare;
+            }
+            return strcmp($a['domain_name'], $b['domain_name']);
+        });
+
+        return $candidates;
+    }
+
+    private function formatTxtTargetCandidate(array $row, string $recordName, int $currentDomainId): array
+    {
+        $account = [
+            'id' => intval($row['aid'] ?? 0),
+            'name' => trim((string)($row['account_name'] ?? '')),
+            'remark' => trim((string)($row['account_remark'] ?? '')),
+        ];
+        $accountType = trim((string)($row['account_type'] ?? ''));
+
+        return [
+            'domain_id' => intval($row['id'] ?? 0),
+            'domain_name' => trim((string)($row['name'] ?? '')),
+            'record_name' => $recordName,
+            'account_id' => $account['id'],
+            'account_type' => $accountType,
+            'account_type_name' => $this->formatDnsTypeName($accountType),
+            'account_display_name' => $this->formatAccountDisplayName($account),
+            'is_current_domain' => intval($row['id'] ?? 0) === $currentDomainId,
+        ];
+    }
+
     private function formatAccountDisplayName(array $account): string
     {
         $name = trim((string)($account['name'] ?? ''));
@@ -896,14 +997,42 @@ class Cloudflare extends BaseController
             if ($domainName === '') {
                 continue;
             }
-            if ($hostname === $domainName || str_ends_with($hostname, '.' . $domainName)) {
-                if (strlen($domainName) > $bestLength) {
-                    $best = $domain;
-                    $bestLength = strlen($domainName);
-                }
+            if ($this->matchHostnameToDomainRecordName($hostname, $domainName) !== null && strlen($domainName) > $bestLength) {
+                $best = $domain;
+                $bestLength = strlen($domainName);
             }
         }
         return $best;
+    }
+
+    private function matchHostnameToDomainRecordName(string $hostname, string $domainName, bool $allowRelative = false): ?string
+    {
+        $hostname = preg_replace('/^\*\./', '', $this->normalizeHostname($hostname));
+        $domainName = $this->normalizeHostname($domainName);
+        if ($hostname === '' || $domainName === '') {
+            return null;
+        }
+        if ($hostname === $domainName) {
+            return '@';
+        }
+        if (str_ends_with($hostname, '.' . $domainName)) {
+            return substr($hostname, 0, -strlen($domainName) - 1);
+        }
+        if ($allowRelative) {
+            if ($hostname === '@') {
+                return '@';
+            }
+            if (!str_contains($hostname, '.')) {
+                return $hostname;
+            }
+        }
+        return null;
+    }
+
+    private function formatDnsTypeName(string $type): string
+    {
+        $dnsList = DnsHelper::getList();
+        return $dnsList[$type]['name'] ?? ($type !== '' ? $type : '-');
     }
 
     private function normalizeHostname($hostname): string
