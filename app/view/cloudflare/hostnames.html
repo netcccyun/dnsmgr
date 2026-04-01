@@ -5,10 +5,18 @@
   <div class="col-xs-12 center-block" style="float:none;">
     <div class="panel panel-default panel-intro">
       <div class="panel-heading">
-        <h3 class="panel-title">
-          <a href="/record/{$domainId}" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回解析</a>
-          Cloudflare增强 - {$domainName}
-        </h3>
+        <div class="clearfix">
+          <div class="pull-right" style="margin-top:-6px;max-width:100%;">
+            <div style="display:inline-block;width:300px;max-width:100%;vertical-align:middle;margin-right:6px;">
+              <select id="quickDomainSwitch" class="form-control">
+                <option value="{$domainId}" selected>{$domainName}</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" id="quickDomainSwitchBtn" style="vertical-align:middle;margin-right:6px;"><i class="fa fa-random fa-fw"></i> 切换域名</button>
+            <a href="/record/{$domainId}" class="btn btn-sm btn-default" style="vertical-align:middle;"><i class="fa fa-reply fa-fw"></i> 返回解析</a>
+          </div>
+          <h3 class="panel-title" style="padding-top:4px;">Cloudflare增强 - {$domainName}</h3>
+        </div>
       </div>
       <div class="panel-body">
         <div class="alert alert-info">
@@ -97,12 +105,22 @@
 <script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
 <script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
+<script src="/static/js/select2-4.0.13.min.js"></script>
+<script src="/static/js/select2-i18n-zh-CN-4.0.13.min.js"></script>
 <script src="/static/js/custom.js"></script>
 <script>
 var currentVerificationHostnameId = '';
 var currentDomainName = '{$domainName}';
 
 $(document).ready(function(){
+  initDomainQuickSwitch({
+    currentId: '{$domainId}',
+    currentText: {$domainName|json_encode|raw},
+    type: 'cloudflare',
+    buildUrl: function(id){
+      return '/cloudflare/hostnames/' + id;
+    }
+  });
   $("#form-store").bootstrapValidator();
   loadFallbackOrigin();
   $("#listTable").bootstrapTable({
