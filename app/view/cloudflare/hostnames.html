@@ -9,7 +9,9 @@
           <div class="pull-right" style="margin-top:-6px;max-width:100%;">
             <div style="display:inline-block;width:300px;max-width:100%;vertical-align:middle;margin-right:6px;">
               <select id="quickDomainSwitch" class="form-control">
-                <option value="{$domainId}" selected>{$domainName}</option>
+                {volist name="quickDomainOptions" id="item"}
+                <option value="{$item.id}"{if $item.id == $domainId} selected{/if}>{$item.text}</option>
+                {/volist}
               </select>
             </div>
             <button type="button" class="btn btn-sm btn-primary" id="quickDomainSwitchBtn" style="vertical-align:middle;margin-right:6px;"><i class="fa fa-random fa-fw"></i> 切换域名</button>

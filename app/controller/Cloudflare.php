@@ -14,8 +14,18 @@ class Cloudflare extends BaseController
     {
         try {
             $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $quickDomainOptions = $this->getManagedDomainOptions('cloudflare');
+            if (empty($quickDomainOptions)) {
+                $quickDomainOptions = [[
+                    'id' => intval($context['domain']['id']),
+                    'name' => $context['domain']['name'],
+                    'type' => 'cloudflare',
+                    'text' => $context['domain']['name'] . ' [Cloudflare]',
+                ]];
+            }
             View::assign('domainId', $context['domain']['id']);
             View::assign('domainName', $context['domain']['name']);
+            View::assign('quickDomainOptions', $quickDomainOptions);
             return view();
         } catch (Exception $e) {
             return $this->alert('error', $e->getMessage());

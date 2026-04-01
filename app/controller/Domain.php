@@ -452,9 +452,19 @@ class Domain extends BaseController
 
         $dnsconfig = DnsHelper::$dns_config[$dnstype];
         $dnsconfig['type'] = $dnstype;
+        $quickDomainOptions = $this->getManagedDomainOptions();
+        if (empty($quickDomainOptions)) {
+            $quickDomainOptions = [[
+                'id' => intval($id),
+                'name' => $drow['name'],
+                'type' => $dnstype,
+                'text' => $drow['name'] . ' [' . ($dnsconfig['name'] ?? strtoupper($dnstype)) . ']',
+            ]];
+        }
 
         View::assign('domainId', $id);
         View::assign('domainName', $drow['name']);
+        View::assign('quickDomainOptions', $quickDomainOptions);
         View::assign('recordLine', $recordLineArr);
         View::assign('minTTL', $minTTL ? $minTTL : 1);
         View::assign('dnsconfig', $dnsconfig);

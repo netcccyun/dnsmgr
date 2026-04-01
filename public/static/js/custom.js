@@ -66,6 +66,7 @@ function initDomainQuickSwitch(options){
 		currentId: '',
 		currentText: '',
 		placeholder: '搜索域名后切换',
+		useAjax: false,
 		type: '',
 		limit: 10,
 		buildUrl: function(id){
@@ -79,11 +80,13 @@ function initDomainQuickSwitch(options){
 	if(settings.currentId !== '' && settings.currentText !== '' && $select.find('option[value="' + settings.currentId + '"]').length === 0){
 		$select.append(new Option(settings.currentText, settings.currentId, true, true));
 	}
-	$select.select2({
+	var select2Options = {
 		width: '100%',
 		language: 'zh-CN',
-		placeholder: settings.placeholder,
-		ajax: {
+		placeholder: settings.placeholder
+	};
+	if(settings.useAjax){
+		select2Options.ajax = {
 			url: '/domain/data',
 			type: 'post',
 			dataType: 'json',
@@ -117,8 +120,9 @@ function initDomainQuickSwitch(options){
 				};
 			},
 			cache: true
-		}
-	});
+		};
+	}
+	$select.select2(select2Options);
 	var navigate = function(){
 		var targetId = $.trim($select.val());
 		if(targetId === ''){
