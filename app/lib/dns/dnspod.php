@@ -322,14 +322,21 @@ class dnspod implements DnsInterface
         ];
         $data = $this->send_request($action, $param);
         if ($data) {
-            return [
+            $result = [
                 'id' => $data['DomainInfo']['Id'],
                 'name' => $data['DomainInfo']['Domain'],
                 'name_servers' => $this->normalizeNameServerList($data['DomainInfo']['GradeNsList'] ?? []),
             ];
+            if (!$this->modifyDomainStatus($result['name'], 'enable', intval($result['id']))) {
+                return false;
+            }
+            return $result;
         }
         $existingDomain = $this->findExactDomain($Domain);
         if ($existingDomain) {
+            if (!$this->modifyDomainStatus($existingDomain['name'], 'enable', intval($existingDomain['id']))) {
+                return false;
+            }
             return $existingDomain;
         }
         return false;
@@ -457,6 +464,19 @@ class dnspod implements DnsInterface
             }
         }
         return array_values(array_unique($result));
+    }
+
+    private function modifyDomainStatus($domain, $status, $domainId = 0)
+    {
+        $param = [
+            'Domain' => $domain,
+            'Status' => $status,
+        ];
+        if ($domainId > 0) {
+            $param['DomainId'] = $domainId;
+        }
+        $data = $this->send_request('ModifyDomainStatus', $param);
+        return is_array($data);
     }
 
     private function findExactDomain($domain)
