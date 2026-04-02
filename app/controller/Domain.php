@@ -1364,6 +1364,7 @@ class Domain extends BaseController
         if (!$recordId) {
             return ['success' => false, 'msg' => $dns->getError()];
         }
+        $this->add_log($domainRow['name'], '添加解析', $name . ' [' . $type . '] ' . $value . ' (线路:' . $line . ' TTL:600)');
         return ['success' => true, 'msg' => '添加成功'];
     }
 
