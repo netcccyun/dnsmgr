@@ -1,0 +1,53 @@
+# 手动触发：构建多架构镜像（amd64 / arm64），仅推送 latest 至 Docker Hub 与华为云 SWR。
+# Dockerfile 与构建上下文位于 .github/docker/ 目录。
+#
+# 需在仓库 Settings → Secrets 中配置：
+#   DOCKERHUB_USERNAME / DOCKERHUB_TOKEN（Docker Hub 访问令牌）
+#   HUAWEI_SWR_USERNAME / HUAWEI_SWR_PASSWORD（华为云 SWR 登录凭证，与本地 docker login swr.cn-east-3.myhuaweicloud.com 一致）
+
+name: Docker Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to Huawei SWR
+        uses: docker/login-action@v3
+        with:
+          registry: swr.cn-east-3.myhuaweicloud.com
+          username: ${{ secrets.HUAWEI_SWR_USERNAME }}
+          password: ${{ secrets.HUAWEI_SWR_PASSWORD }}
+
+      - name: Build and push (Docker Hub + Huawei SWR, latest only)
+        uses: docker/build-push-action@v6
+        with:
+          context: .github/docker
+          file: .github/docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            netcccyun/dnsmgr:latest
+            swr.cn-east-3.myhuaweicloud.com/netcccyun/dnsmgr:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

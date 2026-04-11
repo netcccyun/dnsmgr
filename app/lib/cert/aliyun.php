@@ -27,18 +27,18 @@ class aliyun implements CertInterface
 
     public function register()
     {
-        if (empty($this->AccessKeyId) || empty($this->AccessKeySecret) || empty($this->config['username']) || empty($this->config['phone']) || empty($this->config['email'])) throw new Exception('必填参数不能为空');
-        $param = ['Action' => 'ListUserCertificateOrder'];
+        if (empty($this->AccessKeyId) || empty($this->AccessKeySecret)) throw new Exception('必填参数不能为空');
+        $param = ['Action' => 'ListInstances'];
         $this->request($param, true);
         return true;
     }
 
     public function buyCert($domainList, &$order)
     {
-        $param = ['Action' => 'DescribePackageState', 'ProductCode' => 'digicert-free-1-free'];
+        $param = ['Action' => 'GetInstanceSummary', 'InstanceType' => 'TEST'];
         $data = $this->request($param, true);
-        if (!isset($data['TotalCount']) || $data['TotalCount'] == 0) throw new Exception('没有可用的免费证书资源包');
-        $this->log('证书资源包总数量:' . $data['TotalCount'] . ',已使用数量:' . $data['UsedCount']);
+        if (!isset($data['InactiveCount']) || $data['InactiveCount'] == 0) throw new Exception('没有待使用的测试证书实例，请先购买测试证书');
+        $this->log('实例总个数:' . $data['TotalCount'] . ',实例待使用总数:' . $data['InactiveCount']);
     }
 
     public function createOrder($domainList, &$order, $keytype, $keysize)
@@ -46,31 +46,92 @@ class aliyun implements CertInterface
         if (empty($domainList)) throw new Exception('域名列表不能为空');
         $domain = $domainList[0];
         $param = [
-            'Action' => 'CreateCertificateRequest',
-            'ProductCode' => 'digicert-free-1-free',
-            'Username' => $this->config['username'],
-            'Phone' => $this->config['phone'],
-            'Email' => $this->config['email'],
-            'Domain' => $domain,
-            'ValidateType' => 'DNS'
+            'Action' => 'ListInstances',
+            'Status' => 'inactive',
+            'InstanceType' => 'TEST',
         ];
         $data = $this->request($param, true);
-        if (empty($data['OrderId'])) throw new Exception('证书申请失败，OrderId为空');
-        $order['OrderId'] = $data['OrderId'];
-
-        sleep(3);
+        if (empty($data['InstanceList'])) throw new Exception('待使用的测试证书实例列表为空');
+        $instanceId = $data['InstanceList'][0]['InstanceId'];
 
         $param = [
-            'Action' => 'DescribeCertificateState',
-            'OrderId' => $order['OrderId'],
+            'Action' => 'ListContact',
         ];
         $data = $this->request($param, true);
+        if (empty($data['ContactList'])) throw new Exception('联系人列表为空，请先添加联系人');
+        $contactId = $data['ContactList'][0]['ContactId'];
+
+        if ($keytype == 'ECC') $KeyAlgorithm = 'ECC_256';
+        else if ($keysize == '3072') $KeyAlgorithm = 'RSA_3072';
+        else $KeyAlgorithm = 'RSA_2048';
+        $param = [
+            'Action' => 'UpdateInstance',
+            'InstanceId' => $instanceId,
+            'Domain' => $domain,
+            'KeyAlgorithm' => $KeyAlgorithm,
+            'AutoReissue' => 'disable',
+            'ContactIdList.1' => $contactId,
+            'ValidateType' => 'DNS'
+        ];
+        try {
+            $this->request($param);
+        } catch (Exception $e) {
+            throw new Exception('更新证书实例失败：' . $e->getMessage());
+        }
+
+        $param = [
+            'Action' => 'ApplyCertificate',
+            'InstanceId' => $instanceId
+        ];
+        try {
+            $this->request($param);
+        } catch (Exception $e) {
+            throw new Exception('申请证书失败：' . $e->getMessage());
+        }
+
+        sleep(1);
+
+        $status = '';
+        do {
+            $param = [
+                'Action' => 'GetTaskAttribute',
+                'TaskId' => $instanceId
+            ];
+            try {
+                $data = $this->request($param, true);
+                $status = $data['TaskStatus'];
+            } catch (Exception $e) {
+                throw new Exception('申请证书提交结果查询失败：' . $e->getMessage());
+            }
+            if ($status == 'processing') {
+                sleep(1);
+            } elseif ($status == 'failed') {
+                throw new Exception('申请证书失败：' . $data['TaskMessage']);
+            } else {
+                break;
+            }
+        } while ($status == 'processing');
+
+
+        $param = [
+            'Action' => 'GetInstanceDetail',
+            'InstanceId' => $instanceId
+        ];
+        try {
+            $data = $this->request($param, true);
+        } catch (Exception $e) {
+            throw new Exception('获取实例详情失败：' . $e->getMessage());
+        }
+
+        $order['InstanceId'] = $instanceId;
 
         $dnsList = [];
-        if ($data['Type'] == 'domain_verify') {
-            $mainDomain = getMainDomain($domain);
-            $name = substr($data['RecordDomain'], 0, -(strlen($mainDomain) + 1));
-            $dnsList[$mainDomain][] = ['name' => $name, 'type' => $data['RecordType'], 'value' => $data['RecordValue']];
+        if (!empty($data['DomainValidationList'])) {
+            foreach ($data['DomainValidationList'] as $opts) {
+                $mainDomain = getMainDomain($opts['Domain']);
+                $name = substr($opts['ValidationKey'] . '.' . $opts['RootDomain'], 0, - (strlen($mainDomain) + 1));
+                $dnsList[$mainDomain][] = ['name' => $name, 'type' => $opts['ValidationType'], 'value' => $opts['ValidationValue']];
+            }
         }
 
         return $dnsList;
@@ -81,13 +142,13 @@ class aliyun implements CertInterface
     public function getAuthStatus($domainList, $order)
     {
         $param = [
-            'Action' => 'DescribeCertificateState',
-            'OrderId' => $order['OrderId'],
+            'Action' => 'GetInstanceDetail',
+            'InstanceId' => $order['InstanceId'],
         ];
         $data = $this->request($param, true);
-        if ($data['Type'] == 'certificate') {
+        if ($data['Status'] == 'normal') {
             return true;
-        } elseif ($data['Type'] == 'verify_fail') {
+        } elseif ($data['Status'] == 'closed') {
             throw new Exception('证书审核失败');
         } else {
             return false;
@@ -97,12 +158,19 @@ class aliyun implements CertInterface
     public function finalizeOrder($domainList, $order, $keytype, $keysize)
     {
         $param = [
-            'Action' => 'DescribeCertificateState',
-            'OrderId' => $order['OrderId'],
+            'Action' => 'GetInstanceDetail',
+            'InstanceId' => $order['InstanceId'],
         ];
         $data = $this->request($param, true);
-        $fullchain = $data['Certificate'];
-        $private_key = $data['PrivateKey'];
+        if (empty($data['CertificateId'])) throw new Exception('证书ID不存在');
+
+        $param = [
+            'Action' => 'GetUserCertificateDetail',
+            'CertId' => $data['CertificateId'],
+        ];
+        $data = $this->request($param, true);
+        $fullchain = $data['Cert'];
+        $private_key = $data['Key'];
         if (empty($fullchain) || empty($private_key)) throw new Exception('证书内容获取失败');
 
         $certInfo = openssl_x509_parse($fullchain, true);
@@ -113,8 +181,8 @@ class aliyun implements CertInterface
     public function revoke($order, $pem)
     {
         $param = [
-            'Action' => 'CancelCertificateForPackageRequest',
-            'OrderId' => $order['OrderId'],
+            'Action' => 'RevokeCertificate',
+            'InstanceId' => $order['InstanceId'],
         ];
         $this->request($param);
     }
@@ -122,22 +190,14 @@ class aliyun implements CertInterface
     public function cancel($order)
     {
         $param = [
-            'Action' => 'DescribeCertificateState',
-            'OrderId' => $order['OrderId'],
+            'Action' => 'GetInstanceDetail',
+            'InstanceId' => $order['InstanceId'],
         ];
         $data = $this->request($param, true);
-        if ($data['Type'] == 'domain_verify' || $data['Type'] == 'process') {
+        if ($data['Status'] == 'pending') {
             $param = [
-                'Action' => 'CancelOrderRequest',
-                'OrderId' => $order['OrderId'],
-            ];
-            $this->request($param);
-            usleep(500000);
-        }
-        if ($data['Type'] == 'domain_verify' || $data['Type'] == 'process' || $data['Type'] == 'payed' || $data['Type'] == 'verify_fail') {
-            $param = [
-                'Action' => 'DeleteCertificateRequest',
-                'OrderId' => $order['OrderId'],
+                'Action' => 'CancelPendingCertificate',
+                'InstanceId' => $order['InstanceId'],
             ];
             $this->request($param);
         }
