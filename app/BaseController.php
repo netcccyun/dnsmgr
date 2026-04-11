@@ -3,9 +3,11 @@ declare (strict_types = 1);
 
 namespace app;
 
+use app\lib\DnsHelper;
 use think\App;
 use think\exception\ValidateException;
 use think\Validate;
+use think\facade\Db;
 use think\facade\View;
 
 /**
@@ -94,6 +96,36 @@ abstract class BaseController
         }
 
         return $v->failException(true)->check($data);
+    }
+
+    protected function getManagedDomainOptions(?string $type = null): array
+    {
+        if (!checkPermission(1)) {
+            return [];
+        }
+
+        $query = Db::name('domain')->alias('A')
+            ->join('account B', 'A.aid = B.id')
+            ->field('A.id,A.name,B.type');
+        if (!empty($type)) {
+            $query->where('B.type', $type);
+        }
+        if (request()->user['level'] == 1) {
+            $query->where('A.is_hide', 0)->where('A.name', 'in', request()->user['permission']);
+        }
+
+        $rows = $query->order('A.name', 'asc')->select();
+        $list = [];
+        foreach ($rows as $row) {
+            $typeName = DnsHelper::$dns_config[$row['type']]['name'] ?? strtoupper((string)$row['type']);
+            $list[] = [
+                'id' => intval($row['id']),
+                'name' => $row['name'],
+                'type' => $row['type'],
+                'text' => $row['name'] . ' [' . $typeName . ']',
+            ];
+        }
+        return $list;
     }
 
 

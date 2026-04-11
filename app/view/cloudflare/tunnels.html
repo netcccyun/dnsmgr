@@ -1,0 +1,607 @@
+{extend name="common/layout" /}
+{block name="title"}Cloudflare Tunnels - {$accountName}{/block}
+{block name="main"}
+<div class="row">
+  <div class="col-xs-12 center-block" style="float:none;">
+    <div class="panel panel-default panel-intro">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          <a href="/account" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回账户</a>
+          Cloudflare Tunnels - {$accountName}
+        </h3>
+      </div>
+      <div class="panel-body">
+        <div class="alert alert-info">
+          <strong>Account ID：</strong>{$cfAccountId}
+          <br>
+          这里管理 Tunnel 列表、公网主机名、CIDR 路由和主机名路由。公网主机名会自动同步为对应域名下的 CNAME。
+        </div>
+
+        <div class="clearfix" style="margin-bottom:15px;">
+          <div class="pull-left">
+            <a href="javascript:refreshTunnelList()" class="btn btn-default" title="刷新 Tunnel 列表"><i class="fa fa-refresh"></i> 刷新</a>
+            <a href="javascript:openTunnelDialog()" class="btn btn-success"><i class="fa fa-plus"></i> 创建 Tunnel</a>
+          </div>
+        </div>
+
+        <table id="listTable"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-tunnel" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">创建 Tunnel</h4>
+      </div>
+      <div class="modal-body">
+        <form class="form-horizontal" id="form-tunnel">
+          <div class="form-group">
+            <label class="col-sm-3 control-label">名称</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" name="name" placeholder="例如 edge-prod" required>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-primary" onclick="submitTunnel()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-token" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">Tunnel Token</h4>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tunnel</label>
+          <input type="text" class="form-control" id="tokenTunnelName" disabled>
+        </div>
+        <div class="form-group">
+          <label>Token</label>
+          <textarea id="tokenValue" class="form-control" rows="4" readonly></textarea>
+        </div>
+        <div class="form-group">
+          <label>启动命令</label>
+          <textarea id="tokenCommand" class="form-control" rows="3" readonly></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" onclick="copyTokenCommand()">复制启动命令</button>
+        <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-public" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title" id="publicTitle">公网主机名</h4>
+      </div>
+      <div class="modal-body">
+        <form class="form-inline" id="form-public">
+          <div class="form-group">
+            <input type="text" class="form-control" name="hostname" placeholder="hostname，例如 app.example.com" style="width:240px;" required>
+          </div>
+          <div class="form-group">
+            <input type="text" class="form-control" name="service" placeholder="service，例如 http://127.0.0.1:8080" style="width:260px;" required>
+          </div>
+          <div class="form-group">
+            <input type="text" class="form-control" name="path" placeholder="可留空，例如 /api/*" style="width:180px;">
+          </div>
+          <button type="button" class="btn btn-primary" onclick="savePublicHostname()">保存</button>
+        </form>
+        <hr>
+        <table id="publicTable"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-cidr" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title" id="cidrTitle">CIDR 路由</h4>
+      </div>
+      <div class="modal-body">
+        <form class="form-inline" id="form-cidr">
+          <div class="form-group">
+            <input type="text" class="form-control" name="network" placeholder="例如 10.10.0.0/16" style="width:220px;" required>
+          </div>
+          <div class="form-group">
+            <input type="text" class="form-control" name="comment" placeholder="备注，可留空" style="width:240px;">
+          </div>
+          <button type="button" class="btn btn-primary" onclick="saveCidrRoute()">保存</button>
+        </form>
+        <hr>
+        <table id="cidrTable"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-hostname-route" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title" id="hostnameRouteTitle">主机名路由</h4>
+      </div>
+      <div class="modal-body">
+        <form class="form-inline" id="form-hostname-route">
+          <div class="form-group">
+            <input type="text" class="form-control" name="hostname" placeholder="例如 internal.example.com" style="width:260px;" required>
+          </div>
+          <div class="form-group">
+            <input type="text" class="form-control" name="comment" placeholder="备注，可留空" style="width:240px;">
+          </div>
+          <button type="button" class="btn btn-primary" onclick="saveHostnameRoute()">保存</button>
+        </form>
+        <hr>
+        <table id="hostnameRouteTable"></table>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
+<script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
+<script src="/static/js/bootstrapValidator.min.js"></script>
+<script src="/static/js/custom.js"></script>
+<script>
+var selectedTunnelId = '';
+var selectedTunnelName = '';
+
+$(document).ready(function(){
+  $("#form-tunnel").bootstrapValidator();
+
+  $("#listTable").bootstrapTable({
+    url: '/cloudflare/tunnels/data/{$accountId}',
+    method: 'post',
+    toolbar: '',
+    classes: 'table table-striped table-hover table-bordered',
+    uniqueId: 'id',
+    responseHandler: tableResponseHandler,
+    columns: [
+      {field: 'name', title: '名称'},
+      {field: 'id', title: 'Tunnel ID'},
+      {field: 'status', title: '状态', formatter: tunnelStatusFormatter},
+      {field: 'connection_count', title: '连接数'},
+      {field: 'created_at', title: '创建时间', formatter: function(v){ return v || '-'; }},
+      {
+        field: 'action',
+        title: '操作',
+        formatter: function(value, row){
+          return ''
+            + '<a href="javascript:showToken(\''+row.id+'\', \''+htmlEscape(row.name)+'\')" class="btn btn-info btn-xs">Token</a> '
+            + '<a href="javascript:openPublicHostnames(\''+row.id+'\', \''+htmlEscape(row.name)+'\')" class="btn btn-primary btn-xs">公网主机名</a> '
+            + '<a href="javascript:openCidrRoutes(\''+row.id+'\', \''+htmlEscape(row.name)+'\')" class="btn btn-warning btn-xs">CIDR</a> '
+            + '<a href="javascript:openHostnameRoutes(\''+row.id+'\', \''+htmlEscape(row.name)+'\')" class="btn btn-success btn-xs">主机名路由</a> '
+            + '<a href="javascript:deleteTunnel(\''+row.id+'\', \''+htmlEscape(row.name)+'\')" class="btn btn-danger btn-xs">删除</a>';
+        }
+      }
+    ]
+  });
+
+  $("#publicTable").bootstrapTable({
+    method: 'post',
+    classes: 'table table-striped table-hover table-bordered',
+    uniqueId: 'hostname',
+    responseHandler: tableResponseHandler,
+    columns: [
+      {field: 'hostname', title: 'Hostname'},
+      {field: 'path', title: 'Path', formatter: function(v){ return v || '-'; }},
+      {field: 'service', title: 'Service'},
+      {field: 'zone_name', title: '匹配域名', formatter: function(v){ return v || '-'; }},
+      {
+        field: 'action',
+        title: '操作',
+        formatter: function(value, row){
+          return '<a href="javascript:deletePublicHostname(\''+escapeJs(row.hostname)+'\', \''+escapeJs(row.path || '')+'\')" class="btn btn-danger btn-xs">删除</a>';
+        }
+      }
+    ]
+  });
+
+  $("#cidrTable").bootstrapTable({
+    method: 'post',
+    classes: 'table table-striped table-hover table-bordered',
+    uniqueId: 'id',
+    responseHandler: tableResponseHandler,
+    columns: [
+      {field: 'network', title: 'CIDR'},
+      {field: 'comment', title: '备注', formatter: function(v){ return v || '-'; }},
+      {field: 'created_at', title: '创建时间', formatter: function(v){ return v || '-'; }},
+      {
+        field: 'action',
+        title: '操作',
+        formatter: function(value, row){
+          return '<a href="javascript:deleteCidrRoute(\''+row.id+'\')" class="btn btn-danger btn-xs">删除</a>';
+        }
+      }
+    ]
+  });
+
+  $("#hostnameRouteTable").bootstrapTable({
+    method: 'post',
+    classes: 'table table-striped table-hover table-bordered',
+    uniqueId: 'id',
+    responseHandler: tableResponseHandler,
+    columns: [
+      {field: 'hostname', title: 'Hostname'},
+      {field: 'comment', title: '备注', formatter: function(v){ return v || '-'; }},
+      {field: 'created_at', title: '创建时间', formatter: function(v){ return v || '-'; }},
+      {
+        field: 'action',
+        title: '操作',
+        formatter: function(value, row){
+          return '<a href="javascript:deleteHostnameRoute(\''+row.id+'\')" class="btn btn-danger btn-xs">删除</a>';
+        }
+      }
+    ]
+  });
+});
+
+function tableResponseHandler(res){
+  if(res.code !== 0){
+    layer.alert(res.msg || '请求失败', {icon: 2});
+    return {total: 0, rows: []};
+  }
+  return res;
+}
+
+function refreshTunnelList(){
+  $("#listTable").bootstrapTable('refresh');
+}
+
+function tunnelStatusFormatter(value){
+  var v = (value || '').toLowerCase();
+  if(v === 'healthy' || v === 'active'){
+    return '<span class="label label-success">'+htmlEscape(value)+'</span>';
+  }
+  if(v === 'inactive' || v === 'down' || v === 'degraded'){
+    return '<span class="label label-warning">'+htmlEscape(value || '-')+'</span>';
+  }
+  return value ? '<span class="label label-default">'+htmlEscape(value)+'</span>' : '-';
+}
+
+function openTunnelDialog(){
+  $("#form-tunnel")[0].reset();
+  $("#form-tunnel").data("bootstrapValidator").resetForm();
+  $("#modal-tunnel").modal('show');
+}
+
+function submitTunnel(){
+  $("#form-tunnel").data("bootstrapValidator").validate();
+  if(!$("#form-tunnel").data("bootstrapValidator").isValid()){
+    return;
+  }
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/tunnels/add/{$accountId}',
+    data: $("#form-tunnel").serialize(),
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        $("#modal-tunnel").modal('hide');
+        layer.msg(res.msg, {icon: 1, time: 1000});
+        $("#listTable").bootstrapTable('refresh');
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function deleteTunnel(tunnelId, tunnelName){
+  layer.confirm('确定要删除 Tunnel '+tunnelName+' 吗？', {title: '提示', icon: 0}, function(){
+    var ii = layer.load(2);
+    $.ajax({
+      type: 'POST',
+      url: '/cloudflare/tunnels/delete/{$accountId}',
+      data: {tunnel_id: tunnelId},
+      dataType: 'json',
+      success: function(res){
+        layer.close(ii);
+        if(res.code === 0){
+          layer.closeAll();
+          layer.msg(res.msg, {icon: 1, time: 1000});
+          $("#listTable").bootstrapTable('refresh');
+        }else{
+          layer.alert(res.msg, {icon: 2});
+        }
+      },
+      error: function(){
+        layer.close(ii);
+        layer.alert('服务器错误', {icon: 2});
+      }
+    });
+  });
+}
+
+function showToken(tunnelId, tunnelName){
+  $("#tokenTunnelName").val(tunnelName + ' [' + tunnelId + ']');
+  $("#tokenValue").val('');
+  $("#tokenCommand").val('');
+  $("#modal-token").modal('show');
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/tunnels/token/{$accountId}',
+    data: {tunnel_id: tunnelId},
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        var token = (res.data && res.data.token) ? res.data.token : '';
+        $("#tokenValue").val(token);
+        $("#tokenCommand").val('cloudflared tunnel run --token ' + token);
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function copyTokenCommand(){
+  copyPlainText($("#tokenCommand").val());
+}
+
+function openPublicHostnames(tunnelId, tunnelName){
+  selectedTunnelId = tunnelId;
+  selectedTunnelName = tunnelName;
+  $("#publicTitle").text('公网主机名 - ' + tunnelName);
+  $("#form-public")[0].reset();
+  $("#modal-public").modal('show');
+  $("#publicTable").bootstrapTable('refreshOptions', {
+    url: '/cloudflare/tunnels/publichostnames/data/{$accountId}',
+    queryParams: function(){ return {tunnel_id: selectedTunnelId}; }
+  });
+}
+
+function savePublicHostname(){
+  if(!selectedTunnelId){
+    layer.msg('请先选择 Tunnel');
+    return;
+  }
+  var ii = layer.load(2);
+  var data = $("#form-public").serializeArray();
+  data.push({name: 'tunnel_id', value: selectedTunnelId});
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/tunnels/publichostnames/save/{$accountId}',
+    data: $.param(data),
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        layer.msg(res.msg, {icon: 1, time: 1000});
+        $("#publicTable").bootstrapTable('refresh');
+        $("#listTable").bootstrapTable('refresh');
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function deletePublicHostname(hostname, path){
+  layer.confirm('确定要删除公网主机名 '+hostname+' 吗？', {title: '提示', icon: 0}, function(){
+    var ii = layer.load(2);
+    $.ajax({
+      type: 'POST',
+      url: '/cloudflare/tunnels/publichostnames/delete/{$accountId}',
+      data: {tunnel_id: selectedTunnelId, hostname: hostname, path: path},
+      dataType: 'json',
+      success: function(res){
+        layer.close(ii);
+        if(res.code === 0){
+          layer.closeAll();
+          $("#modal-public").modal('show');
+          layer.msg(res.msg, {icon: 1, time: 1000});
+          $("#publicTable").bootstrapTable('refresh');
+        }else{
+          layer.alert(res.msg, {icon: 2});
+        }
+      },
+      error: function(){
+        layer.close(ii);
+        layer.alert('服务器错误', {icon: 2});
+      }
+    });
+  });
+}
+
+function openCidrRoutes(tunnelId, tunnelName){
+  selectedTunnelId = tunnelId;
+  selectedTunnelName = tunnelName;
+  $("#cidrTitle").text('CIDR 路由 - ' + tunnelName);
+  $("#form-cidr")[0].reset();
+  $("#modal-cidr").modal('show');
+  $("#cidrTable").bootstrapTable('refreshOptions', {
+    url: '/cloudflare/tunnels/cidr/data/{$accountId}',
+    queryParams: function(){ return {tunnel_id: selectedTunnelId}; }
+  });
+}
+
+function saveCidrRoute(){
+  if(!selectedTunnelId){
+    layer.msg('请先选择 Tunnel');
+    return;
+  }
+  var ii = layer.load(2);
+  var data = $("#form-cidr").serializeArray();
+  data.push({name: 'tunnel_id', value: selectedTunnelId});
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/tunnels/cidr/add/{$accountId}',
+    data: $.param(data),
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        layer.msg(res.msg, {icon: 1, time: 1000});
+        $("#cidrTable").bootstrapTable('refresh');
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function deleteCidrRoute(routeId){
+  layer.confirm('确定要删除该 CIDR 路由吗？', {title: '提示', icon: 0}, function(){
+    var ii = layer.load(2);
+    $.ajax({
+      type: 'POST',
+      url: '/cloudflare/tunnels/cidr/delete/{$accountId}',
+      data: {tunnel_id: selectedTunnelId, route_id: routeId},
+      dataType: 'json',
+      success: function(res){
+        layer.close(ii);
+        if(res.code === 0){
+          layer.closeAll();
+          $("#modal-cidr").modal('show');
+          layer.msg(res.msg, {icon: 1, time: 1000});
+          $("#cidrTable").bootstrapTable('refresh');
+        }else{
+          layer.alert(res.msg, {icon: 2});
+        }
+      },
+      error: function(){
+        layer.close(ii);
+        layer.alert('服务器错误', {icon: 2});
+      }
+    });
+  });
+}
+
+function openHostnameRoutes(tunnelId, tunnelName){
+  selectedTunnelId = tunnelId;
+  selectedTunnelName = tunnelName;
+  $("#hostnameRouteTitle").text('主机名路由 - ' + tunnelName);
+  $("#form-hostname-route")[0].reset();
+  $("#modal-hostname-route").modal('show');
+  $("#hostnameRouteTable").bootstrapTable('refreshOptions', {
+    url: '/cloudflare/tunnels/hostnameroutes/data/{$accountId}',
+    queryParams: function(){ return {tunnel_id: selectedTunnelId}; }
+  });
+}
+
+function saveHostnameRoute(){
+  if(!selectedTunnelId){
+    layer.msg('请先选择 Tunnel');
+    return;
+  }
+  var ii = layer.load(2);
+  var data = $("#form-hostname-route").serializeArray();
+  data.push({name: 'tunnel_id', value: selectedTunnelId});
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/tunnels/hostnameroutes/add/{$accountId}',
+    data: $.param(data),
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        layer.msg(res.msg, {icon: 1, time: 1000});
+        $("#hostnameRouteTable").bootstrapTable('refresh');
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function deleteHostnameRoute(routeId){
+  layer.confirm('确定要删除该主机名路由吗？', {title: '提示', icon: 0}, function(){
+    var ii = layer.load(2);
+    $.ajax({
+      type: 'POST',
+      url: '/cloudflare/tunnels/hostnameroutes/delete/{$accountId}',
+      data: {tunnel_id: selectedTunnelId, route_id: routeId},
+      dataType: 'json',
+      success: function(res){
+        layer.close(ii);
+        if(res.code === 0){
+          layer.closeAll();
+          $("#modal-hostname-route").modal('show');
+          layer.msg(res.msg, {icon: 1, time: 1000});
+          $("#hostnameRouteTable").bootstrapTable('refresh');
+        }else{
+          layer.alert(res.msg, {icon: 2});
+        }
+      },
+      error: function(){
+        layer.close(ii);
+        layer.alert('服务器错误', {icon: 2});
+      }
+    });
+  });
+}
+
+function copyPlainText(text){
+  var temp = document.createElement('textarea');
+  temp.style.position = 'absolute';
+  temp.style.left = '-9999px';
+  temp.value = text || '';
+  document.body.appendChild(temp);
+  temp.select();
+  document.execCommand('copy');
+  document.body.removeChild(temp);
+  layer.msg('已复制到剪贴板', {icon: 1, time: 600});
+}
+
+function escapeJs(str){
+  return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function htmlEscape(str){
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+</script>
+{/block}

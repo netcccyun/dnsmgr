@@ -1,0 +1,701 @@
+{extend name="common/layout" /}
+{block name="title"}Cloudflare增强 - {$domainName}{/block}
+{block name="main"}
+<div class="row">
+  <div class="col-xs-12 center-block" style="float:none;">
+    <div class="panel panel-default panel-intro">
+      <div class="panel-heading">
+        <div class="clearfix">
+          <div class="pull-right" style="margin-top:-6px;max-width:100%;">
+            <div style="display:inline-block;width:300px;max-width:100%;vertical-align:middle;margin-right:6px;">
+              <select id="quickDomainSwitch" class="form-control">
+                {volist name="quickDomainOptions" id="item"}
+                <option value="{$item.id}"{if $item.id == $domainId} selected{/if}>{$item.text}</option>
+                {/volist}
+              </select>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" id="quickDomainSwitchBtn" style="vertical-align:middle;margin-right:6px;" onclick="return quickSwitchDomain('/cloudflare/hostnames/')"><i class="fa fa-random fa-fw"></i> 切换域名</button>
+            <a href="/record/{$domainId}" class="btn btn-sm btn-default" style="vertical-align:middle;"><i class="fa fa-reply fa-fw"></i> 返回解析</a>
+          </div>
+          <h3 class="panel-title" style="padding-top:4px;">Cloudflare增强 - {$domainName}</h3>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="alert alert-info">
+          <strong>说明：</strong> 这里管理 Cloudflare 自定义主机名、证书状态、证书校验与 Fallback Origin。
+        </div>
+
+        <div class="well well-sm">
+          <div class="form-inline">
+            <div class="form-group" style="width:70%;max-width:720px;">
+              <label>Fallback Origin</label>
+              <input type="text" id="fallbackOrigin" class="form-control" style="width:80%;" placeholder="例如 origin.example.com">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="saveFallbackOrigin()">保存</button>
+            <button type="button" class="btn btn-default" onclick="loadFallbackOrigin()">刷新</button>
+            <button type="button" class="btn btn-danger" onclick="clearFallbackOrigin()">清空</button>
+          </div>
+        </div>
+
+        <div class="clearfix" style="margin-bottom:15px;">
+          <div class="pull-left">
+            <a href="javascript:refreshHostnameList()" class="btn btn-default" title="刷新自定义主机名列表"><i class="fa fa-refresh"></i> 刷新</a>
+            <a href="javascript:openAddDialog()" class="btn btn-success"><i class="fa fa-plus"></i> 添加自定义主机名</a>
+          </div>
+        </div>
+
+        <table id="listTable"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-store" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title" id="storeTitle">添加自定义主机名</h4>
+      </div>
+      <div class="modal-body">
+        <form class="form-horizontal" id="form-store">
+          <input type="hidden" name="hostname_id" value="">
+          <div class="form-group">
+            <label class="col-sm-3 control-label">主机名</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" name="hostname" placeholder="例如 app.example.com 或 *.example.com" required>
+              <p class="help-block" id="hostnameHint">创建后主机名不能直接改名，如需改名请删除后重建。</p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">自定义源站</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" name="custom_origin_server" placeholder="可留空，例如 origin.example.com">
+              <p class="help-block">留空表示清空当前自定义源站，回退到 Fallback Origin 或默认源站逻辑。</p>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-primary" onclick="submitHostname()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-verification" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title" id="verificationTitle">证书校验</h4>
+      </div>
+      <div class="modal-body">
+        <div id="verificationContent"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="refreshHostnameValidation()">刷新校验</button>
+        <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
+<script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
+<script src="/static/js/bootstrapValidator.min.js"></script>
+<script src="/static/js/select2-4.0.13.min.js"></script>
+<script src="/static/js/select2-i18n-zh-CN-4.0.13.min.js"></script>
+<script src="/static/js/custom.js?v=1005"></script>
+<script>
+var currentVerificationHostnameId = '';
+
+$(document).ready(function(){
+    initDomainQuickSwitch({
+      buttonSelector: '',
+      currentId: '{$domainId}',
+      currentText: {$domainName|json_encode|raw},
+      type: 'cloudflare',
+    buildUrl: function(id){
+      return '/cloudflare/hostnames/' + id;
+    }
+  });
+  $("#form-store").bootstrapValidator();
+  loadFallbackOrigin();
+  $("#listTable").bootstrapTable({
+    url: '/cloudflare/hostnames/data/{$domainId}',
+    method: 'post',
+    toolbar: '',
+    classes: 'table table-striped table-hover table-bordered',
+    uniqueId: 'id',
+    responseHandler: hostnameResponseHandler,
+    columns: [
+      {field: 'hostname', title: '主机名'},
+      {field: 'custom_origin_server', title: '自定义源站', formatter: function(v){ return v || '-'; }},
+      {field: 'ssl_status', title: '证书状态', formatter: formatStatus},
+      {field: 'ssl_validation_status', title: '证书校验', formatter: formatStatus},
+      {field: 'verification_status', title: '所有权校验', formatter: formatStatus},
+      {field: 'created_on', title: '创建时间', formatter: function(v){ return v || '-'; }},
+      {field: 'validation_errors', title: '错误信息', formatter: function(v){ return v || '-'; }},
+      {
+        field: 'action',
+        title: '操作',
+        formatter: function(value, row){
+          return ''
+            + '<a href="javascript:openEditDialog(\''+row.id+'\')" class="btn btn-info btn-xs">编辑</a> '
+            + '<a href="javascript:openVerificationDialog(\''+row.id+'\')" class="btn btn-primary btn-xs">校验</a> '
+            + '<a href="javascript:deleteHostname(\''+row.id+'\', \''+htmlEscape(row.hostname)+'\')" class="btn btn-danger btn-xs">删除</a>';
+        }
+      }
+    ]
+  });
+});
+
+function hostnameResponseHandler(res){
+  if(res.code !== 0){
+    layer.alert(res.msg || '获取自定义主机名失败', {icon: 2});
+    return {total: 0, rows: []};
+  }
+  return res;
+}
+
+function refreshHostnameList(){
+  $("#listTable").bootstrapTable('refresh');
+}
+
+function formatStatus(value){
+  var v = String(value || '').toLowerCase();
+  if(v === 'active' || v === 'active_deployed' || v === 'valid'){
+    return '<span class="label label-success">'+htmlEscape(value)+'</span>';
+  }
+  if(v === 'pending' || v === 'pending_validation' || v === 'initializing' || v === 'in_progress'){
+    return '<span class="label label-warning">'+htmlEscape(value || '-')+'</span>';
+  }
+  if(v && v !== '-'){
+    return '<span class="label label-danger">'+htmlEscape(value)+'</span>';
+  }
+  return '-';
+}
+
+function getHostnameRow(id){
+  var row = $("#listTable").bootstrapTable('getRowByUniqueId', id);
+  if(!row){
+    layer.alert('未找到自定义主机名数据，请先刷新列表后重试', {icon: 2});
+    return null;
+  }
+  return row;
+}
+
+function resetHostnameForm(){
+  $("#form-store")[0].reset();
+  $("#form-store input[name=hostname_id]").val('');
+  $("#form-store input[name=hostname]").prop('readonly', false);
+  $("#form-store").data("bootstrapValidator").resetForm(true);
+}
+
+function openAddDialog(){
+  resetHostnameForm();
+  $("#storeTitle").text('添加自定义主机名');
+  $("#hostnameHint").text('创建后主机名不能直接改名，如需改名请删除后重建。');
+  $("#modal-store").modal('show');
+}
+
+function openEditDialog(id){
+  var row = getHostnameRow(id);
+  if(!row){
+    return;
+  }
+  resetHostnameForm();
+  $("#storeTitle").text('编辑自定义主机名');
+  $("#hostnameHint").text('主机名不可直接改名，当前仅支持修改或清空自定义源站。');
+  $("#form-store input[name=hostname_id]").val(row.id);
+  $("#form-store input[name=hostname]").val(row.hostname).prop('readonly', true);
+  $("#form-store input[name=custom_origin_server]").val(row.custom_origin_server || '');
+  $("#modal-store").modal('show');
+}
+
+function submitHostname(){
+  $("#form-store").data("bootstrapValidator").validate();
+  if(!$("#form-store").data("bootstrapValidator").isValid()){
+    return;
+  }
+  var hostnameId = $.trim($("#form-store input[name=hostname_id]").val());
+  var url = hostnameId ? '/cloudflare/hostnames/update/{$domainId}' : '/cloudflare/hostnames/add/{$domainId}';
+  var successMsg = hostnameId ? '更新自定义主机名成功' : '创建自定义主机名成功';
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: url,
+    data: $("#form-store").serialize(),
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        $("#modal-store").modal('hide');
+        layer.msg(res.msg || successMsg, {icon: 1, time: 1200});
+        if(res.data && res.data.id){
+          $("#listTable").bootstrapTable('updateByUniqueId', {id: res.data.id, row: res.data});
+          if(!$("#listTable").bootstrapTable('getRowByUniqueId', res.data.id)){
+            refreshHostnameList();
+          }
+        }else{
+          refreshHostnameList();
+        }
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function openVerificationDialog(id){
+  var row = getHostnameRow(id);
+  if(!row){
+    return;
+  }
+  currentVerificationHostnameId = id;
+  renderVerificationDialog(row);
+  $("#modal-verification").modal('show');
+}
+
+function refreshHostnameValidation(){
+  if(!currentVerificationHostnameId){
+    layer.msg('请先选择自定义主机名');
+    return;
+  }
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/hostnames/refresh/{$domainId}',
+    data: {hostname_id: currentVerificationHostnameId},
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        if(res.data && res.data.id){
+          $("#listTable").bootstrapTable('updateByUniqueId', {id: res.data.id, row: res.data});
+          renderVerificationDialog(res.data);
+        }else{
+          refreshHostnameList();
+        }
+        layer.msg(res.msg, {icon: 1, time: 1200});
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function renderVerificationDialog(row){
+  $("#verificationTitle").text('证书校验 - ' + row.hostname);
+  var html = '';
+  html += '<div class="alert alert-info"><strong>说明：</strong> 下列值直接来自 Cloudflare 返回结果，可直接复制到 DNS、源站或验证目录中。点击“刷新校验”会重新向 Cloudflare 发起一次校验。</div>';
+  html += '<div class="row">';
+  html += '<div class="col-sm-4">'+renderSummaryCard('证书状态', formatStatusText(row.ssl_status))+'</div>';
+  html += '<div class="col-sm-4">'+renderSummaryCard('证书校验', formatStatusText(row.ssl_validation_status))+'</div>';
+  html += '<div class="col-sm-4">'+renderSummaryCard('所有权校验', formatStatusText(row.verification_status))+'</div>';
+  html += '</div>';
+
+  var ownership = row.ownership_verification || {};
+  if(ownership.name || ownership.value){
+    html += renderSection('所有权 TXT 校验',
+      renderCopyInput('记录类型', ownership.type || 'txt', false)
+      + renderCopyInput('TXT 名称', ownership.name || '', true)
+      + renderCopyTextarea('TXT 值', ownership.value || '', true, 3)
+      + renderQuickAddTxtButton(ownership.name || '', ownership.value || '', '快速添加所有权 TXT')
+    );
+  }
+
+  var ownershipHttp = row.ownership_verification_http || {};
+  if(ownershipHttp.http_url || ownershipHttp.http_body){
+    html += renderSection('所有权 HTTP 校验',
+      renderCopyTextarea('HTTP URL', ownershipHttp.http_url || '', true, 2)
+      + renderCopyTextarea('HTTP Body', ownershipHttp.http_body || '', true, 3)
+    );
+  }
+
+  var records = $.isArray(row.ssl_validation_records) ? row.ssl_validation_records : [];
+  if(records.length > 0){
+    var recordsHtml = '';
+    for(var i = 0; i < records.length; i++){
+      var item = records[i] || {};
+      var emails = $.isArray(item.emails) ? item.emails.join('\n') : '';
+      recordsHtml += '<div class="panel panel-default" style="margin-bottom:12px;">';
+      recordsHtml += '<div class="panel-heading"><strong>证书校验记录 #' + (i + 1) + '</strong><span class="pull-right">' + formatStatusText(item.status || '-') + '</span></div>';
+      recordsHtml += '<div class="panel-body">';
+      recordsHtml += renderCopyInput('TXT 名称', item.txt_name || '', true);
+      recordsHtml += renderCopyTextarea('TXT 值', item.txt_value || '', true, 3);
+      recordsHtml += renderQuickAddTxtButton(item.txt_name || '', item.txt_value || '', '快速添加 TXT');
+      recordsHtml += renderCopyInput('CNAME 名称', item.cname_name || '', true);
+      recordsHtml += renderCopyTextarea('CNAME 目标', item.cname_target || '', true, 2);
+      recordsHtml += renderCopyTextarea('HTTP URL', item.http_url || '', true, 2);
+      recordsHtml += renderCopyTextarea('HTTP Body', item.http_body || '', true, 3);
+      recordsHtml += renderCopyTextarea('邮箱地址', emails, false, 2);
+      recordsHtml += '</div></div>';
+    }
+    html += renderSection('证书校验记录', recordsHtml);
+  }else{
+    html += '<div class="alert alert-warning">Cloudflare 当前尚未返回证书校验记录，请先等待状态进入 <code>pending_validation</code>，再点击“刷新校验”或稍后刷新列表。</div>';
+  }
+
+  if(row.validation_errors){
+    html += renderSection('错误信息', renderCopyTextarea('错误信息', row.validation_errors, false, 3));
+  }
+
+  $("#verificationContent").html(html);
+}
+
+function renderSummaryCard(title, value){
+  return '<div class="panel panel-default"><div class="panel-heading"><strong>' + htmlEscape(title) + '</strong></div><div class="panel-body">' + value + '</div></div>';
+}
+
+function renderSection(title, body){
+  return '<div class="panel panel-default"><div class="panel-heading"><strong>' + htmlEscape(title) + '</strong></div><div class="panel-body">' + body + '</div></div>';
+}
+
+function renderCopyInput(label, value, copyable){
+  var safeValue = String(value || '');
+  if(!safeValue){
+    return '';
+  }
+  var html = '<div class="form-group">';
+  html += '<label>' + htmlEscape(label) + '</label>';
+  if(copyable){
+    html += '<div class="input-group">';
+    html += '<input type="text" class="form-control" readonly value="' + htmlEscape(safeValue) + '">';
+    html += '<span class="input-group-btn"><button type="button" class="btn btn-default" data-copy="' + encodeURIComponent(safeValue) + '" onclick="copyEncodedValue(this)">复制</button></span>';
+    html += '</div>';
+  }else{
+    html += '<input type="text" class="form-control" readonly value="' + htmlEscape(safeValue) + '">';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderCopyTextarea(label, value, copyable, rows){
+  var safeValue = String(value || '');
+  if(!safeValue){
+    return '';
+  }
+  var html = '<div class="form-group">';
+  html += '<label>' + htmlEscape(label) + '</label>';
+  html += '<textarea class="form-control" rows="' + (rows || 3) + '" readonly>' + htmlEscape(safeValue) + '</textarea>';
+  if(copyable){
+    html += '<div class="text-right" style="margin-top:8px;"><button type="button" class="btn btn-default btn-xs" data-copy="' + encodeURIComponent(safeValue) + '" onclick="copyEncodedValue(this)">复制</button></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderQuickAddTxtButton(name, value, label){
+  var txtName = String(name || '').trim();
+  var txtValue = String(value || '').trim();
+  if(!txtName || !txtValue){
+    return '';
+  }
+  return '<div class="text-right" style="margin-top:8px;margin-bottom:12px;"><button type="button" class="btn btn-success btn-xs" data-name="' + encodeURIComponent(txtName) + '" data-value="' + encodeURIComponent(txtValue) + '" onclick="quickAddTxtRecord(this)">' + htmlEscape(label || '快速添加 TXT') + '</button></div>';
+}
+
+function formatStatusText(value){
+  var text = value || '-';
+  if(text === '-'){
+    return '<span class="text-muted">-</span>';
+  }
+  return formatStatus(text);
+}
+
+function copyEncodedValue(btn){
+  copyText(decodeURIComponent($(btn).attr('data-copy') || ''));
+}
+
+function copyText(text){
+  var value = String(text || '');
+  if(!value){
+    layer.msg('没有可复制的内容');
+    return;
+  }
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(value).then(function(){
+      layer.msg('已复制', {icon: 1, time: 1000});
+    }).catch(function(){
+      fallbackCopyText(value);
+    });
+    return;
+  }
+  fallbackCopyText(value);
+}
+
+function fallbackCopyText(text){
+  var $temp = $('<textarea readonly></textarea>');
+  $('body').append($temp);
+  $temp.val(text).select();
+  try{
+    document.execCommand('copy');
+    layer.msg('已复制', {icon: 1, time: 1000});
+  }catch(e){
+    layer.alert('复制失败，请手动复制', {icon: 2});
+  }
+  $temp.remove();
+}
+
+function quickAddTxtRecord(btn){
+  var fullName = decodeURIComponent($(btn).attr('data-name') || '');
+  var value = decodeURIComponent($(btn).attr('data-value') || '');
+  resolveTxtRecordTargets(fullName, function(targets){
+    if(!targets.length){
+      layer.alert('系统中未找到与该 TXT 主机名对应的托管域名，请手动到解析页添加', {icon: 2});
+      return;
+    }
+    if(targets.length === 1){
+      confirmQuickAddTxtRecord(fullName, value, targets[0]);
+      return;
+    }
+    openTxtTargetPicker(fullName, value, targets);
+  });
+}
+
+function resolveTxtRecordTargets(fullName, callback){
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/hostnames/txttargets/{$domainId}',
+    data: {hostname: fullName},
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        var targets = res.data && $.isArray(res.data.candidates) ? res.data.candidates : [];
+        callback(targets);
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function openTxtTargetPicker(fullName, value, targets){
+  var html = '<div style="padding:16px 18px 6px;">';
+  html += '<div class="alert alert-warning" style="margin-bottom:12px;">检测到多个可用解析域名，请确认要写入哪个服务商。</div>';
+  html += '<div class="form-group"><label>TXT 主机名</label><div><code>' + htmlEscape(fullName) + '</code></div></div>';
+  html += '<div class="form-group"><label>TXT 值</label><textarea class="form-control" rows="3" readonly>' + htmlEscape(value) + '</textarea></div>';
+  html += '<form id="txtTargetPickerForm">';
+  for(var i = 0; i < targets.length; i++){
+    var target = targets[i] || {};
+    var providerName = target.account_type_name || target.account_type || '-';
+    var accountName = target.account_display_name || ('账户#' + (target.account_id || ''));
+    html += '<div class="radio" style="margin:0 0 12px;border:1px solid #e5e5e5;border-radius:4px;padding:10px 12px;">';
+    html += '<label style="display:block;padding-left:22px;">';
+    html += '<input type="radio" name="txtTarget" value="' + htmlEscape(String(target.domain_id || '')) + '"' + (i === 0 ? ' checked' : '') + '>';
+    html += '<strong>' + htmlEscape(target.domain_name || '-') + '</strong>';
+    if(target.is_current_domain){
+      html += ' <span class="label label-primary">当前页</span>';
+    }
+    html += '<div class="help-block" style="margin:8px 0 0;">';
+    html += '主机记录：<code>' + htmlEscape(target.record_name || '@') + '</code><br>';
+    html += '服务商：' + htmlEscape(providerName) + '<br>';
+    html += '账户：' + htmlEscape(accountName);
+    html += '</div>';
+    html += '</label></div>';
+  }
+  html += '</form></div>';
+  layer.open({
+    type: 1,
+    title: '选择解析服务商',
+    area: ['640px', 'auto'],
+    shadeClose: false,
+    content: html,
+    btn: ['添加 TXT', '取消'],
+    yes: function(index){
+      var selectedId = $('#txtTargetPickerForm input[name=txtTarget]:checked').val();
+      var target = findTxtTargetByDomainId(targets, selectedId);
+      if(!target){
+        layer.msg('请选择要写入的解析域名', {icon: 2});
+        return;
+      }
+      layer.close(index);
+      submitQuickAddTxtRecord(value, target);
+    }
+  });
+}
+
+function confirmQuickAddTxtRecord(fullName, value, target){
+  layer.confirm(buildQuickAddConfirmHtml(fullName, target), {title: '提示', icon: 0}, function(index){
+    layer.close(index);
+    submitQuickAddTxtRecord(value, target);
+  });
+}
+
+function buildQuickAddConfirmHtml(fullName, target){
+  var providerName = target.account_type_name || target.account_type || '-';
+  var accountName = target.account_display_name || ('账户#' + (target.account_id || ''));
+  return '确定要快速添加 TXT 记录吗？<br><br>'
+    + 'TXT 主机名：<code>' + htmlEscape(fullName) + '</code><br>'
+    + '解析域名：<code>' + htmlEscape(target.domain_name || '-') + '</code><br>'
+    + '主机记录：<code>' + htmlEscape(target.record_name || '@') + '</code><br>'
+    + '服务商：' + htmlEscape(providerName) + '<br>'
+    + '账户：' + htmlEscape(accountName);
+}
+
+function submitQuickAddTxtRecord(value, target){
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/record/add/' + target.domain_id,
+    data: {
+      name: target.record_name,
+      type: 'TXT',
+      value: value,
+      line: '0',
+      ttl: 600,
+      mx: 1,
+      weight: 0,
+      remark: 'Cloudflare证书校验'
+    },
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        layer.closeAll();
+        $("#modal-verification").modal('show');
+        layer.msg('TXT 记录已添加到 ' + (target.domain_name || '-'), {icon: 1, time: 1400});
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function findTxtTargetByDomainId(targets, domainId){
+  var selected = String(domainId || '');
+  for(var i = 0; i < targets.length; i++){
+    var item = targets[i] || {};
+    if(String(item.domain_id || '') === selected){
+      return item;
+    }
+  }
+  return null;
+}
+
+function deleteHostname(id, hostname){
+  layer.confirm('确定要删除自定义主机名 ' + hostname + ' 吗？', {title: '提示', icon: 0}, function(){
+    var ii = layer.load(2);
+    $.ajax({
+      type: 'POST',
+      url: '/cloudflare/hostnames/delete/{$domainId}',
+      data: {hostname_id: id, hostname: hostname},
+      dataType: 'json',
+      success: function(res){
+        layer.close(ii);
+        if(res.code === 0){
+          layer.closeAll();
+          layer.msg(res.msg, {icon: 1, time: 1000});
+          refreshHostnameList();
+        }else{
+          layer.alert(res.msg, {icon: 2});
+        }
+      },
+      error: function(){
+        layer.close(ii);
+        layer.alert('服务器错误', {icon: 2});
+      }
+    });
+  });
+}
+
+function loadFallbackOrigin(){
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/fallback/get/{$domainId}',
+    dataType: 'json',
+    success: function(res){
+      if(res.code === 0){
+        $("#fallbackOrigin").val((res.data && res.data.origin) ? res.data.origin : '');
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    }
+  });
+}
+
+function saveFallbackOrigin(){
+  var origin = $.trim($("#fallbackOrigin").val());
+  if(!origin){
+    layer.msg('请输入 Fallback Origin');
+    return;
+  }
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/fallback/set/{$domainId}',
+    data: {origin: origin},
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        $("#fallbackOrigin").val(res.data.origin || origin);
+        layer.msg(res.msg, {icon: 1, time: 1200});
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+function clearFallbackOrigin(){
+  layer.confirm('确定要清空 Fallback Origin 吗？', {title: '提示', icon: 0}, function(){
+    var ii = layer.load(2);
+    $.ajax({
+      type: 'POST',
+      url: '/cloudflare/fallback/delete/{$domainId}',
+      dataType: 'json',
+      success: function(res){
+        layer.close(ii);
+        if(res.code === 0){
+          layer.closeAll();
+          $("#fallbackOrigin").val('');
+          layer.msg(res.msg, {icon: 1, time: 1200});
+        }else{
+          layer.alert(res.msg, {icon: 2});
+        }
+      },
+      error: function(){
+        layer.close(ii);
+        layer.alert('服务器错误', {icon: 2});
+      }
+    });
+  });
+}
+
+function htmlEscape(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+</script>
+{/block}

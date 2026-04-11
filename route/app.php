@@ -51,6 +51,31 @@ Route::group(function () {
     Route::get('/account/:action', 'domain/account_add');
     Route::get('/account', 'domain/account');
 
+    Route::get('/cloudflare/hostnames/:id', 'cloudflare/hostnames');
+    Route::post('/cloudflare/hostnames/data/:id', 'cloudflare/hostnames_data');
+    Route::post('/cloudflare/hostnames/add/:id', 'cloudflare/hostnames_add');
+    Route::post('/cloudflare/hostnames/update/:id', 'cloudflare/hostnames_update');
+    Route::post('/cloudflare/hostnames/refresh/:id', 'cloudflare/hostnames_refresh');
+    Route::post('/cloudflare/hostnames/delete/:id', 'cloudflare/hostnames_delete');
+    Route::post('/cloudflare/hostnames/txttargets/:id', 'cloudflare/hostnames_txt_targets');
+    Route::post('/cloudflare/fallback/get/:id', 'cloudflare/fallback_get');
+    Route::post('/cloudflare/fallback/set/:id', 'cloudflare/fallback_set');
+    Route::post('/cloudflare/fallback/delete/:id', 'cloudflare/fallback_delete');
+    Route::get('/cloudflare/tunnels/:id', 'cloudflare/tunnels');
+    Route::post('/cloudflare/tunnels/data/:id', 'cloudflare/tunnels_data');
+    Route::post('/cloudflare/tunnels/add/:id', 'cloudflare/tunnels_add');
+    Route::post('/cloudflare/tunnels/delete/:id', 'cloudflare/tunnels_delete');
+    Route::post('/cloudflare/tunnels/token/:id', 'cloudflare/tunnels_token');
+    Route::post('/cloudflare/tunnels/publichostnames/data/:id', 'cloudflare/tunnels_public_hostnames_data');
+    Route::post('/cloudflare/tunnels/publichostnames/save/:id', 'cloudflare/tunnels_public_hostnames_save');
+    Route::post('/cloudflare/tunnels/publichostnames/delete/:id', 'cloudflare/tunnels_public_hostnames_delete');
+    Route::post('/cloudflare/tunnels/cidr/data/:id', 'cloudflare/tunnels_cidr_data');
+    Route::post('/cloudflare/tunnels/cidr/add/:id', 'cloudflare/tunnels_cidr_add');
+    Route::post('/cloudflare/tunnels/cidr/delete/:id', 'cloudflare/tunnels_cidr_delete');
+    Route::post('/cloudflare/tunnels/hostnameroutes/data/:id', 'cloudflare/tunnels_hostname_routes_data');
+    Route::post('/cloudflare/tunnels/hostnameroutes/add/:id', 'cloudflare/tunnels_hostname_routes_add');
+    Route::post('/cloudflare/tunnels/hostnameroutes/delete/:id', 'cloudflare/tunnels_hostname_routes_delete');
+
     Route::any('/domain/expirenotice', 'domain/expire_notice');
     Route::post('/domain/updatedate', 'domain/update_date');
     Route::post('/domain/data', 'domain/domain_data');

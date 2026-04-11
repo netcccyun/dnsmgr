@@ -3,3 +3,5 @@
 /vendor
 *.log
 .env
+.ace-tool/
+/.codex-tmp/dns-panel-ref/

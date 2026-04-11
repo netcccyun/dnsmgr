@@ -167,7 +167,20 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 	<div class="col-xs-12 center-block" style="float: none;">
 	<div class="panel panel-default">
 	<div class="panel-heading">
-		<h3 class="panel-title">{if request()->user['type'] eq 'user'}<a href="/domain" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>{/if}{$domainName}</h3>
+		<div class="clearfix">
+			<div class="pull-right" style="margin-top:-6px;max-width:100%;">
+				<div style="display:inline-block;width:300px;max-width:100%;vertical-align:middle;margin-right:6px;">
+					<select id="quickDomainSwitch" class="form-control">
+						{volist name="quickDomainOptions" id="item"}
+						<option value="{$item.id}"{if $item.id == $domainId} selected{/if}>{$item.text}</option>
+						{/volist}
+					</select>
+				</div>
+				<button type="button" class="btn btn-sm btn-primary" id="quickDomainSwitchBtn" style="vertical-align:middle;margin-right:6px;" onclick="return quickSwitchDomain('/record/')"><i class="fa fa-random fa-fw"></i> 切换域名</button>
+				{if $user['type'] eq 'user'}<a href="/domain" class="btn btn-sm btn-default" style="vertical-align:middle;"><i class="fa fa-reply fa-fw"></i> 返回</a>{/if}
+			</div>
+			<h3 class="panel-title" style="padding-top:4px;">{$domainName}</h3>
+		</div>
 	</div>
 	<div class="panel-body">
 	
@@ -183,6 +196,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新解析记录列表"><i class="fa fa-refresh"></i> 刷新</a>
   <a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加记录</a>
+  {if $dnsconfig.type=='cloudflare' && $user['level'] eq 2}<a href="/cloudflare/hostnames/{$domainId}" class="btn btn-primary"><i class="fa fa-cloud"></i> Cloudflare增强</a>{/if}
   {if $dnsconfig.type=='aliyun'}<a href="/record/weight/{$domainId}" class="btn btn-default">权重配置</a>{/if}
   {if $dnsconfig.type=='dnspod'}<a href="/record/alias/{$domainId}" class="btn btn-default">域名别名</a>{/if}
   <div class="btn-group" role="group">
@@ -240,7 +254,9 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 <script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
 <script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
-<script src="/static/js/custom.js?v=1003"></script>
+<script src="/static/js/select2-4.0.13.min.js"></script>
+<script src="/static/js/select2-i18n-zh-CN-4.0.13.min.js"></script>
+<script src="/static/js/custom.js?v=1005"></script>
 <script>
 var recordLine = {$recordLine|json_encode|raw};
 var dnsconfig = {$dnsconfig|json_encode|raw};
@@ -248,6 +264,16 @@ var defaultLine = recordLine[0].id;
 var sidePagination = dnsconfig.page ? 'client' : 'server';
 var showWeight = dnsconfig.weight;
 $(document).ready(function(){
+	if(typeof initDomainQuickSwitch === 'function'){
+		initDomainQuickSwitch({
+			buttonSelector: '',
+			currentId: '{$domainId}',
+			currentText: {$domainName|json_encode|raw},
+			buildUrl: function(id){
+				return '/record/' + id;
+			}
+		});
+	}
 	updateToolbar();
 	let defaultPageSize = getCookie('record_pagesize') ? getCookie('record_pagesize') : 15;
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
