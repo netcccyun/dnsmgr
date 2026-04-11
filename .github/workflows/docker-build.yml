@@ -46,6 +46,9 @@ jobs:
           file: .github/docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          # 避免向仓库推送 attestations；部分镜像仓库（含部分 SWR 场景）无法解析导致 “fail to parse manifest.json”
+          provenance: false
+          sbom: false
           tags: |
             netcccyun/dnsmgr:latest
             swr.cn-east-3.myhuaweicloud.com/netcccyun/dnsmgr:latest
