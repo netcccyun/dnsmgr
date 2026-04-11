@@ -26,6 +26,7 @@ class OptimizeService
             $url = 'https://www.wetest.vip/api/cf2dns/get_license?license='.$key;
         }
         $response = get_curl($url);
+        if (!$response) throw new Exception('接口请求失败');
         $arr = json_decode($response, true);
         if (isset($arr['code']) && $arr['code'] == 200 && isset($arr['count'])) {
             return $arr['count'];
@@ -60,6 +61,7 @@ class OptimizeService
             'type' => $ip_type,
         ];
         $response = get_curl($url, json_encode($params), 0, 0, 0, 0, ['Content-Type' => 'application/json; charset=UTF-8']);
+        if (!$response) throw new Exception('接口请求失败');
         $arr = json_decode($response, true);
         if (isset($arr['code']) && $arr['code'] == 200) {
             return $arr['info'];
@@ -98,7 +100,7 @@ class OptimizeService
             $url = 'https://raw.githubusercontent.com/xingpingcn/enhanced-FaaS-in-China/refs/heads/main/Cf.json';
         }
         $response = get_curl($url);
-        if ($response === '') {
+        if (!$response) {
             throw new Exception('获取优选IP数据失败，网络请求失败，请检查网络连接或代理地址');
         }
         $arr = json_decode($response, true);

@@ -651,7 +651,7 @@ class DnsHelper
         $dnstype = $account['type'];
         $class = "\\app\\lib\\dns\\{$dnstype}";
         if (class_exists($class)) {
-            $config = json_decode($account['config'], true);
+            $config = json_decode($account['config'] ?? '', true);
             $config['domain'] = $domain;
             $config['domainid'] = $domainid;
             $model = new $class($config);
@@ -668,7 +668,7 @@ class DnsHelper
         $dnstype = $account['type'];
         $class = "\\app\\lib\\dns\\{$dnstype}";
         if (class_exists($class)) {
-            $config = json_decode($account['config'], true);
+            $config = json_decode($account['config'] ?? '', true);
             $config['domain'] = $account['name'];
             $config['domainid'] = $account['thirdid'];
             $model = new $class($config);

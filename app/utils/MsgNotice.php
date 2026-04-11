@@ -223,6 +223,7 @@ class MsgNotice
         $url = 'https://wxpusher.zjiecode.com/api/send/message';
         $post = ['appToken' => $wechat_apptoken, 'content' => $content, 'summary' => $title, 'contentType' => 3, 'uids' => [$wechat_appuid]];
         $result = get_curl($url, json_encode($post), 0, 0, 0, 0, ['Content-Type' => 'application/json; charset=UTF-8']);
+        if (!$result) return '请求失败';
         $arr = json_decode($result, true);
         if (isset($arr['success']) && $arr['success'] == true) {
             return true;
@@ -246,6 +247,7 @@ class MsgNotice
         $url = $tgbot_url.'/bot'.$tgbot_token.'/sendMessage';
         $post = ['chat_id' => $tgbot_chatid, 'text' => $content, 'parse_mode' => 'HTML'];
         $result = self::telegram_curl($url, http_build_query($post));
+        if (!$result) return '请求失败';
         $arr = json_decode($result, true);
         if (isset($arr['ok']) && $arr['ok'] == true) {
             return true;
@@ -348,6 +350,7 @@ class MsgNotice
             return '不支持的Webhook地址';
         }
         $result = get_curl($url, json_encode($post), 0, 0, 0, 0, ['Content-Type' => 'application/json; charset=UTF-8']);
+        if (!$result) return '请求失败';
         $arr = json_decode($result, true);
         if (isset($arr['errcode']) && $arr['errcode'] == 0 || isset($arr['code']) && $arr['code'] == 0) {
             return true;

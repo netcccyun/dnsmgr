@@ -63,20 +63,23 @@ class ctyun implements DeployInterface
         }
         $this->log('上传证书成功 cert_name=' . $config['cert_name']);
 
-        $param = [
-            'domain' => $config['domain'],
-            'https_status' => 'on',
-            'cert_name' => $config['cert_name'],
-        ];
-        try {
-            $client->request('POST', '/v1/domain/update-domain', null, $param);
-        } catch (Exception $e) {
-            if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
-                throw new Exception($e->getMessage());
+        foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
+            $param = [
+                'domain' => $domain,
+                'https_status' => 'on',
+                'cert_name' => $config['cert_name'],
+            ];
+            try {
+                $client->request('POST', '/v1/domain/update-domain', null, $param);
+            } catch (Exception $e) {
+                if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
+                    throw new Exception($e->getMessage());
+                }
             }
-        }
 
-        $this->log('CDN域名 ' . $config['domain'] . ' 部署证书成功！');
+            $this->log('CDN域名 ' . $domain . ' 部署证书成功！');
+        }
     }
 
     private function deploy_icdn($fullchain, $privatekey, $config)
@@ -98,20 +101,23 @@ class ctyun implements DeployInterface
         }
         $this->log('上传证书成功 cert_name=' . $config['cert_name']);
 
-        $param = [
-            'domain' => $config['domain'],
-            'https_status' => 'on',
-            'cert_name' => $config['cert_name'],
-        ];
-        try {
-            $client->request('POST', '/v1/domain/update-domain', null, $param);
-        } catch (Exception $e) {
-            if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
-                throw new Exception($e->getMessage());
+        foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
+            $param = [
+                'domain' => $domain,
+                'https_status' => 'on',
+                'cert_name' => $config['cert_name'],
+            ];
+            try {
+                $client->request('POST', '/v1/domain/update-domain', null, $param);
+            } catch (Exception $e) {
+                if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
+                    throw new Exception($e->getMessage());
+                }
             }
-        }
 
-        $this->log('CDN域名 ' . $config['domain'] . ' 部署证书成功！');
+            $this->log('CDN域名 ' . $domain . ' 部署证书成功！');
+        }
     }
 
     private function deploy_accessone($fullchain, $privatekey, $config)
@@ -133,81 +139,87 @@ class ctyun implements DeployInterface
         }
         $this->log('上传证书成功 cert_name=' . $config['cert_name']);
 
-        $param = [
-            'domain' => $config['domain'],
-            'product_code' => '020',
-        ];
-        try {
-            $result = $client->request('POST', '/ctapi/v1/accessone/domain/config', null, $param);
-        } catch (Exception $e) {
-            throw new Exception('查询域名配置失败：' . $e->getMessage());
-        }
-
-        if ($result['https_status'] == 'on' && $result['cert_name'] == $config['cert_name']) {
-            $this->log('边缘安全加速域名 ' . $config['domain'] . ' 证书已部署，无需重复操作！');
-            return;
-        }
-
-        $result['https_status'] = 'on';
-        $result['cert_name'] = $config['cert_name'];
-        $exclude_keys = ['status', 'area_scope', 'cname', 'insert_date', 'status_date', 'record_status', 'record_num', 'customer_name', 'outlink_replace_filter', 'website_ipv6_access_mark', 'websocket_speed', 'dynamic_config', 'dynamic_ability'];
-        foreach ($result as $key => $value) {
-            if (in_array($key, $exclude_keys) || is_array($value) && empty($value)) {
-                unset($result[$key]);
+        foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
+            $param = [
+                'domain' => $domain,
+                'product_code' => '020',
+            ];
+            try {
+                $result = $client->request('POST', '/ctapi/v1/accessone/domain/config', null, $param);
+            } catch (Exception $e) {
+                throw new Exception('查询域名配置失败：' . $e->getMessage());
             }
-        }
-        if (isset($result['origin'])) {
-            foreach ($result['origin'] as &$origin) {
-                $origin['weight'] = strval($origin['weight']);
-            }
-        }
-        try {
-            $client->request('POST', '/ctapi/v1/scdn/domain/modify_config', null, $result);
-        } catch (Exception $e) {
-            if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
-                throw new Exception($e->getMessage());
-            }
-        }
 
-        $this->log('边缘安全加速域名 ' . $config['domain'] . ' 部署证书成功！');
+            if ($result['https_status'] == 'on' && $result['cert_name'] == $config['cert_name']) {
+                $this->log('边缘安全加速域名 ' . $domain . ' 证书已部署，无需重复操作！');
+                return;
+            }
+
+            $result['https_status'] = 'on';
+            $result['cert_name'] = $config['cert_name'];
+            $exclude_keys = ['status', 'area_scope', 'cname', 'insert_date', 'status_date', 'record_status', 'record_num', 'customer_name', 'outlink_replace_filter', 'website_ipv6_access_mark', 'websocket_speed', 'dynamic_config', 'dynamic_ability'];
+            foreach ($result as $key => $value) {
+                if (in_array($key, $exclude_keys) || is_array($value) && empty($value)) {
+                    unset($result[$key]);
+                }
+            }
+            if (isset($result['origin'])) {
+                foreach ($result['origin'] as &$origin) {
+                    $origin['weight'] = strval($origin['weight']);
+                }
+            }
+            try {
+                $client->request('POST', '/ctapi/v1/scdn/domain/modify_config', null, $result);
+            } catch (Exception $e) {
+                if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
+                    throw new Exception($e->getMessage());
+                }
+            }
+
+            $this->log('边缘安全加速域名 ' . $domain . ' 部署证书成功！');
+        }
     }
 
     private function deploy_cf($fullchain, $privatekey, $config)
     {
         $client = new CtyunClient($this->AccessKeyId, $this->SecretAccessKey, 'cf-global.ctapi.ctyun.cn', $this->proxy);
-        try {
-            $data = $client->request('GET', '/openapi/v1/domains/customdomains/' . $config['domain'], null, null, ['regionId' => $config['region_id']]);
-        } catch (Exception $e) {
-            throw new Exception('获取自定义域名配置失败：' . $e->getMessage());
-        }
-
-        if (isset($data['certConfig']['certificate']) && trim($data['certConfig']['certificate']) == trim($fullchain)) {
-            $this->log('函数计算域名 ' . $config['domain'] . ' 证书已部署，无需重复操作！');
-            return;
-        }
-
-        if ($data['protocol'] == 'HTTP') $data['protocol'] = 'HTTP,HTTPS';
-        $param = [
-            'domainName' => $config['domain'],
-            'description' => $data['description'],
-            'protocol' => $data['protocol'],
-            'certConfig' => [
-                'certName' => 'cert' . substr($config['cert_name'], strpos($config['cert_name'], '-') + 1),
-                'certificate' => $fullchain,
-                'privateKey' => $privatekey,
-            ],
-            'authConfig' => $data['authConfig'],
-            'routeConfig' => $data['routeConfig'],
-        ];
-        try {
-            $client->request('PUT', '/openapi/v1/domains/customdomains/' . $config['domain'], null, $param, ['regionId' => $config['region_id']]);
-        } catch (Exception $e) {
-            if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
-                throw new Exception($e->getMessage());
+        foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
+            try {
+                $data = $client->request('GET', '/openapi/v1/domains/customdomains/' . $domain, null, null, ['regionId' => $config['region_id']]);
+            } catch (Exception $e) {
+                throw new Exception('获取自定义域名配置失败：' . $e->getMessage());
             }
-        }
 
-        $this->log('函数计算域名 ' . $config['domain'] . ' 部署证书成功！');
+            if (isset($data['certConfig']['certificate']) && trim($data['certConfig']['certificate']) == trim($fullchain)) {
+                $this->log('函数计算域名 ' . $domain . ' 证书已部署，无需重复操作！');
+                return;
+            }
+
+            if ($data['protocol'] == 'HTTP') $data['protocol'] = 'HTTP,HTTPS';
+            $param = [
+                'domainName' => $domain,
+                'description' => $data['description'],
+                'protocol' => $data['protocol'],
+                'certConfig' => [
+                    'certName' => 'cert' . substr($config['cert_name'], strpos($config['cert_name'], '-') + 1),
+                    'certificate' => $fullchain,
+                    'privateKey' => $privatekey,
+                ],
+                'authConfig' => $data['authConfig'],
+                'routeConfig' => $data['routeConfig'],
+            ];
+            try {
+                $client->request('PUT', '/openapi/v1/domains/customdomains/' . $domain, null, $param, ['regionId' => $config['region_id']]);
+            } catch (Exception $e) {
+                if (strpos($e->getMessage(), '请求已提交，请勿重复操作！') === false) {
+                    throw new Exception($e->getMessage());
+                }
+            }
+
+            $this->log('函数计算域名 ' . $domain . ' 部署证书成功！');
+        }
     }
 
     public function setLogger($func)
