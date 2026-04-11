@@ -322,51 +322,9 @@ class dnspod implements DnsInterface
         ];
         $data = $this->send_request($action, $param);
         if ($data) {
-            $result = [
-                'id' => $data['DomainInfo']['Id'],
-                'name' => $data['DomainInfo']['Domain'],
-                'name_servers' => $this->normalizeNameServerList($data['DomainInfo']['GradeNsList'] ?? []),
-            ];
-            if (!$this->modifyDomainStatus($result['name'], 'enable', intval($result['id']))) {
-                return false;
-            }
-            return $result;
-        }
-        $existingDomain = $this->findExactDomain($Domain);
-        if ($existingDomain) {
-            if (!$this->modifyDomainStatus($existingDomain['name'], 'enable', intval($existingDomain['id']))) {
-                return false;
-            }
-            return $existingDomain;
+            return ['id' => $data['DomainInfo']['Id'], 'name' => $data['DomainInfo']['Domain']];
         }
         return false;
-    }
-
-    public function createSubdomainValidateTxtValue($Domain)
-    {
-        $action = 'CreateSubdomainValidateTXTValue';
-        $param = [
-            'DomainZone' => $Domain,
-        ];
-        $data = $this->send_request($action, $param);
-        if ($data) {
-            return [
-                'domain' => trim((string)($data['Domain'] ?? getMainDomain($Domain))),
-                'sub_domain' => trim((string)($data['Subdomain'] ?? '')),
-                'value' => trim((string)($data['Value'] ?? '')),
-            ];
-        }
-        return false;
-    }
-
-    public function describeSubdomainValidateStatus($Domain)
-    {
-        $action = 'DescribeSubdomainValidateStatus';
-        $param = [
-            'DomainZone' => $Domain,
-        ];
-        $data = $this->send_request($action, $param);
-        return is_array($data);
     }
 
     //域名别名列表
@@ -449,57 +407,5 @@ class dnspod implements DnsInterface
     {
         $this->error = $message;
         //file_put_contents('logs.txt',date('H:i:s').' '.$message."\r\n", FILE_APPEND);
-    }
-
-    private function normalizeNameServerList($list)
-    {
-        if (!is_array($list)) {
-            return [];
-        }
-        $result = [];
-        foreach ($list as $item) {
-            $value = trim((string)$item);
-            if ($value !== '') {
-                $result[] = strtolower(rtrim($value, '.'));
-            }
-        }
-        return array_values(array_unique($result));
-    }
-
-    private function modifyDomainStatus($domain, $status, $domainId = 0)
-    {
-        $param = [
-            'Domain' => $domain,
-            'Status' => $status,
-        ];
-        if ($domainId > 0) {
-            $param['DomainId'] = $domainId;
-        }
-        $data = $this->send_request('ModifyDomainStatus', $param);
-        return is_array($data);
-    }
-
-    private function findExactDomain($domain)
-    {
-        $data = $this->send_request('DescribeDomainList', [
-            'Offset' => 0,
-            'Limit' => 20,
-            'Keyword' => $domain,
-        ]);
-        if (!$data || empty($data['DomainList']) || !is_array($data['DomainList'])) {
-            return false;
-        }
-        foreach ($data['DomainList'] as $row) {
-            $name = strtolower(trim((string)($row['Name'] ?? '')));
-            if ($name !== strtolower(trim((string)$domain))) {
-                continue;
-            }
-            return [
-                'id' => $row['DomainId'],
-                'name' => $row['Name'],
-                'name_servers' => $this->normalizeNameServerList($row['GradeNsList'] ?? []),
-            ];
-        }
-        return false;
     }
 }

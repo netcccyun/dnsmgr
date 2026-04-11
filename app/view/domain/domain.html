@@ -40,7 +40,6 @@
 						<label class="col-sm-3 control-label">输入域名</label>
 						<div class="col-sm-9">
 							<input type="text" class="form-control" name="adddomain" placeholder="输入要新增的域名" value="">
-							<p class="help-block" id="addDomainHint" style="display:none;">腾讯云子域托管会先自动添加校验 TXT，再向父域自动补 NS 委派。父域必须已添加到系统并具备写入权限。</p>
 						</div>
 					</div>
 					
@@ -294,10 +293,6 @@ $(document).ready(function(){
 				title: '操作',
 				formatter: function(value, row, index) {
 					var html = '<a href="/record/'+row.id+'" class="btn btn-success btn-xs" onclick="loading()">解析</a>';
-					var rowType = String(row.type || '').toLowerCase();
-					if(userLevel == '2' && rowType === 'cloudflare'){
-						html += ' <a href="/cloudflare/hostnames/'+row.id+'" class="btn btn-primary btn-xs">CF增强</a>';
-					}
 					if(userLevel == '2'){
 						html += ' <a href="javascript:editframe('+row.id+')" class="btn btn-info btn-xs">配置</a>';
 						html += ' <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a>';
@@ -321,7 +316,6 @@ $(document).ready(function(){
 			$("#form-store input[name=method][value=0]").prop('checked', true);
 			$("#domainSelect").show();
 			$("#domainInput").hide();
-			$("#addDomainHint").hide();
 			var add = $(this).find('option:selected').data('add');
 			if(add == '1'){
 				$("#methodSelect").show();
@@ -333,20 +327,13 @@ $(document).ready(function(){
 	})
 	$("#form-store input[name=method]").change(function(){
 		var value = $("#form-store input[name=method]:checked").val();
-		var type = String($("#form-store select[name=aid]").find('option:selected').data('type') || '');
 		if(value == '0'){
 			$("#domainSelect").show();
 			$("#domainInput").hide();
-			$("#addDomainHint").hide();
 			getDomainList();
 		}else{
 			$("#domainSelect").hide();
 			$("#domainInput").show();
-			if(type === '腾讯云'){
-				$("#addDomainHint").show();
-			}else{
-				$("#addDomainHint").hide();
-			}
 			$('#domainList').empty();
 		}
 	})

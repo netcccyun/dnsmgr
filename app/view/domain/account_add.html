@@ -198,11 +198,7 @@ new Vue({
                 }
             })
             this.set.config = JSON.stringify(this.config);
-            this.set.name = this.resolveAccountName();
-            if(!this.set.name){
-                layer.alert('账户名称自动生成失败，请至少填写一个有效的认证字段', {icon: 2});
-                return;
-            }
+            this.set.name = this.config[Object.keys(this.config)[0]];
             let loading = layer.msg('正在进行账户有效性检查', {icon: 16,shade: 0.1,time: 0});
             $.ajax({
                 type: "POST",
@@ -224,29 +220,6 @@ new Vue({
                     layer.msg('服务器错误');
                 }
             });
-        },
-        resolveAccountName(){
-            var preferred = [];
-            if(this.set.type === 'cloudflare'){
-                preferred = ['email', 'account_id', 'apikey'];
-            }
-            for(var i = 0; i < preferred.length; i++){
-                var val = this.config[preferred[i]];
-                if(typeof val === 'string' && this.trim(val)){
-                    return this.trim(val);
-                }
-            }
-            var keys = Object.keys(this.config);
-            for(var j = 0; j < keys.length; j++){
-                var value = this.config[keys[j]];
-                if(typeof value === 'string' && this.trim(value)){
-                    return this.trim(value);
-                }
-                if(typeof value === 'number'){
-                    return String(value);
-                }
-            }
-            return '';
         },
         isShow(show){
             if(typeof show == 'boolean' && show){

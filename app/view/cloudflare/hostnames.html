@@ -7,14 +7,6 @@
       <div class="panel-heading">
         <div class="clearfix">
           <div class="pull-right" style="margin-top:-6px;max-width:100%;">
-            <div style="display:inline-block;width:300px;max-width:100%;vertical-align:middle;margin-right:6px;">
-              <select id="quickDomainSwitch" class="form-control">
-                {volist name="quickDomainOptions" id="item"}
-                <option value="{$item.id}"{if $item.id == $domainId} selected{/if}>{$item.text}</option>
-                {/volist}
-              </select>
-            </div>
-            <button type="button" class="btn btn-sm btn-primary" id="quickDomainSwitchBtn" style="vertical-align:middle;margin-right:6px;" onclick="return quickSwitchDomain('/cloudflare/hostnames/')"><i class="fa fa-random fa-fw"></i> 切换域名</button>
             <a href="/record/{$domainId}" class="btn btn-sm btn-default" style="vertical-align:middle;"><i class="fa fa-reply fa-fw"></i> 返回解析</a>
           </div>
           <h3 class="panel-title" style="padding-top:4px;">Cloudflare增强 - {$domainName}</h3>
@@ -37,7 +29,7 @@
           </div>
         </div>
 
-        <div class="clearfix" style="margin-bottom:15px;">
+        <div class="clearfix" style="margin-bottom:5px;">
           <div class="pull-left">
             <a href="javascript:refreshHostnameList()" class="btn btn-default" title="刷新自定义主机名列表"><i class="fa fa-refresh"></i> 刷新</a>
             <a href="javascript:openAddDialog()" class="btn btn-success"><i class="fa fa-plus"></i> 添加自定义主机名</a>
@@ -114,15 +106,6 @@
 var currentVerificationHostnameId = '';
 
 $(document).ready(function(){
-    initDomainQuickSwitch({
-      buttonSelector: '',
-      currentId: '{$domainId}',
-      currentText: {$domainName|json_encode|raw},
-      type: 'cloudflare',
-    buildUrl: function(id){
-      return '/cloudflare/hostnames/' + id;
-    }
-  });
   $("#form-store").bootstrapValidator();
   loadFallbackOrigin();
   $("#listTable").bootstrapTable({
@@ -622,16 +605,22 @@ function deleteHostname(id, hostname){
 }
 
 function loadFallbackOrigin(){
+  var ii = layer.load(2);
   $.ajax({
     type: 'POST',
     url: '/cloudflare/fallback/get/{$domainId}',
     dataType: 'json',
     success: function(res){
+      layer.close(ii);
       if(res.code === 0){
         $("#fallbackOrigin").val((res.data && res.data.origin) ? res.data.origin : '');
       }else{
         layer.alert(res.msg, {icon: 2});
       }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
     }
   });
 }

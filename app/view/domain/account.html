@@ -72,7 +72,7 @@ $(document).ready(function(){
 					var html = '<a href="/account/edit?id='+row.id+'" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a> <a href="/domain?aid='+row.id+'" class="btn btn-default btn-xs">域名</a>';
 					var rowType = String(row.type || '').toLowerCase();
 					if(userLevel == '2' && rowType === 'cloudflare'){
-						html += ' <a href="/cloudflare/tunnels/'+row.id+'" class="btn btn-primary btn-xs">Tunnels</a>';
+						html += ' <a href="/cloudflare/tunnels/'+row.id+'" class="btn btn-default btn-xs">Tunnels</a>';
 					}
 					return html;
 				}

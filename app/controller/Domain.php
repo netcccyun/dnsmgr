@@ -261,27 +261,14 @@ class Domain extends BaseController
             $name = input('post.name', null, 'trim');
             $thirdid = input('post.thirdid', null, 'trim');
             $recordcount = input('post.recordcount/d', 0);
-            $result = [];
             if ($method == 1 && empty($name) || $method == 0 && (empty($name) || empty($thirdid))) return json(['code' => -1, 'msg' => '参数不能为空']);
             if (Db::name('domain')->where('aid', $aid)->where('name', $name)->find()) {
                 return json(['code' => -1, 'msg' => '域名已存在']);
             }
             if ($method == 1) {
-                $account = Db::name('account')->where('id', $aid)->find();
-                if (!$account) {
-                    return json(['code' => -1, 'msg' => '域名账户不存在']);
-                }
-                $name = strtolower(rtrim($name, '.'));
-                if ($account['type'] == 'dnspod' && getMainDomain($name) !== $name) {
-                    $result = $this->addDnsPodDelegatedSubdomain($account, $name);
-                    if (!$result['success']) {
-                        return json(['code' => -1, 'msg' => $result['msg']]);
-                    }
-                } else {
-                    $dns = DnsHelper::getModel($aid);
-                    $result = $dns->addDomain($name);
-                    if (!$result) return json(['code' => -1, 'msg' => '添加域名失败，' . $dns->getError()]);
-                }
+                $dns = DnsHelper::getModel($aid);
+                $result = $dns->addDomain($name);
+                if (!$result) return json(['code' => -1, 'msg' => '添加域名失败，' . $dns->getError()]);
                 $name = $result['name'];
                 $thirdid = $result['id'];
             }
@@ -294,11 +281,7 @@ class Domain extends BaseController
                 'is_sso' => 1,
                 'recordcount' => $recordcount,
             ]);
-            $msg = '添加域名成功！';
-            if (!empty($result['msg'])) {
-                $msg .= ' ' . $result['msg'];
-            }
-            return json(['code' => 0, 'msg' => $msg]);
+            return json(['code' => 0, 'msg' => '添加域名成功！']);
         } elseif ($act == 'edit') {
             if (!checkPermission(2)) return $this->alert('error', '无权限');
             $id = input('post.id/d');
@@ -469,19 +452,9 @@ class Domain extends BaseController
 
         $dnsconfig = DnsHelper::$dns_config[$dnstype];
         $dnsconfig['type'] = $dnstype;
-        $quickDomainOptions = $this->getManagedDomainOptions();
-        if (empty($quickDomainOptions)) {
-            $quickDomainOptions = [[
-                'id' => intval($id),
-                'name' => $drow['name'],
-                'type' => $dnstype,
-                'text' => $drow['name'] . ' [' . ($dnsconfig['name'] ?? strtoupper($dnstype)) . ']',
-            ]];
-        }
 
         View::assign('domainId', $id);
         View::assign('domainName', $drow['name']);
-        View::assign('quickDomainOptions', $quickDomainOptions);
         View::assign('recordLine', $recordLineArr);
         View::assign('minTTL', $minTTL ? $minTTL : 1);
         View::assign('dnsconfig', $dnsconfig);
@@ -1215,189 +1188,6 @@ class Domain extends BaseController
             }
             Db::name('domain_alias')->insertAll($dataList);
         }
-    }
-
-    private function addDnsPodDelegatedSubdomain($account, $domain)
-    {
-        $dns = DnsHelper::getModel(intval($account['id']));
-        if (!$dns || !method_exists($dns, 'createSubdomainValidateTxtValue')) {
-            return ['success' => false, 'msg' => '当前腾讯云账户不支持子域托管自动委派'];
-        }
-
-        $parentDomainRow = $this->findManagedParentDomainRow($domain);
-        if (!$parentDomainRow) {
-            return ['success' => false, 'msg' => '未找到可写的父域名，请先把父域添加到系统后再创建子域托管'];
-        }
-
-        $relativeName = $this->buildRelativeRecordName($domain, $parentDomainRow['name']);
-        if ($relativeName === '@') {
-            return ['success' => false, 'msg' => '当前输入看起来是根域名，请直接按普通新域名方式添加'];
-        }
-
-        $validation = $dns->createSubdomainValidateTxtValue($domain);
-        if (!$validation) {
-            return ['success' => false, 'msg' => '获取腾讯云子域校验 TXT 失败，' . $dns->getError()];
-        }
-
-        $validationRecordName = $validation['sub_domain'] !== '' ? $validation['sub_domain'] : $relativeName;
-        $validationValue = $validation['value'] ?? '';
-        if ($validationValue === '') {
-            return ['success' => false, 'msg' => '腾讯云未返回子域校验 TXT 值，请稍后重试'];
-        }
-
-        $saveValidation = $this->ensureManagedRecord(
-            $parentDomainRow,
-            $validationRecordName,
-            'TXT',
-            $validationValue,
-            'DNSPod子域托管校验'
-        );
-        if (!$saveValidation['success']) {
-            return ['success' => false, 'msg' => '父域自动添加校验 TXT 失败，' . $saveValidation['msg']];
-        }
-
-        $validated = false;
-        for ($i = 0; $i < 4; $i++) {
-            if ($dns->describeSubdomainValidateStatus($domain)) {
-                $validated = true;
-                break;
-            }
-            if ($i < 3) {
-                sleep(3);
-            }
-        }
-        if (!$validated) {
-            return [
-                'success' => false,
-                'msg' => '已自动向父域添加腾讯云校验 TXT，但腾讯云暂未检测到生效。请等待 DNS 生效后再次点击添加。校验主机：'
-                    . $validationRecordName . '；校验值：' . $validationValue,
-            ];
-        }
-
-        $result = $dns->addDomain($domain);
-        if (!$result) {
-            return ['success' => false, 'msg' => '腾讯云创建子域托管失败，' . $dns->getError()];
-        }
-
-        $nameServers = isset($result['name_servers']) && is_array($result['name_servers']) ? $result['name_servers'] : [];
-        if (empty($nameServers)) {
-            return [
-                'success' => true,
-                'id' => $result['id'],
-                'name' => $result['name'],
-                'msg' => '腾讯云子域已创建，但未返回 NS 服务器，请到腾讯云控制台查看后手动补父域委派。',
-            ];
-        }
-
-        foreach ($nameServers as $nameServer) {
-            $saveNs = $this->ensureManagedRecord(
-                $parentDomainRow,
-                $relativeName,
-                'NS',
-                $nameServer,
-                'DNSPod子域托管委派'
-            );
-            if (!$saveNs['success']) {
-                return [
-                    'success' => false,
-                    'msg' => '腾讯云子域已创建，但父域自动添加 NS 委派失败，' . $saveNs['msg'] . '。请手动添加 NS：' . implode(', ', $nameServers),
-                ];
-            }
-        }
-
-        return [
-            'success' => true,
-            'id' => $result['id'],
-            'name' => $result['name'],
-            'msg' => '已自动完成父域校验 TXT 和 NS 委派。',
-        ];
-    }
-
-    private function findManagedParentDomainRow($domain)
-    {
-        $domain = strtolower(rtrim(trim($domain), '.'));
-        $rows = Db::name('domain')->alias('d')
-            ->join('account a', 'd.aid = a.id')
-            ->field('d.id,d.aid,d.name,d.thirdid,a.type')
-            ->select()
-            ->toArray();
-        usort($rows, function ($left, $right) {
-            return strlen($right['name']) <=> strlen($left['name']);
-        });
-        foreach ($rows as $row) {
-            $parent = strtolower(rtrim(trim($row['name']), '.'));
-            if ($parent === $domain) {
-                continue;
-            }
-            if (str_ends_with($domain, '.' . $parent)) {
-                return $row;
-            }
-        }
-        return false;
-    }
-
-    private function buildRelativeRecordName($domain, $parentDomain)
-    {
-        $domain = strtolower(rtrim(trim($domain), '.'));
-        $parentDomain = strtolower(rtrim(trim($parentDomain), '.'));
-        if ($domain === $parentDomain) {
-            return '@';
-        }
-        $suffix = '.' . $parentDomain;
-        if (!str_ends_with($domain, $suffix)) {
-            return '';
-        }
-        return substr($domain, 0, -strlen($suffix));
-    }
-
-    private function ensureManagedRecord($domainRow, $name, $type, $value, $remark = null)
-    {
-        $dns = DnsHelper::getModel($domainRow['aid'], $domainRow['name'], $domainRow['thirdid']);
-        if (!$dns) {
-            return ['success' => false, 'msg' => '父域 DNS 驱动初始化失败'];
-        }
-        if ($this->hasExistingManagedRecord($dns, $name, $type, $value)) {
-            return ['success' => true, 'msg' => '记录已存在'];
-        }
-        $line = DnsHelper::$line_name[$domainRow['type']]['DEF'] ?? 'default';
-        $recordId = $dns->addDomainRecord($name, $type, $value, $line, 600, 1, null, $remark);
-        if (!$recordId) {
-            return ['success' => false, 'msg' => $dns->getError()];
-        }
-        $this->add_log($domainRow['name'], '添加解析', $name . ' [' . $type . '] ' . $value . ' (线路:' . $line . ' TTL:600)');
-        return ['success' => true, 'msg' => '添加成功'];
-    }
-
-    private function hasExistingManagedRecord($dns, $name, $type, $value)
-    {
-        $records = $dns->getSubDomainRecords($name === '@' ? '' : $name, 1, 100, $type);
-        if (!$records || empty($records['list']) || !is_array($records['list'])) {
-            return false;
-        }
-        foreach ($records['list'] as $row) {
-            if (strtoupper((string)($row['Type'] ?? '')) !== strtoupper($type)) {
-                continue;
-            }
-            if ($this->isSameDnsRecordValue($type, $row['Value'] ?? '', $value)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private function isSameDnsRecordValue($type, $left, $right)
-    {
-        $left = trim((string)$left);
-        $right = trim((string)$right);
-        if (strtoupper($type) === 'TXT') {
-            $left = trim($left, "\"'");
-            $right = trim($right, "\"'");
-            return $left === $right;
-        }
-        if (strtoupper($type) === 'NS') {
-            return strtolower(rtrim($left, '.')) === strtolower(rtrim($right, '.'));
-        }
-        return $left === $right;
     }
 
     public function expire_notice()
