@@ -11,7 +11,7 @@ class DeployHelper
             'name' => '宝塔面板',
             'class' => 1,
             'icon' => 'bt.png',
-            'desc' => '支持部署到宝塔面板&aaPanel搭建的站点、Docker、邮局与面板本身',
+            'desc' => '支持部署到宝塔Linux面板&aaPanel搭建的站点',
             'note' => null,
             'inputs' => [
                 'url' => [
@@ -26,15 +26,6 @@ class DeployHelper
                     'type' => 'input',
                     'placeholder' => '宝塔面板设置->面板设置->API接口',
                     'required' => true,
-                ],
-                'version' => [
-                    'name' => '面板版本',
-                    'type' => 'radio',
-                    'options' => [
-                        '0' => 'Linux面板+Win经典版',
-                        '1' => 'Win极速版',
-                    ],
-                    'value' => '0'
                 ],
                 'proxy' => [
                     'name' => '使用代理服务器',
@@ -55,6 +46,7 @@ class DeployHelper
                         '3' => 'Docker网站的证书',
                         '2' => '邮局域名的证书',
                         '1' => '面板本身的证书',
+                        '4' => '反向代理的证书',
                     ],
                     'value' => '0',
                     'required' => true,
@@ -64,7 +56,58 @@ class DeployHelper
                     'type' => 'textarea',
                     'placeholder' => '填写要部署证书的网站名称，每行一个',
                     'note' => 'PHP项目和反代项目填写创建时绑定的第一个域名，Java/Node/Go等其他项目填写项目名称，邮局和IIS站点填写绑定的域名',
-                    'show' => 'type==0||type==2||type==3',
+                    'show' => 'type==0||type==2||type==3||type==4',
+                    'required' => true,
+                ],
+            ],
+        ],
+        'btwin' => [
+            'name' => '宝塔Win极速版',
+            'class' => 1,
+            'icon' => 'bt.png',
+            'desc' => '支持部署到宝塔Windows面板极速版',
+            'note' => null,
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => '宝塔面板地址',
+                    'note' => '填写规则如：http://192.168.1.100:8888 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'key' => [
+                    'name' => '接口密钥',
+                    'type' => 'input',
+                    'placeholder' => '宝塔面板设置->面板设置->API接口',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'type' => [
+                    'name' => '部署类型',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '网站的证书',
+                        '1' => '面板本身的证书',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
+                'sites' => [
+                    'name' => '网站名称列表',
+                    'type' => 'textarea',
+                    'placeholder' => '填写要部署证书的网站名称，每行一个',
+                    'note' => '',
+                    'show' => 'type==0',
                     'required' => true,
                 ],
                 'is_iis' => [

@@ -6,7 +6,7 @@ use app\lib\DeployInterface;
 use app\lib\CertHelper;
 use Exception;
 
-class btpanel implements DeployInterface
+class btwin implements DeployInterface
 {
     private $logger;
     private $url;
@@ -24,10 +24,10 @@ class btpanel implements DeployInterface
     {
         if (empty($this->url) || empty($this->key)) throw new Exception('请填写面板地址和接口密钥');
 
-        $path = '/config?action=get_config';
+        $path = '/config/get_config';
         $response = $this->request($path, []);
         $result = json_decode($response, true);
-        if (isset($result['status']) && ($result['status'] == 1 || isset($result['sites_path']))) {
+        if (isset($result['panel']['status']) && $result['panel']['status']) {
             return true;
         } else {
             throw new Exception(isset($result['msg']) ? $result['msg'] : '面板地址无法连接');
@@ -42,38 +42,53 @@ class btpanel implements DeployInterface
             return;
         }
 
+        $isIIS = $config['type'] == '0' && isset($config['is_iis']) && $config['is_iis'] == '1';
+        if ($isIIS) {
+            $response = $this->request('/panel/get_config', []);
+            $result = json_decode($response, true);
+            if (isset($result['paths']['soft'])) {
+                if ($result['config']['webserver'] != 'iis') {
+                    throw new Exception('当前安装的Web服务器不是IIS');
+                }
+                $panel_path = $result['paths']['soft'];
+            } else {
+                throw new Exception(isset($result['msg']) ? $result['msg'] : '面板地址无法连接');
+            }
+
+            $pfx_dir = $panel_path . '/temp/ssl/' . getMillisecond();
+            $pfx_path = $pfx_dir . '/cert.pfx';
+            $pfx_password = '123456';
+            $pfx = CertHelper::getPfx($fullchain, $privatekey, $pfx_password);
+            $data = [
+                ['name' => 'path', 'contents' => $pfx_dir],
+                ['name' => 'filename', 'contents' => 'cert.pfx'],
+                ['name' => 'size', 'contents' => strlen($pfx)],
+                ['name' => 'start', 'contents' => '0'],
+                ['name' => 'blob', 'filename' => 'cert.pfx', 'contents' => $pfx],
+                ['name' => 'force', 'contents' => 'true'],
+            ];
+            $response = $this->request('/files/upload', $data, true);
+            $result = json_decode($response, true);
+            if (isset($result['status']) && $result['status']) {
+            } else {
+                throw new Exception(isset($result['msg']) ? $result['msg'] : '面板地址无法连接');
+            }
+        }
+
         $sites = explode("\n", $config['sites']);
         $success = 0;
         $errmsg = null;
         foreach ($sites as $site) {
             $siteName = trim($site);
             if (empty($siteName)) continue;
-            if ($config['type'] == '4') {
+            if ($isIIS) {
                 try {
-                    $this->deployProxy($siteName, $fullchain, $privatekey);
-                    $this->log("反向代理站点 {$siteName} 证书部署成功");
+                    $this->deployIISSite($siteName, $pfx_path, $pfx_password);
+                    $this->log("域名 {$siteName} 证书部署成功");
                     $success++;
                 } catch (Exception $e) {
                     $errmsg = $e->getMessage();
-                    $this->log("反向代理站点 {$siteName} 证书部署失败：" . $errmsg);
-                }
-            } elseif ($config['type'] == '3') {
-                try {
-                    $this->deployDocker($siteName, $fullchain, $privatekey);
-                    $this->log("Docker域名 {$siteName} 证书部署成功");
-                    $success++;
-                } catch (Exception $e) {
-                    $errmsg = $e->getMessage();
-                    $this->log("Docker域名 {$siteName} 证书部署失败：" . $errmsg);
-                }
-            } elseif ($config['type'] == '2') {
-                try {
-                    $this->deployMailSys($siteName, $fullchain, $privatekey);
-                    $this->log("邮局域名 {$siteName} 证书部署成功");
-                    $success++;
-                } catch (Exception $e) {
-                    $errmsg = $e->getMessage();
-                    $this->log("邮局域名 {$siteName} 证书部署失败：" . $errmsg);
+                    $this->log("域名 {$siteName} 证书部署失败：" . $errmsg);
                 }
             } else {
                 try {
@@ -93,10 +108,10 @@ class btpanel implements DeployInterface
 
     private function deployPanel($fullchain, $privatekey)
     {
-        $path = '/config?action=SavePanelSSL';
+        $path = '/config/set_panel_ssl';
         $data = [
-            'privateKey' => $privatekey,
-            'certPem' => $fullchain,
+            'ssl_key' => $privatekey,
+            'ssl_pem' => $fullchain,
         ];
         $response = $this->request($path, $data);
         $result = json_decode($response, true);
@@ -111,16 +126,44 @@ class btpanel implements DeployInterface
 
     private function deploySite($siteName, $fullchain, $privatekey)
     {
-        $path = '/site?action=SetSSL';
+        $path = '/datalist/get_data_list';
         $data = [
-            'type' => '0',
-            'siteName' => $siteName,
-            'key' => $privatekey,
-            'csr' => $fullchain,
+            'table' => 'sites',
+            'search_type' => 'PHP',
+            'search' => $siteName,
+            'p' => 1,
+            'limit' => 10,
+            'type' => -1,
         ];
         $response = $this->request($path, $data);
         $result = json_decode($response, true);
-        if (isset($result['status']) && $result['status']) {
+        if (isset($result['data'])) {
+            if (empty($result['data'])) throw new Exception("网站 {$siteName} 不存在");
+            $siteId = null;
+            foreach ($result['data'] as $item) {
+                if ($item['name'] == $siteName) {
+                    $siteId = $item['id'];
+                    break;
+                }
+            }
+            if (is_null($siteId)) throw new Exception("网站 {$siteName} 不存在");
+            $path = '/site/set_site_ssl';
+            $data = [
+                'siteid' => $siteId,
+                'status' => 'true',
+                'sslType' => '',
+                'cert' => $fullchain,
+                'key' => $privatekey,
+            ];
+            $response = $this->request($path, $data);
+            $result = json_decode($response, true);
+            if (isset($result['status']) && $result['status']) {
+                return true;
+            } elseif (isset($result['msg'])) {
+                throw new Exception($result['msg']);
+            } else {
+                throw new Exception($response ? $response : '返回数据解析失败');
+            }
             return true;
         } elseif (isset($result['msg'])) {
             throw new Exception($result['msg']);
@@ -129,52 +172,13 @@ class btpanel implements DeployInterface
         }
     }
 
-    private function deployMailSys($domain, $fullchain, $privatekey)
+    private function deployIISSite($domain, $pfx_path, $password = '123456')
     {
-        $path = '/plugin?action=a&name=mail_sys&s=set_mail_certificate_multiple';
+        $path = '/site/set_site_domain_ssl';
         $data = [
             'domain' => $domain,
-            'key' => $privatekey,
-            'csr' => $fullchain,
-            'act' => 'add',
-        ];
-        $response = $this->request($path, $data);
-        $result = json_decode($response, true);
-        if (isset($result['status']) && $result['status']) {
-            return true;
-        } elseif (isset($result['msg'])) {
-            throw new Exception($result['msg']);
-        } else {
-            throw new Exception($response ? $response : '返回数据解析失败');
-        }
-    }
-
-    private function deployDocker($domain, $fullchain, $privatekey)
-    {
-        $path = '/mod/docker/com/set_ssl';
-        $data = [
-            'site_name' => $domain,
-            'key' => $privatekey,
-            'csr' => $fullchain,
-        ];
-        $response = $this->request($path, $data);
-        $result = json_decode($response, true);
-        if (isset($result['status']) && $result['status']) {
-            return true;
-        } elseif (isset($result['msg'])) {
-            throw new Exception($result['msg']);
-        } else {
-            throw new Exception($response ? $response : '返回数据解析失败');
-        }
-    }
-
-    private function deployProxy($domain, $fullchain, $privatekey)
-    {
-        $path = '/mod/proxy/com/set_ssl';
-        $data = [
-            'site_name' => $domain,
-            'key' => $privatekey,
-            'csr' => $fullchain,
+            'path' => $pfx_path,
+            'password' => $password,
         ];
         $response = $this->request($path, $data);
         $result = json_decode($response, true);
