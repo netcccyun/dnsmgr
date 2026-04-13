@@ -48,6 +48,8 @@ class huoshan implements DeployInterface
                 $this->deploy_clb($cert_id, $config);
             } elseif ($config['product'] == 'alb') {
                 $this->deploy_alb($cert_id, $config);
+            } elseif ($config['product'] == 'vod') {
+                $this->deploy_vod($cert_id, $config);
             }
         }
     }
@@ -132,6 +134,33 @@ class huoshan implements DeployInterface
             ];
             $client->request('POST', 'BindCert', $param);
             $this->log('视频直播域名 ' . $domain . ' 部署证书成功！');
+        }
+    }
+
+    private function deploy_vod($cert_id, $config)
+    {
+        if (empty($config['domain'])) throw new Exception('绑定的域名不能为空');
+        if (empty($config['vod_space_name'])) throw new Exception('点播空间名称不能为空');
+        if (empty($config['vod_domain_type'])) throw new Exception('点播域名类型不能为空');
+
+        $client = new Volcengine($this->AccessKeyId, $this->SecretAccessKey, 'vod.volcengineapi.com', 'vod', '2023-07-01', 'cn-north-1', $this->proxy);
+        foreach (explode(',', $config['domain']) as $domain) {
+            if (empty($domain)) continue;
+            $param = [
+                'SpaceName' => $config['vod_space_name'],
+                'DomainType' => $config['vod_domain_type'],
+                'Domain' => $domain,
+                'Config' => [
+                    'HTTPS' => [
+                        'Switch' => true,
+                        'CertInfo' => [
+                            'CertId' => $cert_id,
+                        ],
+                    ],
+                ],
+            ];
+            $client->request('POST', 'UpdateDomainConfig', $param);
+            $this->log('视频点播域名 ' . $domain . ' 部署证书成功！');
         }
     }
 
