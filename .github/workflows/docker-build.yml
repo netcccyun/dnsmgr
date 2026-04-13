@@ -46,6 +46,9 @@ jobs:
           file: .github/docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          # 每次运行唯一，打破「下载源码 + composer」等层的缓存，否则会一直用首次构建时的层
+          build-args: |
+            CACHE_BUST=${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           # 避免向仓库推送 attestations；部分镜像仓库（含部分 SWR 场景）无法解析导致 “fail to parse manifest.json”
           provenance: false
           sbom: false

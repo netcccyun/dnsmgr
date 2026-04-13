@@ -52,13 +52,16 @@ COPY config/php.ini ${PHP_INI_DIR}/conf.d/custom.ini
 # Configure supervisord
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# CACHE_BUST 须写进每条相关 RUN，否则 GHA/BuildKit 可能单独命中 composer 相关层缓存，vendor 仍来自旧构建
+ARG CACHE_BUST=local
+
 # Add application
-RUN mkdir -p /usr/src && wget --no-cache https://github.com/netcccyun/dnsmgr/archive/refs/heads/main.zip -O /usr/src/www.zip && unzip /usr/src/www.zip -d /usr/src/ && mv /usr/src/dnsmgr-main /usr/src/www && rm -f /usr/src/www.zip
+RUN mkdir -p /usr/src && echo "$CACHE_BUST" >/dev/null && wget --no-cache https://github.com/netcccyun/dnsmgr/archive/refs/heads/main.zip -O /usr/src/www.zip && unzip /usr/src/www.zip -d /usr/src/ && mv /usr/src/dnsmgr-main /usr/src/www && rm -f /usr/src/www.zip
 
-# Install composer
-RUN wget https://getcomposer.org/download/latest-stable/composer.phar -O /usr/local/bin/composer && chmod +x /usr/local/bin/composer
+# Install composer（与下面 install 一并随 CACHE_BUST 失效）
+RUN echo "$CACHE_BUST" >/dev/null && wget https://getcomposer.org/download/latest-stable/composer.phar -O /usr/local/bin/composer && chmod +x /usr/local/bin/composer
 
-RUN composer install -d /usr/src/www --no-interaction --no-dev --optimize-autoloader
+RUN echo "$CACHE_BUST" >/dev/null && composer install -d /usr/src/www --no-interaction --no-dev --optimize-autoloader --no-cache
 
 RUN adduser -D -s /sbin/nologin -g www www && chown -R www.www /usr/src/www /var/lib/nginx /var/log/nginx
 
