@@ -28,6 +28,10 @@ tbody tr>td:nth-child(3){min-width:300px;word-break:break-all;}
                 <option value="SRV">SRV</option>
                 <option value="TXT">TXT</option>
                 <option value="CAA">CAA</option>
+
+                {if $dnsconfig.type=='technitium'}<option value="ANAME">ANAME</option>
+                <option value="DNAME">DNAME</option>
+                <option value="APP">APP</option>{/if}
             </select>
         </div>
     </div>

@@ -29,6 +29,8 @@ tbody tr>td:nth-child(3){min-width:300px;word-break:break-all;}
                 <option value="SRV">SRV</option>
                 <option value="TXT">TXT</option>
                 <option value="CAA">CAA</option>
+                <option value="ANAME" v-show="existTechnitium">ANAME</option>
+                <option value="DNAME" v-show="existTechnitium">DNAME</option>
             </select>
         </div>
     </div>
@@ -105,6 +107,7 @@ new Vue({
 			proxy: 0,
 		},
 		existCF: false,
+		existTechnitium: false,
     },
 	watch: {
 		'set.type': function(val){
@@ -126,6 +129,7 @@ new Vue({
 			this.$set(this.domainList[i], 'result', '<span class="text-muted">待添加</span>');
 		}
 		this.existCF = this.domainList.some(item => item.type === 'cloudflare');
+		this.existTechnitium = this.domainList.some(item => item.type === 'technitium');
     },
     methods: {
 		async save(id){

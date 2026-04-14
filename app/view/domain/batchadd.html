@@ -26,8 +26,9 @@
                 <option value="SRV">SRV</option>
                 <option value="TXT">TXT</option>
                 <option value="CAA">CAA</option>
-                {if $dnsconfig.redirect}<option value="REDIRECT_URL">显性URL</option>
-                <option value="FORWARD_URL">隐性URL</option>{/if}
+
+                {if $dnsconfig.type=='technitium'}<option value="ANAME">ANAME</option>
+                <option value="DNAME">DNAME</option>{/if}
             </select>
         </div>
     </div>

@@ -608,6 +608,41 @@ class DnsHelper
             'page' => false,
             'add' => false,
         ],
+        'technitium' => [
+            'name' => 'Technitium',
+            'icon' => 'technitium.png',
+            'note' => '',
+            'config' => [
+                'url' => [
+                    'name' => 'Server URL',
+                    'type' => 'input',
+                    'placeholder' => 'http://127.0.0.1:5380',
+                    'required' => true,
+                ],
+                'token' => [
+                    'name' => 'API Token',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'remark' => 1,
+            'status' => true,
+            'redirect' => false,
+            'log' => false,
+            'weight' => false,
+            'page' => true,
+            'add' => true,
+        ],
     ];
 
     public static $line_name = [
@@ -627,6 +662,7 @@ class DnsHelper
         'spaceship' => ['DEF' => 'default'],
         'aliyunesa' => ['DEF' => '0'],
         'tencenteo' => ['DEF' => 'Default'],
+        'technitium' => ['DEF' => 'default'],
     ];
 
     public static function getList()
