@@ -635,7 +635,7 @@ class DnsHelper
                     'value' => '0'
                 ],
             ],
-            'remark' => 1,
+            'remark' => 2,
             'status' => true,
             'redirect' => false,
             'log' => false,
