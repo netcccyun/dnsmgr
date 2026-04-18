@@ -48,7 +48,10 @@
             <h4 class="panel-title">自定义主机名列表</h4>
           </div>
           <div class="panel-body">
-            <div id="toolbar" style="margin-bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <div id="toolbar" style="margin-bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                <input type="text" id="hostnameSearchInput" class="form-control input-sm" placeholder="搜索主机名..." oninput="filterHostnameList(this.value)" style="max-width: 300px;">
+              </div>
               <a href="javascript:refreshHostnameList()" class="btn btn-default btn-sm" title="刷新自定义主机名列表"><i class="fa fa-refresh"></i> 刷新</a>
               <a href="javascript:openAddDialog()" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> 添加自定义主机名</a>
               <a href="javascript:batchAddHostnames()" class="btn btn-primary btn-sm"><i class="fa fa-plus-circle"></i> 批量添加</a>
@@ -147,6 +150,7 @@
 <script src="/static/js/custom.js?v=1005"></script>
 <script>
 var currentVerificationHostnameId = '';
+var allHostnameData = []; // 保存完整的原始数据用于客户端搜索
 
 $(document).ready(function(){
   $("#form-store").bootstrapValidator();
@@ -194,6 +198,27 @@ function updateBatchButtons(){
   var hasSelection = selectedRows.length > 0;
   $("#btnBatchDelete").prop('disabled', !hasSelection);
   $("#btnBatchEdit").prop('disabled', !hasSelection);
+}
+
+function filterHostnameList(searchText){
+  var searchTextLower = (searchText || '').toLowerCase();
+  var filteredData = [];
+  
+  if(searchTextLower === ''){
+    // 搜索为空时，显示所有原始数据
+    filteredData = allHostnameData;
+  } else {
+    // 基于原始数据进行过滤
+    for(var i = 0; i < allHostnameData.length; i++){
+      var row = allHostnameData[i];
+      if(row && row.hostname && row.hostname.toLowerCase().indexOf(searchTextLower) !== -1){
+        filteredData.push(row);
+      }
+    }
+  }
+  
+  // 使用 load 方法重新加载过滤后的数据（客户端分页）
+  $('#listTable').bootstrapTable('load', filteredData);
 }
 
 function batchDeleteHostnames(){
@@ -486,8 +511,8 @@ function quickAddDcvDelegation(){
     return;
   }
   
-  // 获取自定义主机名列表
-  var hostnames = $('#listTable').bootstrapTable('getData');
+  // 获取自定义主机名列表（使用完整原始数据，而不是表格中的已过滤数据）
+  var hostnames = allHostnameData.length > 0 ? allHostnameData : $('#listTable').bootstrapTable('getData');
   var hostnameOptions = [];
   
   // 添加自定义主机名选项
@@ -516,16 +541,38 @@ function checkDomainFormat(domain){
   return /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(domain);
 }
 
+function filterDcvHostnames(searchText){
+  var searchTextLower = (searchText || '').toLowerCase();
+  $('.dcv-hostname-item').each(function(){
+    var itemText = $(this).attr('data-search-text') || '';
+    if(searchTextLower === '' || itemText.indexOf(searchTextLower) !== -1){
+      $(this).show();
+    } else {
+      $(this).hide();
+    }
+  });
+  // 更新可见项计数
+  var visibleCount = $('.dcv-hostname-item:visible').length;
+  if(visibleCount === 0 && searchText !== ''){
+    $('#dcvHostnameList .alert-warning').show();
+  } else {
+    $('#dcvHostnameList .alert-warning').hide();
+  }
+}
+
 function openHostnameSelector(options, uuid){
   var isMobile = window.innerWidth <= 768;
   var dialogWidth = isMobile ? '90%' : '600px';
   var html = '<div style="padding:16px 18px 6px;">';
   html += '<div class="alert alert-info" style="margin-bottom:12px;font-size:14px;">请选择要为哪个自定义主机名添加 DCV 委派 CNAME 记录。</div>';
-  html += '<div style="max-height:400px;overflow-y:auto;padding-right:8px;">';
+  html += '<div class="form-group" style="margin-bottom:12px;">';
+  html += '<input type="text" id="dcvHostnameSearch" class="form-control" placeholder="搜索自定义主机名..." oninput="filterDcvHostnames(this.value)">';
+  html += '</div>';
+  html += '<div id="dcvHostnameList" style="max-height:400px;overflow-y:auto;padding-right:8px;">';
   html += '<form id="hostnameSelectorForm">';
   for(var i = 0; i < options.length; i++){
     var opt = options[i] || {};
-    html += '<div class="radio" style="margin:0 0 12px;border:1px solid #e5e5e5;border-radius:4px;padding:12px;">';
+    html += '<div class="radio dcv-hostname-item" style="margin:0 0 12px;border:1px solid #e5e5e5;border-radius:4px;padding:12px;" data-search-text="' + htmlEscape(opt.value || '').toLowerCase() + '">';
     html += '<label style="display:block;padding-left:22px;word-wrap:break-word;word-break:break-all;font-size:14px;">';
     html += '<input type="radio" name="hostnameOption" value="' + htmlEscape(opt.value || '') + '"' + (i === 0 ? ' checked' : '') + '>';
     html += '<strong style="display:inline-block;max-width:100%;word-wrap:break-word;word-break:break-all;font-size:14px;">' + htmlEscape(opt.name || '') + '</strong>';
@@ -534,6 +581,9 @@ function openHostnameSelector(options, uuid){
   }
   html += '</form>';
   html += '</div>';
+  if(options.length === 0){
+    html += '<div class="alert alert-warning">未找到匹配的自定义主机名</div>';
+  }
   html += '</div>';
   
   layer.open({
@@ -547,7 +597,7 @@ function openHostnameSelector(options, uuid){
     yes: function(index){
       var selectedValue = $('#hostnameSelectorForm input[name=hostnameOption]:checked').val();
       if(!selectedValue){
-        layer.msg('请选择一个域名或自定义主机名', {icon: 2});
+        layer.msg('请选择一个自定义主机名', {icon: 2});
         return;
       }
       layer.close(index);
@@ -700,10 +750,13 @@ function hostnameResponseHandler(res){
     layer.alert(res.msg || '获取自定义主机名失败', {icon: 2});
     return {total: 0, rows: []};
   }
+  // 保存完整的原始数据用于客户端搜索
+  allHostnameData = res.rows || [];
   return res;
 }
 
 function refreshHostnameList(){
+  $("#hostnameSearchInput").val('');
   $("#listTable").bootstrapTable('refresh');
 }
 
