@@ -43,15 +43,23 @@ class Cloudflare extends BaseController
             $context = $this->getCloudflareDomainContext(input('param.id/d'));
             $hostname = trim(input('post.hostname', '', 'trim'));
             $origin = trim(input('post.custom_origin_server', '', 'trim'));
+            $sslMethod = trim(input('post.ssl_method', 'txt', 'trim'));
+            $minTlsVersion = trim(input('post.min_tls_version', '1.0', 'trim'));
             if (empty($hostname) || !checkDomain($hostname)) {
                 throw new Exception('主机名格式不正确');
+            }
+            if (!in_array($sslMethod, ['txt', 'http'])) {
+                throw new Exception('证书验证方法无效');
+            }
+            if (!in_array($minTlsVersion, ['1.0', '1.1', '1.2', '1.3'])) {
+                throw new Exception('最低 TLS 版本无效');
             }
             if ($origin !== '') {
                 $this->validateCustomOrigin($origin);
             }
 
-            $result = $context['service']->createCustomHostname($context['domain']['thirdid'], $hostname, $origin !== '' ? $origin : null);
-            $this->add_log($context['domain']['name'], '创建自定义主机名', $hostname . ($origin !== '' ? ' -> ' . $origin : ''));
+            $result = $context['service']->createCustomHostname($context['domain']['thirdid'], $hostname, $origin !== '' ? $origin : null, $sslMethod, $minTlsVersion);
+            $this->add_log($context['domain']['name'], '创建自定义主机名', $hostname . ($origin !== '' ? ' -> ' . $origin : '') . ' (验证: ' . $sslMethod . ', TLS: ' . $minTlsVersion . ')');
             return json(['code' => 0, 'msg' => '创建自定义主机名成功', 'data' => $this->formatCustomHostnameRow($result)]);
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage()]);
@@ -70,6 +78,14 @@ class Cloudflare extends BaseController
             $current = $context['service']->getCustomHostname($context['domain']['thirdid'], $hostnameId);
             $hostname = trim((string)($current['hostname'] ?? ''));
             $origin = trim(input('post.custom_origin_server', '', 'trim'));
+            $sslMethod = trim(input('post.ssl_method', 'txt', 'trim'));
+            $minTlsVersion = trim(input('post.min_tls_version', '1.0', 'trim'));
+            if (!in_array($sslMethod, ['txt', 'http'])) {
+                throw new Exception('证书验证方法无效');
+            }
+            if (!in_array($minTlsVersion, ['1.0', '1.1', '1.2', '1.3'])) {
+                throw new Exception('最低 TLS 版本无效');
+            }
             if ($origin !== '') {
                 $this->validateCustomOrigin($origin);
             }
@@ -79,10 +95,10 @@ class Cloudflare extends BaseController
                 $hostnameId,
                 [
                     'custom_origin_server' => $origin !== '' ? $origin : null,
-                    'ssl' => $this->extractCustomHostnameSslPayload($current),
+                    'ssl' => $this->extractCustomHostnameSslPayload($current, $sslMethod, $minTlsVersion),
                 ]
             );
-            $this->add_log($context['domain']['name'], '编辑自定义主机名', $hostname . ' -> ' . ($origin !== '' ? $origin : '清空源站'));
+            $this->add_log($context['domain']['name'], '编辑自定义主机名', $hostname . ' -> ' . ($origin !== '' ? $origin : '清空源站') . ' (验证: ' . $sslMethod . ', TLS: ' . $minTlsVersion . ')');
             return json(['code' => 0, 'msg' => '更新自定义主机名成功', 'data' => $this->formatCustomHostnameRow($result)]);
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage()]);
@@ -109,8 +125,8 @@ class Cloudflare extends BaseController
                     'ssl' => $this->extractCustomHostnameSslPayload($current),
                 ]
             );
-            $this->add_log($context['domain']['name'], '刷新自定义主机名校验', $hostname);
-            return json(['code' => 0, 'msg' => '已向 Cloudflare 重新发起校验', 'data' => $this->formatCustomHostnameRow($result)]);
+            $this->add_log($context['domain']['name'], '刷新自定义主机名验证', $hostname);
+            return json(['code' => 0, 'msg' => '已向 Cloudflare 重新发起验证', 'data' => $this->formatCustomHostnameRow($result)]);
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage()]);
         }
@@ -125,10 +141,165 @@ class Cloudflare extends BaseController
             if ($hostnameId === '') {
                 throw new Exception('缺少 hostname_id');
             }
-
             $context['service']->deleteCustomHostname($context['domain']['thirdid'], $hostnameId);
-            $this->add_log($context['domain']['name'], '删除自定义主机名', $hostname !== '' ? $hostname : $hostnameId);
+            $this->add_log($context['domain']['name'], '删除自定义主机名', $hostname);
             return json(['code' => 0, 'msg' => '删除自定义主机名成功']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function hostnames_batch_delete()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $hostnameIds = input('post.hostname_ids/a', []);
+            if (empty($hostnameIds)) {
+                throw new Exception('缺少 hostname_ids');
+            }
+            
+            $deletedCount = 0;
+            foreach ($hostnameIds as $hostnameId) {
+                if (trim((string)$hostnameId) !== '') {
+                    try {
+                        // 获取主机名信息用于日志
+                        $hostnameInfo = $context['service']->getCustomHostname($context['domain']['thirdid'], trim((string)$hostnameId));
+                        $hostname = trim((string)($hostnameInfo['hostname'] ?? ''));
+                        
+                        $context['service']->deleteCustomHostname($context['domain']['thirdid'], trim((string)$hostnameId));
+                        $deletedCount++;
+                        // 为每个成功删除的主机名记录单独的日志
+                        $this->add_log($context['domain']['name'], '批量删除自定义主机名', $hostname);
+                    } catch (Exception $e) {
+                        // 忽略删除失败的情况，继续处理其他主机名
+                    }
+                }
+            }
+            
+            return json(['code' => 0, 'msg' => '批量删除成功，共删除 ' . $deletedCount . ' 个自定义主机名']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function hostnames_batch_update()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $hostnameIds = input('post.hostname_ids/s', '');
+            $hostnameIdArray = array_filter(array_map('trim', explode(',', $hostnameIds)));
+            if (empty($hostnameIdArray)) {
+                throw new Exception('缺少 hostname_ids');
+            }
+            
+            $origin = trim(input('post.custom_origin_server', '', 'trim'));
+            $sslMethod = trim(input('post.ssl_method', '', 'trim'));
+            $minTlsVersion = trim(input('post.min_tls_version', '', 'trim'));
+            
+            if (!empty($sslMethod) && !in_array($sslMethod, ['txt', 'http'])) {
+                throw new Exception('证书验证方法无效');
+            }
+            if (!empty($minTlsVersion) && !in_array($minTlsVersion, ['1.0', '1.1', '1.2', '1.3'])) {
+                throw new Exception('最低 TLS 版本无效');
+            }
+            if ($origin !== '') {
+                $this->validateCustomOrigin($origin);
+            }
+            
+            $updatedCount = 0;
+            foreach ($hostnameIdArray as $hostnameId) {
+                if (trim((string)$hostnameId) !== '') {
+                    try {
+                        $current = $context['service']->getCustomHostname($context['domain']['thirdid'], $hostnameId);
+                        $hostname = trim((string)($current['hostname'] ?? ''));
+                        $payload = [];
+                        
+                        // 总是设置 custom_origin_server，留空时设置为 null 表示清空
+                        $payload['custom_origin_server'] = $origin !== '' ? $origin : null;
+                        
+                        if (!empty($sslMethod) || !empty($minTlsVersion)) {
+                            $payload['ssl'] = $this->extractCustomHostnameSslPayload($current, $sslMethod, $minTlsVersion);
+                        }
+                        
+                        if (!empty($payload)) {
+                            $context['service']->updateCustomHostname($context['domain']['thirdid'], $hostnameId, $payload);
+                            $updatedCount++;
+                            // 为每个成功修改的主机名记录单独的日志
+                            $logMessage = $hostname . ' -> ' . ($origin !== '' ? $origin : '清空源站') . ' (验证: ' . ($sslMethod ?: '保持不变') . ', TLS: ' . ($minTlsVersion ?: '保持不变') . ')';
+                            $this->add_log($context['domain']['name'], '批量修改自定义主机名', $logMessage);
+                        }
+                    } catch (Exception $e) {
+                        // 忽略修改失败的情况，继续处理其他主机名
+                    }
+                }
+            }
+            
+            return json(['code' => 0, 'msg' => '批量修改成功，共修改 ' . $updatedCount . ' 个自定义主机名']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function hostnames_batch_add()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $hostnamesText = trim(input('post.hostnames', '', 'trim'));
+            $origin = trim(input('post.custom_origin_server', '', 'trim'));
+            $sslMethod = trim(input('post.ssl_method', 'txt', 'trim'));
+            $minTlsVersion = trim(input('post.min_tls_version', '1.0', 'trim'));
+            
+            if (empty($hostnamesText)) {
+                throw new Exception('缺少主机名列表');
+            }
+            if (!in_array($sslMethod, ['txt', 'http'])) {
+                throw new Exception('证书验证方法无效');
+            }
+            if (!in_array($minTlsVersion, ['1.0', '1.1', '1.2', '1.3'])) {
+                throw new Exception('最低 TLS 版本无效');
+            }
+            if ($origin !== '') {
+                $this->validateCustomOrigin($origin);
+            }
+            
+            $hostnames = array_filter(array_map('trim', explode("\n", $hostnamesText)));
+            if (empty($hostnames)) {
+                throw new Exception('主机名列表为空');
+            }
+            
+            $addedCount = 0;
+            $failedHostnames = [];
+            foreach ($hostnames as $hostname) {
+                if (empty($hostname)) {
+                    continue;
+                }
+                if (!checkDomain($hostname)) {
+                    $failedHostnames[] = $hostname . '（格式不正确）';
+                    continue;
+                }
+                try {
+                    $context['service']->createCustomHostname(
+                        $context['domain']['thirdid'],
+                        $hostname,
+                        $origin !== '' ? $origin : null,
+                        $sslMethod,
+                        $minTlsVersion
+                    );
+                    $addedCount++;
+                    // 为每个成功添加的主机名记录单独的日志
+                    $logMessage = $hostname . ($origin !== '' ? ' -> ' . $origin : '') . ' (验证: ' . $sslMethod . ', TLS: ' . $minTlsVersion . ')';
+                    $this->add_log($context['domain']['name'], '批量添加自定义主机名', $logMessage);
+                } catch (Exception $e) {
+                    $failedHostnames[] = $hostname . '（' . $e->getMessage() . '）';
+                }
+            }
+            
+            $message = '批量添加成功，共添加 ' . $addedCount . ' 个自定义主机名';
+            if (!empty($failedHostnames)) {
+                $message .= '，失败 ' . count($failedHostnames) . ' 个：' . implode('; ', $failedHostnames);
+            }
+            
+            return json(['code' => 0, 'msg' => $message]);
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage()]);
         }
@@ -191,6 +362,17 @@ class Cloudflare extends BaseController
             $context['service']->deleteFallbackOrigin($context['domain']['thirdid']);
             $this->add_log($context['domain']['name'], '删除 Fallback Origin', '清空成功');
             return json(['code' => 0, 'msg' => '已清空 Fallback Origin']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function dcv_delegation_uuid()
+    {
+        try {
+            $context = $this->getCloudflareDomainContext(input('param.id/d'));
+            $uuid = $context['service']->getDcvDelegationUuid($context['domain']['thirdid']);
+            return json(['code' => 0, 'data' => ['uuid' => $uuid]]);
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage()]);
         }
@@ -650,11 +832,11 @@ class Cloudflare extends BaseController
         }
     }
 
-    private function extractCustomHostnameSslPayload(array $row): array
+    private function extractCustomHostnameSslPayload(array $row, string $sslMethod = '', string $minTlsVersion = ''): array
     {
         $ssl = isset($row['ssl']) && is_array($row['ssl']) ? $row['ssl'] : [];
         $payload = [
-            'method' => trim((string)($ssl['method'] ?? 'http')),
+            'method' => $sslMethod !== '' ? $sslMethod : trim((string)($ssl['method'] ?? 'http')),
             'type' => trim((string)($ssl['type'] ?? 'dv')),
         ];
         if ($payload['method'] === '') {
@@ -663,6 +845,16 @@ class Cloudflare extends BaseController
         if ($payload['type'] === '') {
             $payload['type'] = 'dv';
         }
+        
+        // 添加 TLS 版本设置
+        if ($minTlsVersion !== '') {
+            $payload['settings'] = [
+                'min_tls_version' => $minTlsVersion
+            ];
+        } elseif (isset($ssl['settings']) && is_array($ssl['settings'])) {
+            $payload['settings'] = $ssl['settings'];
+        }
+        
         return $payload;
     }
 
@@ -755,8 +947,10 @@ class Cloudflare extends BaseController
             'hostname' => trim((string)($row['hostname'] ?? '')),
             'custom_origin_server' => trim((string)($row['custom_origin_server'] ?? '')),
             'status' => trim((string)($row['status'] ?? '')),
+            'ssl' => $ssl,
             'ssl_status' => trim((string)($ssl['status'] ?? '')),
             'ssl_method' => trim((string)($ssl['method'] ?? '')),
+            'ssl_min_tls_version' => trim((string)($ssl['settings']['min_tls_version'] ?? '')),
             'ssl_type' => trim((string)($ssl['type'] ?? '')),
             'ssl_validation_status' => $sslValidationStatus,
             'verification_status' => $verificationStatus !== '' ? $verificationStatus : '-',

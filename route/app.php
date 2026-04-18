@@ -55,12 +55,16 @@ Route::group(function () {
     Route::post('/cloudflare/hostnames/data/:id', 'cloudflare/hostnames_data');
     Route::post('/cloudflare/hostnames/add/:id', 'cloudflare/hostnames_add');
     Route::post('/cloudflare/hostnames/update/:id', 'cloudflare/hostnames_update');
-    Route::post('/cloudflare/hostnames/refresh/:id', 'cloudflare/hostnames_refresh');
     Route::post('/cloudflare/hostnames/delete/:id', 'cloudflare/hostnames_delete');
+    Route::post('/cloudflare/hostnames/refresh/:id', 'cloudflare/hostnames_refresh');
     Route::post('/cloudflare/hostnames/txttargets/:id', 'cloudflare/hostnames_txt_targets');
+    Route::post('/cloudflare/hostnames/batch_add/:id', 'cloudflare/hostnames_batch_add');
+    Route::post('/cloudflare/hostnames/batch_delete/:id', 'cloudflare/hostnames_batch_delete');
+    Route::post('/cloudflare/hostnames/batch_update/:id', 'cloudflare/hostnames_batch_update');
     Route::post('/cloudflare/fallback/get/:id', 'cloudflare/fallback_get');
     Route::post('/cloudflare/fallback/set/:id', 'cloudflare/fallback_set');
     Route::post('/cloudflare/fallback/delete/:id', 'cloudflare/fallback_delete');
+    Route::post('/cloudflare/dcv_delegation_uuid/:id', 'cloudflare/dcv_delegation_uuid');
     Route::get('/cloudflare/tunnels/:id', 'cloudflare/tunnels');
     Route::post('/cloudflare/tunnels/data/:id', 'cloudflare/tunnels_data');
     Route::post('/cloudflare/tunnels/add/:id', 'cloudflare/tunnels_add');

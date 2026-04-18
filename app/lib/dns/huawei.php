@@ -135,6 +135,12 @@ class huawei implements DnsInterface
     {
         $Name = $this->getHost($Name);
         if ($Type == 'TXT' && substr($Value, 0, 1) != '"') $Value = '"' . $Value . '"';
+        
+        // 修复：华为云不支持 line=0 或空字符串，使用 default_view 作为默认线路
+        if (empty($Line) || $Line === '0') {
+            $Line = 'default_view';
+        }
+        
         $records = array_reverse(explode(',', $Value));
         $params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => $records, 'line' => $Line, 'ttl' => intval($TTL), 'description' => $Remark];
         if ($Weight > 0) $params['weight'] = intval($Weight);
@@ -147,6 +153,12 @@ class huawei implements DnsInterface
     {
         $Name = $this->getHost($Name);
         if ($Type == 'TXT' && substr($Value, 0, 1) != '"') $Value = '"' . $Value . '"';
+        
+        // 修复：华为云不支持 line=0 或空字符串，使用 default_view 作为默认线路
+        if (empty($Line) || $Line === '0') {
+            $Line = 'default_view';
+        }
+        
         $records = array_reverse(explode(',', $Value));
         $params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => $records, 'line' => $Line, 'ttl' => intval($TTL), 'description' => $Remark];
         if ($Weight > 0) $params['weight'] = intval($Weight);

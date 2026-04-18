@@ -91,14 +91,17 @@ class CloudflareEnhanceService
         }
     }
 
-    public function createCustomHostname(string $zoneId, string $hostname, ?string $customOriginServer = null): array
+    public function createCustomHostname(string $zoneId, string $hostname, ?string $customOriginServer = null, string $sslMethod = 'http', string $minTlsVersion = '1.0'): array
     {
         $hostname = $this->normalizeHostname($hostname);
         $payload = [
             'hostname' => $hostname,
             'ssl' => [
-                'method' => 'http',
+                'method' => $sslMethod === 'txt' ? 'txt' : 'http',
                 'type' => 'dv',
+                'settings' => [
+                    'min_tls_version' => $minTlsVersion
+                ]
             ],
         ];
         $origin = trim((string)$customOriginServer);
@@ -177,6 +180,19 @@ class CloudflareEnhanceService
                 return true;
             }
             $this->throwActionError('删除 Fallback Origin', $e, 'SSL and Certificates:Write');
+        }
+    }
+
+    public function getDcvDelegationUuid(string $zoneId): string
+    {
+        try {
+            $result = $this->requestResult('GET', '/zones/' . $zoneId . '/dcv_delegation/uuid', [], null, true);
+            if ($result === null) {
+                return '';
+            }
+            return trim((string)($result['uuid'] ?? ''));
+        } catch (Exception $e) {
+            $this->throwActionError('获取 DCV 委派 UUID', $e, 'SSL and Certificates:Read');
         }
     }
 
