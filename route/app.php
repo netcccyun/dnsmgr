@@ -65,6 +65,7 @@ Route::group(function () {
     Route::post('/cloudflare/fallback/set/:id', 'cloudflare/fallback_set');
     Route::post('/cloudflare/fallback/delete/:id', 'cloudflare/fallback_delete');
     Route::post('/cloudflare/dcv_delegation_uuid/:id', 'cloudflare/dcv_delegation_uuid');
+    Route::post('/cloudflare/get_domain_default_line', 'cloudflare/get_domain_default_line');
     Route::get('/cloudflare/tunnels/:id', 'cloudflare/tunnels');
     Route::post('/cloudflare/tunnels/data/:id', 'cloudflare/tunnels_data');
     Route::post('/cloudflare/tunnels/add/:id', 'cloudflare/tunnels_add');

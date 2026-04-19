@@ -122,6 +122,175 @@
   </div>
 </div>
 
+<div class="modal" id="modal-dcv-help" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">DCV 委派帮助</h4>
+      </div>
+      <div class="modal-body" id="dcvHelpContent"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-batch-delete" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">批量删除确认</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-danger" id="batchDeleteAlert"></div>
+        <div id="batchDeleteHostnameList" style="max-height:200px;overflow-y:auto;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-danger" onclick="confirmBatchDelete()">删除</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-dcv-target-picker" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">选择解析服务商 - DCV 委派</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning" style="margin-bottom:12px;">检测到多个可用解析域名，请确认要写入哪个服务商。</div>
+        <div class="form-group"><label>CNAME 主机名</label><div id="dcvTargetHostname"></div></div>
+        <div class="form-group"><label>CNAME 目标</label><textarea id="dcvTargetValue" class="form-control" rows="2" readonly></textarea></div>
+        <div id="dcvTargetPickerList"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="confirmDcvTargetSelection()">添加 CNAME</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-batch-edit" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title" id="batchEditTitle">批量修改自定义主机名</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" id="batchEditAlert"></div>
+        <form id="batchEditForm">
+          <input type="hidden" name="hostname_ids" value="">
+          <div class="form-group">
+            <label>自定义源站</label>
+            <input type="text" class="form-control" name="custom_origin_server" placeholder="可留空，例如 origin.example.com">
+            <p class="help-block">留空表示清空当前自定义源站，回退到 Fallback Origin 或默认源站逻辑</p>
+          </div>
+          <div class="form-group">
+            <label>证书验证方法</label>
+            <select class="form-control" name="ssl_method">
+              <option value="">保持不变</option>
+              <option value="txt">TXT 验证（推荐）</option>
+              <option value="http">HTTP 验证</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>最低 TLS 版本</label>
+            <select class="form-control" name="min_tls_version">
+              <option value="">保持不变</option>
+              <option value="1.0">TLS 1.0（默认）</option>
+              <option value="1.1">TLS 1.1</option>
+              <option value="1.2">TLS 1.2</option>
+              <option value="1.3">TLS 1.3</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="submitBatchEdit()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-batch-add" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">批量添加自定义主机名</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">批量添加自定义主机名，每行一个主机名</div>
+        <form id="batchAddForm">
+          <div class="form-group">
+            <label>主机名列表</label>
+            <textarea class="form-control" name="hostnames" rows="10" placeholder="每行输入一个主机名，例如：&#10;app.example.com&#10;api.example.com&#10;*.subdomain.example.com"></textarea>
+            <p class="help-block">支持通配符主机名，如 *.example.com</p>
+          </div>
+          <div class="form-group">
+            <label>自定义源站</label>
+            <input type="text" class="form-control" name="custom_origin_server" placeholder="可留空，例如 origin.example.com">
+            <p class="help-block">留空表示使用 Fallback Origin 或默认源站逻辑</p>
+          </div>
+          <div class="form-group">
+            <label>证书验证方法</label>
+            <select class="form-control" name="ssl_method">
+              <option value="txt">TXT 验证（推荐）</option>
+              <option value="http">HTTP 验证</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>最低 TLS 版本</label>
+            <select class="form-control" name="min_tls_version">
+              <option value="1.0">TLS 1.0（默认）</option>
+              <option value="1.1">TLS 1.1</option>
+              <option value="1.2">TLS 1.2</option>
+              <option value="1.3">TLS 1.3</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="submitBatchAdd()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-dcv-selector" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">选择域名 - DCV 委派</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" style="margin-bottom:12px;font-size:14px;">请选择要为哪个自定义主机名添加 DCV 委派 CNAME 记录。</div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <input type="text" id="dcvHostnameSearch" class="form-control" placeholder="搜索自定义主机名..." oninput="filterDcvHostnamesModal(this.value)">
+        </div>
+        <div id="dcvHostnameList" style="max-height:400px;overflow-y:auto;padding-right:8px;">
+          <form id="hostnameSelectorForm"></form>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="confirmDcvHostnameSelection()">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="modal-verification" role="dialog" aria-hidden="true" data-backdrop="static">
   <div class="modal-dialog modal-lg">
     <div class="modal-content animated flipInX">
@@ -221,41 +390,46 @@ function filterHostnameList(searchText){
   $('#listTable').bootstrapTable('load', filteredData);
 }
 
+var batchDeleteHostnamesData = [];
+
 function batchDeleteHostnames(){
   var selectedRows = $("#listTable").bootstrapTable('getSelections');
   if(selectedRows.length === 0){
     layer.msg('请先选择要删除的自定义主机名', {icon: 0});
     return;
   }
-  
-  var hostnames = selectedRows.map(function(row){ return row.hostname; }).join(', ');
-  layer.confirm('确定要删除选中的 ' + selectedRows.length + ' 个自定义主机名吗？<br><br>主机名：' + hostnames, {
-    icon: 3,
-    title: '批量删除确认'
-  }, function(index){
-    layer.close(index);
-    var ii = layer.load(2);
-    var hostnameIds = selectedRows.map(function(row){ return row.id; });
-    
-    $.ajax({
-      type: 'POST',
-      url: '/cloudflare/hostnames/batch_delete/{$domainId}',
-      data: {hostname_ids: hostnameIds},
-      dataType: 'json',
-      success: function(res){
-        layer.close(ii);
-        if(res.code === 0){
-          layer.msg('批量删除成功', {icon: 1, time: 1500});
-          refreshHostnameList();
-        }else{
-          layer.alert(res.msg, {icon: 2});
-        }
-      },
-      error: function(){
-        layer.close(ii);
-        layer.alert('服务器错误', {icon: 2});
+
+  batchDeleteHostnamesData = selectedRows;
+  var hostnames = selectedRows.map(function(row){ return '<div>' + htmlEscape(row.hostname) + '</div>'; }).join('');
+
+  $('#batchDeleteAlert').text('确定要删除选中的 ' + selectedRows.length + ' 个自定义主机名吗？');
+  $('#batchDeleteHostnameList').html(hostnames);
+  $("#modal-batch-delete").modal('show');
+}
+
+function confirmBatchDelete(){
+  var ii = layer.load(2);
+  var hostnameIds = batchDeleteHostnamesData.map(function(row){ return row.id; });
+
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/hostnames/batch_delete/{$domainId}',
+    data: {hostname_ids: hostnameIds},
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        $("#modal-batch-delete").modal('hide');
+        layer.msg('批量删除成功', {icon: 1, time: 1500});
+        refreshHostnameList();
+      }else{
+        layer.alert(res.msg, {icon: 2});
       }
-    });
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
+    }
   });
 }
 
@@ -265,139 +439,74 @@ function batchEditHostnames(){
     layer.msg('请先选择要修改的自定义主机名', {icon: 0});
     return;
   }
-  
-  // 打开批量修改对话框
-  var html = '<div style="padding:20px;">';
-  html += '<div class="alert alert-info">批量修改 ' + selectedRows.length + ' 个自定义主机名的设置</div>';
-  html += '<form id="batchEditForm">';
-  html += '<input type="hidden" name="hostname_ids" value="' + selectedRows.map(function(row){ return row.id; }).join(',') + '">';
-  html += '<div class="form-group">';
-  html += '<label>自定义源站</label>';
-  html += '<input type="text" class="form-control" name="custom_origin_server" placeholder="可留空，例如 origin.example.com">';
-  html += '<p class="help-block">留空表示清空当前自定义源站，回退到 Fallback Origin 或默认源站逻辑</p>';
-  html += '</div>';
-  html += '<div class="form-group">';
-  html += '<label>证书验证方法</label>';
-  html += '<select class="form-control" name="ssl_method">';
-  html += '<option value="">保持不变</option>';
-  html += '<option value="txt">TXT 验证（推荐）</option>';
-  html += '<option value="http">HTTP 验证</option>';
-  html += '</select>';
-  html += '</div>';
-  html += '<div class="form-group">';
-  html += '<label>最低 TLS 版本</label>';
-  html += '<select class="form-control" name="min_tls_version">';
-  html += '<option value="">保持不变</option>';
-  html += '<option value="1.0">TLS 1.0（默认）</option>';
-  html += '<option value="1.1">TLS 1.1</option>';
-  html += '<option value="1.2">TLS 1.2</option>';
-  html += '<option value="1.3">TLS 1.3</option>';
-  html += '</select>';
-  html += '</div>';
-  html += '</form>';
-  html += '</div>';
-  
-  var isMobile = window.innerWidth <= 768;
-  layer.open({
-    type: 1,
-    title: '批量修改自定义主机名',
-    area: [isMobile ? '90%' : '500px', 'auto'],
-    content: html,
-    btn: ['保存', '取消'],
-    yes: function(index){
-      var ii = layer.load(2);
-      $.ajax({
-        type: 'POST',
-        url: '/cloudflare/hostnames/batch_update/{$domainId}',
-        data: $("#batchEditForm").serialize(),
-        dataType: 'json',
-        success: function(res){
-          layer.close(ii);
-          if(res.code === 0){
-            layer.close(index);
-            layer.msg('批量修改成功', {icon: 1, time: 1500});
-            refreshHostnameList();
-          }else{
-            layer.alert(res.msg, {icon: 2});
-          }
-        },
-        error: function(){
-          layer.close(ii);
-          layer.alert('服务器错误', {icon: 2});
-        }
-      });
+
+  // 设置批量修改对话框的内容
+  $('#batchEditAlert').text('批量修改 ' + selectedRows.length + ' 个自定义主机名的设置');
+  $('#batchEditForm input[name=hostname_ids]').val(selectedRows.map(function(row){ return row.id; }).join(','));
+  $('#batchEditForm input[name=custom_origin_server]').val('');
+  $('#batchEditForm select[name=ssl_method]').val('');
+  $('#batchEditForm select[name=min_tls_version]').val('');
+
+  $("#modal-batch-edit").modal('show');
+}
+
+function submitBatchEdit(){
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/hostnames/batch_update/{$domainId}',
+    data: $("#batchEditForm").serialize(),
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        $("#modal-batch-edit").modal('hide');
+        layer.msg('批量修改成功', {icon: 1, time: 1500});
+        refreshHostnameList();
+      }else{
+        layer.alert(res.msg, {icon: 2});
+      }
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
     }
   });
 }
 
 function batchAddHostnames(){
-  // 打开批量添加对话框
-  var html = '<div style="padding:20px;">';
-  html += '<div class="alert alert-info">批量添加自定义主机名，每行一个主机名</div>';
-  html += '<form id="batchAddForm">';
-  html += '<div class="form-group">';
-  html += '<label>主机名列表</label>';
-  html += '<textarea class="form-control" name="hostnames" rows="10" placeholder="每行输入一个主机名，例如：\napp.example.com\napi.example.com\n*.subdomain.example.com"></textarea>';
-  html += '<p class="help-block">支持通配符主机名，如 *.example.com</p>';
-  html += '</div>';
-  html += '<div class="form-group">';
-  html += '<label>自定义源站</label>';
-  html += '<input type="text" class="form-control" name="custom_origin_server" placeholder="可留空，例如 origin.example.com">';
-  html += '<p class="help-block">留空表示使用 Fallback Origin 或默认源站逻辑</p>';
-  html += '</div>';
-  html += '<div class="form-group">';
-  html += '<label>证书验证方法</label>';
-  html += '<select class="form-control" name="ssl_method">';
-  html += '<option value="txt">TXT 验证（推荐）</option>';
-  html += '<option value="http">HTTP 验证</option>';
-  html += '</select>';
-  html += '</div>';
-  html += '<div class="form-group">';
-  html += '<label>最低 TLS 版本</label>';
-  html += '<select class="form-control" name="min_tls_version">';
-  html += '<option value="1.0">TLS 1.0（默认）</option>';
-  html += '<option value="1.1">TLS 1.1</option>';
-  html += '<option value="1.2">TLS 1.2</option>';
-  html += '<option value="1.3">TLS 1.3</option>';
-  html += '</select>';
-  html += '</div>';
-  html += '</form>';
-  html += '</div>';
-  
-  layer.open({
-    type: 1,
-    title: '批量添加自定义主机名',
-    area: [isMobile ? '90%' : '600px', 'auto'],
-    content: html,
-    btn: ['保存', '取消'],
-    yes: function(index){
-      var hostnamesText = $(".form-control[name=hostnames]").val();
-      if(!hostnamesText.trim()){
-        layer.msg('请输入主机名列表', {icon: 0});
-        return;
+  // 重置批量添加对话框
+  $('#batchAddForm')[0].reset();
+
+  $("#modal-batch-add").modal('show');
+}
+
+function submitBatchAdd(){
+  var hostnamesText = $("#batchAddForm textarea[name=hostnames]").val();
+  if(!hostnamesText.trim()){
+    layer.msg('请输入主机名列表', {icon: 0});
+    return;
+  }
+
+  var ii = layer.load(2);
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/hostnames/batch_add/{$domainId}',
+    data: $("#batchAddForm").serialize(),
+    dataType: 'json',
+    success: function(res){
+      layer.close(ii);
+      if(res.code === 0){
+        $("#modal-batch-add").modal('hide');
+        layer.msg('批量添加成功', {icon: 1, time: 1500});
+        refreshHostnameList();
+      }else{
+        layer.alert(res.msg, {icon: 2});
       }
-      
-      var ii = layer.load(2);
-      $.ajax({
-        type: 'POST',
-        url: '/cloudflare/hostnames/batch_add/{$domainId}',
-        data: $("#batchAddForm").serialize(),
-        dataType: 'json',
-        success: function(res){
-          layer.close(ii);
-          if(res.code === 0){
-            layer.close(index);
-            layer.msg('批量添加成功', {icon: 1, time: 1500});
-            refreshHostnameList();
-          }else{
-            layer.alert(res.msg, {icon: 2});
-          }
-        },
-        error: function(){
-          layer.close(ii);
-          layer.alert('服务器错误', {icon: 2});
-        }
-      });
+    },
+    error: function(){
+      layer.close(ii);
+      layer.alert('服务器错误', {icon: 2});
     }
   });
 }
@@ -437,11 +546,9 @@ function loadDcvDelegationUuid(){
 }
 
 function showDcvDelegationHelp(){
-  var isMobile = window.innerWidth <= 768;
-  var dialogWidth = isMobile ? '90%' : '600px';
   var fullCnameTarget = $.trim($('#dcvDelegationUuid').val());
   var uuid = '{uuid}';
-  
+
   // 从完整的 CNAME 目标中提取 UUID
   if(fullCnameTarget){
     var match = fullCnameTarget.match(/\.([a-f0-9-]+)\.dcv\.cloudflare\.com$/i);
@@ -452,7 +559,7 @@ function showDcvDelegationHelp(){
       uuid = fullCnameTarget;
     }
   }
-  
+
   var html = '';
   html += '<div class="alert alert-info">';
   html += '<strong>什么是 DCV 委派？</strong><br>';
@@ -473,21 +580,10 @@ function showDcvDelegationHelp(){
   html += '<li>将域移动到其他帐户将更改 UUID 的值。</li>';
   html += '</ul>';
   html += '</div>';
-  
-  layer.open({
-    type: 1,
-    title: 'DCV 委派帮助',
-    area: [dialogWidth, 'auto'],
-    content: html,
-    btn: ['关闭'],
-    btnAlign: 'c',
-    yes: function(index){
-      layer.close(index);
-    }
-  });
-}
 
-var dcvDomainName = '';
+  $('#dcvHelpContent').html(html);
+  $("#modal-dcv-help").modal('show');
+}
 
 function quickAddDcvDelegation(){
   var fullCnameTarget = $.trim($('#dcvDelegationUuid').val());
@@ -495,7 +591,7 @@ function quickAddDcvDelegation(){
     layer.msg('请先获取 DCV 委派 UUID', {icon: 0});
     return;
   }
-  
+
   // 从完整的 CNAME 目标中提取 UUID
   var uuid = '';
   var match = fullCnameTarget.match(/\.([a-f0-9-]+)\.dcv\.cloudflare\.com$/i);
@@ -505,16 +601,16 @@ function quickAddDcvDelegation(){
     // 尝试直接使用输入值作为 UUID
     uuid = fullCnameTarget;
   }
-  
+
   if(!uuid){
     layer.msg('无法从 DCV 委派值中提取 UUID', {icon: 2});
     return;
   }
-  
+
   // 获取自定义主机名列表（使用完整原始数据，而不是表格中的已过滤数据）
   var hostnames = allHostnameData.length > 0 ? allHostnameData : $('#listTable').bootstrapTable('getData');
   var hostnameOptions = [];
-  
+
   // 添加自定义主机名选项
   for(var i = 0; i < hostnames.length; i++){
     var row = hostnames[i];
@@ -527,21 +623,17 @@ function quickAddDcvDelegation(){
       });
     }
   }
-  
+
   if(hostnameOptions.length === 0){
-    layer.alert('未找到可用的域名或自定义主机名', {icon: 2});
+    layer.alert('未找到可用的自定义主机名', {icon: 2});
     return;
   }
-  
+
   // 弹出选择对话框
   openHostnameSelector(hostnameOptions, uuid);
 }
 
-function checkDomainFormat(domain){
-  return /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(domain);
-}
-
-function filterDcvHostnames(searchText){
+function filterDcvHostnamesModal(searchText){
   var searchTextLower = (searchText || '').toLowerCase();
   $('.dcv-hostname-item').each(function(){
     var itemText = $(this).attr('data-search-text') || '';
@@ -551,25 +643,41 @@ function filterDcvHostnames(searchText){
       $(this).hide();
     }
   });
-  // 更新可见项计数
-  var visibleCount = $('.dcv-hostname-item:visible').length;
-  if(visibleCount === 0 && searchText !== ''){
-    $('#dcvHostnameList .alert-warning').show();
-  } else {
-    $('#dcvHostnameList .alert-warning').hide();
-  }
 }
 
+function confirmDcvHostnameSelection(){
+  var selectedValue = $('#hostnameSelectorForm input[name=hostnameOption]:checked').val();
+  if(!selectedValue){
+    layer.msg('请选择一个自定义主机名', {icon: 2});
+    return;
+  }
+  $("#modal-dcv-selector").modal('hide');
+
+  // 构造 CNAME 记录信息
+  var selectedDomain = selectedValue.toLowerCase();
+  var cnameFullName = '_acme-challenge.' + selectedDomain;
+  var cnameTarget = selectedDomain + '.' + currentDcvUuid + '.dcv.cloudflare.com';
+
+  // 继续原有逻辑
+  resolveDcvCnameTargets(cnameFullName, function(targets){
+    if(!targets.length){
+      layer.alert('系统中未找到与该域名对应的托管域名，请手动到解析页添加 CNAME 记录<br><br>'
+        + '记录类型：CNAME<br>主机记录：<code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(cnameFullName) + '</code><br>记录值：<code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(cnameTarget) + '</code>', {icon: 2, maxWidth: 350});
+      return;
+    }
+    if(targets.length === 1){
+      confirmQuickAddDcvCnameRecord(cnameFullName, cnameTarget, targets[0]);
+      return;
+    }
+    openDcvTargetPicker(cnameFullName, cnameTarget, targets);
+  });
+}
+
+var currentDcvUuid = '';
+
 function openHostnameSelector(options, uuid){
-  var isMobile = window.innerWidth <= 768;
-  var dialogWidth = isMobile ? '90%' : '600px';
-  var html = '<div style="padding:16px 18px 6px;">';
-  html += '<div class="alert alert-info" style="margin-bottom:12px;font-size:14px;">请选择要为哪个自定义主机名添加 DCV 委派 CNAME 记录。</div>';
-  html += '<div class="form-group" style="margin-bottom:12px;">';
-  html += '<input type="text" id="dcvHostnameSearch" class="form-control" placeholder="搜索自定义主机名..." oninput="filterDcvHostnames(this.value)">';
-  html += '</div>';
-  html += '<div id="dcvHostnameList" style="max-height:400px;overflow-y:auto;padding-right:8px;">';
-  html += '<form id="hostnameSelectorForm">';
+  currentDcvUuid = uuid;
+  var html = '';
   for(var i = 0; i < options.length; i++){
     var opt = options[i] || {};
     html += '<div class="radio dcv-hostname-item" style="margin:0 0 12px;border:1px solid #e5e5e5;border-radius:4px;padding:12px;" data-search-text="' + htmlEscape(opt.value || '').toLowerCase() + '">';
@@ -579,49 +687,13 @@ function openHostnameSelector(options, uuid){
     html += '</label>';
     html += '</div>';
   }
-  html += '</form>';
-  html += '</div>';
   if(options.length === 0){
     html += '<div class="alert alert-warning">未找到匹配的自定义主机名</div>';
   }
-  html += '</div>';
-  
-  layer.open({
-    type: 1,
-    title: '选择域名 - DCV 委派',
-    area: [dialogWidth, 'auto'],
-    shadeClose: false,
-    content: html,
-    btn: ['确定', '取消'],
-    btnAlign: 'c',
-    yes: function(index){
-      var selectedValue = $('#hostnameSelectorForm input[name=hostnameOption]:checked').val();
-      if(!selectedValue){
-        layer.msg('请选择一个自定义主机名', {icon: 2});
-        return;
-      }
-      layer.close(index);
-      
-      // 构造 CNAME 记录信息
-      var selectedDomain = selectedValue.toLowerCase();
-      var cnameFullName = '_acme-challenge.' + selectedDomain;
-      var cnameTarget = selectedDomain + '.' + uuid + '.dcv.cloudflare.com';
-      
-      // 继续原有逻辑
-      resolveDcvCnameTargets(cnameFullName, function(targets){
-        if(!targets.length){
-          layer.alert('系统中未找到与该域名对应的托管域名，请手动到解析页添加 CNAME 记录<br><br>'
-            + '记录类型：CNAME<br>主机记录：<code>' + htmlEscape(cnameFullName) + '</code><br>记录值：<code>' + htmlEscape(cnameTarget) + '</code>', {icon: 2});
-          return;
-        }
-        if(targets.length === 1){
-          confirmQuickAddDcvCnameRecord(cnameFullName, cnameTarget, targets[0]);
-          return;
-        }
-        openDcvTargetPicker(cnameFullName, cnameTarget, targets);
-      });
-    }
-  });
+
+  $('#hostnameSelectorForm').html(html);
+  $('#dcvHostnameSearch').val('');
+  $("#modal-dcv-selector").modal('show');
 }
 
 function resolveDcvCnameTargets(fullName, callback){
@@ -647,12 +719,14 @@ function resolveDcvCnameTargets(fullName, callback){
   });
 }
 
+var currentDcvTargets = [];
+var currentDcvCnameValue = '';
+
 function openDcvTargetPicker(fullName, cnameValue, targets){
-  var html = '<div style="padding:16px 18px 6px;">';
-  html += '<div class="alert alert-warning" style="margin-bottom:12px;">检测到多个可用解析域名，请确认要写入哪个服务商。</div>';
-  html += '<div class="form-group"><label>CNAME 主机名</label><div><code>' + htmlEscape(fullName) + '</code></div></div>';
-  html += '<div class="form-group"><label>CNAME 目标</label><textarea class="form-control" rows="2" readonly>' + htmlEscape(cnameValue) + '</textarea></div>';
-  html += '<form id="dcvTargetPickerForm">';
+  currentDcvTargets = targets;
+  currentDcvCnameValue = cnameValue;
+
+  var html = '';
   for(var i = 0; i < targets.length; i++){
     var target = targets[i] || {};
     var providerName = target.account_type_name || target.account_type || '-';
@@ -671,40 +745,40 @@ function openDcvTargetPicker(fullName, cnameValue, targets){
     html += '</div>';
     html += '</label></div>';
   }
-  html += '</form></div>';
-  layer.open({
-    type: 1,
-    title: '选择解析服务商 - DCV 委派',
-    area: ['640px', 'auto'],
-    shadeClose: false,
-    content: html,
-    btn: ['添加 CNAME', '取消'],
-    yes: function(index){
-      var selectedId = $('#dcvTargetPickerForm input[name=dcvTarget]:checked').val();
-      var target = findTxtTargetByDomainId(targets, selectedId);
-      if(!target){
-        layer.msg('请选择要写入的解析域名', {icon: 2});
-        return;
-      }
-      layer.close(index);
-      submitQuickAddDcvCnameRecord(cnameValue, target);
-    }
-  });
+
+  $('#dcvTargetHostname').html('<code>' + htmlEscape(fullName) + '</code>');
+  $('#dcvTargetValue').val(cnameValue);
+  $('#dcvTargetPickerList').html('<form id="dcvTargetPickerForm">' + html + '</form>');
+  $("#modal-dcv-target-picker").modal('show');
+}
+
+function confirmDcvTargetSelection(){
+  var selectedId = $('#dcvTargetPickerForm input[name=dcvTarget]:checked').val();
+  var target = findTxtTargetByDomainId(currentDcvTargets, selectedId);
+  if(!target){
+    layer.msg('请选择要写入的解析域名', {icon: 2});
+    return;
+  }
+  $("#modal-dcv-target-picker").modal('hide');
+  submitQuickAddDcvCnameRecord(currentDcvCnameValue, target);
 }
 
 function confirmQuickAddDcvCnameRecord(fullName, cnameValue, target){
   var providerName = target.account_type_name || target.account_type || '-';
   var accountName = target.account_display_name || ('账户#' + (target.account_id || ''));
   layer.confirm(
-    '确定要一键添加 DCV 委派 CNAME 记录吗？<br><br>'
-    + '此操作将在 <b>' + htmlEscape(target.domain_name || '-') + '</b> 上创建以下记录：<br><br>'
-    + '<table class="table table-bordered table-condensed" style="margin-bottom:0;background:#fff;"><tbody>'
-    + '<tr><td style="width:100px;font-weight:bold;">记录类型</td><td>CNAME</td></tr>'
-    + '<tr><td style="font-weight:bold;">主机记录</td><td><code>' + htmlEscape(fullName) + '</code></td></tr>'
-    + '<tr><td style="font-weight:bold;">记录值</td><td><code>' + htmlEscape(cnameValue) + '</code></td></tr>'
-    + '<tr><td style="font-weight:bold;">服务商</td><td>' + htmlEscape(providerName) + '</td></tr>'
-    + '<tr><td style="font-weight:bold;">账户</td><td>' + htmlEscape(accountName) + '</td></tr>'
-    + '</tbody></table>',
+    '<div style="max-width:100%;overflow:hidden;">'
+    + '<p style="margin-bottom:10px;">确定要一键添加 DCV 委派 CNAME 记录吗？</p>'
+    + '<p style="margin-bottom:10px;">此操作将在 <b>' + htmlEscape(target.domain_name || '-') + '</b> 上创建以下记录：</p>'
+    + '<div style="background:#f5f5f5;padding:10px;border-radius:4px;border:1px solid #e5e5e5;font-size:13px;">'
+    + '<div style="margin-bottom:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">记录类型</span><span style="color:#d9534f;font-weight:bold;">CNAME</span></div>'
+    + '<div style="margin-bottom:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">主机记录</span><span style="word-wrap:break-word;word-break:break-all;display:inline-block;vertical-align:top;max-width:calc(100% - 80px);color:#337ab7;font-family:Consolas,Monaco,Courier New,monospace;background:#fff;padding:2px 6px;border-radius:3px;border:1px solid #ddd;">' + htmlEscape(fullName) + '</span></div>'
+    + '<div style="margin-bottom:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">记录值</span><span style="word-wrap:break-word;word-break:break-all;display:inline-block;vertical-align:top;max-width:calc(100% - 80px);color:#337ab7;font-family:Consolas,Monaco,Courier New,monospace;background:#fff;padding:2px 6px;border-radius:3px;border:1px solid #ddd;">' + htmlEscape(cnameValue) + '</span></div>'
+    + '<div style="margin-bottom:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">解析域名</span><span>' + htmlEscape(target.domain_name || '-') + '</span></div>'
+    + '<div style="margin-bottom:0;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">服务商</span><span>' + htmlEscape(providerName) + '</span></div>'
+    + '<div style="margin-top:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">账户</span><span>' + htmlEscape(accountName) + '</span></div>'
+    + '</div>'
+    + '</div>',
     {title: '一键添加 DCV 委派', icon: 0},
     function(index){
       layer.close(index);
@@ -715,32 +789,47 @@ function confirmQuickAddDcvCnameRecord(fullName, cnameValue, target){
 
 function submitQuickAddDcvCnameRecord(cnameValue, target){
   var ii = layer.load(2);
+  // 先获取目标域名的默认线路
   $.ajax({
     type: 'POST',
-    url: '/record/add/' + target.domain_id,
-    data: {
-      name: target.record_name,
-      type: 'CNAME',
-      value: cnameValue,
-      line: '0',
-      ttl: 600,
-      mx: 1,
-      weight: 0,
-      remark: 'Cloudflare DCV 委派'
-    },
+    url: '/cloudflare/get_domain_default_line',
+    data: {domain_id: target.domain_id},
     dataType: 'json',
-    success: function(res){
-      layer.close(ii);
-      if(res.code === 0){
-        layer.closeAll();
-        layer.msg('DCV 委派 CNAME 记录已添加到 ' + (target.domain_name || '-'), {icon: 1, time: 2000});
-      }else{
-        layer.alert(res.msg, {icon: 2});
-      }
+    success: function(lineRes){
+      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line) ? lineRes.data.default_line : '0';
+      // 使用获取到的线路添加记录
+      $.ajax({
+        type: 'POST',
+        url: '/record/add/' + target.domain_id,
+        data: {
+          name: target.record_name,
+          type: 'CNAME',
+          value: cnameValue,
+          line: line,
+          ttl: 600,
+          mx: 1,
+          weight: 0,
+          remark: 'Cloudflare DCV 委派'
+        },
+        dataType: 'json',
+        success: function(res){
+          layer.close(ii);
+          if(res.code === 0){
+            layer.closeAll();
+            layer.msg('DCV 委派 CNAME 记录已添加到 ' + (target.domain_name || '-'), {icon: 1, time: 2000});
+          }else{
+            layer.alert(res.msg, {icon: 2});
+          }
+        },
+        error: function(){
+          layer.close(ii);
+          layer.alert('服务器错误', {icon: 2});
+        }
+      });
     },
     error: function(){
       layer.close(ii);
-      layer.alert('服务器错误', {icon: 2});
+      layer.alert('获取默认线路失败', {icon: 2});
     }
   });
 }
@@ -1144,54 +1233,75 @@ function openTxtTargetPicker(fullName, value, targets, isHostnameVerification){
 }
 
 function confirmQuickAddTxtRecord(fullName, value, target, isHostnameVerification){
-  layer.confirm(buildQuickAddConfirmHtml(fullName, target), {title: '提示', icon: 0}, function(index){
+  layer.confirm(buildQuickAddConfirmHtml(fullName, value, target), {title: '提示', icon: 0}, function(index){
     layer.close(index);
     submitQuickAddTxtRecord(value, target, isHostnameVerification);
   });
 }
 
-function buildQuickAddConfirmHtml(fullName, target){
+function buildQuickAddConfirmHtml(fullName, value, target){
   var providerName = target.account_type_name || target.account_type || '-';
   var accountName = target.account_display_name || ('账户#' + (target.account_id || ''));
-  return '确定要快速添加 TXT 记录吗？<br><br>'
-    + 'TXT 主机名：<code>' + htmlEscape(fullName) + '</code><br>'
-    + '解析域名：<code>' + htmlEscape(target.domain_name || '-') + '</code><br>'
-    + '主机记录：<code>' + htmlEscape(target.record_name || '@') + '</code><br>'
-    + '服务商：' + htmlEscape(providerName) + '<br>'
-    + '账户：' + htmlEscape(accountName);
+  return '<div style="max-width:100%;overflow:hidden;">'
+    + '<p style="margin-bottom:10px;">确定要快速添加 TXT 记录吗？</p>'
+    + '<div style="background:#f5f5f5;padding:10px;border-radius:4px;border:1px solid #e5e5e5;font-size:13px;">'
+    + '<div style="margin-bottom:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">记录类型</span><span style="color:#d9534f;font-weight:bold;">TXT</span></div>'
+    + '<div style="margin-bottom:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">TXT 主机名</span><span style="word-wrap:break-word;word-break:break-all;display:inline-block;vertical-align:top;max-width:calc(100% - 80px);color:#337ab7;font-family:Consolas,Monaco,Courier New,monospace;background:#fff;padding:2px 6px;border-radius:3px;border:1px solid #ddd;">' + htmlEscape(fullName) + '</span></div>'
+    + '<div style="margin-bottom:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">TXT 值</span><span style="word-wrap:break-word;word-break:break-all;display:inline-block;vertical-align:top;max-width:calc(100% - 80px);color:#337ab7;font-family:Consolas,Monaco,Courier New,monospace;background:#fff;padding:2px 6px;border-radius:3px;border:1px solid #ddd;">' + htmlEscape(value) + '</span></div>'
+    + '<div style="margin-bottom:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">解析域名</span><span>' + htmlEscape(target.domain_name || '-') + '</span></div>'
+    + '<div style="margin-bottom:0;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">主机记录</span><span style="word-wrap:break-word;word-break:break-all;display:inline-block;vertical-align:top;max-width:calc(100% - 80px);color:#337ab7;font-family:Consolas,Monaco,Courier New,monospace;background:#fff;padding:2px 6px;border-radius:3px;border:1px solid #ddd;">' + htmlEscape(target.record_name || '@') + '</span></div>'
+    + '<div style="margin-top:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">服务商</span><span>' + htmlEscape(providerName) + '</span></div>'
+    + '<div style="margin-top:6px;"><span style="display:inline-block;width:70px;min-width:70px;font-weight:bold;color:#555;">账户</span><span>' + htmlEscape(accountName) + '</span></div>'
+    + '</div>'
+    + '</div>';
 }
 
 function submitQuickAddTxtRecord(value, target, isHostnameVerification){
   var ii = layer.load(2);
   // 区分是主机名验证还是证书验证的 TXT 记录
   var remark = isHostnameVerification ? 'Cloudflare 主机名验证' : 'Cloudflare 证书验证';
+  // 先获取目标域名的默认线路
   $.ajax({
     type: 'POST',
-    url: '/record/add/' + target.domain_id,
-    data: {
-      name: target.record_name,
-      type: 'TXT',
-      value: value,
-      line: '0',
-      ttl: 600,
-      mx: 1,
-      weight: 0,
-      remark: remark
-    },
+    url: '/cloudflare/get_domain_default_line',
+    data: {domain_id: target.domain_id},
     dataType: 'json',
-    success: function(res){
-      layer.close(ii);
-      if(res.code === 0){
-        layer.closeAll();
-        $("#modal-verification").modal('show');
-        layer.msg('TXT 记录已添加到 ' + (target.domain_name || '-'), {icon: 1, time: 1400});
-      }else{
-        layer.alert(res.msg, {icon: 2});
-      }
+    success: function(lineRes){
+      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line) ? lineRes.data.default_line : '0';
+      // 使用获取到的线路添加记录
+      $.ajax({
+        type: 'POST',
+        url: '/record/add/' + target.domain_id,
+        data: {
+          name: target.record_name,
+          type: 'TXT',
+          value: value,
+          line: line,
+          ttl: 600,
+          mx: 1,
+          weight: 0,
+          remark: remark
+        },
+        dataType: 'json',
+        success: function(res){
+          layer.close(ii);
+          if(res.code === 0){
+            layer.closeAll();
+            $("#modal-verification").modal('show');
+            layer.msg('TXT 记录已添加到 ' + (target.domain_name || '-'), {icon: 1, time: 1400});
+          }else{
+            layer.alert(res.msg, {icon: 2});
+          }
+        },
+        error: function(){
+          layer.close(ii);
+          layer.alert('服务器错误', {icon: 2});
+        }
+      });
     },
     error: function(){
       layer.close(ii);
-      layer.alert('服务器错误', {icon: 2});
+      layer.alert('获取默认线路失败', {icon: 2});
     }
   });
 }

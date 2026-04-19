@@ -378,6 +378,66 @@ class Cloudflare extends BaseController
         }
     }
 
+    public function get_domain_default_line()
+    {
+        try {
+            $domainId = input('param.domain_id/d');
+            if (empty($domainId)) {
+                throw new Exception('缺少 domain_id 参数');
+            }
+
+            // 查询域名信息
+            $domainRow = Db::name('domain')->alias('A')
+                ->join('account B', 'A.aid = B.id')
+                ->where('A.id', $domainId)
+                ->field('A.*, B.type, B.config account_config')
+                ->find();
+
+            if (!$domainRow) {
+                throw new Exception('域名不存在');
+            }
+
+            // 获取该域名的默认线路
+            $recordLine = cache('record_line_' . $domainId);
+            
+            if (empty($recordLine)) {
+                // 缓存中没有，需要从 DNS 提供商获取
+                $config = json_decode($domainRow['account_config'] ?? '', true);
+                if (!is_array($config)) {
+                    $config = [];
+                }
+
+                $dnsModel = \app\lib\DnsHelper::getModel(
+                    intval($domainRow['aid']),
+                    $domainRow['name'],
+                    $domainRow['thirdid'],
+                    $domainRow['type'],
+                    $config
+                );
+
+                if ($dnsModel && method_exists($dnsModel, 'getRecordLine')) {
+                    $recordLine = $dnsModel->getRecordLine();
+                    if ($recordLine && is_array($recordLine)) {
+                        cache('record_line_' . $domainId, $recordLine, 604800); // 缓存7天
+                    }
+                }
+            }
+
+            if (empty($recordLine) || !is_array($recordLine)) {
+                throw new Exception('无法获取该域名的解析线路列表');
+            }
+
+            $firstKey = array_key_first($recordLine);
+            if ($firstKey === null) {
+                throw new Exception('解析线路列表为空');
+            }
+
+            return json(['code' => 0, 'data' => ['default_line' => strval($firstKey)]]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
     public function tunnels()
     {
         try {
