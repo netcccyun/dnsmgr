@@ -880,11 +880,16 @@ class Cloudflare extends BaseController
             'remark' => trim((string)($row['account_remark'] ?? '')),
         ];
         $accountType = trim((string)($row['account_type'] ?? ''));
+        $defaultLine = 'default';
+        if (isset(DnsHelper::$line_name[$accountType]['DEF'])) {
+            $defaultLine = strval(DnsHelper::$line_name[$accountType]['DEF']);
+        }
 
         return [
             'domain_id' => intval($row['id'] ?? 0),
             'domain_name' => trim((string)($row['name'] ?? '')),
             'record_name' => $recordName,
+            'default_line' => $defaultLine,
             'account_id' => $account['id'],
             'account_type' => $accountType,
             'account_type_name' => $this->formatDnsTypeName($accountType),

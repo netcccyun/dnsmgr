@@ -535,6 +535,10 @@ function buildQuickAddConfirmHtml(fullName, target){
 }
 
 function submitQuickAddTxtRecord(value, target){
+  var line = String((target && target.default_line) || '').trim();
+  if(!line){
+    line = 'default';
+  }
   var ii = layer.load(2);
   $.ajax({
     type: 'POST',
@@ -543,7 +547,7 @@ function submitQuickAddTxtRecord(value, target){
       name: target.record_name,
       type: 'TXT',
       value: value,
-      line: '0',
+      line: line,
       ttl: 600,
       mx: 1,
       weight: 0,

@@ -558,6 +558,14 @@ class Domain extends BaseController
             return json(['code' => -1, 'msg' => '参数不能为空']);
         }
 
+        $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+        $defaultLine = isset(DnsHelper::$line_name[$dnstype]['DEF']) ? strval(DnsHelper::$line_name[$dnstype]['DEF']) : 'default';
+        if (isNullOrEmpty($line)) {
+            $line = $defaultLine;
+        } elseif ($line === '0' && $defaultLine !== '0') {
+            $line = $defaultLine;
+        }
+
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         $recordid = $dns->addDomainRecord($name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if ($recordid) {
