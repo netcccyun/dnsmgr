@@ -732,21 +732,21 @@ function openDcvTargetPicker(fullName, cnameValue, targets){
     var providerName = target.account_type_name || target.account_type || '-';
     var accountName = target.account_display_name || ('账户#' + (target.account_id || ''));
     html += '<div class="radio" style="margin:0 0 12px;border:1px solid #e5e5e5;border-radius:4px;padding:10px 12px;">';
-    html += '<label style="display:block;padding-left:22px;">';
+    html += '<label style="display:block;padding-left:22px;word-wrap:break-word;word-break:break-all;">';
     html += '<input type="radio" name="dcvTarget" value="' + htmlEscape(String(target.domain_id || '')) + '"' + (i === 0 ? ' checked' : '') + '>';
-    html += '<strong>' + htmlEscape(target.domain_name || '-') + '</strong>';
+    html += '<strong style="display:inline-block;max-width:100%;word-wrap:break-word;word-break:break-all;">' + htmlEscape(target.domain_name || '-') + '</strong>';
     if(target.is_current_domain){
       html += ' <span class="label label-primary">当前页</span>';
     }
-    html += '<div class="help-block" style="margin:8px 0 0;">';
-    html += '主机记录：<code>' + htmlEscape(target.record_name || '@') + '</code><br>';
+    html += '<div class="help-block" style="margin:8px 0 0;word-wrap:break-word;word-break:break-all;">';
+    html += '主机记录：<code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(target.record_name || '@') + '</code><br>';
     html += '服务商：' + htmlEscape(providerName) + '<br>';
-    html += '账户：' + htmlEscape(accountName);
+    html += '账户：<span style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(accountName) + '</span>';
     html += '</div>';
     html += '</label></div>';
   }
 
-  $('#dcvTargetHostname').html('<code>' + htmlEscape(fullName) + '</code>');
+  $('#dcvTargetHostname').html('<code style="word-wrap:break-word;word-break:break-all;display:block;">' + htmlEscape(fullName) + '</code>');
   $('#dcvTargetValue').val(cnameValue);
   $('#dcvTargetPickerList').html('<form id="dcvTargetPickerForm">' + html + '</form>');
   $("#modal-dcv-target-picker").modal('show');
@@ -1188,26 +1188,28 @@ function resolveTxtRecordTargets(fullName, callback){
 }
 
 function openTxtTargetPicker(fullName, value, targets, isHostnameVerification){
+  var isMobile = window.innerWidth <= 768;
+  var dialogWidth = isMobile ? '90%' : '640px';
   var html = '<div style="padding:16px 18px 6px;">';
   html += '<div class="alert alert-warning" style="margin-bottom:12px;">检测到多个可用解析域名，请确认要写入哪个服务商。</div>';
-  html += '<div class="form-group"><label>TXT 主机名</label><div><code>' + htmlEscape(fullName) + '</code></div></div>';
-  html += '<div class="form-group"><label>TXT 值</label><textarea class="form-control" rows="3" readonly>' + htmlEscape(value) + '</textarea></div>';
+  html += '<div class="form-group"><label>TXT 主机名</label><div><code style="word-wrap:break-word;word-break:break-all;display:block;">' + htmlEscape(fullName) + '</code></div></div>';
+  html += '<div class="form-group"><label>TXT 值</label><textarea class="form-control" rows="3" readonly style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(value) + '</textarea></div>';
   html += '<form id="txtTargetPickerForm">';
   for(var i = 0; i < targets.length; i++){
     var target = targets[i] || {};
     var providerName = target.account_type_name || target.account_type || '-';
     var accountName = target.account_display_name || ('账户#' + (target.account_id || ''));
     html += '<div class="radio" style="margin:0 0 12px;border:1px solid #e5e5e5;border-radius:4px;padding:10px 12px;">';
-    html += '<label style="display:block;padding-left:22px;">';
+    html += '<label style="display:block;padding-left:22px;word-wrap:break-word;word-break:break-all;">';
     html += '<input type="radio" name="txtTarget" value="' + htmlEscape(String(target.domain_id || '')) + '"' + (i === 0 ? ' checked' : '') + '>';
-    html += '<strong>' + htmlEscape(target.domain_name || '-') + '</strong>';
+    html += '<strong style="display:inline-block;max-width:100%;word-wrap:break-word;word-break:break-all;">' + htmlEscape(target.domain_name || '-') + '</strong>';
     if(target.is_current_domain){
       html += ' <span class="label label-primary">当前页</span>';
     }
-    html += '<div class="help-block" style="margin:8px 0 0;">';
-    html += '主机记录：<code>' + htmlEscape(target.record_name || '@') + '</code><br>';
+    html += '<div class="help-block" style="margin:8px 0 0;word-wrap:break-word;word-break:break-all;">';
+    html += '主机记录：<code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(target.record_name || '@') + '</code><br>';
     html += '服务商：' + htmlEscape(providerName) + '<br>';
-    html += '账户：' + htmlEscape(accountName);
+    html += '账户：<span style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(accountName) + '</span>';
     html += '</div>';
     html += '</label></div>';
   }
@@ -1215,7 +1217,7 @@ function openTxtTargetPicker(fullName, value, targets, isHostnameVerification){
   layer.open({
     type: 1,
     title: '选择解析服务商',
-    area: ['640px', 'auto'],
+    area: [dialogWidth, 'auto'],
     shadeClose: false,
     content: html,
     btn: ['添加 TXT', '取消'],
@@ -1419,11 +1421,11 @@ function clearFallbackOrigin(){
 
 function htmlEscape(str) {
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    。replace(/&/g, '&amp;')
+    。replace(/</g, '&lt;')
+    。replace(/>/g, '&gt;')
+    。replace(/"/g, '&quot;')
+    。replace(/'/g, '&#39;');
 }
 </script>
 {/block}
