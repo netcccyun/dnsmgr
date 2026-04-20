@@ -608,6 +608,47 @@ class DnsHelper
             'page' => false,
             'add' => false,
         ],
+        'cccyun' => [
+            'name' => '同系统对接',
+            'icon' => 'logo.png',
+            'note' => '通过聚合DNS管理系统接口实现域名解析管理',
+            'config' => [
+                'base_url' => [
+                    'name' => 'API 地址',
+                    'type' => 'input',
+                    'placeholder' => '例如：https://dns.example.com',
+                    'required' => true,
+                ],
+                'uid' => [
+                    'name' => '用户 ID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'key' => [
+                    'name' => 'API 密钥',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'remark' => 2,
+            'status' => true,
+            'redirect' => false,
+            'log' => false,
+            'weight' => true,
+            'page' => false,
+            'add' => false,
+        ],
     ];
 
     public static $line_name = [
@@ -627,6 +668,7 @@ class DnsHelper
         'spaceship' => ['DEF' => 'default'],
         'aliyunesa' => ['DEF' => '0'],
         'tencenteo' => ['DEF' => 'Default'],
+        'cccyun' => ['DEF' => 'default'],
     ];
 
     public static function getList()
