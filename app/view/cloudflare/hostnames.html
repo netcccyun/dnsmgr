@@ -55,6 +55,10 @@
               <a href="javascript:refreshHostnameList()" class="btn btn-default btn-sm" title="刷新自定义主机名列表"><i class="fa fa-refresh"></i> 刷新</a>
               <a href="javascript:openAddDialog()" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> 添加自定义主机名</a>
               <a href="javascript:batchAddHostnames()" class="btn btn-primary btn-sm"><i class="fa fa-plus-circle"></i> 批量添加</a>
+              <button type="button" class="btn btn-info btn-sm" onclick="batchDcvDelegation()" disabled id="btnBatchDcv"><i class="fa fa-link"></i> 批量 DCV 委派</button>
+              <button type="button" class="btn btn-default btn-sm" onclick="batchHostnameTxtVerification()" disabled id="btnBatchHostnameTxt"><i class="fa fa-check-circle"></i> 批量主机名验证</button>
+              <button type="button" class="btn btn-default btn-sm" onclick="batchCertTxtVerification()" disabled id="btnBatchCertTxt"><i class="fa fa-certificate"></i> 批量证书验证</button>
+              <button type="button" class="btn btn-success btn-sm" onclick="batchRefreshVerification()" disabled id="btnBatchRefresh"><i class="fa fa-refresh"></i> 批量刷新验证</button>
               <button type="button" class="btn btn-warning btn-sm" onclick="batchEditHostnames()" disabled id="btnBatchEdit"><i class="fa fa-pencil"></i> 批量修改</button>
               <button type="button" class="btn btn-danger btn-sm" onclick="batchDeleteHostnames()" disabled id="btnBatchDelete"><i class="fa fa-trash"></i> 批量删除</button>
             </div>
@@ -151,6 +155,113 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
         <button type="button" class="btn btn-danger" onclick="confirmBatchDelete()">删除</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-batch-dcv" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">批量 DCV 委派</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" id="batchDcvAlert"></div>
+        <div id="batchDcvHostnameList" style="max-height:400px;overflow-y:auto;"></div>
+        <div class="alert alert-warning" style="margin-top:12px;">
+          <strong>注意：</strong>此操作将为选中的自定义主机名创建 DCV 委派 CNAME 记录，每条记录将在您选择的解析域名中添加。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-info" onclick="confirmBatchDcv()">开始批量添加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-batch-dcv-target-picker" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">选择解析服务商 - 批量 DCV 委派</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning" style="margin-bottom:12px;">检测到多个可用解析域名，请确认要写入哪个服务商。</div>
+        <div id="batchDcvTargetPickerList"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="confirmBatchDcvTargetSelection()">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-batch-hostname-txt" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">批量主机名 TXT 验证</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" id="batchHostnameTxtAlert"></div>
+        <div id="batchHostnameTxtList" style="max-height:400px;overflow-y:auto;"></div>
+        <div class="alert alert-warning" style="margin-top:12px;">
+          <strong>注意：</strong>此操作将为选中的自定义主机名创建主机名 TXT 验证记录，每条记录将在您选择的解析域名中添加。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-success" onclick="confirmBatchHostnameTxt()">开始添加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-batch-cert-txt" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">批量证书 TXT 验证</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" id="batchCertTxtAlert"></div>
+        <div id="batchCertTxtList" style="max-height:400px;overflow-y:auto;"></div>
+        <div class="alert alert-warning" style="margin-top:12px;">
+          <strong>注意：</strong>此操作将为选中的自定义主机名创建证书 TXT 验证记录，每条记录将在您选择的解析域名中添加。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-success" onclick="confirmBatchCertTxt()">开始添加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-batch-refresh" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">批量刷新验证</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" id="batchRefreshAlert"></div>
+        <div id="batchRefreshList" style="max-height:400px;overflow-y:auto;"></div>
+        <div class="alert alert-warning" style="margin-top:12px;">
+          <strong>注意：</strong>此操作将向 Cloudflare 重新发起验证请求，可能会触发证书重新签发。请确认要为选中的主机名执行此操作。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-success" onclick="confirmBatchRefresh()">开始刷新</button>
       </div>
     </div>
   </div>
@@ -320,6 +431,7 @@
 <script>
 var currentVerificationHostnameId = '';
 var allHostnameData = []; // 保存完整的原始数据用于客户端搜索
+var domainId = '{$domainId}'; // 域名 ID
 
 $(document).ready(function(){
   $("#form-store").bootstrapValidator();
@@ -367,6 +479,10 @@ function updateBatchButtons(){
   var hasSelection = selectedRows.length > 0;
   $("#btnBatchDelete").prop('disabled', !hasSelection);
   $("#btnBatchEdit").prop('disabled', !hasSelection);
+  $("#btnBatchDcv").prop('disabled', !hasSelection);
+  $("#btnBatchHostnameTxt").prop('disabled', !hasSelection);
+  $("#btnBatchCertTxt").prop('disabled', !hasSelection);
+  $("#btnBatchRefresh").prop('disabled', !hasSelection);
 }
 
 function filterHostnameList(searchText){
@@ -429,6 +545,1019 @@ function confirmBatchDelete(){
     error: function(){
       layer.close(ii);
       layer.alert('服务器错误', {icon: 2});
+    }
+  });
+}
+
+var batchDcvHostnamesData = [];
+var batchDcvSelectedTarget = null;
+var batchDcvCnameValue = '';
+
+function batchDcvDelegation(){
+  var selectedRows = $("#listTable").bootstrapTable('getSelections');
+  if(selectedRows.length === 0){
+    layer.msg('请先选择要添加 DCV 委派的自定义主机名', {icon: 0});
+    return;
+  }
+
+  // 检查是否已获取 DCV 委派 UUID
+  var uuid = $.trim($('#dcvDelegationUuid').val());
+  if(!uuid){
+    layer.msg('请先获取 DCV 委派 UUID', {icon: 0});
+    return;
+  }
+
+  batchDcvHostnamesData = selectedRows;
+  
+  // 先获取所有主机名的 DNS 信息，按实际 DNS 域名分组
+  var hostnamesWithDns = [];
+  var processedCount = 0;
+  var totalCount = selectedRows.length;
+  
+  selectedRows.forEach(function(row, index){
+    var hostname = row.hostname;
+    var cnameFullName = '_acme-challenge.' + hostname;
+    
+    resolveDcvCnameTargets(cnameFullName, function(targets){
+      processedCount++;
+      
+      if(targets.length > 0){
+        // 使用第一个目标域名作为该主机名的 DNS 域名
+        var dnsDomain = targets[0].domain_name;
+        hostnamesWithDns.push({
+          row: row,
+          hostname: hostname,
+          dnsDomain: dnsDomain,
+          targets: targets
+        });
+      } else {
+        // 无法解析 DNS 域名的主机名
+        hostnamesWithDns.push({
+          row: row,
+          hostname: hostname,
+          dnsDomain: '未知域名',
+          targets: []
+        });
+      }
+      
+      if(processedCount === totalCount){
+        showBatchDcvModal(hostnamesWithDns, uuid);
+      }
+    });
+  });
+}
+
+function showBatchDcvModal(hostnamesWithDns, uuid){
+  // 按 DNS 域名分组
+  var dnsDomains = {};
+  hostnamesWithDns.forEach(function(item){
+    var dnsDomain = item.dnsDomain;
+    if(!dnsDomains[dnsDomain]){
+      dnsDomains[dnsDomain] = [];
+    }
+    dnsDomains[dnsDomain].push(item);
+  });
+
+  var hostnamesHtml = '';
+  var domainIndex = 0;
+  
+  // 为每个 DNS 域名创建分组
+  for(var dnsDomain in dnsDomains){
+    if(dnsDomains.hasOwnProperty(dnsDomain)){
+      var domainItems = dnsDomains[dnsDomain];
+      var firstItem = domainItems[0];
+      var firstHostname = firstItem.hostname;
+      var cnameFullName = '_acme-challenge.' + firstHostname;
+      var cnameTarget;
+      var displayCnameTarget;
+      if(domainItems.length > 1){
+        // 多个主机名：显示 当前记录.dns域名.UUID.dcv.cloudflare.com
+        displayCnameTarget = '当前记录.' + dnsDomain + '.' + uuid + '.dcv.cloudflare.com';
+      } else {
+        // 单个主机名：保持原格式 主机名.UUID.dcv.cloudflare.com
+        displayCnameTarget = firstHostname + '.' + uuid + '.dcv.cloudflare.com';
+      }
+      // 实际 CNAME 目标格式：主机名.UUID.dcv.cloudflare.com
+      cnameTarget = firstHostname + '.' + uuid + '.dcv.cloudflare.com';
+      
+      hostnamesHtml += '<div style="margin-bottom:16px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;">';
+      hostnamesHtml += '<div style="font-weight:bold;margin-bottom:8px;">DNS 域名: ' + htmlEscape(dnsDomain) + '</div>';
+      
+      // 显示该 DNS 域名下的所有主机名
+      hostnamesHtml += '<div style="font-size:12px;color:#666;margin-bottom:8px;">';
+      hostnamesHtml += '主机名: ';
+      domainItems.forEach(function(item, idx){
+        if(idx > 0) hostnamesHtml += ', ';
+        hostnamesHtml += htmlEscape(item.hostname);
+      });
+      hostnamesHtml += '</div>';
+      
+      hostnamesHtml += '<div style="font-size:12px;color:#666;margin-bottom:12px;">';
+      hostnamesHtml += 'CNAME 目标: <code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(displayCnameTarget) + '</code>';
+      hostnamesHtml += '</div>';
+      
+      hostnamesHtml += '<div class="form-group" style="margin-bottom:0;">';
+      hostnamesHtml += '<label class="control-label" style="font-size:12px;">选择解析服务商</label>';
+      hostnamesHtml += '<select id="dnsProvider_' + domainIndex + '" class="form-control" required>';
+      hostnamesHtml += '<option value="">请选择</option>';
+      
+      // 填充 DNS 服务商选项
+      if(firstItem.targets.length > 0){
+        firstItem.targets.forEach(function(target){
+          var providerName = target.account_type_name || target.account_type || '-';
+          var displayName = target.domain_name + ' (' + providerName + ')';
+          hostnamesHtml += '<option value="' + target.domain_id + '">' + htmlEscape(displayName) + '</option>';
+        });
+      }
+      
+      hostnamesHtml += '</select>';
+      hostnamesHtml += '</div>';
+      hostnamesHtml += '</div>';
+      
+      domainIndex++;
+    }
+  }
+
+  $('#batchDcvAlert').text('确定要为选中的 ' + hostnamesWithDns.length + ' 个自定义主机名添加 DCV 委派 CNAME 记录吗？');
+  $('#batchDcvHostnameList').html(hostnamesHtml);
+  $("#modal-batch-dcv").modal('show');
+}
+
+function confirmBatchDcv(){
+  // 禁用按钮，防止重复点击
+  var confirmBtn = $("#modal-batch-dcv .btn-info");
+  confirmBtn.prop('disabled', true).text('处理中...');
+
+  var uuid = $.trim($('#dcvDelegationUuid').val());
+  if(!uuid){
+    confirmBtn.prop('disabled', false).text('开始批量添加');
+    layer.msg('请先获取 DCV 委派 UUID', {icon: 0});
+    return;
+  }
+
+  // 先获取所有主机名的 DNS 信息，按实际 DNS 域名分组
+  var hostnamesWithDns = [];
+  var processedCount = 0;
+  var totalCount = batchDcvHostnamesData.length;
+  
+  // 收集所有主机名的 DNS 信息
+  batchDcvHostnamesData.forEach(function(row, index){
+    var hostname = row.hostname;
+    var cnameFullName = '_acme-challenge.' + hostname;
+    
+    resolveDcvCnameTargets(cnameFullName, function(targets){
+      processedCount++;
+      
+      if(targets.length > 0){
+        // 使用第一个目标域名作为该主机名的 DNS 域名
+        var dnsDomain = targets[0].domain_name;
+        hostnamesWithDns.push({
+          row: row,
+          hostname: hostname,
+          dnsDomain: dnsDomain,
+          targets: targets
+        });
+      } else {
+        // 无法解析 DNS 域名的主机名
+        hostnamesWithDns.push({
+          row: row,
+          hostname: hostname,
+          dnsDomain: '未知域名',
+          targets: []
+        });
+      }
+      
+      if(processedCount === totalCount){
+        processBatchDcv(hostnamesWithDns, uuid, confirmBtn);
+      }
+    });
+  });
+}
+
+function processBatchDcv(hostnamesWithDns, uuid, confirmBtn){
+  // 按 DNS 域名分组
+  var dnsDomains = {};
+  hostnamesWithDns.forEach(function(item){
+    var dnsDomain = item.dnsDomain;
+    if(!dnsDomains[dnsDomain]){
+      dnsDomains[dnsDomain] = [];
+    }
+    dnsDomains[dnsDomain].push(item);
+  });
+
+  // 检查是否所有 DNS 域名都选择了 DNS 服务商
+  var allSelected = true;
+  var domainIndex = 0;
+  for(var dnsDomain in dnsDomains){
+    if(dnsDomains.hasOwnProperty(dnsDomain)){
+      var selectedDomainId = $('#dnsProvider_' + domainIndex).val();
+      if(!selectedDomainId){
+        allSelected = false;
+        break;
+      }
+      domainIndex++;
+    }
+  }
+  
+  if(!allSelected){
+    confirmBtn.prop('disabled', false).text('开始批量添加');
+    layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0});
+    return;
+  }
+
+  var ii = layer.load(2);
+  var batchResults = {
+    success: 0,
+    failed: 0,
+    errors: []
+  };
+  var processedCount = 0;
+  var totalCount = hostnamesWithDns.length;
+
+  // 按 DNS 域名处理
+  var currentDomainIndex = 0;
+  for(var dnsDomain in dnsDomains){
+    if(dnsDomains.hasOwnProperty(dnsDomain)){
+      var domainItems = dnsDomains[dnsDomain];
+      var selectedDomainId = $('#dnsProvider_' + currentDomainIndex).val();
+      
+      // 为该 DNS 域名下的所有主机名使用同一个 DNS 服务商（直接用已解析的 targets）
+      domainItems.forEach(function(item){
+        var hostname = item.hostname;
+        var cnameFullName = '_acme-challenge.' + hostname;
+        var cnameTarget = hostname + '.' + uuid + '.dcv.cloudflare.com';
+        var targets = item.targets;
+
+        if(!targets.length){
+          batchResults.failed++;
+          batchResults.errors.push(hostname + ': 未找到对应的解析域名');
+          processedCount++;
+          checkBatchCompletion();
+          return;
+        }
+
+        var selectedTarget = null;
+        for(var i = 0; i < targets.length; i++){
+          if(String(targets[i].domain_id) === String(selectedDomainId)){
+            selectedTarget = targets[i];
+            break;
+          }
+        }
+
+        if(!selectedTarget){
+          batchResults.failed++;
+          batchResults.errors.push(hostname + ': 未找到选中的解析域名');
+          processedCount++;
+          checkBatchCompletion();
+          return;
+        }
+
+        submitBatchDcvCnameRecord(cnameFullName, cnameTarget, selectedTarget, function(success, error){
+          if(success){
+            batchResults.success++;
+          } else {
+            batchResults.failed++;
+            batchResults.errors.push(hostname + ': ' + error);
+          }
+          processedCount++;
+          checkBatchCompletion();
+        });
+      });
+      
+      currentDomainIndex++;
+    }
+  }
+
+  function checkBatchCompletion(){
+    if(processedCount === totalCount){
+      layer.close(ii);
+      // 恢复按钮状态
+      confirmBtn.prop('disabled', false).text('开始批量添加');
+      
+      $("#modal-batch-dcv").modal('hide');
+      
+      var message = '批量 DCV 委派完成：\n成功 ' + batchResults.success + ' 个，失败 ' + batchResults.failed + ' 个';
+      if(batchResults.errors.length > 0){
+        message += '\n\n失败详情：\n' + batchResults.errors.join('\n');
+      }
+      
+      layer.alert(message, {icon: batchResults.failed > 0 ? 2 : 1});
+    }
+  }
+}
+
+function submitBatchDcvCnameRecord(cnameFullName, cnameValue, target, callback){
+  // 先获取目标域名的默认线路
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/get_domain_default_line',
+    data: {domain_id: target.domain_id},
+    dataType: 'json',
+    success: function(lineRes){
+      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line) ? lineRes.data.default_line : '0';
+      // 使用获取到的线路添加记录
+      $.ajax({
+        type: 'POST',
+        url: '/record/add/' + target.domain_id,
+        data: {
+          name: target.record_name,
+          type: 'CNAME',
+          value: cnameValue,
+          line: line,
+          ttl: 600,
+          mx: 1,
+          weight: 0,
+          remark: 'Cloudflare DCV 委派'
+        },
+        dataType: 'json',
+        success: function(res){
+          if(res.code === 0){
+            callback(true);
+          }else{
+            callback(false, res.msg);
+          }
+        },
+        error: function(){
+          callback(false, '服务器错误');
+        }
+      });
+    },
+    error: function(){
+      callback(false, '获取默认线路失败');
+    }
+  });
+}
+
+// ==================== 批量主机名 TXT 验证 ====================
+
+function batchHostnameTxtVerification(){
+  var selectedRows = $("#listTable").bootstrapTable('getSelections');
+  if(selectedRows.length === 0){
+    layer.msg('请先选择要添加主机名验证的自定义主机名', {icon: 0});
+    return;
+  }
+
+  // 过滤出有待验证信息的主机名
+  var validHostnames = [];
+  var invalidHostnames = [];
+  
+  selectedRows.forEach(function(row){
+    var ownership = row.ownership_verification || {};
+    if(ownership.name && ownership.value){
+      validHostnames.push({
+        row: row,
+        txtName: ownership.name || '',
+        txtValue: ownership.value || ''
+      });
+    } else {
+      invalidHostnames.push(row.hostname);
+    }
+  });
+
+  if(validHostnames.length === 0){
+    layer.msg('所选主机名都没有获取到主机名验证信息，请先刷新获取', {icon: 0});
+    return;
+  }
+
+  // 显示警告信息
+  var warningMsg = '';
+  if(invalidHostnames.length > 0){
+    warningMsg = '（注意：有 ' + invalidHostnames.length + ' 个主机名无法获取验证信息，已跳过）';
+  }
+
+  // 先获取所有主机名的 DNS 信息，按实际 DNS 域名分组
+  var processedCount = 0;
+  var totalCount = validHostnames.length;
+  var dnsDomains = {};
+
+  validHostnames.forEach(function(item, idx){
+    var txtName = item.txtName;
+    var txtValue = item.txtValue;
+    
+    resolveTxtTargets(txtName, txtValue, function(targets){
+      processedCount++;
+      
+      // 获取该主机名的 DNS 域名
+      var dnsDomain = targets.length > 0 ? targets[0].domain_name : '未知域名';
+      
+      if(!dnsDomains[dnsDomain]){
+        dnsDomains[dnsDomain] = {
+          items: [],
+          targets: targets.length > 0 ? targets : []
+        };
+      }
+      dnsDomains[dnsDomain].items.push(item);
+      
+      if(processedCount === totalCount){
+        showBatchHostnameTxtModal(dnsDomains, validHostnames.length, invalidHostnames, warningMsg);
+      }
+    });
+  });
+}
+
+function showBatchHostnameTxtModal(dnsDomains, totalCount, invalidHostnames, warningMsg){
+  var hostnamesHtml = '';
+  var domainIndex = 0;
+  batchHostnameTxtData = dnsDomains;
+
+  // 为每个 DNS 域名创建分组
+  for(var dnsDomain in dnsDomains){
+    if(dnsDomains.hasOwnProperty(dnsDomain)){
+      var domainData = dnsDomains[dnsDomain];
+      var domainItems = domainData.items;
+      var targets = domainData.targets;
+      
+      hostnamesHtml += '<div style="margin-bottom:16px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;">';
+      hostnamesHtml += '<div style="font-weight:bold;margin-bottom:8px;">DNS 域名: ' + htmlEscape(dnsDomain) + '</div>';
+      
+      // 为每个主机名显示详细信息
+      domainItems.forEach(function(item, idx){
+        hostnamesHtml += '<div style="margin-top:8px;padding:8px;background:#f9f9f9;border-radius:4px;">';
+        hostnamesHtml += '<div style="font-weight:bold;font-size:12px;margin-bottom:4px;">主机名: ' + htmlEscape(item.row.hostname) + '</div>';
+        hostnamesHtml += '<div style="font-size:12px;color:#666;">';
+        hostnamesHtml += 'TXT 名称: <code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(item.txtName) + '</code><br>';
+        hostnamesHtml += 'TXT 值: <code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(item.txtValue) + '</code>';
+        hostnamesHtml += '</div>';
+        hostnamesHtml += '</div>';
+      });
+      
+      hostnamesHtml += '<div class="form-group" style="margin-bottom:0;margin-top:12px;">';
+      hostnamesHtml += '<label class="control-label" style="font-size:12px;">选择解析服务商</label>';
+      hostnamesHtml += '<select id="txtDnsProvider_' + domainIndex + '" class="form-control" required>';
+      hostnamesHtml += '<option value="">请选择</option>';
+      
+      // 填充 DNS 服务商选项
+      targets.forEach(function(target){
+        var providerName = target.account_type_name || target.account_type || '-';
+        var displayName = target.domain_name + ' (' + providerName + ')';
+        hostnamesHtml += '<option value="' + target.domain_id + '">' + htmlEscape(displayName) + '</option>';
+      });
+      
+      hostnamesHtml += '</select>';
+      hostnamesHtml += '</div>';
+      hostnamesHtml += '</div>';
+      
+      domainIndex++;
+    }
+  }
+
+  var alertMsg = '确定要为 ' + totalCount + ' 个自定义主机名添加主机名 TXT 验证记录吗？' + warningMsg;
+  if(invalidHostnames.length > 0){
+    alertMsg += '<br>无法获取验证信息的主机名：' + invalidHostnames.join(', ');
+  }
+  $('#batchHostnameTxtAlert').html(alertMsg);
+  $('#batchHostnameTxtList').html(hostnamesHtml);
+  $("#modal-batch-hostname-txt").modal('show');
+}
+
+var batchHostnameTxtData = [];
+
+function confirmBatchHostnameTxt(){
+  // 检查是否所有 DNS 域名都选择了 DNS 服务商
+  var allSelected = true;
+  var domainIndex = 0;
+  for(var dnsDomain in batchHostnameTxtData){
+    if(batchHostnameTxtData.hasOwnProperty(dnsDomain)){
+      var selectedDomainId = $('#txtDnsProvider_' + domainIndex).val();
+      if(!selectedDomainId){
+        allSelected = false;
+        break;
+      }
+      domainIndex++;
+    }
+  }
+  
+  if(!allSelected){
+    layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0});
+    return;
+  }
+
+  // 禁用按钮，防止重复点击
+  var confirmBtn = $("#modal-batch-hostname-txt .btn-success");
+  confirmBtn.prop('disabled', true).text('处理中...');
+
+  var ii = layer.load(2);
+  var batchResults = {
+    success: 0,
+    failed: 0,
+    errors: []
+  };
+  var processedCount = 0;
+  var totalCount = 0;
+  
+  // 计算总主机名数量
+  for(var dnsDomain in batchHostnameTxtData){
+    if(batchHostnameTxtData.hasOwnProperty(dnsDomain)){
+      totalCount += batchHostnameTxtData[dnsDomain].items.length;
+    }
+  }
+
+  // 按 DNS 域名处理
+  var currentDomainIndex = 0;
+  for(var dnsDomain in batchHostnameTxtData){
+    if(batchHostnameTxtData.hasOwnProperty(dnsDomain)){
+      var domainData = batchHostnameTxtData[dnsDomain];
+      var domainItems = domainData.items;
+      var targets = domainData.targets;
+      var selectedDomainId = $('#txtDnsProvider_' + currentDomainIndex).val();
+      
+      // 查找用户选择的目标
+      var selectedTarget = null;
+      for(var i = 0; i < targets.length; i++){
+        if(String(targets[i].domain_id) === String(selectedDomainId)){
+          selectedTarget = targets[i];
+          break;
+        }
+      }
+      
+      // 为该 DNS 域名下的所有主机名添加 TXT 记录（每个主机名单独解析以获取正确的 record_name）
+      domainItems.forEach(function(item){
+        var hostname = item.row.hostname;
+        var txtName = item.txtName;
+        var txtValue = item.txtValue;
+        
+        if(!selectedTarget){
+          batchResults.failed++;
+          batchResults.errors.push(hostname + ': 未找到选中的解析域名');
+          processedCount++;
+          checkBatchCompletion();
+          return;
+        }
+        
+        // 每个主机名的 TXT 名称不同，需要单独解析获取正确的 record_name
+        resolveTxtTargets(txtName, txtValue, function(targetsForHostname){
+          if(!targetsForHostname.length){
+            batchResults.failed++;
+            batchResults.errors.push(hostname + ': 未找到对应的解析域名');
+            processedCount++;
+            checkBatchCompletion();
+            return;
+          }
+          
+          var targetForThisHostname = null;
+          for(var j = 0; j < targetsForHostname.length; j++){
+            if(String(targetsForHostname[j].domain_id) === String(selectedDomainId)){
+              targetForThisHostname = targetsForHostname[j];
+              break;
+            }
+          }
+          
+          if(!targetForThisHostname){
+            batchResults.failed++;
+            batchResults.errors.push(hostname + ': 未找到选中的解析域名');
+            processedCount++;
+            checkBatchCompletion();
+            return;
+          }
+          
+          submitBatchTxtRecord(txtName, txtValue, targetForThisHostname, 'Cloudflare 主机名验证', function(success, error){
+            processedCount++;
+            if(success){
+              batchResults.success++;
+            } else {
+              batchResults.failed++;
+              batchResults.errors.push(hostname + ': ' + error);
+            }
+            checkBatchCompletion();
+          });
+        });
+      });
+      
+      currentDomainIndex++;
+    }
+  }
+
+  function checkBatchCompletion(){
+    if(processedCount === totalCount){
+      layer.close(ii);
+      // 恢复按钮状态
+      var confirmBtn = $("#modal-batch-hostname-txt .btn-success");
+      confirmBtn.prop('disabled', false).text('开始添加');
+      
+      $("#modal-batch-hostname-txt").modal('hide');
+      
+      var message = '批量主机名 TXT 验证完成：\n成功 ' + batchResults.success + ' 个，失败 ' + batchResults.failed + ' 个';
+      if(batchResults.errors.length > 0){
+        message += '\n\n失败详情：\n' + batchResults.errors.join('\n');
+      }
+      
+      layer.alert(message, {icon: batchResults.failed > 0 ? 2 : 1});
+    }
+  }
+}
+
+// ==================== 批量证书 TXT 验证 ====================
+
+function batchCertTxtVerification(){
+  var selectedRows = $("#listTable").bootstrapTable('getSelections');
+  if(selectedRows.length === 0){
+    layer.msg('请先选择要添加证书验证的自定义主机名', {icon: 0});
+    return;
+  }
+
+  // 过滤出有待验证信息的主机名
+  var validHostnames = [];
+  var invalidHostnames = [];
+  
+  selectedRows.forEach(function(row){
+    var records = $.isArray(row.ssl_validation_records) ? row.ssl_validation_records : [];
+    if(records.length > 0 && records[0].txt_name && records[0].txt_value){
+      validHostnames.push({
+        row: row,
+        txtName: records[0].txt_name || '',
+        txtValue: records[0].txt_value || ''
+      });
+    } else {
+      invalidHostnames.push(row.hostname);
+    }
+  });
+
+  if(validHostnames.length === 0){
+    layer.msg('所选主机名都没有获取到证书验证信息，请先刷新获取', {icon: 0});
+    return;
+  }
+
+  // 显示警告信息
+  var warningMsg = '';
+  if(invalidHostnames.length > 0){
+    warningMsg = '（注意：有 ' + invalidHostnames.length + ' 个主机名无法获取验证信息，已跳过）';
+  }
+
+  // 先获取所有主机名的 DNS 信息，按实际 DNS 域名分组
+  var processedCount = 0;
+  var totalCount = validHostnames.length;
+  var dnsDomains = {};
+
+  validHostnames.forEach(function(item, idx){
+    var txtName = item.txtName;
+    var txtValue = item.txtValue;
+    
+    resolveTxtTargets(txtName, txtValue, function(targets){
+      processedCount++;
+      
+      // 获取该主机名的 DNS 域名
+      var dnsDomain = targets.length > 0 ? targets[0].domain_name : '未知域名';
+      
+      if(!dnsDomains[dnsDomain]){
+        dnsDomains[dnsDomain] = {
+          items: [],
+          targets: targets.length > 0 ? targets : []
+        };
+      }
+      dnsDomains[dnsDomain].items.push(item);
+      
+      if(processedCount === totalCount){
+        showBatchCertTxtModal(dnsDomains, validHostnames.length, invalidHostnames, warningMsg);
+      }
+    });
+  });
+}
+
+function showBatchCertTxtModal(dnsDomains, totalCount, invalidHostnames, warningMsg){
+  var hostnamesHtml = '';
+  var domainIndex = 0;
+  batchCertTxtData = dnsDomains;
+
+  // 为每个 DNS 域名创建分组
+  for(var dnsDomain in dnsDomains){
+    if(dnsDomains.hasOwnProperty(dnsDomain)){
+      var domainData = dnsDomains[dnsDomain];
+      var domainItems = domainData.items;
+      var targets = domainData.targets;
+      
+      hostnamesHtml += '<div style="margin-bottom:16px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;">';
+      hostnamesHtml += '<div style="font-weight:bold;margin-bottom:8px;">DNS 域名: ' + htmlEscape(dnsDomain) + '</div>';
+      
+      // 为每个主机名显示详细信息
+      domainItems.forEach(function(item, idx){
+        hostnamesHtml += '<div style="margin-top:8px;padding:8px;background:#f9f9f9;border-radius:4px;">';
+        hostnamesHtml += '<div style="font-weight:bold;font-size:12px;margin-bottom:4px;">主机名: ' + htmlEscape(item.row.hostname) + '</div>';
+        hostnamesHtml += '<div style="font-size:12px;color:#666;">';
+        hostnamesHtml += 'TXT 名称: <code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(item.txtName) + '</code><br>';
+        hostnamesHtml += 'TXT 值: <code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(item.txtValue) + '</code>';
+        hostnamesHtml += '</div>';
+        hostnamesHtml += '</div>';
+      });
+      
+      hostnamesHtml += '<div class="form-group" style="margin-bottom:0;margin-top:12px;">';
+      hostnamesHtml += '<label class="control-label" style="font-size:12px;">选择解析服务商</label>';
+      hostnamesHtml += '<select id="certDnsProvider_' + domainIndex + '" class="form-control" required>';
+      hostnamesHtml += '<option value="">请选择</option>';
+      
+      // 填充 DNS 服务商选项
+      targets.forEach(function(target){
+        var providerName = target.account_type_name || target.account_type || '-';
+        var displayName = target.domain_name + ' (' + providerName + ')';
+        hostnamesHtml += '<option value="' + target.domain_id + '">' + htmlEscape(displayName) + '</option>';
+      });
+      
+      hostnamesHtml += '</select>';
+      hostnamesHtml += '</div>';
+      hostnamesHtml += '</div>';
+      
+      domainIndex++;
+    }
+  }
+
+  var alertMsg = '确定要为 ' + totalCount + ' 个自定义主机名添加证书 TXT 验证记录吗？' + warningMsg;
+  if(invalidHostnames.length > 0){
+    alertMsg += '<br>无法获取验证信息的主机名：' + invalidHostnames.join(', ');
+  }
+  $('#batchCertTxtAlert').html(alertMsg);
+  $('#batchCertTxtList').html(hostnamesHtml);
+  $("#modal-batch-cert-txt").modal('show');
+}
+
+var batchCertTxtData = [];
+
+function confirmBatchCertTxt(){
+  // 检查是否所有 DNS 域名都选择了 DNS 服务商
+  var allSelected = true;
+  var domainIndex = 0;
+  for(var dnsDomain in batchCertTxtData){
+    if(batchCertTxtData.hasOwnProperty(dnsDomain)){
+      var selectedDomainId = $('#certDnsProvider_' + domainIndex).val();
+      if(!selectedDomainId){
+        allSelected = false;
+        break;
+      }
+      domainIndex++;
+    }
+  }
+  
+  if(!allSelected){
+    layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0});
+    return;
+  }
+
+  // 禁用按钮，防止重复点击
+  var confirmBtn = $("#modal-batch-cert-txt .btn-success");
+  confirmBtn.prop('disabled', true).text('处理中...');
+
+  var ii = layer.load(2);
+  var batchResults = {
+    success: 0,
+    failed: 0,
+    errors: []
+  };
+  var processedCount = 0;
+  var totalCount = 0;
+  
+  // 计算总主机名数量
+  for(var dnsDomain in batchCertTxtData){
+    if(batchCertTxtData.hasOwnProperty(dnsDomain)){
+      totalCount += batchCertTxtData[dnsDomain].items.length;
+    }
+  }
+
+  // 按 DNS 域名处理
+  var currentDomainIndex = 0;
+  for(var dnsDomain in batchCertTxtData){
+    if(batchCertTxtData.hasOwnProperty(dnsDomain)){
+      var domainData = batchCertTxtData[dnsDomain];
+      var domainItems = domainData.items;
+      var targets = domainData.targets;
+      var selectedDomainId = $('#certDnsProvider_' + currentDomainIndex).val();
+      
+      // 查找用户选择的目标
+      var selectedTarget = null;
+      for(var i = 0; i < targets.length; i++){
+        if(String(targets[i].domain_id) === String(selectedDomainId)){
+          selectedTarget = targets[i];
+          break;
+        }
+      }
+      
+      // 为该 DNS 域名下的所有主机名添加 TXT 记录（每个主机名单独解析以获取正确的 record_name）
+      domainItems.forEach(function(item){
+        var hostname = item.row.hostname;
+        var txtName = item.txtName;
+        var txtValue = item.txtValue;
+        
+        if(!selectedTarget){
+          batchResults.failed++;
+          batchResults.errors.push(hostname + ': 未找到选中的解析域名');
+          processedCount++;
+          checkBatchCompletion();
+          return;
+        }
+        
+        // 每个主机名的 TXT 名称不同，需要单独解析获取正确的 record_name
+        resolveTxtTargets(txtName, txtValue, function(targetsForHostname){
+          if(!targetsForHostname.length){
+            batchResults.failed++;
+            batchResults.errors.push(hostname + ': 未找到对应的解析域名');
+            processedCount++;
+            checkBatchCompletion();
+            return;
+          }
+          
+          var targetForThisHostname = null;
+          for(var j = 0; j < targetsForHostname.length; j++){
+            if(String(targetsForHostname[j].domain_id) === String(selectedDomainId)){
+              targetForThisHostname = targetsForHostname[j];
+              break;
+            }
+          }
+          
+          if(!targetForThisHostname){
+            batchResults.failed++;
+            batchResults.errors.push(hostname + ': 未找到选中的解析域名');
+            processedCount++;
+            checkBatchCompletion();
+            return;
+          }
+          
+          submitBatchTxtRecord(txtName, txtValue, targetForThisHostname, 'Cloudflare 证书验证', function(success, error){
+            processedCount++;
+            if(success){
+              batchResults.success++;
+            } else {
+              batchResults.failed++;
+              batchResults.errors.push(hostname + ': ' + error);
+            }
+            checkBatchCompletion();
+          });
+        });
+      });
+      
+      currentDomainIndex++;
+    }
+  }
+
+  function checkBatchCompletion(){
+    if(processedCount === totalCount){
+      layer.close(ii);
+      // 恢复按钮状态
+      var confirmBtn = $("#modal-batch-cert-txt .btn-success");
+      confirmBtn.prop('disabled', false).text('开始添加');
+      
+      $("#modal-batch-cert-txt").modal('hide');
+      
+      var message = '批量证书 TXT 验证完成：\n成功 ' + batchResults.success + ' 个，失败 ' + batchResults.failed + ' 个';
+      if(batchResults.errors.length > 0){
+        message += '\n\n失败详情：\n' + batchResults.errors.join('\n');
+      }
+      
+      layer.alert(message, {icon: batchResults.failed > 0 ? 2 : 1});
+    }
+  }
+}
+
+// 批量刷新验证
+function batchRefreshVerification(){
+  var selections = $('#listTable').bootstrapTable('getSelections');
+  if(!selections || selections.length === 0){
+    layer.msg('请先选择要刷新验证的自定义主机名', {icon: 0});
+    return;
+  }
+
+  // 显示选中的主机名列表
+  var hostnamesHtml = '';
+  selections.forEach(function(row, index){
+    hostnamesHtml += '<div style="padding:8px;border-bottom:1px solid #eee;' + (index === 0 ? 'border-top:1px solid #eee;' : '') + '">';
+    hostnamesHtml += '<div style="font-weight:bold;">' + htmlEscape(row.hostname) + '</div>';
+    if(row.ssl_status){
+      hostnamesHtml += '<div style="font-size:12px;color:#666;">SSL 状态: ' + formatStatusText(row.ssl_status) + '</div>';
+    }
+    if(row.verification_status && row.verification_status !== '-'){
+      hostnamesHtml += '<div style="font-size:12px;color:#666;">主机名验证: ' + formatStatusText(row.verification_status) + '</div>';
+    }
+    hostnamesHtml += '</div>';
+  });
+
+  $('#batchRefreshAlert').html('确定要为选中的 <strong>' + selections.length + '</strong> 个自定义主机名重新发起验证吗？');
+  $('#batchRefreshList').html(hostnamesHtml);
+  $("#modal-batch-refresh").modal('show');
+}
+
+function confirmBatchRefresh(){
+  var selections = $('#listTable').bootstrapTable('getSelections');
+  if(!selections || selections.length === 0){
+    layer.msg('请先选择要刷新验证的自定义主机名', {icon: 0});
+    return;
+  }
+
+  // 禁用按钮
+  var confirmBtn = $("#modal-batch-refresh .btn-success");
+  confirmBtn.prop('disabled', true).text('处理中...');
+
+  var ii = layer.load(2);
+  var batchResults = {
+    success: 0,
+    failed: 0,
+    errors: []
+  };
+
+  var totalCount = selections.length;
+  var processedCount = 0;
+
+  function checkBatchCompletion(){
+    if(processedCount === totalCount){
+      layer.close(ii);
+      // 恢复按钮状态
+      confirmBtn.prop('disabled', false).text('开始刷新');
+
+      $("#modal-batch-refresh").modal('hide');
+
+      var message = '批量刷新验证完成：\n成功 ' + batchResults.success + ' 个，失败 ' + batchResults.failed + ' 个';
+      if(batchResults.errors.length > 0){
+        message += '\n\n失败详情：\n' + batchResults.errors.join('\n');
+      }
+
+      layer.alert(message, {icon: batchResults.failed > 0 ? 2 : 1});
+
+      // 刷新主机名列表以显示最新状态
+      refreshHostnameList();
+    }
+  }
+
+  // 为每个选中的主机名发起刷新验证请求
+  selections.forEach(function(row){
+    $.ajax({
+      type: 'POST',
+      url: '/cloudflare/hostnames/refresh/{$domainId}',
+      data: {hostname_id: row.id},
+      dataType: 'json',
+      success: function(res){
+        processedCount++;
+        if(res.code === 0){
+          batchResults.success++;
+        } else {
+          batchResults.failed++;
+          batchResults.errors.push(row.hostname + ': ' + (res.msg || '未知错误'));
+        }
+        checkBatchCompletion();
+      },
+      error: function(){
+        processedCount++;
+        batchResults.failed++;
+        batchResults.errors.push(row.hostname + ': 网络错误或服务器无响应');
+        checkBatchCompletion();
+      }
+    });
+  });
+}
+
+// 提交批量 TXT 记录的通用函数
+function submitBatchTxtRecord(txtName, txtValue, target, remark, callback){
+  // 先获取目标域名的默认线路
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/get_domain_default_line',
+    data: {domain_id: target.domain_id},
+    dataType: 'json',
+    success: function(lineRes){
+      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line) ? lineRes.data.default_line : '0';
+      // 使用获取到的线路添加记录
+      $.ajax({
+        type: 'POST',
+        url: '/record/add/' + target.domain_id,
+        data: {
+          name: target.record_name,
+          type: 'TXT',
+          value: txtValue,
+          line: line,
+          ttl: 600,
+          mx: 1,
+          weight: 0,
+          remark: remark
+        },
+        dataType: 'json',
+        success: function(res){
+          if(res.code === 0){
+            callback(true);
+          }else{
+            callback(false, res.msg);
+          }
+        },
+        error: function(){
+          callback(false, '服务器错误');
+        }
+      });
+    },
+    error: function(){
+      callback(false, '获取默认线路失败');
+    }
+  });
+}
+
+// 解析 TXT 记录的目标域名
+function resolveTxtTargets(txtName, txtValue, callback){
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/hostnames/txttargets/' + domainId,
+    data: {hostname: txtName},
+    dataType: 'json',
+    success: function(res){
+      if(res.code === 0 && res.data && res.data.candidates){
+        callback(res.data.candidates);
+      } else {
+        callback([]);
+      }
+    },
+    error: function(){
+      callback([]);
     }
   });
 }
@@ -547,7 +1676,7 @@ function loadDcvDelegationUuid(){
 
 function showDcvDelegationHelp(){
   var fullCnameTarget = $.trim($('#dcvDelegationUuid').val());
-  var uuid = '{uuid}';
+  var uuid = '';
 
   // 从完整的 CNAME 目标中提取 UUID
   if(fullCnameTarget){
@@ -709,12 +1838,14 @@ function resolveDcvCnameTargets(fullName, callback){
         var targets = res.data && $.isArray(res.data.candidates) ? res.data.candidates : [];
         callback(targets);
       }else{
-        layer.alert(res.msg, {icon: 2});
+        // 错误时返回空数组，避免流程阻塞
+        callback([]);
       }
     },
     error: function(){
       layer.close(ii);
-      layer.alert('服务器错误', {icon: 2});
+      // 错误时返回空数组，避免流程阻塞
+      callback([]);
     }
   });
 }
@@ -1165,25 +2296,11 @@ function quickAddTxtRecord(btn){
 }
 
 function resolveTxtRecordTargets(fullName, callback){
-  var ii = layer.load(2);
-  $.ajax({
-    type: 'POST',
-    url: '/cloudflare/hostnames/txttargets/{$domainId}',
-    data: {hostname: fullName},
-    dataType: 'json',
-    success: function(res){
-      layer.close(ii);
-      if(res.code === 0){
-        var targets = res.data && $.isArray(res.data.candidates) ? res.data.candidates : [];
-        callback(targets);
-      }else{
-        layer.alert(res.msg, {icon: 2});
-      }
-    },
-    error: function(){
-      layer.close(ii);
-      layer.alert('服务器错误', {icon: 2});
+  resolveDcvCnameTargets(fullName, function(targets){
+    if(targets.length === 0){
+      layer.alert('未找到对应的解析域名', {icon: 2});
     }
+    callback(targets);
   });
 }
 
