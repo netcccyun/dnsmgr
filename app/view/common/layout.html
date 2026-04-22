@@ -106,11 +106,11 @@
           {if request()->user['type'] eq 'user'}<li class="{:checkIfActive('index')}">
             <a href="/"><i class="fa fa-home fa-fw"></i> <span>后台首页</span></a>
           </li>{/if}
-          <li class="{:checkIfActive('domain,record,record_log,record_batch_add,domain_add,weight,record_batch_add2,record_batch_edit2,expire_notice,quickadd')}">
+          <li class="{:checkIfActive('domain,record,record_log,record_batch_add,domain_add,weight,record_batch_add2,record_batch_edit2,expire_notice,smartparse')}">
             <a href="/domain"><i class="fa fa-list-ul fa-fw"></i> <span>域名管理</span></a>
           </li>
-          <li class="{:checkIfActive('quickadd')}">
-            <a href="/record/quickadd"><i class="fa fa-flash fa-fw"></i> <span>快速解析</span></a>
+          <li class="{:checkIfActive('smartparse')}">
+            <a href="/record/smartparse"><i class="fa fa-flash fa-fw"></i> <span>智能解析</span></a>
           </li>
           {if request()->user['level'] eq 2}
           <li class="{:checkIfActive('account,account_add')}">

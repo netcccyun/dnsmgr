@@ -1005,7 +1005,7 @@ class Domain extends BaseController
         return view('log');
     }
 
-    public function quickadd()
+    public function smartparse()
     {
         if (request()->user['type'] == 'domain') {
             return redirect('/record/' . request()->user['id']);

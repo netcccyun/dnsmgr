@@ -106,7 +106,7 @@ Route::group(function () {
     Route::any('/record/weight/:id', 'domain/weight');
     Route::any('/record/alias/:id', 'domain/alias');
     Route::get('/record/:id', 'domain/record');
-    Route::get('/record/quickadd', 'domain/quickadd');
+    Route::get('/record/smartparse', 'domain/smartparse');
     Route::post('/record/quickinfo/:id', 'domain/quickinfo');
 
     Route::get('/dmonitor/overview', 'dmonitor/overview');
