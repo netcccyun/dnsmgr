@@ -1533,7 +1533,7 @@ function renderRecordList(records){
 			html += '<i class="fa fa-trash"></i> 删除</button>&nbsp;';
 			
 			// 添加备注按钮
-			if(window.showRemark && window.showRemark > 0){
+			if(window.showRemark && window.showRemark == 1){
 				html += '<button type="button" class="btn btn-info btn-xs" onclick="setRemark(' + index + ')" title="修改备注">';
 				html += '<i class="fa fa-pencil"></i> 备注</button>&nbsp;';
 			}
@@ -1664,7 +1664,7 @@ function editRecord(index){
 		$('#edit_weight_group').hide();
 	}
 
-	if(window.showRemark == 2){
+	if(window.showRemark && window.showRemark == 2){
 		$('#edit_remark').val(row.Remark || '');
 		$('#edit_remark_group').show();
 	}else{
