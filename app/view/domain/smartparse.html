@@ -1505,7 +1505,6 @@ function renderRecordList(records){
 		var remarkDisplay = row.Remark || '-';
 		var recordInfoStr = htmlEscape(JSON.stringify(row));
 		var copyId = 'copy-value-' + row.RecordId;
-		var remarkCopyId = 'copy-remark-' + row.RecordId;
 
 		html += '<tr data-index="' + index + '">';
 		html += '<td style="text-align:center;"><input type="checkbox" class="record-checkbox" value="' + row.RecordId + '" data-info="' + recordInfoStr + '" onchange="updateSelectedCount()"></td>';
@@ -1518,10 +1517,7 @@ function renderRecordList(records){
 		html += '<td>' + (row.LineName || '-') + '</td>';
 		html += '<td>' + row.TTL + '</td>';
 		html += '<td>' + statusHtml + '</td>';
-		html += '<td class="record-value" title="' + htmlEscape(remarkDisplay) + '">';
-		html += '<span id="' + remarkCopyId + '" data-value="' + htmlEscape(remarkDisplay) + '">' + remarkDisplay + '</span>';
-		html += '<a href="javascript:void(0);" title="复制备注" onclick="copyToClipboard(null, \'#' + remarkCopyId + '\')" style="padding-left:6px;"><i class="fa fa-copy"></i></a>';
-		html += '</td>';
+		html += '<td class="record-value" title="' + htmlEscape(remarkDisplay) + '">' + remarkDisplay + '</td>';
 		html += '<td style="text-align:center;">';
 		if(row.Type != 'NS' && row.Type != 'SOA' || row.Name != '@'){
 			html += '<button type="button" class="btn btn-primary btn-xs" onclick="editRecord(' + index + ')" title="修改此记录">';
@@ -1537,7 +1533,7 @@ function renderRecordList(records){
 			html += '<i class="fa fa-trash"></i> 删除</button>&nbsp;';
 			
 			// 添加备注按钮
-			if(window.showRemark == 1){
+			if(window.showRemark && window.showRemark > 0){
 				html += '<button type="button" class="btn btn-info btn-xs" onclick="setRemark(' + index + ')" title="修改备注">';
 				html += '<i class="fa fa-pencil"></i> 备注</button>&nbsp;';
 			}
@@ -1888,10 +1884,10 @@ function setRemark(index){
 		area: ['350px'],
 		closeBtn: 2,
 		title: '编辑备注',
-		content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark" value="'+(row.Remark==null?'':row.Remark)+'" autocomplete="off" placeholder="备注信息"></div></div>',
+		content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" id="edit_remark_input" value="'+(row.Remark==null?'':row.Remark)+'" autocomplete="off" placeholder="备注信息"></div></div>',
 		btn: ['确认', '取消'],
 		yes: function(){
-			var remark = $("input[name='remark']").val();
+			var remark = $("#edit_remark_input").val();
 			var domainId = $('#domainSelect').val();
 			var ii = layer.load(2, {shade:[0.1,'#fff']});
 			$.ajax({
