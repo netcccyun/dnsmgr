@@ -1,0 +1,2263 @@
+{extend name="common/layout" /}
+{block name="title"}智能解析助手{/block}
+{block name="main"}
+<style>
+.quick-add-container {
+    max-width: 100%;
+    margin: 20px;
+    padding: 20px;
+}
+.form-section {
+    background: #fff;
+    padding: 30px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow-x: auto;
+}
+.form-title {
+    color: #337ab7;
+    font-size: 24px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #337ab7;
+}
+.record-list-section {
+    margin-top: 30px;
+}
+.record-list-title {
+    color: #337ab7;
+    font-size: 20px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+.toolbar {
+    margin-bottom: 15px;
+    padding: 12px 15px;
+    background: #f9f9f9;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.toolbar .search-box {
+    flex: 1;
+    min-width: 250px;
+}
+.toolbar .btn-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.record-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.record-table th,
+.record-table td {
+    padding: 10px 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+.record-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    color: #333;
+    white-space: nowrap;
+}
+.record-table tr:hover {
+    background-color: #f9f9f9;
+}
+.record-value {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.no-records {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-size: 14px;
+}
+.pagination-wrapper {
+    margin-top: 15px;
+    text-align: right;
+}
+.pagination-wrapper .pagination-info {
+    float: left;
+    line-height: 34px;
+    color: #666;
+    font-size: 13px;
+}
+.modal-body .form-group {
+	margin-bottom: 15px;
+}
+.batch-input-area {
+    min-height: 200px;
+    resize: vertical;
+}
+.batch-preview {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.batch-preview table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    margin-bottom: 0;
+}
+.batch-preview th,
+.batch-preview td {
+    padding: 8px 10px;
+    text-align: left;
+    border: 0.5px solid #f0f0f0;
+    vertical-align: middle;
+    font-size: 13px;
+    white-space: nowrap;
+}
+.batch-preview th {
+    background-color: #f9f9f9;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #e0e0e0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.batch-preview tr:hover {
+    background-color: #fafafa;
+}
+.batch-preview .label {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.batch-preview .label-primary {
+    background-color: #337ab7;
+    color: #fff;
+}
+.batch-preview .status-success {
+    color: #52c41a;
+    font-weight: 600;
+    font-size: 12px;
+}
+.domain-select-modal {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.domain-item {
+    cursor: pointer;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border: 2px solid #ddd;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+.domain-item:hover {
+    border-color: #337ab7;
+    background-color: #f5f9fc;
+}
+.domain-item.selected {
+    border-color: #337ab7;
+    background-color: #e7f3ff;
+}
+.domain-item.selected::after {
+    content: '✓';
+    float: right;
+    color: #337ab7;
+    font-weight: bold;
+}
+.tab-buttons {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+}
+.tab-button {
+    display: inline-block;
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 16px;
+    color: #666;
+    transition: all 0.3s;
+}
+.tab-button.active {
+    color: #337ab7;
+    border-bottom-color: #337ab7;
+    font-weight: bold;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+</style>
+<div class="quick-add-container">
+	<div class="form-section">
+		<h3 class="form-title">智能解析助手</h3>
+
+		<div class="tab-buttons">
+			<button type="button" class="tab-button active" onclick="switchTab('single')">单条添加</button>
+			<button type="button" class="tab-button" onclick="switchTab('batch')">智能批量添加</button>
+		</div>
+
+		<div id="tab-single" class="tab-content active">
+			<form class="form-horizontal" id="quickAddForm">
+				<div class="form-group">
+					<label class="col-sm-2 control-label">域名 <span class="text-danger">*</span></label>
+					<div class="col-sm-10">
+						<select name="domain" id="domainSelect" class="form-control select2" required>
+							<option value="">请选择域名</option>
+							{foreach $domainList as $domain}
+							<option value="{$domain.id}">{$domain.name} [{$domain.dnsType}]</option>
+							{/foreach}
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">主机记录 <span class="text-danger">*</span></label>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" name="name" placeholder="如：www、@、mail" required>
+						<p class="help-block">填写域名前缀，支持多级</p>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">记录类型 <span class="text-danger">*</span></label>
+					<div class="col-sm-10">
+						<select name="type" class="form-control" required>
+							<option value="A">A</option>
+							<option value="CNAME">CNAME</option>
+							<option value="AAAA">AAAA</option>
+							<option value="NS">NS</option>
+							<option value="MX">MX</option>
+							<option value="SRV">SRV</option>
+							<option value="TXT">TXT</option>
+							<option value="CAA">CAA</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">线路 <span class="text-danger">*</span></label>
+					<div class="col-sm-10" id="line_list">
+						<select name="line" class="form-control" required>
+							<option value="">请先选择域名</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">记录值 <span class="text-danger">*</span></label>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" name="value" placeholder="请输入记录值" required>
+					</div>
+				</div>
+				<div class="form-group" style="display:none" id="mx_type">
+					<label class="col-sm-2 control-label">MX优先级</label>
+					<div class="col-sm-10">
+						<input type="number" class="form-control" name="mx" value="10" min="1" max="65535">
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">TTL <span class="text-danger">*</span></label>
+					<div class="col-sm-10">
+						<input type="number" class="form-control" name="ttl" value="600" placeholder="指解析结果在DNS服务器中的缓存时间" required min="1">
+						<p class="help-block">单位：秒，默认600秒</p>
+					</div>
+				</div>
+				<div class="form-group" style="display:none" id="weight">
+					<label class="col-sm-2 control-label">权重</label>
+					<div class="col-sm-10">
+						<input type="number" class="form-control" name="weight" value="" placeholder="留空则不使用权重" min="0">
+					</div>
+				</div>
+				<div class="form-group" style="display:none" id="remark_group">
+					<label class="col-sm-2 control-label">备注</label>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" name="remark" placeholder="">
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-offset-2 col-sm-10">
+						<button type="button" class="btn btn-primary btn-lg" onclick="saveQuickAdd()"><i class="fa fa-plus"></i> 添加解析记录</button>
+						<button type="button" class="btn btn-default btn-lg" onclick="resetForm()"><i class="fa fa-refresh"></i> 重置</button>
+					</div>
+				</div>
+			</form>
+		</div>
+
+		<div id="tab-batch" class="tab-content">
+			<form class="form-horizontal" id="batchForm">
+				<div class="form-group">
+						<label class="col-sm-2 control-label">批量数据 <span class="text-danger">*</span></label>
+						<div class="col-sm-10">
+							<textarea class="form-control batch-input-area" id="batchInput" rows="10"
+								placeholder="请按以下格式输入（每行一条记录）：&#10;格式1：主机记录 记录值&#10;格式2：主机记录 记录值 域名&#10;格式3：记录值 主机记录.域名&#10;格式4：主机记录.域名（使用下方记录值）&#10;&#10;示例：&#10;www 1.2.3.4 example.com&#10;api app.example.com example.com&#10;1.1.1.1 www.example.com&#10;example.com&#10;&#10;说明：&#10;- 如果使用格式4，将使用下方的记录值&#10;- 如果不指定域名，将使用下方选择的默认域名&#10;- 如果检测到多个不同域名，会提示您选择对应的DNS配置"></textarea>
+							<p class="help-block">每行一条记录，支持混合输入多个域名的记录</p>
+						</div>
+					</div>
+					
+					<div class="form-group">
+						<label class="col-sm-2 control-label">记录值</label>
+						<div class="col-sm-10">
+							<input type="text" class="form-control" id="batchValueInput" placeholder="当使用格式4时，将使用此记录值">
+							<p class="help-block">留空则不使用格式4</p>
+						</div>
+					</div>
+					
+					<div class="form-group">
+						<label class="col-sm-2 control-label">默认域名</label>
+						<div class="col-sm-10">
+							<select name="defaultDomain" id="defaultDomainSelect" class="form-control select2">
+								<option value="">不使用默认域名（必须每行都指定域名）</option>
+								{foreach $domainList as $domain}
+								<option value="{$domain.id}">{$domain.name} [{$domain.dnsType}]</option>
+								{/foreach}
+							</select>
+							<p class="help-block">当某行没有指定域名时，使用此默认域名</p>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-sm-2 control-label">记录类型</label>
+						<div class="col-sm-10">
+							<select name="defaultType" id="defaultTypeSelect" class="form-control">
+								<option value="">自动检测</option>
+								<option value="A">A</option>
+								<option value="CNAME">CNAME</option>
+								<option value="AAAA">AAAA</option>
+								<option value="NS">NS</option>
+								<option value="MX">MX</option>
+								<option value="SRV">SRV</option>
+								<option value="TXT">TXT</option>
+								<option value="CAA">CAA</option>
+							</select>
+							<p class="help-block">留空则根据记录值自动判断类型</p>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-sm-2 control-label">线路</label>
+						<div class="col-sm-10" id="batch_line_list">
+							<select name="defaultLine" id="defaultLineSelect" class="form-control" onchange="changeBatchLine(this)">
+								<option value="">自动选择</option>
+							</select>
+							<p class="help-block">留空则使用默认线路</p>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-sm-2 control-label">TTL</label>
+						<div class="col-sm-10">
+							<input type="number" class="form-control" name="defaultTtl" id="defaultTtlInput" value="600" min="1">
+							<p class="help-block">默认TTL时间（秒）</p>
+						</div>
+					</div>
+
+				<div class="form-group">
+					<div class="col-sm-offset-2 col-sm-10">
+						<button type="button" class="btn btn-info btn-lg" onclick="previewBatchData()"><i class="fa fa-eye"></i> 预览解析结果</button>
+						<button type="button" class="btn btn-primary btn-lg" onclick="submitBatchData()"><i class="fa fa-plus-circle"></i> 批量添加解析</button>
+						<button type="button" class="btn btn-default btn-lg" onclick="resetBatchForm()"><i class="fa fa-refresh"></i> 重置</button>
+					</div>
+				</div>
+			</form>
+
+			<div class="form-group" id="previewSection" style="display:none;margin-top:20px;">
+				<label class="col-sm-2 control-label">解析预览</label>
+				<div class="col-sm-10">
+					<div class="table-responsive batch-preview">
+						<table style="min-width: 800px;">
+							<thead>
+								<tr>
+									<th style="width:5%">序号</th>
+									<th style="width:15%">主机记录</th>
+									<th style="width:10%">类型</th>
+									<th style="width:25%">记录值</th>
+									<th style="width:18%">DNS域名</th>
+									<th style="width:12%">线路</th>
+									<th style="width:8%">TTL</th>
+									<th style="width:7%">状态</th>
+								</tr>
+							</thead>
+							<tbody id="previewBody">
+							</tbody>
+						</table>
+					</div>
+					<div class="alert alert-info" id="previewSummary" style="margin-top:10px;"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="form-section record-list-section" id="recordListSection" style="display:none;">
+		<h3 class="record-list-title">
+			<i class="fa fa-list"></i> 已有解析记录
+			<button type="button" class="btn btn-sm btn-default pull-right" onclick="loadRecordList()" title="刷新列表">
+				<i class="fa fa-refresh"></i> 刷新
+			</button>
+		</h3>
+
+		<div class="toolbar">
+			<div class="search-box">
+				<div class="input-group">
+					<span class="input-group-addon"><i class="fa fa-search"></i></span>
+					<input type="text" class="form-control" id="searchKeyword" placeholder="搜索主机记录、记录值..." onkeyup="searchRecords()">
+				</div>
+			</div>
+			<div class="btn-group">
+				<button type="button" class="btn btn-success btn-sm" onclick="batchEditValue()" title="批量修改记录">
+					<i class="fa fa-edit"></i> 批量修改
+				</button>
+				<button type="button" class="btn btn-info btn-sm" onclick="batchOperation('open')" title="批量启用">
+					<i class="fa fa-play-circle"></i> 启用
+				</button>
+				<button type="button" class="btn btn-warning btn-sm" onclick="batchOperation('pause')" title="批量暂停">
+					<i class="fa fa-pause-circle"></i> 暂停
+				</button>
+				<button type="button" class="btn btn-danger btn-sm" onclick="batchDelete()" title="批量删除选中记录">
+					<i class="fa fa-trash"></i> 删除
+				</button>
+				<span class="text-muted" style="margin-left:8px;" id="selectedCount"></span>
+			</div>
+		</div>
+
+		<div class="table-responsive">
+			<table class="record-table">
+				<thead>
+					<tr>
+						<th style="width:3%;text-align:center;"><input type="checkbox" id="checkAll" onclick="toggleCheckAll(this)"></th>
+						<th style="width:11%">主机记录</th>
+						<th style="width:7%">类型</th>
+						<th style="width:18%">记录值</th>
+						<th style="width:10%">线路</th>
+						<th style="width:5%">TTL</th>
+						<th style="width:6%">状态</th>
+						<th style="width:8%">备注</th>
+						<th style="width:32%;text-align:center;">操作</th>
+					</tr>
+				</thead>
+				<tbody id="recordListBody">
+				</tbody>
+			</table>
+		</div>
+
+		<div class="pagination-wrapper clearfix" id="paginationWrapper" style="display:none;">
+			<div class="pagination-info" id="paginationInfo"></div>
+			<div class="pull-right" style="display:flex;align-items:center;gap:10px;">
+				<div>
+					<select id="pageSizeSelect" class="form-control input-sm" onchange="changePageSize()" style="width:auto;display:inline-block;">
+						<option value="10">10条/页</option>
+						<option value="20" selected>20条/页</option>
+						<option value="50">50条/页</option>
+						<option value="100">100条/页</option>
+					</select>
+				</div>
+				<ul class="pagination pagination-sm" id="pagination"></ul>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="modal-edit" role="dialog" aria-hidden="true" data-backdrop="static">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content animated flipInX">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+				<h4 class="modal-title">修改解析记录</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="editForm">
+					<input type="hidden" name="recordid" id="edit_recordid">
+					<input type="hidden" name="recordinfo" id="edit_recordinfo">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="form-group">
+								<label class="col-sm-3 control-label">主机记录</label>
+								<div class="col-sm-9">
+									<input type="text" class="form-control" name="name" id="edit_name" required>
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="col-sm-3 control-label">记录类型</label>
+								<div class="col-sm-9">
+									<select name="type" id="edit_type" class="form-control">
+										<option value="A">A</option>
+										<option value="CNAME">CNAME</option>
+										<option value="AAAA">AAAA</option>
+										<option value="NS">NS</option>
+										<option value="MX">MX</option>
+										<option value="SRV">SRV</option>
+										<option value="TXT">TXT</option>
+										<option value="CAA">CAA</option>
+									</select>
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="col-sm-3 control-label">记录值</label>
+								<div class="col-sm-9">
+									<input type="text" class="form-control" name="value" id="edit_value" required>
+								</div>
+							</div>
+							<div class="form-group" style="display:none" id="edit_mx_type">
+								<label class="col-sm-3 control-label">MX优先级</label>
+								<div class="col-sm-9">
+									<input type="number" class="form-control" name="mx" id="edit_mx" value="10" min="1" max="65535">
+								</div>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="form-group">
+								<label class="col-sm-3 control-label">线路类型</label>
+								<div class="col-sm-9" id="edit_line_list">
+									<select name="line" id="edit_line" class="form-control"></select>
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="col-sm-3 control-label">TTL</label>
+								<div class="col-sm-9">
+									<input type="number" class="form-control" name="ttl" id="edit_ttl" min="1">
+								</div>
+							</div>
+							<div class="form-group" style="display:none" id="edit_weight_group">
+								<label class="col-sm-3 control-label">权重</label>
+								<div class="col-sm-9">
+									<input type="number" class="form-control" name="weight" id="edit_weight" value="" min="0">
+								</div>
+							</div>
+							<div class="form-group" style="display:none" id="edit_remark_group">
+								<label class="col-sm-3 control-label">备注</label>
+								<div class="col-sm-9">
+									<input type="text" class="form-control" name="remark" id="edit_remark">
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+				<button type="button" class="btn btn-primary" onclick="updateRecord()">保存修改</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="modal-batch-edit" role="dialog" aria-hidden="true" data-backdrop="static">
+	<div class="modal-dialog">
+		<div class="modal-content animated flipInX">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+				<h4 class="modal-title">批量修改记录</h4>
+			</div>
+			<div class="modal-body">
+				<form class="form-horizontal" id="batchEditForm">
+					<input type="hidden" name="action" id="batch_action" value="value">
+					<input type="hidden" name="recordinfo" id="batch_recordinfo">
+					<div class="form-group">
+						<label class="col-sm-3 control-label">记录类型</label>
+						<div class="col-sm-9">
+							<select name="type" id="batch_type" class="form-control">
+								<option value="">不修改</option>
+								<option value="A">A</option>
+								<option value="CNAME">CNAME</option>
+								<option value="AAAA">AAAA</option>
+								<option value="NS">NS</option>
+								<option value="MX">MX</option>
+								<option value="SRV">SRV</option>
+								<option value="TXT">TXT</option>
+								<option value="CAA">CAA</option>
+							</select>
+							<p class="help-block text-muted">选择新的记录类型，不修改则留空</p>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">新记录值</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" name="value" id="batch_value" placeholder="请输入新的记录值">
+							<p class="help-block text-muted">留空则不修改记录值</p>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">新线路</label>
+						<div class="col-sm-9" id="modal_batch_line_list">
+							<select name="line" id="modal_batch_line" class="form-control">
+								<option value="">不修改</option>
+							</select>
+							<p class="help-block text-muted">选择新线路，不修改则留空（支持多级选择）</p>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+				<button type="button" class="btn btn-primary" onclick="confirmBatchEdit()">确认修改</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="modal-domain-select" role="dialog" aria-hidden="true" data-backdrop="static">
+	<div class="modal-dialog modal-md">
+		<div class="modal-content animated flipInX">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+				<h4 class="modal-title">选择DNS配置</h4>
+			</div>
+			<div class="modal-body">
+				<div class="alert alert-warning">
+					<i class="fa fa-exclamation-triangle"></i> 检测到多个不同的域名，请为每个域名选择对应的DNS配置：
+				</div>
+				<div class="domain-select-modal" id="domainSelectModal">
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+				<button type="button" class="btn btn-primary" onclick="confirmDomainSelection()">确定</button>
+			</div>
+		</div>
+	</div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/select2-4.0.13.min.js"></script>
+<script>
+var allRecords = [];
+var filteredRecords = [];
+var currentPage = 1;
+var pageSize = 20;
+var totalRecords = 0;
+
+// 域名列表（用于批量添加时匹配）
+var domainList = [];
+{foreach $domainList as $domain}
+domainList.push({
+	id: '{$domain.id}',
+	name: '{$domain.name}',
+	dnsType: '{$domain.dnsType}'
+});
+{/foreach}
+
+// 解析后的批量数据
+var parsedBatchData = [];
+var domainMapping = {}; // 域名到ID的映射
+
+$(document).ready(function(){
+	$('#domainSelect').select2({
+		placeholder: '请选择域名',
+		allowClear: true,
+		width: '100%',
+		language: {
+			noResults: function(){ return '未找到匹配的域名'; },
+			searching: function(){ return '搜索中...'; }
+		}
+	});
+	
+	$('#defaultDomainSelect').select2({
+		placeholder: '选择默认域名',
+		allowClear: true,
+		width: '100%',
+		language: {
+			noResults: function(){ return '未找到匹配的域名'; },
+			searching: function(){ return '搜索中...'; }
+		}
+	});
+	
+	// 默认域名选择时更新线路选项
+	$('#defaultDomainSelect').on('change', function(){ 
+		var domainId = $(this).val();
+		if(domainId){
+			// 加载域名信息以获取线路选项
+			var ii = layer.load(2);
+			$.ajax({
+				type : 'POST',
+				url : '/record/quickinfo/' + domainId,
+				dataType : 'json',
+				success : function(data) {
+					layer.close(ii);
+					if(data.code == 0){
+						// 更新批量添加的线路选项
+						var lineOptions = '<option value="">自动选择</option>';
+						var firstOption = null;
+						$.each(data.data.recordLine, function(index, item){
+							if(item.parent == null){
+								if(!firstOption) firstOption = item.id;
+								lineOptions += '<option value="'+item.id+'">'+item.name+'</option>';
+							}
+						});
+						// 清空并重新添加线路选择器
+						$('#batch_line_list').html('<select name="defaultLine" id="defaultLineSelect" class="form-control" onchange="changeBatchLine(this)">'+lineOptions+'</select>');
+						// 保存当前线路信息，用于后续处理
+						window.currentRecordLine = data.data.recordLine;
+						// 自动选择第一个线路
+						if(firstOption){
+							$('#defaultLineSelect').val(firstOption).trigger('change');
+						}
+					}else{
+						layer.alert(data.msg, {icon: 2});
+					}
+				},
+				error : function() {
+					layer.close(ii);
+					layer.alert('获取域名信息失败', {icon: 2});
+				}
+			});
+		}
+	});
+
+	$('select[name=type]').change(function(){
+		if($(this).val() == 'MX'){
+			$("#mx_type").show();
+		}else{
+			$("#mx_type").hide();
+		}
+		if(window.showWeight){
+			if($(this).val() == 'A' || $(this).val() == 'CNAME' || $(this).val() == 'AAAA'){
+				$("#weight").show();
+			}else{
+				$("#weight").hide();
+			}
+		}
+	});
+
+	$('#domainSelect').on('change', function(){
+		var domainId = $(this).val();
+		if(domainId){
+			loadDomainInfo(domainId);
+			currentPage = 1;
+			loadRecordList();
+			$('#recordListSection').show();
+		}else{
+			$('#line_list').html('<select name="line" class="form-control"><option value="">请先选择域名</option></select>');
+			$('#weight').hide();
+			$('#remark_group').hide();
+			$('#recordListSection').hide();
+		}
+	});
+});
+
+function switchTab(tab){
+	$('.tab-button').removeClass('active');
+	$('.tab-content').removeClass('active');
+	
+	if(tab == 'single'){
+		$('[onclick="switchTab(\'single\')"]').addClass('active');
+		$('#tab-single').addClass('active');
+		
+		// 如果选择了域名，显示已有解析记录
+		var domainId = $('#domainSelect').val();
+		if(domainId){
+			$('#recordListSection').show();
+		}
+	}else{
+		$('[onclick="switchTab(\'batch\')"]').addClass('active');
+		$('#tab-batch').addClass('active');
+		
+		// 隐藏已有解析记录
+		$('#recordListSection').hide();
+		
+		// 初始化批量添加的线路选项
+		initBatchLineOptions();
+	}
+}
+
+function initBatchLineOptions(){
+	var lineOptions = '<option value="">自动选择</option>';
+	if(window.currentRecordLine){
+		$.each(window.currentRecordLine, function(index, item){
+			if(item.parent == null){
+				lineOptions += '<option value="'+item.id+'">'+item.name+'</option>';
+			}
+		});
+	}
+	$('#defaultLineSelect').html(lineOptions);
+}
+
+function loadDomainInfo(domainId){
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/record/quickinfo/' + domainId,
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				renderLineOptions(data.data.recordLine, data.data.weight, data.data.remark);
+			}else{
+				layer.alert(data.msg, {icon: 2});
+			}
+		},
+		error : function() {
+			layer.close(ii);
+			layer.alert('获取域名信息失败', {icon: 2});
+		}
+	});
+}
+
+function renderLineOptions(recordLine, showWeight, showRemark){
+	window.showWeight = showWeight;
+	window.showRemark = showRemark;
+	var options = '<select name="line" class="form-control" onchange="changeLine(this)" required>';
+	var firstOption = null;
+	$.each(recordLine, function(index, item){
+		if(item.parent == null){
+			if(!firstOption) firstOption = item.id;
+			options += '<option value="'+item.id+'">'+item.name+'</option>';
+		}
+	});
+	options += '</select>';
+	$('#line_list').html(options);
+	window.currentRecordLine = recordLine;
+
+	if(firstOption){
+		$('#line_list select[name=line]').val(firstOption);
+	}
+
+	if(showWeight){
+		var type = $('select[name=type]').val();
+		if(type == 'A' || type == 'CNAME' || type == 'AAAA'){
+			$('#weight').show();
+		}else{
+			$('#weight').hide();
+		}
+	}else{
+		$('#weight').hide();
+	}
+
+	if(showRemark == 2){
+		$('#remark_group').show();
+	}else{
+		$('#remark_group').hide();
+	}
+}
+
+function changeLine(obj){
+	var line = $(obj).val();
+	var flag = false;
+	$("#line_list").children().each(function(index, elem){
+		if(flag) $(elem).remove()
+		if(obj == elem){ flag = true; }
+	})
+	if($(obj).find("option:selected").text() == '子集线路（非必填）') return;
+	if(window.currentRecordLine){
+		var tempLine = window.currentRecordLine.filter((x) => x.parent == line)
+		if(tempLine.length > 0){
+			var option = line.substr(0,2) == 'N.' ? '' : '<option value="'+line+'">子集线路（非必填）</option>';
+			$.each(tempLine, function(index, item){
+				option += '<option value="'+item.id+'">'+item.name+'</option>';
+			})
+			$("#line_list").append('<select name="line" class="form-control" onchange="changeLine(this)">'+option+'</select>');
+		}
+	}
+}
+
+function changeBatchLine(obj){
+	var line = $(obj).val();
+	var flag = false;
+	$("#batch_line_list").children().each(function(index, elem){
+		if(flag) $(elem).remove()
+		if(obj == elem){ flag = true; }
+	})
+	if($(obj).find("option:selected").text() == '子集线路（非必填）') return;
+	if(window.currentRecordLine){
+		var tempLine = window.currentRecordLine.filter((x) => x.parent == line)
+		if(tempLine.length > 0){
+			var option = line.substr(0,2) == 'N.' ? '' : '<option value="'+line+'">子集线路（非必填）</option>';
+			$.each(tempLine, function(index, item){
+				option += '<option value="'+item.id+'">'+item.name+'</option>';
+			})
+			$("#batch_line_list").append('<select name="defaultLine" class="form-control" onchange="changeBatchLine(this)">'+option+'</select>');
+		}
+	}
+}
+
+function resetForm(){
+	var domainId = $('#domainSelect').val();
+	
+	$('#quickAddForm')[0].reset();
+	
+	if(domainId){
+		$('#domainSelect').val(domainId).trigger('change');
+	}
+	
+	$('#line_list').html('<select name="line" class="form-control"><option value="">请先选择域名</option></select>');
+	$('#weight').hide();
+	$('#remark_group').hide();
+	$('#mx_type').hide();
+}
+
+function resetBatchForm(){
+	$('#batchInput').val('');
+	$('#batchValueInput').val(''); // 重置批量记录值
+	$('#defaultDomainSelect').val(null).trigger('change');
+	$('#defaultTypeSelect').val('');
+	$('#defaultTtlInput').val(600);
+	$('#defaultLineSelect').val('').trigger('change'); // 重置线路选择
+	
+	// 清空线路选择器的子元素
+	$('#batch_line_list').empty();
+	// 重新添加默认线路选项
+	$('#batch_line_list').append('<select name="defaultLine" id="defaultLineSelect" class="form-control" onchange="changeBatchLine(this)"><option value="">自动选择</option></select>');
+	
+	$('#previewSection').hide();
+	parsedBatchData = [];
+	domainMapping = {};
+}
+
+function previewBatchData(){
+	var inputText = $('#batchInput').val().trim();
+	
+	if(!inputText){
+		layer.alert('请输入批量解析数据', {icon: 2});
+		return;
+	}
+	
+	var lines = inputText.split('\n');
+	var defaultDomainId = $('#defaultDomainSelect').val();
+	var defaultType = $('#defaultTypeSelect').val();
+	// 获取最后一个线路选择器的值（支持多级线路）
+	var defaultLine = $('#batch_line_list select[name=defaultLine]').last().val() || $('#defaultLineSelect').val();
+	var defaultTtl = $('#defaultTtlInput').val();
+	// 获取批量记录值（用于格式4）
+	var batchValue = $('#batchValueInput').val();
+	
+	parsedBatchData = [];
+	domainMapping = {};
+	var uniqueDomains = new Set();
+	var errors = [];
+	
+	$.each(lines, function(index, line){
+		line = $.trim(line);
+		if(!line) return; // 跳过空行
+		
+		var parts = line.split(/\s+/); // 按空白分割
+		
+		// 检查是否是格式4：只输入域名（使用批量记录值）
+		if(parts.length == 1 && batchValue){
+			// 格式4：dns域名
+			var domainPart = parts[0];
+			var found = false;
+			var host = '@'; // 默认主机记录为@
+			var domainName = domainPart;
+			
+			// 先按域名长度排序，从长到短，确保优先匹配最长的域名
+			var sortedDomains = domainList.slice().sort(function(a, b){
+				return b.name.length - a.name.length;
+			});
+			
+			// 从域名列表中查找匹配的域名
+			$.each(sortedDomains, function(i, domain){
+				var dnsDomainName = domain.name;
+				
+				// 检查是否是完整域名匹配
+				if(domainPart === dnsDomainName){
+					host = '@'; // 完整域名，主机记录为@
+					domainName = domain.name;
+					found = true;
+					return false;
+				}
+				// 检查是否以 ".域名" 结尾（支持格式3的主机记录.dns域名格式）
+				else if(domainPart.endsWith('.' + dnsDomainName)){
+					// 提取主机记录
+					host = domainPart.substring(0, domainPart.length - (dnsDomainName.length + 1));
+					domainName = domain.name;
+					found = true;
+					return false;
+				}
+			});
+			
+			if(!found){
+				errors.push('第' + (index + 1) + '行：域名 "' + domainPart + '" 不在你的域名列表中');
+				return;
+			}
+			
+			// 使用批量记录值
+			value = batchValue;
+		} else if(parts.length < 2){
+			// 其他格式至少需要两个部分
+			errors.push('第' + (index + 1) + '行格式错误：至少需要主机记录和记录值');
+			return;
+		} else if(parts.length == 2){
+			// 检查是否是格式3：记录值 主机记录.dns域名
+			var hostDomainPart = parts[1];
+			var found = false;
+			
+			// 先按域名长度排序，从长到短，确保优先匹配最长的域名
+			var sortedDomains = domainList.slice().sort(function(a, b){
+				return b.name.length - a.name.length;
+			});
+			
+			// 从域名列表中查找匹配的域名
+			$.each(sortedDomains, function(i, domain){
+				var dnsDomainName = domain.name;
+				
+				// 检查是否以 ".域名" 结尾
+				if(hostDomainPart.endsWith('.' + dnsDomainName)){
+					// 找到匹配的域名
+					host = hostDomainPart.substring(0, hostDomainPart.length - (dnsDomainName.length + 1));
+					value = parts[0];
+					domainName = domain.name;
+					found = true;
+					return false; // 停止循环
+				}
+			});
+			
+			if(!found){
+				// 检查是否直接就是域名
+				$.each(domainList, function(i, domain){
+					if(hostDomainPart === domain.name){
+						host = '@'; // 直接就是域名，主机记录为@
+						value = parts[0];
+						domainName = domain.name;
+						found = true;
+						return false; // 停止循环
+					}
+				});
+				
+				if(!found){
+					// 没有找到匹配的域名，使用原有逻辑
+					host = parts[0];
+					value = parts[1];
+					domainName = parts[2] || null;
+				}
+			}
+		} else if(parts.length >= 2){
+			// 原有格式：主机记录 记录值 [域名]
+			host = parts[0];
+			value = parts[1];
+			domainName = parts[2] || null;
+		}
+		
+		// 确定使用的域名
+		var finalDomainId;
+		var finalDomainName;
+		
+		if(domainName){
+			// 用户指定了域名
+			finalDomainName = domainName;
+			
+			// 在域名列表中查找
+			var foundDomain = null;
+			$.each(domainList, function(i, d){
+				if(d.name.toLowerCase() === domainName.toLowerCase()){
+					foundDomain = d;
+					return false;
+				}
+			});
+			
+			if(foundDomain){
+				finalDomainId = foundDomain.id;
+				domainMapping[domainName] = foundDomain.id;
+			}else{
+				// 域名不在列表中
+				errors.push('第' + (index + 1) + '行：域名 "' + domainName + '" 不在你的域名列表中');
+				return;
+			}
+		}else if(defaultDomainId){
+			// 使用默认域名
+			finalDomainId = defaultDomainId;
+			var defaultDomainObj = null;
+			$.each(domainList, function(i, d){
+				if(d.id === defaultDomainId){
+					defaultDomainObj = d;
+					return false;
+				}
+			});
+			finalDomainName = defaultDomainObj ? defaultDomainObj.name : '';
+		}else{
+			// 既没有指定域名也没有默认域名
+			errors.push('第' + (index + 1) + '行：未指定域名且没有设置默认域名');
+			return;
+		}
+		
+		uniqueDomains.add(finalDomainName);
+		
+		// 确定记录类型
+		var type = defaultType;
+		if(!type){
+			type = getDnsType(value);
+		}
+		
+		// 构建记录对象
+		parsedBatchData.push({
+			host: host,
+			value: value,
+			type: type,
+			domainId: finalDomainId,
+			domainName: finalDomainName,
+			line: defaultLine,
+			ttl: defaultTtl,
+			lineNumber: index + 1,
+			status: 'pending'
+		});
+	});
+	
+	if(errors.length > 0){
+		layer.alert('发现以下错误：\n\n' + errors.join('\n'), {icon: 2});
+		return;
+	}
+	
+	if(parsedBatchData.length === 0){
+		layer.alert('没有有效的解析记录', {icon: 2});
+		return;
+	}
+	
+	// 检测是否有多个不同的DNS服务商
+	var uniqueDnsTypes = new Set();
+	var domainDnsMap = {}; // 域名到DNS类型的映射
+	
+	$.each(parsedBatchData, function(index, row){
+		// 查找该域名的DNS类型
+		var domainInfo = null;
+		$.each(domainList, function(i, d){
+			if(d.id === row.domainId){
+				domainInfo = d;
+				return false;
+			}
+		});
+		if(domainInfo){
+			uniqueDnsTypes.add(domainInfo.dnsType);
+			domainDnsMap[row.domainId] = domainInfo.dnsType;
+		}
+	});
+	
+	// 检测是否有多个不同的域名（按ID区分）
+	var uniqueDomainIds = new Set(parsedBatchData.map(r => r.domainId));
+	
+	// 如果有多个不同的域名，显示选择框
+	if(uniqueDomainIds.size > 1){
+		showDomainSelectionModal(Array.from(uniqueDomainIds));
+		return;
+	}
+	
+	// 显示预览
+	renderPreview();
+}
+
+function getDnsType(value){
+	value = value.toLowerCase();
+	if(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(value)){
+		return 'A';
+	}else if(/^([a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i.test(value)){
+		return 'CNAME';
+	}else if(/^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/.test(value)){
+		return 'AAAA';
+	}else if(/^\d+$/.test(value) && parseInt(value) <= 65535){
+		return 'MX';
+	}else{
+		return 'A';
+	}
+}
+
+function renderPreview(){
+	var html = '';
+	var validCount = 0;
+	var invalidCount = 0;
+	
+	$.each(parsedBatchData, function(index, row){
+		var statusHtml = '<span class="status-success"><i class="fa fa-check"></i> 待添加</span>';
+		validCount++;
+		
+		html += '<tr>';
+		html += '<td style="text-align:center;">' + row.lineNumber + '</td>';
+		html += '<td>' + (row.host == '@' ? '@ (主域名)' : row.host) + '</td>';
+		html += '<td style="text-align:center;"><span class="label label-primary">' + row.type + '</span></td>';
+		html += '<td title="' + htmlEscape(row.value) + '">' + row.value + '</td>';
+		html += '<td><strong>' + row.domainName + '</strong></td>';
+		html += '<td style="text-align:center;">' + (row.line ? row.line : '默认') + '</td>';
+		html += '<td style="text-align:center;">' + row.ttl + '</td>';
+		html += '<td style="text-align:center;">' + statusHtml + '</td>';
+		html += '</tr>';
+	});
+	
+	$('#previewBody').html(html);
+	$('#previewSummary').html('<strong>共 ' + validCount + ' 条记录待添加</strong>');
+	$('#previewSection').show();
+}
+
+function showDomainSelectionModal(domains){
+	var html = '';
+	
+	$.each(domains, function(index, domainIdentifier){
+		// 检查是域名ID还是域名名称
+		var domainName = '';
+		var domainId = '';
+		
+		// 检查是否为数字（域名ID）
+		if(!isNaN(domainIdentifier)){
+			// 是域名ID，查找对应的域名名称
+			var domainInfo = null;
+			$.each(domainList, function(i, d){
+				if(d.id === domainIdentifier){
+					domainInfo = d;
+					return false;
+				}
+			});
+			if(domainInfo){
+				domainName = domainInfo.name;
+				domainId = domainInfo.id;
+			}
+		}else{
+			// 是域名名称
+			domainName = domainIdentifier;
+			// 查找对应的域名ID
+			var domainInfo = null;
+			$.each(domainList, function(i, d){
+				if(d.name === domainIdentifier){
+					domainInfo = d;
+					return false;
+				}
+			});
+			if(domainInfo){
+				domainId = domainInfo.id;
+			}
+		}
+		
+		if(!domainName) return; // 跳过无效的域名
+		
+		// 查找所有可能的匹配域名（同域名的不同DNS配置）
+		var matches = [];
+		$.each(domainList, function(i, d){
+			if(d.name === domainName){
+				matches.push(d);
+			}
+		});
+		
+		if(matches.length === 0){
+			matches = domainList; // 如果没找到精确匹配，显示全部
+		}
+		
+		html += '<div style="margin-bottom:20px;">';
+		html += '<h5><strong>' + domainName + '</strong></h5>';
+		html += '<div class="row">';
+		$.each(matches, function(j, match){
+			var isSelected = j === 0; // 默认选中第一个
+			html += '<div class="col-md-6">';
+			html += '<div class="domain-item' + (isSelected ? ' selected' : '') + '" ';
+			html += 'data-domain="' + domainName + '" data-id="' + match.id + '" ';
+			html += 'onclick="selectDomainItem(this)">';
+			html += '<strong>' + match.name + '</strong> [' + match.dnsType + ']';
+			html += '</div>';
+			html += '</div>';
+			
+			// 自动映射第一个
+			if(isSelected){
+				domainMapping[domainName] = match.id;
+			}
+		});
+		html += '</div></div>';
+	});
+	
+	$('#domainSelectModal').html(html);
+	$('#modal-domain-select').modal('show');
+}
+
+function selectDomainItem(element){
+	var $element = $(element);
+	var domainName = $element.data('domain');
+	var domainId = $element.data('id');
+	
+	// 找到同一域名组中的所有domain-item（同一row中的）
+	var $row = $element.closest('.row');
+	$row.find('.domain-item').removeClass('selected');
+	$element.addClass('selected');
+	
+	// 更新映射
+	domainMapping[domainName] = domainId;
+}
+
+function confirmDomainSelection(){
+	$('#modal-domain-select').modal('hide');
+	
+	// 更新parsedBatchData中的domainId
+	$.each(parsedBatchData, function(index, row){
+		if(domainMapping[row.domainName]){
+			row.domainId = domainMapping[row.domainName];
+		}
+	});
+	
+	// 重新渲染预览
+	renderPreview();
+	
+	layer.msg('域名配置已更新', {icon: 1, time: 1500});
+}
+
+function submitBatchData(){
+	if(parsedBatchData.length === 0){
+		layer.alert('请先预览解析结果', {icon: 2});
+		return;
+	}
+	
+	layer.confirm('确定要批量添加这 <strong>' + parsedBatchData.length + '</strong> 条解析记录吗？', {
+		title: '确认批量添加',
+		icon: 0,
+		btn: ['确定添加', '取消']
+	}, function(){
+		executeBatchAdd();
+	});
+}
+
+function executeBatchAdd(){
+	// 按域名分组
+	var groupedByDomain = {};
+	$.each(parsedBatchData, function(index, row){
+		if(!groupedByDomain[row.domainId]){
+			groupedByDomain[row.domainId] = [];
+		}
+		groupedByDomain[row.domainId].push(row);
+	});
+	
+	var totalSuccess = 0;
+	var totalFail = 0;
+	var completedCount = 0;
+	var totalCount = Object.keys(groupedByDomain).length;
+	var failReasons = []; // 记录失败原因
+	
+	var ii = layer.load(2);
+	
+	// 逐个域名执行批量添加
+	$.each(groupedByDomain, function(domainId, records){
+		// 构建批量数据字符串
+		var recordLines = [];
+		$.each(records, function(i, r){
+			recordLines.push(r.host + ' ' + r.value);
+		});
+		var recordStr = recordLines.join('\n');
+		
+		// 发送请求
+		$.ajax({
+			type : 'POST',
+			url : '/record/batchadd/' + domainId,
+			data : function(){
+				var data = {
+					record: recordStr,
+					type: records[0].type,
+					ttl: records[0].ttl
+				};
+				// 只有当line有值时才发送，否则让后端自动设置
+				if(records[0].line){
+					data.line = records[0].line;
+				}
+				return data;
+			}(),
+			dataType : 'json',
+			async: false, // 同步执行，确保顺序
+			success : function(data) {
+					completedCount++;
+					if(data.code == 0){
+						// 从消息中提取成功数量
+						var match = data.msg.match(/成功(\d+)条/);
+						if(match){
+							totalSuccess += parseInt(match[1]);
+						}
+						var failMatch = data.msg.match(/失败(\d+)条/);
+						if(failMatch){
+							var failCount = parseInt(failMatch[1]);
+							totalFail += failCount;
+							
+							// 为每条失败的记录添加详细的失败原因
+							if(failCount > 0){
+								// 找出可能失败的记录（假设是最后几条）
+								var startIndex = records.length - failCount;
+								for(var i = startIndex; i < records.length; i++){
+									var record = records[i];
+									failReasons.push('记录 ' + record.host + ' [域名: ' + record.domainName + ']：' + data.msg);
+								}
+							}
+						} else if(data.msg.indexOf('失败') !== -1){
+							// 当code==0但消息中包含失败时，添加域名信息
+							failReasons.push('域名 ' + records[0].domainName + '：' + data.msg);
+						}
+					}else{
+						totalFail += records.length;
+						// 记录失败原因
+						$.each(records, function(i, record){
+							failReasons.push('记录 ' + record.host + ' [域名: ' + record.domainName + ']：' + data.msg);
+						});
+					}
+					
+					// 全部完成
+					if(completedCount >= totalCount){
+						layer.close(ii);
+						
+						var msg = '批量添加完成！';
+						if(totalSuccess > 0){
+							msg += '\n成功：' + totalSuccess + ' 条';
+						}
+						if(totalFail > 0){
+							msg += '\n失败：' + totalFail + ' 条';
+							if(failReasons.length > 0){
+								msg += '\n\n失败原因：';
+								$.each(failReasons, function(i, reason){
+									msg += '\n' + (i + 1) + '. ' + reason;
+								});
+							}
+						}
+						
+						layer.alert(msg, {
+							icon: totalFail > 0 ? 2 : 1,
+							btn: ['确定'],
+							yes: function(index){
+								layer.close(index);
+								try {
+									resetBatchForm();
+									loadRecordList();
+								} catch(e) {
+									console.error('Error in callback:', e);
+								}
+							}
+						});
+					}
+				},
+			error : function() {
+					completedCount++;
+					totalFail += records.length;
+					// 记录网络错误
+					$.each(records, function(i, record){
+						failReasons.push('记录 ' + record.host + ' [域名: ' + record.domainName + ']：网络错误，无法连接服务器');
+					});
+					
+					if(completedCount >= totalCount){
+						layer.close(ii);
+						var msg = '批量添加完成！';
+						if(totalSuccess > 0){
+							msg += '\n成功：' + totalSuccess + ' 条';
+						}
+						if(totalFail > 0){
+							msg += '\n失败：' + totalFail + ' 条';
+							if(failReasons.length > 0){
+								msg += '\n\n失败原因：';
+								$.each(failReasons, function(i, reason){
+									msg += '\n' + (i + 1) + '. ' + reason;
+								});
+							}
+						}
+						
+						layer.alert(msg, {
+							icon: totalFail > 0 ? 2 : 1,
+							btn: ['确定'],
+							yes: function(index){
+								layer.close(index);
+								try {
+									resetBatchForm();
+									loadRecordList();
+								} catch(e) {
+									console.error('Error in callback:', e);
+								}
+							}
+						});
+					}
+				}
+		});
+	});
+}
+
+function loadRecordList(){
+	var domainId = $('#domainSelect').val();
+	if(!domainId) return;
+
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/record/data/' + domainId,
+		data : {offset: (currentPage - 1) * pageSize, limit: pageSize},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			allRecords = data.rows || [];
+			filteredRecords = allRecords;
+			totalRecords = data.total || 0;
+
+			if(filteredRecords.length > 0){
+				renderRecordList(filteredRecords);
+			}else{
+				renderEmptyRecord();
+			}
+			renderPagination();
+		},
+		error : function() {
+			layer.close(ii);
+			layer.alert('获取记录列表失败', {icon: 2});
+		}
+	});
+}
+
+function renderRecordList(records){
+	$('#checkAll').prop('checked', false);
+
+	var html = '';
+	$.each(records, function(index, row){
+		var statusHtml = row.Status == '1'
+			? '<font color="green"><i class="fa fa-check-circle"></i> 启用</font>'
+			: '<font color="orange"><i class="fa fa-pause-circle"></i> 暂停</font>';
+
+		var valueDisplay = Array.isArray(row.Value) ? row.Value.join(', ') : row.Value;
+		var remarkDisplay = row.Remark || '-';
+		var recordInfoStr = htmlEscape(JSON.stringify(row));
+		var copyId = 'copy-value-' + row.RecordId;
+		var remarkCopyId = 'copy-remark-' + row.RecordId;
+
+		html += '<tr data-index="' + index + '">';
+		html += '<td style="text-align:center;"><input type="checkbox" class="record-checkbox" value="' + row.RecordId + '" data-info="' + recordInfoStr + '" onchange="updateSelectedCount()"></td>';
+		html += '<td>' + (row.Name == '@' ? '@ (主域名)' : row.Name) + '</td>';
+		html += '<td><span class="label label-primary">' + row.Type + '</span></td>';
+		html += '<td class="record-value" title="' + htmlEscape(valueDisplay) + '">';
+		html += '<span id="' + copyId + '" data-value="' + htmlEscape(valueDisplay) + '">' + valueDisplay + '</span>';
+		html += '<a href="javascript:void(0);" title="复制记录值" onclick="copyToClipboard(null, \'#' + copyId + '\')" style="padding-left:6px;"><i class="fa fa-copy"></i></a>';
+		html += '</td>';
+		html += '<td>' + (row.LineName || '-') + '</td>';
+		html += '<td>' + row.TTL + '</td>';
+		html += '<td>' + statusHtml + '</td>';
+		html += '<td class="record-value" title="' + htmlEscape(remarkDisplay) + '">';
+		html += '<span id="' + remarkCopyId + '" data-value="' + htmlEscape(remarkDisplay) + '">' + remarkDisplay + '</span>';
+		html += '<a href="javascript:void(0);" title="复制备注" onclick="copyToClipboard(null, \'#' + remarkCopyId + '\')" style="padding-left:6px;"><i class="fa fa-copy"></i></a>';
+		html += '</td>';
+		html += '<td style="text-align:center;">';
+		if(row.Type != 'NS' && row.Type != 'SOA' || row.Name != '@'){
+			html += '<button type="button" class="btn btn-primary btn-xs" onclick="editRecord(' + index + ')" title="修改此记录">';
+			html += '<i class="fa fa-edit"></i> 修改</button>&nbsp;';
+			if(row.Status == '1'){
+				html += '<button type="button" class="btn btn-warning btn-xs" onclick="setRecordStatus(' + index + ', \'0\')" title="暂停此记录">';
+				html += '<i class="fa fa-pause"></i> 暂停</button>&nbsp;';
+			}else{
+				html += '<button type="button" class="btn btn-success btn-xs" onclick="setRecordStatus(' + index + ', \'1\')" title="启用此记录">';
+				html += '<i class="fa fa-play"></i> 启用</button>&nbsp;';
+			}
+			html += '<button type="button" class="btn btn-danger btn-xs" onclick="deleteRecord(' + index + ')" title="删除此记录">';
+			html += '<i class="fa fa-trash"></i> 删除</button>&nbsp;';
+			
+			// 添加备注按钮
+			if(window.showRemark == 1){
+				html += '<button type="button" class="btn btn-info btn-xs" onclick="setRemark(' + index + ')" title="修改备注">';
+				html += '<i class="fa fa-pencil"></i> 备注</button>&nbsp;';
+			}
+			
+			// 添加访问按钮（仅支持A、CNAME、AAAA、URL类型）
+			if(['A', 'CNAME', 'AAAA', 'REDIRECT_URL', 'FORWARD_URL'].includes(row.Type)){
+				html += '<button type="button" class="btn btn-default btn-xs" onclick="visitDomain(' + index + ')" title="访问域名">';
+				html += '<i class="fa fa-external-link"></i> 访问</button>&nbsp;';
+			}
+			
+			// 添加复制域名按钮
+			html += '<button type="button" class="btn btn-default btn-xs" onclick="copyDomain(' + index + ')" title="复制域名">';
+			html += '<i class="fa fa-copy"></i> 复制域名</button>';
+		}else{
+			html += '-';
+		}
+		html += '</td>';
+		html += '</tr>';
+	});
+	$('#recordListBody').html(html);
+	updateSelectedCount();
+}
+
+function renderEmptyRecord(){
+	$('#checkAll').prop('checked', false);
+
+	$('#recordListBody').html('<tr><td colspan="9" class="no-records"><i class="fa fa-inbox fa-3x"></i><br>暂无解析记录</td></tr>');
+	$('#selectedCount').text('');
+	$('#paginationWrapper').hide();
+}
+
+function renderPagination(){
+	if(totalRecords <= pageSize){
+		$('#paginationWrapper').hide();
+		return;
+	}
+
+	$('#paginationWrapper').show();
+
+	var totalPages = Math.ceil(totalRecords / pageSize);
+	var infoHtml = '共 <strong>' + totalRecords + '</strong> 条记录';
+	$('#paginationInfo').html(infoHtml);
+
+	var paginationHtml = '';
+	paginationHtml += '<li class="' + (currentPage == 1 ? 'disabled' : '') + '"><a href="javascript:goToPage(' + (currentPage - 1) + ')">&laquo;</a></li>';
+
+	for(var i = 1; i <= totalPages; i++){
+		if(i == 1 || i == totalPages || (i >= currentPage - 2 && i <= currentPage + 2)){
+			paginationHtml += '<li class="' + (i == currentPage ? 'active' : '') + '"><a href="javascript:goToPage(' + i + ')">' + i + '</a></li>';
+		}else if(i == currentPage - 3 || i == currentPage + 3){
+			paginationHtml += '<li class="disabled"><a href="javascript:void(0)">...</a></li>';
+		}
+	}
+
+	paginationHtml += '<li class="' + (currentPage == totalPages ? 'disabled' : '') + '"><a href="javascript:goToPage(' + (currentPage + 1) + ')">&raquo;</a></li>';
+
+	$('#pagination').html(paginationHtml);
+}
+
+function goToPage(page){
+	var totalPages = Math.ceil(totalRecords / pageSize);
+	if(page < 1 || page > totalPages) return;
+	currentPage = page;
+	loadRecordList();
+}
+
+function changePageSize(){
+	pageSize = parseInt($('#pageSizeSelect').val());
+	currentPage = 1;
+	loadRecordList();
+}
+
+function searchRecords(){
+	var keyword = $('#searchKeyword').val().toLowerCase();
+
+	if(!keyword){
+		filteredRecords = allRecords;
+	}else{
+		filteredRecords = allRecords.filter(function(row){
+			var name = (row.Name || '').toLowerCase();
+			var value = Array.isArray(row.Value) ? row.Value.join(', ') : (row.Value || '').toLowerCase();
+			var remark = (row.Remark || '').toLowerCase();
+			return name.indexOf(keyword) > -1 || value.indexOf(keyword) > -1 || remark.indexOf(keyword) > -1;
+		});
+	}
+
+	if(filteredRecords.length > 0){
+		renderRecordList(filteredRecords);
+	}else{
+		$('#recordListBody').html('<tr><td colspan="9" class="no-records"><i class="fa fa-search fa-3x"></i><br>未找到匹配的记录</td></tr>');
+		$('#selectedCount').text('');
+	}
+}
+
+function toggleCheckAll(obj){
+	$('.record-checkbox').prop('checked', obj.checked);
+	updateSelectedCount();
+}
+
+function updateSelectedCount(){
+	var count = $('.record-checkbox:checked').length;
+	$('#selectedCount').text(count > 0 ? '已选 ' + count + ' 条' : '');
+}
+
+function editRecord(index){
+	var row = filteredRecords[index];
+	$('#edit_recordid').val(row.RecordId).data('index', index);
+	$('#edit_recordinfo').val(JSON.stringify(row));
+	$('#edit_name').val(row.Name);
+	$('#edit_type').val(row.Type);
+	$('#edit_value').val(Array.isArray(row.Value) ? row.Value.join(', ') : row.Value);
+	$('#edit_ttl').val(row.TTL);
+
+	if(row.MX !== undefined && row.MX !== null){
+		$('#edit_mx').val(row.MX);
+	}
+
+	if($('#edit_type').val() == 'MX'){
+		$('#edit_mx_type').show();
+	}else{
+		$('#edit_mx_type').hide();
+	}
+
+	if(window.showWeight){
+		$('#edit_weight').val(row.Weight || '');
+		$('#edit_weight_group').show();
+	}else{
+		$('#edit_weight_group').hide();
+	}
+
+	if(window.showRemark == 2){
+		$('#edit_remark').val(row.Remark || '');
+		$('#edit_remark_group').show();
+	}else{
+		$('#edit_remark_group').hide();
+	}
+
+	renderEditLineOptions(row.Line);
+
+	$('#edit_type').off('change').on('change', function(){
+		if($(this).val() == 'MX'){
+			$('#edit_mx_type').show();
+		}else{
+			$('#edit_mx_type').hide();
+		}
+		if(window.showWeight){
+			if($(this).val() == 'A' || $(this).val() == 'CNAME' || $(this).val() == 'AAAA'){
+				$('#edit_weight_group').show();
+			}else{
+				$('#edit_weight_group').hide();
+			}
+		}
+	});
+
+	$('#modal-edit').modal('show');
+}
+
+function renderEditLineOptions(currentLine){
+	initEditLine();
+	if($('#edit_line option[value="'+currentLine+'"]').length > 0){
+		$('#edit_line').val(currentLine);
+	}else{
+		var row = filteredRecords[$('#edit_recordid').data('index')];
+		initEditLine('<option value="'+currentLine+'">'+(row.LineName || currentLine)+'</option>');
+	}
+}
+
+function initEditLine(option){
+	option = option || '';
+	$("#edit_line_list").empty();
+	$.each(window.currentRecordLine, function(index, item){
+		if(item.parent == null){
+			option += '<option value="'+item.id+'">'+item.name+'</option>';
+		}
+	});
+	$("#edit_line_list").append('<select name="line" id="edit_line" class="form-control" onchange="changeEditLine(this)">'+option+'</select>');
+}
+
+function changeEditLine(obj){
+	var line = $(obj).val();
+	var flag = false;
+	$("#edit_line_list").children().each(function(index, elem){
+		if(flag) $(elem).remove()
+		if(obj == elem){
+			flag = true;
+		}
+	})
+	if($(obj).find("option:selected").text() == '子集线路（非必填）') return;
+	if(window.currentRecordLine){
+		var tempLine = window.currentRecordLine.filter((x) => x.parent == line)
+		if(tempLine.length > 0){
+			var option = line.substr(0,2) == 'N.' ? '' : '<option value="'+line+'">子集线路（非必填）</option>';
+			$.each(tempLine, function(index, item){
+				option += '<option value="'+item.id+'">'+item.name+'</option>';
+			})
+			$("#edit_line_list").append('<select name="line" class="form-control" onchange="changeEditLine(this)">'+option+'</select>');
+		}
+	}
+}
+
+function updateRecord(){
+	var domainId = $('#domainSelect').val();
+	var ii = layer.load(2);
+
+	$.ajax({
+		type : 'POST',
+		url : '/record/update/' + domainId,
+		data : $('#editForm').serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.msg('修改成功！', {icon: 1, time: 1000});
+				$('#modal-edit').modal('hide');
+				loadRecordList();
+			}else{
+				layer.alert('修改失败：' + data.msg, {icon: 2});
+			}
+		},
+		error : function() {
+			layer.close(ii);
+			layer.alert('服务器错误', {icon: 2});
+		}
+	});
+}
+
+function setRecordStatus(index, status){
+	var row = filteredRecords[index];
+	var actionText = status == '1' ? '启用' : '暂停';
+
+	layer.confirm('确定要' + actionText + '这条解析记录吗？<br><br><strong>' + row.Name + ' [' + row.Type + '] ' + (Array.isArray(row.Value) ? row.Value.join(',') : row.Value) + '</strong>', {
+		title: actionText + '记录',
+		icon: 0,
+		btn: [actionText, '取消']
+	}, function(){
+		var domainId = $('#domainSelect').val();
+		var ii = layer.load(2);
+		$.ajax({
+			type : 'POST',
+			url : '/record/status/' + domainId,
+			data : {
+				recordid: row.RecordId,
+				status: status,
+				recordinfo: JSON.stringify(row)
+			},
+			dataType : 'json',
+			success : function(data) {
+				layer.close(ii);
+				if(data.code == 0){
+					layer.msg(actionText + '成功！', {icon: 1, time: 1000});
+					loadRecordList();
+				}else{
+					layer.alert(actionText + '失败：' + data.msg, {icon: 2});
+				}
+			},
+			error : function() {
+				layer.close(ii);
+				layer.alert('服务器错误', {icon: 2});
+			}
+		});
+	});
+}
+
+function deleteRecord(index){
+	var row = filteredRecords[index];
+
+	layer.confirm('确定要删除这条解析记录吗？<br><br><strong>' + row.Name + ' [' + row.Type + '] ' + (Array.isArray(row.Value) ? row.Value.join(',') : row.Value) + '</strong>', {
+		title: '确认删除',
+		icon: 0,
+		btn: ['确定删除', '取消']
+	}, function(){
+		var domainId = $('#domainSelect').val();
+		var ii = layer.load(2);
+		$.ajax({
+			type : 'POST',
+			url : '/record/delete/' + domainId,
+			data : {
+				recordid: row.RecordId,
+				recordinfo: JSON.stringify(row)
+			},
+			dataType : 'json',
+			success : function(data) {
+				layer.close(ii);
+				if(data.code == 0){
+					layer.msg('删除成功！', {icon: 1, time: 1000});
+					loadRecordList();
+				}else{
+					layer.alert('删除失败：' + data.msg, {icon: 2});
+				}
+			},
+			error : function() {
+				layer.close(ii);
+				layer.alert('服务器错误', {icon: 2});
+			}
+		});
+	});
+}
+
+// 访问域名
+function visitDomain(index){
+	var row = filteredRecords[index];
+	var domainSelect = $('#domainSelect');
+	var domainText = domainSelect.find('option:selected').text();
+	
+	// 从文本中提取纯域名部分（去掉 [DNS类型]）
+	var domainName = domainText.split(' [')[0];
+	
+	if(row.Name === '@'){
+		var fullDomain = domainName;
+	}else{
+		var fullDomain = row.Name + '.' + domainName;
+	}
+	
+	// 替换通配符为www
+	fullDomain = fullDomain.replace(/\*/g, 'www');
+	
+	// 在新窗口中打开
+	window.open('http://' + fullDomain, '_blank');
+}
+
+// 复制域名
+function copyDomain(index){
+	var row = filteredRecords[index];
+	var domainSelect = $('#domainSelect');
+	var domainText = domainSelect.find('option:selected').text();
+	
+	// 从文本中提取纯域名部分（去掉 [DNS类型]）
+	var domainName = domainText.split(' [')[0];
+	
+	if(row.Name === '@'){
+		var fullDomain = domainName;
+	}else{
+		var fullDomain = row.Name + '.' + domainName;
+	}
+	
+	// 替换通配符为www
+	fullDomain = fullDomain.replace(/\*/g, 'www');
+	
+	// 复制到剪贴板
+	copyToClipboard(fullDomain);
+}
+
+// 修改备注
+function setRemark(index){
+	var row = filteredRecords[index];
+	layer.open({
+		type: 1,
+		area: ['350px'],
+		closeBtn: 2,
+		title: '编辑备注',
+		content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark" value="'+(row.Remark==null?'':row.Remark)+'" autocomplete="off" placeholder="备注信息"></div></div>',
+		btn: ['确认', '取消'],
+		yes: function(){
+			var remark = $("input[name='remark']").val();
+			var domainId = $('#domainSelect').val();
+			var ii = layer.load(2, {shade:[0.1,'#fff']});
+			$.ajax({
+				type : 'POST',
+				url : '/record/remark/' + domainId,
+				data : {recordid: row.RecordId, remark: remark},
+				dataType : 'json',
+				success : function(data) {
+					layer.close(ii);
+					if(data.code == 0){
+						layer.closeAll();
+						layer.msg('保存成功', {icon: 1, time:800});
+						loadRecordList();
+					}else{
+						layer.alert(data.msg, {icon:2});
+					}
+				},
+				error:function(data){
+					layer.close(ii);
+					layer.msg('服务器错误');
+				}
+			});
+		}
+	});
+}
+
+function batchDelete(){
+	var selected = $('.record-checkbox:checked');
+	if(selected.length == 0){
+		layer.msg('请先选择要删除的记录', {icon: 2});
+		return;
+	}
+
+	var records = [];
+	selected.each(function(){
+		records.push(JSON.parse($(this).attr('data-info')));
+	});
+
+	layer.confirm('确定要删除选中的 <strong>' + records.length + '</strong> 条记录吗？', {
+		title: '批量删除',
+		icon: 0,
+		btn: ['确定删除', '取消']
+	}, function(){
+		var domainId = $('#domainSelect').val();
+		var ii = layer.load(2);
+		$.ajax({
+			type : 'POST',
+			url : '/record/batch/' + domainId,
+			data : {
+				action: 'delete',
+				recordinfo: JSON.stringify(records)
+			},
+			dataType : 'json',
+			success : function(data) {
+				layer.close(ii);
+				if(data.code == 0){
+					layer.msg(data.msg, {icon: 1, time: 1500});
+					loadRecordList();
+				}else{
+					layer.alert('删除失败：' + data.msg, {icon: 2});
+				}
+			},
+			error : function() {
+				layer.close(ii);
+				layer.alert('服务器错误', {icon: 2});
+			}
+		});
+	});
+}
+
+function batchOperation(action){
+	var selected = $('.record-checkbox:checked');
+	if(selected.length == 0){
+		layer.msg('请先选择要操作的记录', {icon: 2});
+		return;
+	}
+
+	var records = [];
+	selected.each(function(){
+		records.push(JSON.parse($(this).attr('data-info')));
+	});
+
+	var actionText = action == 'open' ? '启用' : '暂停';
+
+	layer.confirm('确定要' + actionText + '选中的 <strong>' + records.length + '</strong> 条记录吗？', {
+		title: '批量' + actionText,
+		icon: 0,
+		btn: [actionText, '取消']
+	}, function(){
+		var domainId = $('#domainSelect').val();
+		var ii = layer.load(2);
+		$.ajax({
+			type : 'POST',
+			url : '/record/batch/' + domainId,
+			data : {
+				action: action,
+				recordinfo: JSON.stringify(records)
+			},
+			dataType : 'json',
+			success : function(data) {
+				layer.close(ii);
+				if(data.code == 0){
+					layer.msg(data.msg, {icon: 1, time: 1500});
+					loadRecordList();
+				}else{
+					layer.alert(actionText + '失败：' + data.msg, {icon: 2});
+				}
+			},
+			error : function() {
+				layer.close(ii);
+				layer.alert('服务器错误', {icon: 2});
+			}
+		});
+	});
+}
+
+function batchEditValue(){
+	var selected = $('.record-checkbox:checked');
+	if(selected.length == 0){
+		layer.msg('请先选择要修改的记录', {icon: 2});
+		return;
+	}
+
+	var records = [];
+	selected.each(function(){
+		records.push(JSON.parse($(this).attr('data-info')));
+	});
+
+	$('#batch_action').val('value');
+	$('#batch_recordinfo').val(JSON.stringify(records));
+
+	$('#batch_type').val('');
+	$('#batch_value').val('');
+
+	initBatchLine();
+
+	$('#modal-batch-edit').modal('show');
+}
+
+function initBatchLine(option){
+	option = option || '<option value="">不修改</option>';
+	$("#modal_batch_line_list").empty();
+	$.each(window.currentRecordLine, function(index, item){
+		if(item.parent == null){
+			option += '<option value="'+item.id+'">'+item.name+'</option>';
+		}
+	});
+	$("#modal_batch_line_list").append('<select name="line" id="modal_batch_line" class="form-control" onchange="changeModalBatchLine(this)">'+option+'</select>');
+}
+
+function changeModalBatchLine(obj){
+	var line = $(obj).val();
+	var flag = false;
+	$("#modal_batch_line_list").children().each(function(index, elem){
+		if(flag) $(elem).remove()
+		if(obj == elem){
+			flag = true;
+		}
+	})
+	if($(obj).find("option:selected").text() == '子集线路（非必填）') return;
+	if(window.currentRecordLine){
+		var tempLine = window.currentRecordLine.filter((x) => x.parent == line)
+		if(tempLine.length > 0){
+			var option = line.substr(0,2) == 'N.' ? '' : '<option value="'+line+'">子集线路（非必填）</option>';
+			$.each(tempLine, function(index, item){
+				option += '<option value="'+item.id+'">'+item.name+'</option>';
+			})
+			$("#modal_batch_line_list").append('<select name="line" class="form-control" onchange="changeModalBatchLine(this)">'+option+'</select>');
+		}
+	}
+}
+
+function confirmBatchEdit(){
+	var newType = $('#batch_type').val();
+	var newValue = $('#batch_value').val();
+	var newLine = $('#batch_line').val();
+
+	if(!newValue && !newType && !newLine){
+		layer.alert('至少填写一项要修改的内容', {icon: 2});
+		return;
+	}
+
+	if(newValue && !newType){
+		var selected = $('.record-checkbox:checked');
+		var firstRecord = JSON.parse($(selected[0]).attr('data-info'));
+		newType = firstRecord.Type;
+		$('#batch_type').val(newType);
+	}
+
+	var domainId = $('#domainSelect').val();
+
+	// 处理修改记录值的情况
+	if((newValue || newType) && newLine){
+		// 同时修改记录值和线路，需要分两步执行
+		var ii = layer.load(2);
+
+		// 第一步：修改记录值和类型
+		$('#batch_action').val('value');
+		var valueData = $('#batchEditForm').serialize();
+		$.ajax({
+			type : 'POST',
+			url : '/record/batchedit/' + domainId,
+			data : valueData,
+			dataType : 'json',
+			success : function(data) {
+				// 检查第一步是否成功
+				if(data.code != 0){
+					layer.close(ii);
+					layer.alert('修改记录值失败：' + data.msg, {icon: 2});
+					return;
+				}
+				
+				// 第二步：修改线路（使用新的类型和值）
+				// 获取选中的记录
+				var selected = $('.record-checkbox:checked');
+				var updatedRecords = [];
+				selected.each(function(){
+					var record = JSON.parse($(this).attr('data-info'));
+					// 更新记录的类型和值
+					if(newType) record.Type = newType;
+					if(newValue) record.Value = newValue;
+					updatedRecords.push(record);
+				});
+				
+				// 发送更新后的记录信息
+				$('#batch_action').val('line');
+				var lineData = 'action=line&line=' + encodeURIComponent(newLine) + '&recordinfo=' + encodeURIComponent(JSON.stringify(updatedRecords));
+				$.ajax({
+					type : 'POST',
+					url : '/record/batchedit/' + domainId,
+					data : lineData,
+					dataType : 'json',
+					success : function(data2) {
+						layer.close(ii);
+						if(data2.code == 0){
+							layer.msg('批量修改成功！', {icon: 1, time: 1500});
+							$('#modal-batch-edit').modal('hide');
+							loadRecordList();
+						}else{
+							layer.alert('修改线路失败：' + data2.msg, {icon: 2});
+						}
+					},
+					error : function() {
+						layer.close(ii);
+						layer.alert('服务器错误', {icon: 2});
+					}
+				});
+			},
+			error : function() {
+				layer.close(ii);
+				layer.alert('服务器错误', {icon: 2});
+			}
+		});
+	} else {
+		// 只修改单项，直接执行
+		// 动态设置action
+		if(newLine && !newValue && !newType){
+			$('#batch_action').val('line');
+		} else if(newType && !newValue && !newLine){
+			$('#batch_action').val('type');
+		} else {
+			$('#batch_action').val('value');
+		}
+
+		var ii = layer.load(2);
+		$.ajax({
+			type : 'POST',
+			url : '/record/batchedit/' + domainId,
+			data : $('#batchEditForm').serialize(),
+			dataType : 'json',
+			success : function(data) {
+				layer.close(ii);
+				if(data.code == 0){
+					layer.msg(data.msg, {icon: 1, time: 1500});
+					$('#modal-batch-edit').modal('hide');
+					loadRecordList();
+				}else{
+					layer.alert('修改失败：' + data.msg, {icon: 2});
+				}
+			},
+			error : function() {
+				layer.close(ii);
+				layer.alert('服务器错误', {icon: 2});
+			}
+		});
+	}
+}
+
+function saveQuickAdd(){
+	var domainId = $('#domainSelect').val();
+	if(!domainId){
+		layer.alert('请选择域名', {icon: 2});
+		return;
+	}
+
+	var name = $('input[name=name]').val();
+	var type = $('select[name=type]').val();
+	var value = $('input[name=value]').val();
+
+	if(!name || !type || !value){
+		layer.alert('请填写必填项', {icon: 2});
+		return;
+	}
+
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/record/add/' + domainId,
+		data : $("#quickAddForm").serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert(data.msg,{
+					icon: 1,
+					closeBtn: false
+				}, function(){
+					layer.closeAll();
+					resetForm();  // 使用修改后的resetForm函数
+					loadRecordList();
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2});
+			}
+		},
+		error : function() {
+			layer.close(ii);
+			layer.alert('服务器错误', {icon: 2});
+		}
+	});
+}
+
+function htmlEscape(str) {
+    return String(str)
+        。replace(/&/g, '&amp;')
+        。replace(/</g, '&lt;')
+        。replace(/>/g, '&gt;')
+        。replace(/"/g, '&quot;')
+        。replace(/'/g, '&#39;');
+}
+
+// 复制到剪贴板
+function copyToClipboard(text, selector) {
+    if (!text && selector) {
+        var el = document.querySelector(selector);
+        if (el) {
+            text = el.getAttribute('data-value');
+        }
+    }
+    var tempInput = document.createElement('input');
+    tempInput.style.position = 'absolute';
+    tempInput.style.left = '-9999px';
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+    if(selector){
+        var icon = document.querySelector(selector + ' + a i');
+        if(icon){
+            var oldClass = icon.className;
+            icon.className = 'fa fa-check';
+            setTimeout(function(){ icon.className = oldClass; }, 1000);
+        }
+    }
+    layer.msg('已复制到剪贴板', {icon: 1, time: 600});
+}
+</script>
+{/block}
