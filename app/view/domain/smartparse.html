@@ -53,28 +53,74 @@
 .record-table {
     width: 100%;
     border-collapse: collapse;
+    border: 1px solid #ddd;
 }
 .record-table th,
 .record-table td {
     padding: 10px 8px;
     text-align: left;
+    border-right: 1px solid #eee;
     border-bottom: 1px solid #eee;
     vertical-align: middle;
+}
+.record-table th:last-child,
+.record-table td:last-child {
+    border-right: none;
 }
 .record-table th {
     background-color: #f5f5f5;
     font-weight: bold;
     color: #333;
     white-space: nowrap;
+    border-bottom: 2px solid #ddd;
 }
 .record-table tr:hover {
     background-color: #f9f9f9;
 }
-.record-value {
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+
+/* 操作列按钮水平排列 */
+.record-table .operation-column {
     white-space: nowrap;
+}
+.record-table .operation-column .btn {
+    display: inline-block !important;
+    margin-right: 5px;
+    margin-bottom: 0 !important;
+}
+.record-table .operation-column .btn:last-child {
+    margin-right: 0;
+}
+
+/* 状态和线路列不换行 */
+.record-table .nowrap-column {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.record-value {
+	max-width: 250px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+.record-value .value-text {
+	max-width: 230px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	display: inline-block;
+	vertical-align: middle;
+}
+.record-value .copy-btn {
+	margin-left: 5px;
+	color: #999;
+	cursor: pointer;
+	font-size: 12px;
+	display: inline-block;
+	vertical-align: middle;
+}
+.record-value .copy-btn:hover {
+	color: #337ab7;
 }
 .no-records {
     text-align: center;
@@ -1511,14 +1557,14 @@ function renderRecordList(records){
 		html += '<td>' + (row.Name == '@' ? '@ (主域名)' : row.Name) + '</td>';
 		html += '<td><span class="label label-primary">' + row.Type + '</span></td>';
 		html += '<td class="record-value" title="' + htmlEscape(valueDisplay) + '">';
-		html += '<span id="' + copyId + '" data-value="' + htmlEscape(valueDisplay) + '">' + valueDisplay + '</span>';
-		html += '<a href="javascript:void(0);" title="复制记录值" onclick="copyToClipboard(null, \'#' + copyId + '\')" style="padding-left:6px;"><i class="fa fa-copy"></i></a>';
+		html += '<span id="' + copyId + '" data-value="' + htmlEscape(valueDisplay) + '" class="value-text">' + valueDisplay + '</span>';
+		html += '<a href="javascript:void(0);" title="复制记录值" onclick="copyToClipboard(null, \'#' + copyId + '\')" class="copy-btn"><i class="fa fa-copy"></i></a>';
 		html += '</td>';
-		html += '<td>' + (row.LineName || '-') + '</td>';
+		html += '<td class="nowrap-column">' + (row.LineName || '-') + '</td>';
 		html += '<td>' + row.TTL + '</td>';
-		html += '<td>' + statusHtml + '</td>';
+		html += '<td class="nowrap-column">' + statusHtml + '</td>';
 		html += '<td class="record-value" title="' + htmlEscape(remarkDisplay) + '">' + remarkDisplay + '</td>';
-		html += '<td style="text-align:center;">';
+		html += '<td class="operation-column" style="text-align:center;">';
 		if(row.Type != 'NS' && row.Type != 'SOA' || row.Name != '@'){
 			html += '<button type="button" class="btn btn-primary btn-xs" onclick="editRecord(' + index + ')" title="修改此记录">';
 			html += '<i class="fa fa-edit"></i> 修改</button>&nbsp;';
@@ -2246,7 +2292,7 @@ function copyToClipboard(text, selector) {
     document.execCommand('copy');
     document.body.removeChild(tempInput);
     if(selector){
-        var icon = document.querySelector(selector + ' + a i');
+        var icon = document.querySelector(selector + ' + .copy-btn i');
         if(icon){
             var oldClass = icon.className;
             icon.className = 'fa fa-check';
