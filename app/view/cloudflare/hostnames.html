@@ -182,25 +182,6 @@
   </div>
 </div>
 
-<div class="modal" id="modal-batch-dcv-target-picker" role="dialog" aria-hidden="true" data-backdrop="static">
-  <div class="modal-dialog">
-    <div class="modal-content animated flipInX">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-        <h4 class="modal-title">选择解析服务商 - 批量 DCV 委派</h4>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-warning" style="margin-bottom:12px;">检测到多个可用解析域名，请确认要写入哪个服务商。</div>
-        <div id="batchDcvTargetPickerList"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
-        <button type="button" class="btn btn-primary" onclick="confirmBatchDcvTargetSelection()">确定</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="modal" id="modal-batch-hostname-txt" role="dialog" aria-hidden="true" data-backdrop="static">
   <div class="modal-dialog">
     <div class="modal-content animated flipInX">
@@ -443,6 +424,11 @@ $(document).ready(function(){
     toolbar: '#toolbar',
     classes: 'table table-striped table-hover table-bordered',
     uniqueId: 'id',
+    sidePagination: 'client',
+    pagination: true,
+    pageSize: 20,
+    pageList: [10, 20, 50, 100],
+    queryParams: function(params){ return {}; },
     responseHandler: hostnameResponseHandler,
     columns: [
       {field: 'checkbox', checkbox: true, width: '50px'},
@@ -550,8 +536,6 @@ function confirmBatchDelete(){
 }
 
 var batchDcvHostnamesData = [];
-var batchDcvSelectedTarget = null;
-var batchDcvCnameValue = '';
 
 function batchDcvDelegation(){
   var selectedRows = $("#listTable").bootstrapTable('getSelections');
