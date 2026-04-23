@@ -296,6 +296,59 @@ class DeployHelper
             ],
             'taskinputs' => [],
         ],
+        'nginxproxymanager' => [
+            'name' => 'Nginx Proxy Manager',
+            'class' => 1,
+            'icon' => 'npm.svg',
+            'desc' => '更新 Nginx Proxy Manager 的自定义证书并自动绑定 Proxy Host',
+            'note' => '填写 Nginx Proxy Manager 面板地址与登录账号密码，系统将通过官方 API 登录并执行证书更新。',
+            'tasknote' => '如填写证书ID则优先更新该自定义证书；留空时系统会根据当前证书订单的域名在 NPM 中匹配 Proxy Host，并在首次成功后自动保存证书ID，后续续期优先走该ID，不再依赖域名匹配。',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'Nginx Proxy Manager 面板地址',
+                    'note' => '填写规则如：http://192.168.1.100:81 ，不要带 /api 等后缀',
+                    'required' => true,
+                ],
+                'email' => [
+                    'name' => '登录邮箱',
+                    'type' => 'input',
+                    'placeholder' => 'NPM 登录邮箱',
+                    'validator' => 'email',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '登录密码',
+                    'type' => 'input',
+                    'placeholder' => 'NPM 登录密码',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'id' => [
+                    'name' => '证书ID',
+                    'type' => 'input',
+                    'placeholder' => '留空则按域名匹配 Proxy Host 并自动回填',
+                    'note' => '优先级最高。填写后将直接更新该自定义证书ID；仅支持 NPM 中 provider 为 other 的自定义证书。',
+                ],
+                'host_id' => [
+                    'name' => 'Proxy Host ID',
+                    'type' => 'input',
+                    'placeholder' => '可留空，留空则按域名自动匹配',
+                    'note' => '可选。未填写证书ID时，若填写此项则仅处理指定 Proxy Host；若留空则按当前证书订单域名自动查找匹配的 Proxy Host。',
+                ],
+            ],
+        ],
         'btwaf' => [
             'name' => '堡塔云WAF',
             'class' => 1,
