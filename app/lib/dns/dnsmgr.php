@@ -5,7 +5,7 @@ namespace app\lib\dns;
 use app\lib\DnsInterface;
 use Exception;
 
-class cccyun implements DnsInterface
+class dnsmgr implements DnsInterface
 {
     private $uid;
     private $key;
@@ -14,6 +14,7 @@ class cccyun implements DnsInterface
     private $domain;
     private $domainid;
     private $proxy;
+    private $domainInfo;
 
     public function __construct($config)
     {
@@ -100,8 +101,6 @@ class cccyun implements DnsInterface
                 ];
             }
             return ['total' => $data['total'], 'list' => $list];
-        } elseif ($this->error == '记录列表为空。') {
-            return ['total' => 0, 'list' => []];
         }
         return false;
     }
@@ -114,27 +113,6 @@ class cccyun implements DnsInterface
 
     public function getDomainRecordInfo($RecordId)
     {
-        $param = [
-            'recordid' => $RecordId,
-        ];
-        $data = $this->send_request('/api/record/data/' . $this->domainid, $param);
-        if ($data && isset($data['rows'][0])) {
-            $row = $data['rows'][0];
-            return [
-                'RecordId' => $row['RecordId'],
-                'Domain' => $row['Domain'],
-                'Name' => $row['Name'],
-                'Type' => $row['Type'],
-                'Value' => $row['Value'],
-                'Line' => $row['Line'],
-                'TTL' => $row['TTL'],
-                'MX' => $row['MX'],
-                'Status' => $row['Status'],
-                'Weight' => $row['Weight'],
-                'Remark' => $row['Remark'],
-                'UpdateTime' => $row['UpdateTime'],
-            ];
-        }
         return false;
     }
 
@@ -158,7 +136,7 @@ class cccyun implements DnsInterface
         }
 
         $data = $this->send_request('/api/record/add/' . $this->domainid, $param);
-        return is_array($data) && isset($data['code']) && $data['code'] == 0;
+        return $data !== false;
     }
 
     public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = 'default', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
@@ -182,7 +160,7 @@ class cccyun implements DnsInterface
         }
 
         $data = $this->send_request('/api/record/update/' . $this->domainid, $param);
-        return is_array($data) && isset($data['code']) && $data['code'] == 0;
+        return $data !== false;
     }
 
     public function updateDomainRecordRemark($RecordId, $Remark)
@@ -193,7 +171,7 @@ class cccyun implements DnsInterface
         ];
 
         $data = $this->send_request('/api/record/remark/' . $this->domainid, $param);
-        return is_array($data) && isset($data['code']) && $data['code'] == 0;
+        return $data !== false;
     }
 
     public function deleteDomainRecord($RecordId)
@@ -203,7 +181,7 @@ class cccyun implements DnsInterface
         ];
 
         $data = $this->send_request('/api/record/delete/' . $this->domainid, $param);
-        return is_array($data) && isset($data['code']) && $data['code'] == 0;
+        return $data !== false;
     }
 
     public function setDomainRecordStatus($RecordId, $Status)
@@ -214,18 +192,17 @@ class cccyun implements DnsInterface
         ];
 
         $data = $this->send_request('/api/record/status/' . $this->domainid, $param);
-        return is_array($data) && isset($data['code']) && $data['code'] == 0;
+        return $data !== false;
     }
 
     public function getDomainRecordLog($PageNumber = 1, $PageSize = 20, $KeyWord = null, $StartDate = null, $endDate = null)
     {
-        $this->setError('该DNS服务商不支持查看日志');
         return false;
     }
 
     public function getRecordLine()
     {
-        $data = $this->send_request('/api/domain/' . $this->domainid, ['loginurl' => 0]);
+        $data = $this->getDomainInfo();
         if ($data && isset($data['recordLine'])) {
             $list = [];
             foreach ($data['recordLine'] as $row) {
@@ -241,23 +218,33 @@ class cccyun implements DnsInterface
 
     public function getMinTTL()
     {
-        $data = $this->send_request('/api/domain/' . $this->domainid, ['loginurl' => 0]);
+        $data = $this->getDomainInfo();
         if ($data && isset($data['minTTL'])) {
             return $data['minTTL'];
         }
         return false;
     }
 
+    public function getDomainInfo()
+    {
+        if (!empty($this->domainInfo)) return $this->domainInfo;
+        $data = $this->send_request('/api/domain/' . $this->domainid, ['loginurl' => 0]);
+        if ($data) {
+            $this->domainInfo = $data;
+            return $data;
+        }
+        return false;
+    }
+
     public function addDomain($Domain)
     {
-        $this->setError('该DNS服务商不支持添加域名');
         return false;
     }
 
     private function send_request($path, $param = [])
     {
         try {
-            $timestamp = time();
+            $timestamp = (string)time();
             $signStr = $this->uid . $timestamp . $this->key;
             $sign = md5($signStr);
 
@@ -268,52 +255,20 @@ class cccyun implements DnsInterface
             $param['sign'] = $sign;
             $postData = http_build_query($param);
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/x-www-form-urlencoded'
-            ]);
+            $response = http_request($url, $postData, null, null, null, $this->proxy);
 
-            if ($this->proxy) {
-                $proxy_config = Db::name('config')->where('key', 'proxy')->value('value');
-                if ($proxy_config) {
-                    $proxy_info = json_decode($proxy_config, true);
-                    if ($proxy_info && $proxy_info['open'] == 1) {
-                        curl_setopt($ch, CURLOPT_PROXY, $proxy_info['ip'] . ':' . $proxy_info['port']);
-                        if (!empty($proxy_info['username']) && !empty($proxy_info['password'])) {
-                            curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxy_info['username'] . ':' . $proxy_info['password']);
-                        }
-                    }
-                }
+            $result = json_decode($response['body'], true);
+            if (isset($result['code']) && $result['code'] == 0) {
+                return isset($result['data']) ? $result['data'] : null;
+            } elseif (isset($result['rows']) && isset($result['total'])) {
+                return $result;
+            } elseif (isset($result['msg'])) {
+                $this->setError($result['msg']);
+                return false;
+            } else {
+                $this->setError($response['body']);
+                return false;
             }
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-
-            if ($curlError) {
-                throw new Exception('CURL Error: ' . $curlError);
-            }
-
-            if ($httpCode != 200) {
-                throw new Exception('HTTP Error: ' . $httpCode);
-            }
-
-            $result = json_decode($response, true);
-            if (!$result) {
-                throw new Exception('JSON Decode Error: ' . $response);
-            }
-
-            if (isset($result['code']) && $result['code'] != 0 && isset($result['msg'])) {
-                throw new Exception($result['msg']);
-            }
-
-            return isset($result['data']) ? $result['data'] : $result;
-
         } catch (Exception $e) {
             $this->setError($e->getMessage());
             return false;

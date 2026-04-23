@@ -518,6 +518,41 @@ class DnsHelper
             'page' => true,
             'add' => true,
         ],
+        'technitium' => [
+            'name' => 'Technitium',
+            'icon' => 'technitium.png',
+            'note' => '',
+            'config' => [
+                'url' => [
+                    'name' => 'Server URL',
+                    'type' => 'input',
+                    'placeholder' => 'http://127.0.0.1:5380',
+                    'required' => true,
+                ],
+                'token' => [
+                    'name' => 'API Token',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'remark' => 2,
+            'status' => true,
+            'redirect' => false,
+            'log' => false,
+            'weight' => false,
+            'page' => true,
+            'add' => true,
+        ],
         'aliyunesa' => [
             'name' => '阿里云ESA',
             'icon' => 'aliyun.png',
@@ -608,13 +643,13 @@ class DnsHelper
             'page' => false,
             'add' => false,
         ],
-        'cccyun' => [
+        'dnsmgr' => [
             'name' => '同系统对接',
             'icon' => 'logo.png',
-            'note' => '通过聚合DNS管理系统接口实现域名解析管理',
+            'note' => '对接其他聚合DNS管理系统站点',
             'config' => [
                 'base_url' => [
-                    'name' => 'API 地址',
+                    'name' => '站点地址',
                     'type' => 'input',
                     'placeholder' => '例如：https://dns.example.com',
                     'required' => true,
@@ -643,7 +678,7 @@ class DnsHelper
             ],
             'remark' => 2,
             'status' => true,
-            'redirect' => false,
+            'redirect' => true,
             'log' => false,
             'weight' => true,
             'page' => false,
