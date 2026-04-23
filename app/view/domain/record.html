@@ -183,7 +183,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新解析记录列表"><i class="fa fa-refresh"></i> 刷新</a>
   <a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加记录</a>
-  {if $dnsconfig.type=='cloudflare' && $user['level'] eq 2}<a href="/cloudflare/hostnames/{$domainId}" class="btn btn-default">Cloudflare增强</a>{/if}
+  {if $dnsconfig.type=='cloudflare' && $user['level'] eq 2}<a href="/cloudflare/hostnames/{$domainId}" class="btn btn-default">Cloudflare自定义主机名</a>{/if}
   {if $dnsconfig.type=='aliyun'}<a href="/record/weight/{$domainId}" class="btn btn-default">权重配置</a>{/if}
   {if $dnsconfig.type=='dnspod'}<a href="/record/alias/{$domainId}" class="btn btn-default">域名别名</a>{/if}
   <div class="btn-group" role="group">

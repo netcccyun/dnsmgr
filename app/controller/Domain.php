@@ -1005,6 +1005,68 @@ class Domain extends BaseController
         return view('log');
     }
 
+    public function smartparse()
+    {
+        if (request()->user['type'] == 'domain') {
+            return redirect('/record/' . request()->user['id']);
+        }
+
+        $list = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')
+            ->field('A.id, A.name, A.aid, B.type')
+            ->order('A.name', 'asc')
+            ->select();
+
+        $domainList = [];
+        foreach ($list as $row) {
+            if (request()->user['level'] == 1 && !in_array($row['name'], request()->user['permission'])) {
+                continue;
+            }
+            $dnsTypeName = isset(DnsHelper::$dns_config[$row['type']]) ? DnsHelper::$dns_config[$row['type']]['name'] : $row['type'];
+            $domainList[] = [
+                'id' => $row['id'],
+                'name' => $row['name'],
+                'dnsType' => $dnsTypeName
+            ];
+        }
+
+        View::assign('domainList', $domainList);
+        return view();
+    }
+
+    public function quickinfo()
+    {
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if (!$drow) {
+            return json(['code' => -1, 'msg' => '域名不存在']);
+        }
+        if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
+
+        try {
+            list($recordLine, $minTTL) = $this->get_line_and_ttl($drow);
+
+            $recordLineArr = [];
+            foreach ($recordLine as $key => $item) {
+                $recordLineArr[] = ['id' => strval($key), 'name' => $item['name'], 'parent' => $item['parent']];
+            }
+
+            $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+            $dnsconfig = DnsHelper::$dns_config[$dnstype];
+
+            return json([
+                'code' => 0,
+                'data' => [
+                    'recordLine' => $recordLineArr,
+                    'minTTL' => $minTTL ? $minTTL : 1,
+                    'weight' => $dnsconfig['weight'] ?? false,
+                    'remark' => $dnsconfig['remark'] ?? 0
+                ]
+            ]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
     private function add_log($domain, $action, $data)
     {
         if (strlen($data) > 500) $data = substr($data, 0, 500);
