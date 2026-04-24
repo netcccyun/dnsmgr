@@ -1611,25 +1611,89 @@ function changePageSize(){
 }
 
 function searchRecords(){
-	var keyword = $('#searchKeyword').val().toLowerCase();
-
+	var keyword = $('#searchKeyword').val().trim();
+	var domainId = $('#domainSelect').val();
+	
+	if(!domainId){
+		layer.msg('请先选择域名', {icon: 0, time: 1500});
+		return;
+	}
+	
 	if(!keyword){
-		filteredRecords = allRecords;
-	}else{
-		filteredRecords = allRecords.filter(function(row){
+		// 无搜索词时，恢复正常加载
+		currentPage = 1;
+		loadRecordList();
+		return;
+	}
+
+	// 获取所有记录进行搜索（分页获取所有数据）
+	var ii = layer.load(2);
+	var allData = [];
+	var offset = 0;
+	var limit = 100; // 每页100条
+	var hasMore = true;
+	
+	// 递归获取所有数据
+	function fetchAllRecords(){
+		if(!hasMore){
+			// 所有数据已获取，开始搜索
+			performSearch();
+			return;
+		}
+		
+		$.ajax({
+			type : 'POST',
+			url : '/record/data/' + domainId,
+			data : {offset: offset, limit: limit},
+			dataType : 'json',
+			success : function(data) {
+				var rows = data.rows || [];
+				allData = allData.concat(rows);
+				
+				if(rows.length < limit){
+					hasMore = false; // 已获取完所有数据
+				}
+				
+				offset += limit;
+				fetchAllRecords(); // 递归获取下一页
+			},
+			error : function(xhr, status, error) {
+				layer.close(ii);
+				layer.alert('获取数据失败：' + (error || '网络错误'), {icon: 2});
+			}
+		});
+	}
+	
+	// 执行搜索
+	function performSearch(){
+		layer.close(ii);
+		
+		// 客户端搜索
+		filteredRecords = allData.filter(function(row){
 			var name = (row.Name || '').toLowerCase();
 			var value = Array.isArray(row.Value) ? row.Value.join(', ') : (row.Value || '').toLowerCase();
 			var remark = (row.Remark || '').toLowerCase();
-			return name.indexOf(keyword) > -1 || value.indexOf(keyword) > -1 || remark.indexOf(keyword) > -1;
+			var line = (row.LineName || '').toLowerCase();
+			var kw = keyword.toLowerCase();
+			return name.indexOf(kw) > -1 || value.indexOf(kw) > -1 || remark.indexOf(kw) > -1 || line.indexOf(kw) > -1;
 		});
-	}
+		
+		allRecords = allData;
+		totalRecords = filteredRecords.length;
+		currentPage = 1;
 
-	if(filteredRecords.length > 0){
-		renderRecordList(filteredRecords);
-	}else{
-		$('#recordListBody').html('<tr><td colspan="9" class="no-records"><i class="fa fa-search fa-3x"></i><br>未找到匹配的记录</td></tr>');
-		$('#selectedCount').text('');
+		if(filteredRecords.length > 0){
+			renderRecordList(filteredRecords);
+		}else{
+			$('#recordListBody').html('<tr><td colspan="9" class="no-records"><i class="fa fa-search fa-3x"></i><br>未找到匹配的记录</td></tr>');
+			$('#selectedCount').text('');
+			$('#paginationWrapper').hide();
+		}
+		renderPagination();
 	}
+	
+	// 开始获取数据
+	fetchAllRecords();
 }
 
 function toggleCheckAll(obj){
