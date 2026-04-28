@@ -432,7 +432,26 @@ class Cloudflare extends BaseController
                 throw new Exception('解析线路列表为空');
             }
 
-            return json(['code' => 0, 'data' => ['default_line' => strval($firstKey)]]);
+            $lines = [];
+            foreach ($recordLine as $lineValue => $lineLabel) {
+                if (is_array($lineLabel)) {
+                    $lines[] = [
+                        'value' => strval($lineValue),
+                        'label' => isset($lineLabel['name']) ? strval($lineLabel['name']) : strval($lineValue),
+                        'parent' => isset($lineLabel['parent']) ? ($lineLabel['parent'] !== null ? strval($lineLabel['parent']) : '') : '',
+                        'is_default' => ($lineValue === $firstKey)
+                    ];
+                } else {
+                    $lines[] = [
+                        'value' => strval($lineValue),
+                        'label' => strval($lineLabel),
+                        'parent' => '',
+                        'is_default' => ($lineValue === $firstKey)
+                    ];
+                }
+            }
+
+            return json(['code' => 0, 'data' => ['default_line' => strval($firstKey), 'lines' => $lines]]);
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage()]);
         }
