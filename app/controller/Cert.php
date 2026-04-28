@@ -751,7 +751,7 @@ class Cert extends BaseController
             $ids = input('post.ids');
             $success = 0;
             $certid = 0;
-            if (input('post.action') == 'cert') {
+            if (input('post.act') == 'cert') {
                 $certid = input('post.certid/d');
                 $cert = Db::name('cert_order')->where('id', $certid)->find();
                 if (!$cert) return json(['code' => -1, 'msg' => '证书订单不存在']);

@@ -63,7 +63,7 @@ class huawei implements DnsInterface
     public function getDomainRecords($PageNumber = 1, $PageSize = 20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null)
     {
         $offset = ($PageNumber - 1) * $PageSize;
-        $query = ['type' => $Type, 'line_id' => $Line, 'name' => $KeyWord, 'offset' => $offset, 'limit' => $PageSize];
+        $query = ['type' => $Type, 'line_id' => $Line, 'name' => $KeyWord, 'offset' => $offset, 'limit' => $PageSize, 'records' => $Value];
         if (!isNullOrEmpty($Status)) {
             $Status = $Status == '1' ? 'ACTIVE' : 'DISABLE';
             $query['status'] = $Status;
