@@ -8,6 +8,7 @@ use think\facade\View;
 use think\facade\Cache;
 use app\lib\DnsHelper;
 use app\service\ExpireNoticeService;
+use app\utils\DnsQueryUtils;
 use Exception;
 
 class Domain extends BaseController
@@ -1279,5 +1280,146 @@ class Domain extends BaseController
         if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
         $result = (new ExpireNoticeService())->updateDomainDate($id, $drow['name']);
         return json($result);
+    }
+
+    public function record_check()
+    {
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if (!$drow) {
+            return json(['code' => -1, 'msg' => '域名不存在']);
+        }
+        if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
+
+        $recordid = input('post.recordid', null, 'trim');
+        $name = input('post.name', null, 'trim');
+        $type = input('post.type', null, 'trim');
+        $value = input('post.value', null, 'trim');
+
+        if (empty($recordid) || empty($name) || empty($type)) {
+            return json(['code' => -1, 'msg' => '参数不能为空']);
+        }
+
+        $domain = $name === '@' ? $drow['name'] : $name . '.' . $drow['name'];
+        $domain = strtolower($domain);
+
+        $supported_types = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA', 'PTR', 'LOC', 'LUA'];
+        if (!in_array($type, $supported_types)) {
+            return json(['code' => -1, 'msg' => '该记录类型暂不支持检测']);
+        }
+
+        $dns_records = DnsQueryUtils::get_dns_records($domain, $type);
+        if ($dns_records === false || empty($dns_records)) {
+            $dns_records = DnsQueryUtils::query_dns_doh($domain, $type);
+        }
+
+        if ($dns_records === false || empty($dns_records)) {
+            return json(['code' => 0, 'data' => ['status' => 'not_found', 'message' => '未查询到该解析记录', 'actual' => []]]);
+        }
+
+        $dns_records = array_map('strtolower', $dns_records);
+        $expected_value = strtolower(trim($value));
+
+        if (in_array($expected_value, $dns_records)) {
+            return json(['code' => 0, 'data' => ['status' => 'active', 'message' => '解析已生效', 'actual' => $dns_records]]);
+        } else {
+            return json(['code' => 0, 'data' => ['status' => 'mismatch', 'message' => '解析值不匹配', 'expected' => $expected_value, 'actual' => $dns_records]]);
+        }
+    }
+
+    public function dnscheck()
+    {
+        if (!checkPermission(1)) return $this->alert('error', '无权限');
+        
+        if (request()->isAjax()) {
+            $domain = input('post.domain', null, 'trim');
+            $type = input('post.type', null, 'trim');
+            $dns_server = input('post.dns_server', 'default', 'trim');
+            
+            if (empty($domain) || empty($type)) {
+                return json(['code' => -1, 'msg' => '域名和记录类型不能为空']);
+            }
+            
+            $domain = strtolower($domain);
+            
+            $supported_types = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA', 'PTR'];
+            if (!in_array($type, $supported_types)) {
+                return json(['code' => -1, 'msg' => '该记录类型暂不支持检测']);
+            }
+            
+            $result = $this->query_dns_with_server($domain, $type, $dns_server);
+            
+            return json($result);
+        }
+        
+        return view();
+    }
+    
+    private function query_dns_with_server($domain, $type, $dns_server)
+    {
+        $dns_servers = [
+            'alidns' => ['223.5.5.5', '223.6.6.6'],
+            'dnspod' => ['119.29.29.29', '182.254.116.116'],
+            'google' => ['8.8.8.8', '8.8.4.4'],
+            'cloudflare' => ['1.1.1.1', '1.0.0.1'],
+        ];
+        
+        $server_names = [
+            'default' => '系统默认',
+            'alidns' => '阿里DNS',
+            'dnspod' => 'DNSPod',
+            'google' => 'Google DNS',
+            'cloudflare' => 'Cloudflare',
+        ];
+        
+        if ($dns_server != 'default' && isset($dns_servers[$dns_server])) {
+            $records = $this->query_dns_custom_server($domain, $type, $dns_servers[$dns_server][0]);
+        } else {
+            $records = DnsQueryUtils::get_dns_records($domain, $type);
+            if ($records === false || empty($records)) {
+                $records = DnsQueryUtils::query_dns_doh($domain, $type);
+            }
+        }
+        
+        if ($records === false) {
+            return ['code' => 0, 'data' => ['status' => 'error', 'message' => '查询失败', 'dns_server' => $server_names[$dns_server] ?? $dns_server]];
+        }
+        
+        if (empty($records)) {
+            return ['code' => 0, 'data' => ['status' => 'not_found', 'message' => '未找到该类型的DNS记录', 'dns_server' => $server_names[$dns_server] ?? $dns_server]];
+        }
+        
+        return ['code' => 0, 'data' => ['status' => 'success', 'records' => $records, 'dns_server' => $server_names[$dns_server] ?? $dns_server]];
+    }
+    
+    private function query_dns_custom_server($domain, $type, $server)
+    {
+        $dns_type = ['A' => DNS_A, 'AAAA' => DNS_AAAA, 'CNAME' => DNS_CNAME, 'MX' => DNS_MX, 'TXT' => DNS_TXT, 'NS' => DNS_NS, 'SOA' => DNS_SOA, 'PTR' => DNS_PTR, 'SRV' => DNS_SRV, 'CAA' => DNS_CAA];
+        
+        if (!array_key_exists($type, $dns_type)) {
+            return false;
+        }
+        
+        try {
+            $cmd = 'dig +short +time=5 @' . escapeshellarg($server) . ' ' . escapeshellarg($domain) . ' ' . escapeshellarg($type) . ' 2>/dev/null';
+            $output = shell_exec($cmd);
+            
+            if (empty($output)) {
+                return false;
+            }
+            
+            $lines = explode("\n", trim($output));
+            $result = [];
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (!empty($line)) {
+                    $result[] = $line;
+                }
+            }
+            
+            return empty($result) ? false : $result;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 }

@@ -1,0 +1,262 @@
+{extend name="common/layout" /}
+{block name="title"}DNS解析检测工具{/block}
+{block name="main"}
+<style>
+.result-box {
+    margin-top: 20px;
+}
+.result-item {
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+.result-success {
+    background-color: #f0f9eb;
+    border-color: #67c23a;
+}
+.result-warning {
+    background-color: #fdf6ec;
+    border-color: #e6a23c;
+}
+.result-error {
+    background-color: #fef0f0;
+    border-color: #f56c6c;
+}
+.result-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+.result-content {
+    color: #666;
+}
+.result-content ul {
+    margin: 5px 0;
+    padding-left: 20px;
+}
+.result-content li {
+    margin: 3px 0;
+    word-break: break-all;
+}
+.dns-server-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 2px;
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    font-size: 12px;
+}
+</style>
+<div class="row">
+    <div class="col-xs-12 center-block" style="float: none;">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">DNS解析检测工具</h3>
+            </div>
+            <div class="panel-body">
+                <form class="form-horizontal" id="checkForm">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">域名</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" name="domain" placeholder="输入要检测的域名，例如：www.example.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">记录类型</label>
+                        <div class="col-sm-8">
+                            <select name="type" class="form-control">
+                                <option value="A">A (IPv4地址)</option>
+                                <option value="AAAA">AAAA (IPv6地址)</option>
+                                <option value="CNAME">CNAME (别名记录)</option>
+                                <option value="MX">MX (邮件交换)</option>
+                                <option value="TXT">TXT (文本记录)</option>
+                                <option value="NS">NS (域名服务器)</option>
+                                <option value="SOA">SOA (起始授权)</option>
+                                <option value="SRV">SRV (服务定位)</option>
+                                <option value="CAA">CAA (证书授权)</option>
+                                <option value="PTR">PTR (反向解析)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">DNS服务器</label>
+                        <div class="col-sm-8">
+                            <label class="radio-inline">
+                                <input type="radio" name="dns_server" value="default" checked> 系统默认
+                            </label>
+                            <label class="radio-inline">
+                                <input type="radio" name="dns_server" value="alidns"> 阿里DNS
+                            </label>
+                            <label class="radio-inline">
+                                <input type="radio" name="dns_server" value="dnspod"> DNSPod
+                            </label>
+                            <label class="radio-inline">
+                                <input type="radio" name="dns_server" value="google"> Google DNS
+                            </label>
+                            <label class="radio-inline">
+                                <input type="radio" name="dns_server" value="cloudflare"> Cloudflare
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-offset-2 col-sm-8">
+                            <button type="submit" class="btn btn-primary" id="checkBtn">
+                                <i class="fa fa-search"></i> 开始检测
+                            </button>
+                            <button type="button" class="btn btn-default" onclick="clearResult()">
+                                <i class="fa fa-trash"></i> 清空结果
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="resultBox" class="result-box" style="display:none;">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">检测结果</label>
+                        <div class="col-sm-8" id="resultContent">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">使用说明</h3>
+            </div>
+            <div class="panel-body">
+                <ul>
+                    <li><strong>A记录</strong>：检测域名解析到的IPv4地址</li>
+                    <li><strong>AAAA记录</strong>：检测域名解析到的IPv6地址</li>
+                    <li><strong>CNAME记录</strong>：检测域名的别名指向</li>
+                    <li><strong>MX记录</strong>：检测邮件服务器配置</li>
+                    <li><strong>TXT记录</strong>：检测文本记录内容（常用于SPF、DKIM验证）</li>
+                    <li><strong>NS记录</strong>：检测域名的DNS服务器</li>
+                    <li><strong>SOA记录</strong>：检测域名的授权信息</li>
+                    <li><strong>SRV记录</strong>：检测服务定位记录</li>
+                    <li><strong>CAA记录</strong>：检测证书颁发机构授权</li>
+                    <li><strong>PTR记录</strong>：检测反向解析记录</li>
+                </ul>
+                <p class="text-muted">提示：可以选择不同的DNS服务器来检测解析是否在全球生效。</p>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script>
+$(document).ready(function(){
+    $('#checkForm').on('submit', function(e){
+        e.preventDefault();
+        doCheck();
+    });
+});
+
+function doCheck(){
+    var domain = $('input[name="domain"]').val().trim();
+    var type = $('select[name="type"]').val();
+    var dnsServer = $('input[name="dns_server"]:checked').val();
+    
+    if(!domain){
+        layer.msg('请输入域名', {icon: 2});
+        return;
+    }
+    
+    $('#checkBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> 检测中...');
+    
+    $.ajax({
+        type: 'POST',
+        url: '/domain/dnscheck',
+        data: {
+            domain: domain,
+            type: type,
+            dns_server: dnsServer
+        },
+        dataType: 'json',
+        success: function(data){
+            $('#checkBtn').prop('disabled', false).html('<i class="fa fa-search"></i> 开始检测');
+            if(data.code == 0){
+                showResult(data.data, domain, type);
+            }else{
+                layer.alert(data.msg, {icon: 2});
+            }
+        },
+        error: function(){
+            $('#checkBtn').prop('disabled', false).html('<i class="fa fa-search"></i> 开始检测');
+            layer.msg('请求失败，请稍后重试', {icon: 2});
+        }
+    });
+}
+
+function showResult(result, domain, type){
+    var html = '';
+    var statusClass = '';
+    var statusTitle = '';
+    var statusIcon = '';
+    
+    if(result.status == 'success'){
+        statusClass = 'result-success';
+        statusTitle = '查询成功';
+        statusIcon = '<i class="fa fa-check-circle text-success"></i> ';
+    }else if(result.status == 'not_found'){
+        statusClass = 'result-warning';
+        statusTitle = '未找到记录';
+        statusIcon = '<i class="fa fa-exclamation-circle text-warning"></i> ';
+    }else{
+        statusClass = 'result-error';
+        statusTitle = '查询失败';
+        statusIcon = '<i class="fa fa-times-circle text-danger"></i> ';
+    }
+    
+    html += '<div class="result-item ' + statusClass + '">';
+    html += '<div class="result-title">' + statusIcon + statusTitle + '</div>';
+    html += '<div class="result-content">';
+    html += '<p><strong>查询域名：</strong>' + htmlEscape(domain) + '</p>';
+    html += '<p><strong>记录类型：</strong>' + type + '</p>';
+    
+    if(result.dns_server){
+        html += '<p><strong>DNS服务器：</strong><span class="dns-server-tag">' + htmlEscape(result.dns_server) + '</span></p>';
+    }
+    
+    if(result.records && result.records.length > 0){
+        html += '<p><strong>解析结果：</strong></p>';
+        html += '<ul>';
+        for(var i = 0; i < result.records.length; i++){
+            html += '<li>' + htmlEscape(result.records[i]) + '</li>';
+        }
+        html += '</ul>';
+    }
+    
+    if(result.ttl){
+        html += '<p><strong>TTL：</strong>' + result.ttl + ' 秒</p>';
+    }
+    
+    if(result.message && result.status != 'success'){
+        html += '<p><strong>提示：</strong>' + htmlEscape(result.message) + '</p>';
+    }
+    
+    html += '</div>';
+    html += '</div>';
+    
+    $('#resultContent').html(html);
+    $('#resultBox').show();
+}
+
+function clearResult(){
+    $('#resultContent').html('');
+    $('#resultBox').hide();
+    $('input[name="domain"]').val('');
+}
+
+function htmlEscape(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+</script>
+{/block}
