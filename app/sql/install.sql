@@ -5,7 +5,7 @@ CREATE TABLE `dnsmgr_config` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `dnsmgr_config` VALUES ('version', '1048');
+INSERT INTO `dnsmgr_config` VALUES ('version', '1049');
 INSERT INTO `dnsmgr_config` VALUES ('notice_mail', '0');
 INSERT INTO `dnsmgr_config` VALUES ('notice_wxtpl', '0');
 INSERT INTO `dnsmgr_config` VALUES ('mail_smtp', 'smtp.qq.com');
@@ -26,6 +26,7 @@ DROP TABLE IF EXISTS `dnsmgr_domain`;
 CREATE TABLE `dnsmgr_domain` (
   `id` int(11) unsigned NOT NULL auto_increment,
   `aid` int(11) unsigned NOT NULL,
+  `cid` int(11) unsigned NOT NULL DEFAULT '0',
   `name` varchar(255) NOT NULL,
   `thirdid` varchar(60) DEFAULT NULL,
   `addtime` datetime DEFAULT NULL,
@@ -40,7 +41,8 @@ CREATE TABLE `dnsmgr_domain` (
   `noticetime` datetime DEFAULT NULL,
   `checkstatus` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `name` (`name`)
+  KEY `name` (`name`),
+  KEY `cid` (`cid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `dnsmgr_user`;
@@ -261,4 +263,15 @@ CREATE TABLE `dnsmgr_domain_alias` (
   PRIMARY KEY (`id`),
   KEY `did` (`did`),
   KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_domain_category`;
+CREATE TABLE `dnsmgr_domain_category` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `name` varchar(50) NOT NULL,
+  `remark` varchar(100) DEFAULT NULL,
+  `sort` int(11) NOT NULL DEFAULT '0',
+  `addtime` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `sort` (`sort`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

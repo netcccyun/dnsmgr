@@ -87,7 +87,12 @@ Route::group(function () {
     Route::post('/domain/op', 'domain/domain_op');
     Route::post('/domain/list', 'domain/domain_list');
     Route::any('/domain/dnscheck', 'domain/dnscheck');
+    Route::post('/domain/category/data', 'domain/category_data');
+    Route::post('/domain/category/:action', 'domain/category_op');
+    Route::get('/domain/category/list', 'domain/category_list');
+    Route::post('/domain/setcategory', 'domain/domain_set_category');
     Route::get('/domain/add', 'domain/domain_add');
+    Route::get('/domain/category', 'domain/category');
     Route::get('/domain', 'domain/domain');
 
     Route::post('/record/data/:id', 'domain/record_data');
