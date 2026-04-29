@@ -78,14 +78,10 @@
 }
 .record-table .action-cell {
     white-space: nowrap;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: nowrap;
+    text-align: center;
 }
 .record-table .action-cell .btn {
-    margin: 0;
+    margin: 2px 1px;
 }
 .no-records {
     text-align: center;
@@ -649,6 +645,10 @@ var currentPage = 1;
 var pageSize = 20;
 var totalRecords = 0;
 
+// 搜索状态
+var isSearching = false;
+var searchKeyword = '';
+
 // 域名列表（用于批量添加时匹配）
 var domainList = [];
 {foreach $domainList as $domain}
@@ -744,6 +744,11 @@ $(document).ready(function(){
 	$('#domainSelect').on('change', function(){
 		var domainId = $(this).val();
 		if(domainId){
+			// 清空搜索状态
+			isSearching = false;
+			searchKeyword = '';
+			$('#searchKeyword').val('');
+			
 			loadDomainInfo(domainId);
 			currentPage = 1;
 			loadRecordList();
@@ -1477,6 +1482,12 @@ function loadRecordList(){
 	var domainId = $('#domainSelect').val();
 	if(!domainId) return;
 
+	// 如果处于搜索状态，执行搜索
+	if(isSearching && searchKeyword){
+		searchRecords();
+		return;
+	}
+
 	var ii = layer.load(2);
 	$.ajax({
 		type : 'POST',
@@ -1519,7 +1530,7 @@ function renderRecordList(records){
 
 		html += '<tr data-index="' + index + '">';
 		html += '<td style="text-align:center;"><input type="checkbox" class="record-checkbox" value="' + row.RecordId + '" data-info="' + recordInfoStr + '" onchange="updateSelectedCount()"></td>';
-		html += '<td>' + (row.Name == '@' ? '@ (主域名)' : row.Name) + '</td>';
+		html += '<td style="vertical-align: top;">' + (row.Name == '@' ? '@ (主域名)' : row.Name) + '</td>';
 		html += '<td><span class="label label-primary">' + row.Type + '</span></td>';
 		html += '<td class="record-value" title="' + htmlEscape(valueDisplay) + '">';
 		html += '<a href="javascript:void(0);" title="复制记录值" onclick="copyToClipboard(null, \'#' + copyId + '\')" style="padding-right:6px;"><i class="fa fa-copy"></i></a>';
@@ -1621,10 +1632,16 @@ function searchRecords(){
 	
 	if(!keyword){
 		// 无搜索词时，恢复正常加载
+		isSearching = false;
+		searchKeyword = '';
 		currentPage = 1;
 		loadRecordList();
 		return;
 	}
+
+	// 设置搜索状态
+	isSearching = true;
+	searchKeyword = keyword;
 
 	// 获取所有记录进行搜索（分页获取所有数据）
 	var ii = layer.load(2);

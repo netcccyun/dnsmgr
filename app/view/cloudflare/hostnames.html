@@ -59,6 +59,7 @@
               <button type="button" class="btn btn-default btn-sm" onclick="batchHostnameTxtVerification()" disabled id="btnBatchHostnameTxt"><i class="fa fa-check-circle"></i> 批量主机名验证</button>
               <button type="button" class="btn btn-default btn-sm" onclick="batchCertTxtVerification()" disabled id="btnBatchCertTxt"><i class="fa fa-certificate"></i> 批量证书验证</button>
               <button type="button" class="btn btn-success btn-sm" onclick="batchRefreshVerification()" disabled id="btnBatchRefresh"><i class="fa fa-refresh"></i> 批量刷新验证</button>
+              <button type="button" class="btn btn-warning btn-sm" onclick="batchCfOptimized()" disabled id="btnBatchCfOptimized"><i class="fa fa-bolt"></i> 批量CF优选解析</button>
               <button type="button" class="btn btn-warning btn-sm" onclick="batchEditHostnames()" disabled id="btnBatchEdit"><i class="fa fa-pencil"></i> 批量修改</button>
               <button type="button" class="btn btn-danger btn-sm" onclick="batchDeleteHostnames()" disabled id="btnBatchDelete"><i class="fa fa-trash"></i> 批量删除</button>
             </div>
@@ -243,6 +244,55 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
         <button type="button" class="btn btn-success" onclick="confirmBatchRefresh()">开始刷新</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-cf-optimized" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title" id="cfOptimizedModalTitle">CF 优选解析</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" id="batchCfOptimizedAlert"></div>
+        <div id="batchCfOptimizedList" style="max-height:400px;overflow-y:auto;"></div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>CNAME 目标 <span style="color:#d9534f;">*</span></label>
+          <div id="cfOptimizedTargetList"></div>
+        </div>
+        <div id="cfOptimizedDnsGroupArea" style="display:none;">
+          <!-- 每个DNS域名一组：主机名列表 + DNS服务商选择 -->
+        </div>
+        <div id="cfOptimizedSingleDnsArea" style="display:none;" class="form-group">
+          <label>选择解析服务商 <span style="color:#d9534f;">*</span></label>
+          <select id="cfOptimizedDnsProvider" class="form-control">
+            <option value="">请选择</option>
+          </select>
+        </div>
+        <div id="singleLineArea" style="display:none;" class="form-group">
+          <label>解析线路</label>
+          <select id="singleLineSelect" class="form-control cf-line-main">
+            <option value="">请先选择解析服务商</option>
+          </select>
+        </div>
+        <div id="singleSubLineArea" style="display:none;" class="form-group">
+          <label>子线路</label>
+          <select id="singleSubLineSelect" class="form-control">
+            <option value="">请选择</option>
+          </select>
+        </div>
+        <div id="cfOptimizedExistingRecord" style="display:none;" class="alert alert-warning">
+          <strong>检测到已存在记录：</strong><br>
+          <span id="cfOptimizedExistingInfo"></span><br>
+          <span style="font-size:12px;color:#666;">点击确认将修改为新的 CNAME 目标</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-warning" onclick="confirmBatchCfOptimized()" id="cfOptimizedConfirmBtn">确定</button>
       </div>
     </div>
   </div>
@@ -448,6 +498,7 @@ $(document).ready(function(){
           return ''
             + '<a href="javascript:openEditDialog(\''+row.id+'\')" class="btn btn-info btn-xs">编辑</a> '
             + '<a href="javascript:openVerificationDialog(\''+row.id+'\')" class="btn btn-primary btn-xs">验证</a> '
+            + '<a href="javascript:openCfOptimizedForHostname(\''+htmlEscape(row.hostname)+'\')" class="btn btn-warning btn-xs">CF优选解析</a> '
             + '<a href="javascript:deleteHostname(\''+row.id+'\', \''+htmlEscape(row.hostname)+'\')" class="btn btn-danger btn-xs">删除</a>';
         }
       }
@@ -469,6 +520,7 @@ function updateBatchButtons(){
   $("#btnBatchHostnameTxt").prop('disabled', !hasSelection);
   $("#btnBatchCertTxt").prop('disabled', !hasSelection);
   $("#btnBatchRefresh").prop('disabled', !hasSelection);
+  $("#btnBatchCfOptimized").prop('disabled', !hasSelection);
 }
 
 function filterHostnameList(searchText){
@@ -1483,7 +1535,844 @@ function confirmBatchRefresh(){
   });
 }
 
-// 提交批量 TXT 记录的通用函数
+// ==================== CF 优选解析 ====================
+
+var cfOptimizedTargets = [
+  {value: 'www.visa.cn', label: 'Visa中国'},
+  {value: 'mfa.gov.ua', label: '乌克兰外交部'},
+  {value: 'www.shopify.com', label: 'Shopify官方'},
+  {value: 'store.ubi.com', label: 'Ubisoft'},
+  {value: 'staticdelivery.nexusmods.com', label: 'NexusMods'}
+];
+var cfOptimizedApiTargets = [];
+
+function loadCfOptimizedTargetsFromApi(callback){
+  cfOptimizedApiTargets = [];
+  $.ajax({
+    type: 'POST',
+    url: '/optimizeip/opiplist/data',
+    data: {offset: 0, limit: 100, type: 1, status: null, kw: ''},
+    dataType: 'json',
+    success: function(res){
+      if(res.rows && res.rows.length > 0){
+        for(var i = 0; i < res.rows.length; i++){
+          var row = res.rows[i];
+          if(row.cdn_type == 1 && row.active == 1 && row.rr && row.domain){
+            var targetValue = row.rr + '.' + row.domain;
+            var targetLabel = row.remark || (row.rr + '.' + row.domain);
+            cfOptimizedApiTargets.push({value: targetValue, label: targetLabel});
+          }
+        }
+      }
+      if(callback) callback();
+    },
+    error: function(){
+      if(callback) callback();
+    }
+  });
+}
+
+function renderCfOptimizedTargetOptions(){
+  var allTargets = cfOptimizedApiTargets.concat(cfOptimizedTargets);
+  var html = '';
+  if(cfOptimizedApiTargets.length > 0){
+    html += '<div style="font-size:12px;color:#888;margin-bottom:6px;padding-bottom:4px;">— 来自 CF优选IP任务 —</div>';
+  }
+  for(var i = 0; i < allTargets.length; i++){
+    var opt = allTargets[i];
+    var isApi = i < cfOptimizedApiTargets.length;
+    if(!isApi && i === cfOptimizedApiTargets.length && cfOptimizedApiTargets.length > 0){
+      html += '<div style="border-top:1px solid #eee;margin:8px 0 4px;"></div>';
+    }
+    html += '<div class="radio" style="margin:0 0 8px;">';
+    html += '<label><input type="radio" name="cfOptimizedTarget" value="' + htmlEscape(opt.value) + '"' + (i === 0 ? ' checked' : '') + '> ';
+    html += '<strong>' + htmlEscape(opt.value) + '</strong> <span style="color:#888;font-size:12px;">(' + htmlEscape(opt.label) + ')' + (isApi ? ' <i class="fa fa-database" style="color:#337ab7;font-size:10px;" title="来自优选任务"></i>' : '') + '</span>';
+    html += '</label></div>';
+  }
+  html += '<div class="radio" style="margin:4px 0 0;padding-top:8px;border-top:1px solid #eee;">';
+  html += '<label><input type="radio" name="cfOptimizedTarget" value="_custom"> ';
+  html += '<strong>自定义</strong></label>';
+  html += '<div id="cfOptimizedCustomInput" style="display:none;margin-top:6px;margin-left:20px;">';
+  html += '<div class="row"><div class="col-xs-4">';
+  html += '<select id="cfOptimizedCustomType" class="form-control input-sm">';
+  html += '<option value="CNAME" selected>CNAME</option>';
+  html += '<option value="A">A</option>';
+  html += '<option value="AAAA">AAAA</option>';
+  html += '</select></div><div class="col-xs-8">';
+  html += '<input type="text" id="cfOptimizedCustomValue" class="form-control input-sm" placeholder="输入目标值（域名或IP）"></div></div>';
+  html += '</div></div>';
+  $('#cfOptimizedTargetList').html(html);
+  $('#cfOptimizedTargetList input[name=cfOptimizedTarget]').on('change', function(){
+    if($(this).val() === '_custom'){
+      $('#cfOptimizedCustomInput').show();
+    } else {
+      $('#cfOptimizedCustomInput').hide();
+    }
+  });
+}
+
+var cfOptimizedSingleHostname = null;
+var batchCfOptimizedData = [];
+
+function resetCfOptimizedState(){
+  var confirmBtn = $("#cfOptimizedConfirmBtn");
+  confirmBtn.prop('disabled', false).text('开始处理').data('cfmode', '').removeData('savedDnsDomains cfExistingId preDetectResults cfExistingRec');
+  $('#cfOptimizedExistingRecord').hide();
+  $('#cfOptimizedDnsGroupArea [id^=lineArea_]').hide();
+  $('#cfOptimizedDnsGroupArea [id^=subLineArea_]').hide();
+  $('#singleLineArea').hide();
+  $('#singleSubLineArea').hide();
+  $('#batchCfOptimizedList').html('').hide();
+  cfOptimizedSingleHostname = null;
+  for(var ci = 0; ci < batchCfOptimizedData.length; ci++){ delete batchCfOptimizedData[ci]._dnsSel; }
+}
+
+$(document).ready(function(){
+  $('#modal-cf-optimized').on('hidden.bs.modal', function(){
+    resetCfOptimizedState();
+  });
+});
+
+function getCfOptimizedTargetValue(){
+  var selectedTarget = $('input[name=cfOptimizedTarget]:checked').val();
+  if(!selectedTarget) return null;
+  if(selectedTarget === '_custom'){
+    var customValue = $.trim($('#cfOptimizedCustomValue').val());
+    var customType = $('#cfOptimizedCustomType').val() || 'CNAME';
+    if(!customValue) return null;
+    return {value: customValue, type: customType};
+  }
+  return {value: selectedTarget, type: 'CNAME'};
+}
+
+// 批量入口
+function batchCfOptimized(){
+  resetCfOptimizedState();
+  var selectedRows = $("#listTable").bootstrapTable('getSelections');
+  if(selectedRows.length === 0){
+    layer.msg('请先选择要设置 CF 优选解析的自定义主机名', {icon: 0});
+    return;
+  }
+
+  $('#cfOptimizedModalTitle').text('批量 CF 优选解析');
+  $('#cfOptimizedConfirmBtn').text('开始处理');
+
+  loadCfOptimizedTargetsFromApi(function(){
+    renderCfOptimizedTargetOptions();
+
+  // 先获取所有主机名的 DNS 域名信息，按 DNS 域名分组
+  batchCfOptimizedData = [];
+  var processedCount = 0;
+  var totalCount = selectedRows.length;
+
+  function checkGroupDone(){
+    if(processedCount === totalCount){
+      // 按 DNS 域名分组
+      var dnsGroups = {};
+      for(var i = 0; i < batchCfOptimizedData.length; i++){
+        var item = batchCfOptimizedData[i];
+        if(!item.targets || !item.targets.length){
+          item.dnsDomain = '未知域名';
+        } else {
+          item.dnsDomain = item.targets[0].domain_name || '未知域名';
+        }
+        if(!dnsGroups[item.dnsDomain]){
+          dnsGroups[item.dnsDomain] = [];
+        }
+        dnsGroups[item.dnsDomain].push(item);
+      }
+      // 渲染分组 UI
+      renderCfOptimizedDnsGroups(dnsGroups, false);
+      $("#modal-cf-optimized").modal('show');
+    }
+  }
+
+  selectedRows.forEach(function(row){
+    var hostname = row.hostname;
+    resolveTxtTargets(hostname, '', function(targets){
+      processedCount++;
+      batchCfOptimizedData.push({row: row, hostname: hostname, targets: targets});
+      checkGroupDone();
+    });
+  });
+  });
+}
+
+// 单个入口
+function openCfOptimizedForHostname(hostname){
+  resetCfOptimizedState();
+  cfOptimizedSingleHostname = hostname;
+  $('#cfOptimizedModalTitle').text('CF 优选解析');
+  $('#cfOptimizedConfirmBtn').text('确定');
+
+  loadCfOptimizedTargetsFromApi(function(){
+    renderCfOptimizedTargetOptions();
+
+    resolveTxtTargets(hostname, '', function(targets){
+      var dnsDomain = (targets && targets.length) ? (targets[0].domain_name || '未知域名') : '未知域名';
+      batchCfOptimizedData = [{row: {hostname: hostname}, hostname: hostname, targets: targets, dnsDomain: dnsDomain}];
+      var dnsGroups = {};
+      dnsGroups[dnsDomain] = [{row: {hostname: hostname}, hostname: hostname, targets: targets, dnsDomain: dnsDomain}];
+      renderCfOptimizedDnsGroups(dnsGroups, true);
+      $("#modal-cf-optimized").modal('show');
+    });
+  });
+}
+
+// 渲染按 DNS 域名分组的 UI
+function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
+  var groupIndex = 0;
+  var groupHtml = '';
+
+  for(var dnsDomain in dnsGroups){
+    if(!dnsGroups.hasOwnProperty(dnsDomain)) continue;
+    var items = dnsGroups[dnsDomain];
+    var hostnamesStr = items.map(function(item){ return item.hostname; }).join(', ');
+
+    // 收集该组内所有主机名的 targets，去重合并选项
+    var allTargets = [];
+    var seenTargetIds = {};
+    for(var ti = 0; ti < items.length; ti++){
+      if(items[ti].targets){
+        for(var tj = 0; tj < items[ti].targets.length; tj++){
+          var t = items[ti].targets[tj];
+          if(t.domain_id && !seenTargetIds[t.domain_id]){
+            seenTargetIds[t.domain_id] = true;
+            allTargets.push(t);
+          }
+        }
+      }
+    }
+
+    groupHtml += '<div class="panel panel-default" style="margin-bottom:10px;">';
+    groupHtml += '<div class="panel-heading" style="padding:8px 12px;"><strong>DNS 域名：' + htmlEscape(dnsDomain) + '</strong></div>';
+    groupHtml += '<div class="panel-body" style="padding:8px 12px;">';
+    groupHtml += '<div style="margin-bottom:6px;font-size:13px;color:#555;">主机名：<strong>' + htmlEscape(hostnamesStr) + '</strong></div>';
+    groupHtml += '<select id="dnsProvider_' + groupIndex + '" data-dns-domain="' + htmlEscape(dnsDomain) + '" data-group-index="' + groupIndex + '" class="form-control input-sm cf-dns-provider">';
+    groupHtml += '<option value="">请选择</option>';
+
+    if(allTargets.length > 0){
+      allTargets.forEach(function(target){
+        var providerName = target.account_type_name || target.account_type || '-';
+        var displayName = target.domain_name + ' (' + providerName + ')';
+        groupHtml += '<option value="' + target.domain_id + '">' + htmlEscape(displayName) + '</option>';
+      });
+    } else {
+      groupHtml += '<option value="" disabled>未找到解析域名</option>';
+    }
+    groupHtml += '</select>';
+
+    groupHtml += '<div id="lineArea_' + groupIndex + '" style="margin-top:6px;display:none;"><label style="font-size:13px;color:#555;">解析线路</label>';
+    groupHtml += '<select id="lineSelect_' + groupIndex + '" class="form-control input-sm cf-line-main"><option value="">加载中...</option></select>';
+    groupHtml += '<div id="subLineArea_' + groupIndex + '" style="margin-top:4px;display:none;"><label style="font-size:12px;color:#999;">子线路</label>';
+    groupHtml += '<select id="subLineSelect_' + groupIndex + '" class="form-control input-sm"><option value="">请选择</option></select></div></div>';
+
+    groupHtml += '</div></div>';
+    groupIndex++;
+  }
+
+  if(Object.keys(dnsGroups).length > 1 || !isSingle){
+    // 多域名或批量模式：显示分组区域
+    $('#cfOptimizedDnsGroupArea').html(groupHtml).show();
+    $('#cfOptimizedSingleDnsArea').hide();
+    $('#batchCfOptimizedList').hide();
+    $('#batchCfOptimizedAlert').html('确定要为选中的 <strong>' + batchCfOptimizedData.length + '</strong> 个主机名设置 CF 优选 CNAME 解析吗？');
+  } else {
+    // 单域名单个模式：显示简化界面
+    $('#cfOptimizedDnsGroupArea').hide();
+    $('#cfOptimizedSingleDnsArea').show();
+
+    var hostnamesHtml = '';
+    for(var d in dnsGroups){
+      if(!dnsGroups.hasOwnProperty(d)) continue;
+      hostnamesHtml += '<div style="padding:12px;background:#f9f9f9;border-radius:4px;"><strong>' + htmlEscape(dnsGroups[d][0].hostname) + '</strong></div>';
+    }
+    $('#batchCfOptimizedList').html(hostnamesHtml).show();
+    $('#batchCfOptimizedAlert').html('<strong>说明：</strong>将主机名 CNAME 解析到 Cloudflare 优选 IP 域名，实现加速访问。');
+
+    // 把第一个组的选项复制到单选框
+    if(groupHtml){
+      var tempDiv = $('<div>').html(groupHtml);
+      var selectOptions = tempDiv.find('select:first option');
+      var optionsHtml = '';
+      selectOptions.each(function(){ optionsHtml += $(this)[0].outerHTML; });
+      $('#cfOptimizedDnsProvider').html(optionsHtml);
+    }
+  }
+
+  // 绑定 DNS 服务商选择事件：选择后加载该域名的线路列表（DOM 已渲染完毕）
+  function bindLineEvents(){
+    // 批量模式：DNS 服务商选择 → 加载线路（事件委托）
+    $('#cfOptimizedDnsGroupArea').off('change.cfline', '.cf-dns-provider').on('change.cfline', '.cf-dns-provider', function(){
+      var domainId = $(this).val();
+      var groupIndex = $(this).data('groupIndex');
+      var lineArea = $('#lineArea_' + groupIndex);
+      var lineSelect = $('#lineSelect_' + groupIndex);
+      var subLineArea = $('#subLineArea_' + groupIndex);
+
+      if(!domainId){ lineArea.hide(); subLineArea.hide(); return; }
+      lineArea.show();
+      subLineArea.hide();
+      lineSelect.html('<option value="">加载中...</option>');
+
+      $.ajax({
+        type: 'POST', url: '/cloudflare/get_domain_default_line', data: {domain_id: domainId}, dataType: 'json',
+        success: function(res){
+          if(res.code === 0 && res.data && res.data.lines && res.data.lines.length > 0){
+            lineSelect.data('allLines', res.data.lines);
+            var opts = '';
+            for(var li = 0; li < res.data.lines.length; li++){
+              var l = res.data.lines[li];
+              if(!l.parent){
+                opts += '<option value="' + htmlEscape(l.value) + '"' + (l.is_default ? ' selected' : '') + '>' + htmlEscape(l.label) + '</option>';
+              }
+            }
+            lineSelect.html(opts || '<option value="" selected>请选择</option>');
+          } else {
+            var defLine = (res.code === 0 && res.data && res.data.default_line) ? res.data.default_line : '0';
+            lineSelect.html('<option value="' + htmlEscape(defLine) + '" selected>默认</option>');
+            lineSelect.data('allLines', []);
+          }
+        },
+        error: function(){ lineSelect.html('<option value="0" selected>默认</option>'); lineSelect.data('allLines', []); }
+      });
+    });
+
+    // 批量模式：主线路选择 → 显示子线路（事件委托，更可靠）
+    $('#cfOptimizedDnsGroupArea').off('change.cfsub', '.cf-line-main').on('change.cfsub', '.cf-line-main', function(){
+      var groupIndex = $(this).attr('id').replace('lineSelect_', '');
+      var subLineArea = $('#subLineArea_' + groupIndex);
+      var subLineSelect = $('#subLineSelect_' + groupIndex);
+      var allLines = $(this).data('allLines') || [];
+      var selectedVal = $(this).val();
+
+      // 找该父线路的子线路
+      var children = [];
+      for(var ci = 0; ci < allLines.length; ci++){
+        if(allLines[ci].parent === selectedVal){
+          children.push(allLines[ci]);
+        }
+      }
+
+      if(children.length > 0){
+        var opts = '';
+        for(var si = 0; si < children.length; si++){
+          opts += '<option value="' + htmlEscape(children[si].value) + '">' + htmlEscape(children[si].label) + '</option>';
+        }
+        subLineSelect.html(opts);
+        subLineArea.show();
+      } else {
+        subLineArea.hide();
+      }
+    });
+
+    // 单域名模式：DNS 服务商选择 → 加载线路
+    $('#cfOptimizedSingleDnsArea #cfOptimizedDnsProvider').off('change.cfline').on('change.cfline', function(){
+      var domainId = $(this).val();
+      var lineArea = $('#singleLineArea');
+      var lineSelect = $('#singleLineSelect');
+      var subLineArea = $('#singleSubLineArea');
+
+      if(!domainId){ lineArea.hide(); subLineArea.hide(); return; }
+      lineArea.show();
+      subLineArea.hide();
+      lineSelect.html('<option value="">加载中...</option>');
+
+      $.ajax({
+        type: 'POST', url: '/cloudflare/get_domain_default_line', data: {domain_id: domainId}, dataType: 'json',
+        success: function(res){
+          if(res.code === 0 && res.data && res.data.lines && res.data.lines.length > 0){
+            lineSelect.data('allLines', res.data.lines);
+            var opts = '';
+            for(var li = 0; li < res.data.lines.length; li++){
+              var l = res.data.lines[li];
+              if(!l.parent){
+                opts += '<option value="' + htmlEscape(l.value) + '"' + (l.is_default ? ' selected' : '') + '>' + htmlEscape(l.label) + '</option>';
+              }
+            }
+            lineSelect.html(opts || '<option value="" selected>请选择</option>');
+          } else {
+            var defLine = (res.code === 0 && res.data && res.data.default_line) ? res.data.default_line : '0';
+            lineSelect.html('<option value="' + htmlEscape(defLine) + '" selected>默认</option>');
+            lineSelect.data('allLines', []);
+          }
+        },
+        error: function(){ lineSelect.html('<option value="0" selected>默认</option>'); lineSelect.data('allLines', []); }
+      });
+    });
+
+    // 单域名模式：主线路选择 → 显示子线路（直接绑定，因为 ID 固定）
+    $('#singleLineSelect').off('change.cfsub').on('change.cfsub', function(){
+      var subLineArea = $('#singleSubLineArea');
+      var subLineSelect = $('#singleSubLineSelect');
+      var allLines = $(this).data('allLines') || [];
+      var selectedVal = $(this).val();
+
+      var children = [];
+      for(var ci = 0; ci < allLines.length; ci++){
+        if(allLines[ci].parent === selectedVal){
+          children.push(allLines[ci]);
+        }
+      }
+
+      if(children.length > 0){
+        var opts = '';
+        for(var si = 0; si < children.length; si++){
+          opts += '<option value="' + htmlEscape(children[si].value) + '">' + htmlEscape(children[si].label) + '</option>';
+        }
+        subLineSelect.html(opts);
+        subLineArea.show();
+      } else {
+        subLineArea.hide();
+      }
+    });
+  }
+  bindLineEvents();
+}
+
+// 确认处理
+function confirmBatchCfOptimized(){
+  var confirmBtn = $("#cfOptimizedConfirmBtn");
+  var targetInfo = getCfOptimizedTargetValue();
+  if(!targetInfo || !targetInfo.value){ layer.msg('请选择 CNAME 目标', {icon: 0}); return; }
+  var cnameTarget = targetInfo.value;
+  var recordType = targetInfo.type || 'CNAME';
+
+  // 收集所有组的选择（或使用上次已保存的选择）
+  var dnsDomains = {};
+  var allSelected = true;
+  var savedDomains = confirmBtn.data('savedDnsDomains');
+
+  if(savedDomains){
+    // 批量二次确认：使用预检测时保存的选择
+    dnsDomains = savedDomains;
+  } else if($('#cfOptimizedDnsGroupArea').is(':visible')){
+    // 多域名分组模式：首次收集（按域名匹配，不依赖 select 顺序）
+    $('#cfOptimizedDnsGroupArea select[id^=dnsProvider_]').each(function(){
+      var dnsDomain = $(this).data('dnsDomain') || '';
+      var val = $(this).val();
+      var domainId = val;
+      var groupIndex = $(this).data('groupIndex');
+      var lineVal = $('#lineSelect_' + groupIndex).val() || '0';
+      var subLineVal = $('#subLineSelect_' + groupIndex).val();
+      if(subLineVal) lineVal = subLineVal;
+      // 获取线路的显示名称（用于预检测结果显示）
+      var lineLabel = '';
+      if(subLineVal){
+        lineLabel = $('#subLineSelect_' + groupIndex).find('option:selected').text() || '';
+      } else {
+        lineLabel = $('#lineSelect_' + groupIndex).find('option:selected').text() || '';
+      }
+      dnsDomains[dnsDomain] = {domainId: domainId, dnsDomain: dnsDomain, line: lineVal, lineLabel: lineLabel};
+      if(!val) allSelected = false;
+    });
+  } else {
+    // 单域名模式
+    var domainId = $('#cfOptimizedDnsProvider').val();
+    if(!domainId) allSelected = false;
+    var singleLineVal = $('#singleLineSelect').val() || '0';
+    var singleSubLineVal = $('#singleSubLineSelect').val();
+    if(singleSubLineVal) singleLineVal = singleSubLineVal;
+    var singleLineLabel = '';
+    if(singleSubLineVal){
+      singleLineLabel = $('#singleSubLineSelect').find('option:selected').text() || '';
+    } else {
+      singleLineLabel = $('#singleLineSelect').find('option:selected').text() || '';
+    }
+    // 直接从数据取实际域名作为 key（此时 orderedDomains 尚未构建，不能引用它）
+    var singleDnsKey = batchCfOptimizedData.length > 0 ? (batchCfOptimizedData[0].dnsDomain || '0') : '0';
+    dnsDomains[singleDnsKey] = {domainId: domainId, line: singleLineVal, lineLabel: singleLineLabel};
+  }
+
+  if(!allSelected){ layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0}); return; }
+
+  // 保存选择供批量二次确认时复用（此时 DOM 可能已被隐藏）
+  confirmBtn.data('savedDnsDomains', dnsDomains);
+
+  // 将 DNS 选择直接存到每个主机名数据上（不依赖 DOM 可见状态）
+  var orderedDomains = [];
+  var seenDomains = {};
+  for(var di = 0; di < batchCfOptimizedData.length; di++){
+    var dd = batchCfOptimizedData[di].dnsDomain;
+    if(dd && !seenDomains[dd]){ seenDomains[dd] = true; orderedDomains.push(dd); }
+  }
+  if(orderedDomains.length > 1){
+    // 多域名分组模式（按域名匹配，不依赖顺序）
+    for(var gi = 0; gi < orderedDomains.length; gi++){
+      var sel = dnsDomains[orderedDomains[gi]];
+      if(!sel) continue;
+      for(var ei = 0; ei < batchCfOptimizedData.length; ei++){
+        if(batchCfOptimizedData[ei].dnsDomain === orderedDomains[gi]){
+          batchCfOptimizedData[ei]._dnsSel = sel;
+        }
+      }
+    }
+  } else {
+    // 单分组模式（dnsDomains key 是域名非数字索引，用 orderedDomains[0] 取正确值）
+    var singleSel = orderedDomains.length > 0 ? dnsDomains[orderedDomains[0]] : null;
+    for(var si = 0; si < batchCfOptimizedData.length; si++){
+      batchCfOptimizedData[si]._dnsSel = singleSel;
+    }
+  }
+
+  var btnMode = confirmBtn.data('cfmode');
+
+  // 单个模式的二次确认（检测已存在记录）
+  if(cfOptimizedSingleHostname && btnMode !== 'execute'){
+    var singleDomainKey = orderedDomains.length > 0 ? orderedDomains[0] : 0;
+    var sel = dnsDomains[singleDomainKey];
+    var singleItem = batchCfOptimizedData[0];
+    var singleDnsDomain = singleItem.dnsDomain || '';
+    var singleRecordName = cfOptimizedSingleHostname;
+    if(singleDnsDomain && cfOptimizedSingleHostname.length > singleDnsDomain.length && cfOptimizedSingleHostname.substr(cfOptimizedSingleHostname.length - singleDnsDomain.length - 1) === '.' + singleDnsDomain){
+      singleRecordName = cfOptimizedSingleHostname.substr(0, cfOptimizedSingleHostname.length - singleDnsDomain.length - 1);
+    } else if(cfOptimizedSingleHostname === singleDnsDomain){
+      singleRecordName = '@';
+    }
+    confirmBtn.prop('disabled', true).text('检测中...');
+
+    $.ajax({
+      type: 'POST',
+      url: '/record/list',
+      data: {id: sel.domainId, rr: singleRecordName},
+      dataType: 'json',
+      success: function(res){
+        confirmBtn.prop('disabled', false);
+        // A/CNAME/AAAA 在同一线路互斥，预检测也匹配全部三种
+        var allowedTypes = ['A', 'AAAA', 'CNAME'];
+        var existingRecord = null;
+        var existingInfo = '';
+        // 获取用户选择的线路 value 和 label
+        var selLine = (sel && sel.line) ? sel.line : '0';
+        var selLineLabel = (sel && sel.lineLabel) ? sel.lineLabel : '';
+        if(res.code === 0 && res.data && res.data.length > 0){
+          for(var i = 0; i < res.data.length; i++){
+            var recType = (res.data[i].Type || '').toUpperCase();
+            if(allowedTypes.indexOf(recType) === -1) continue;
+            var recLine = String(res.data[i].Line || res.data[i].line || '');
+            var recLineName = res.data[i].LineName || (res.data[i].line_name || '');
+            // 线路精确匹配：优先比较 value，不匹配则用 label 兜底
+            var isLineMatch = (recLine === selLine);
+            if(!isLineMatch && selLineLabel && recLineName){
+              isLineMatch = (recLineName === selLineLabel);
+            }
+            if(isLineMatch){
+              existingRecord = res.data[i];
+              break;
+            }
+          }
+        }
+        if(existingRecord){
+          var recType = (existingRecord.Type || '').toUpperCase();
+          var recLineName = existingRecord.LineName || (existingRecord.line_name || String(existingRecord.Line || existingRecord.line || '默认'));
+          var displaySelLabel = selLineLabel || selLine || '默认';
+          var targetRecType = recordType || 'CNAME';
+          var typeChangeInfo = (recType === targetRecType) ? (recType + '') : ('目标类型：' + targetRecType + ' → 现有类型：' + recType);
+          existingInfo = typeChangeInfo + ' | 线路：' + recLineName + ' → 目标线路：' + displaySelLabel + ' | 值：' + (existingRecord.Value || existingRecord.value || '-');
+          $('#cfOptimizedExistingInfo').text(existingInfo);
+          $('#cfOptimizedExistingRecord').show();
+          confirmBtn.text('确认修改').data('cfmode', 'execute').data('cfExistingId', existingRecord.RecordId).data('cfExistingRec', existingRecord);
+        } else {
+          confirmBtn.data('cfmode', 'execute');
+          executeCfOptimized(cnameTarget, dnsDomains, recordType);
+        }
+      },
+      error: function(){
+        confirmBtn.prop('disabled', false).text('确定');
+        layer.alert('检测已有记录失败', {icon: 2});
+      }
+    });
+    return;
+  }
+
+  // 批量模式的二次确认 或 单个模式已确认
+  if(btnMode === 'execute' || btnMode === 'batchExecute'){
+    executeCfOptimized(cnameTarget, dnsDomains, recordType);
+    return;
+  }
+
+  // 批量模式第一次点击：预检测
+  confirmBtn.prop('disabled', true).text('检测中...');
+  $('#cfOptimizedExistingRecord').hide();
+
+  preDetectAllHostnames(cnameTarget, dnsDomains, recordType, function(results){
+    confirmBtn.prop('disabled', false);
+
+    var modifyCount = results.modifyList.length;
+    var addCount = results.addList.length;
+    var failCount = results.failList.length;
+
+    // 更新列表显示检测结果
+    var listHtml = '';
+    batchCfOptimizedData.forEach(function(item){
+      var h = item.hostname;
+      if(results.modifySet[h] && results.modifySet[h] !== true){
+        var rec = results.modifySet[h];
+        var recType = (rec.Type || '').toUpperCase();
+        var recLineName = rec.LineName || (rec.line_name || String(rec.Line || rec.line || '默认'));
+        var selLineLabel = (item._dnsSel && item._dnsSel.lineLabel) ? item._dnsSel.lineLabel : (item._dnsSel && item._dnsSel.line) || '默认';
+        var targetRecType = recordType || 'CNAME';
+        var typeInfo = (recType === targetRecType) ? ('类型：' + recType) : ('目标类型：' + targetRecType + ' → 现有类型：' + recType);
+        listHtml += '<div style="padding:8px;border-bottom:1px solid #eee;background:#fff3cd;">';
+        listHtml += '<strong>' + htmlEscape(h) + '</strong> <span style="color:#d9534f;font-size:12px;margin-left:6px;">⚠ 将修改已有记录</span>';
+        listHtml += '<div style="font-size:11px;color:#888;margin-top:2px;">' + typeInfo + ' | 线路：' + htmlEscape(recLineName) + ' → 目标线路：' + htmlEscape(selLineLabel) + ' | 值：' + htmlEscape(rec.Value || rec.value || '-') + '</div>';
+        listHtml += '</div>';
+      } else if(results.addSet[h]){
+        var addLineLabel = (item._dnsSel && item._dnsSel.lineLabel) ? item._dnsSel.lineLabel : '默认';
+        var addTargetType = recordType || 'CNAME';
+        listHtml += '<div style="padding:8px;border-bottom:1px solid #eee;background:#dff0d8;">';
+        listHtml += '<strong>' + htmlEscape(h) + '</strong> <span style="color:#3c763d;font-size:12px;margin-left:6px;">✓ 将新增记录</span>';
+        listHtml += '<div style="font-size:11px;color:#888;margin-top:2px;">目标类型：' + addTargetType + ' | 目标线路：' + htmlEscape(addLineLabel) + '</div>';
+        listHtml += '</div>';
+      } else {
+        listHtml += '<div style="padding:8px;border-bottom:1px solid #eee;background:#f2dede;">';
+        listHtml += '<strong>' + htmlEscape(h) + '</strong> <span style="color:#a94442;font-size:12px;margin-left:6px;">✗ 检测失败</span>';
+        listHtml += '</div>';
+      }
+    });
+
+    $('#batchCfOptimizedList').html(listHtml).show();
+
+    var summary = '';
+    if(modifyCount > 0) summary += '<span style="color:#d9534f;"><strong>' + modifyCount + '</strong> 个将修改已有记录</span>';
+    if(addCount > 0){ if(summary) summary += ' | '; summary += '<span style="color:#3c763d;"><strong>' + addCount + '</strong> 个将新增记录</span>'; }
+    if(failCount > 0){ if(summary) summary += ' | '; summary += '<span style="color:#a94442;"><strong>' + failCount + '</strong> 个检测失败</span>'; }
+
+    $('#batchCfOptimizedAlert').html(summary);
+
+    // 无论检测结果如何都允许继续（执行阶段会再次检测并决定添加/修改）
+    $('#cfOptimizedDnsGroupArea').hide();
+    $('#cfOptimizedSingleDnsArea').hide();
+    $('#cfOptimizedExistingRecord').show().removeClass('alert-warning alert-info').addClass(failCount > 0 ? 'alert-warning' : 'alert-info');
+    if(failCount > 0 && failCount === totalCount){
+      $('#cfOptimizedExistingInfo').text('检测失败的主机名将尝试直接添加记录');
+    } else if(failCount > 0){
+      $('#cfOptimizedExistingInfo').text('部分主机名检测失败，失败的将尝试直接添加。请确认后点击"确认执行"');
+    } else {
+      $('#cfOptimizedExistingInfo').text('请确认以上检测结果后点击"确认执行"');
+    }
+    confirmBtn.text('确认执行').data('cfmode', 'batchExecute');
+
+    // 保存预检测结果供后续使用
+    confirmBtn.data('preDetectResults', results);
+  });
+}
+
+// 预检测所有主机名是否有已存在记录
+function preDetectAllHostnames(cnameTarget, dnsDomains, recordType, callback){
+  // A/CNAME/AAAA 在同一线路互斥，预检测也匹配全部三种
+  var allowedTypes = ['A', 'AAAA', 'CNAME'];
+  var detectedCount = 0;
+  var totalCount = batchCfOptimizedData.length;
+  var modifyList = [], addList = [], failList = [];
+  var modifySet = {}, addSet = {};
+
+  function checkDone(){
+    if(detectedCount === totalCount){
+      callback({modifyList: modifyList, addList: addList, failList: failList, modifySet: modifySet, addSet: addSet});
+    }
+  }
+
+  // 直接使用已存到每个主机名数据上的 _dnsSel
+  batchCfOptimizedData.forEach(function(item){
+    var hostname = item.hostname;
+    var sel = item._dnsSel;
+
+    // _dnsSel 为空时 fallback 到 targets 数据
+    if(!sel && item.targets && item.targets.length > 0){
+      sel = {domainId: item.targets[0].domain_id};
+    }
+    if(!sel || !sel.domainId){ failList.push(hostname); detectedCount++; if(detectedCount === totalCount) checkDone(); return; }
+
+    // 直接从主机名和 DNS 域名计算 record_name（不依赖 targets 中的值，避免误判）
+    var dnsDomain = item.dnsDomain || '';
+    var recordName = hostname;
+    if(dnsDomain && hostname.length > dnsDomain.length && hostname.substr(hostname.length - dnsDomain.length - 1) === '.' + dnsDomain){
+      recordName = hostname.substr(0, hostname.length - dnsDomain.length - 1);
+    } else if(hostname === dnsDomain){
+      recordName = '@';
+    }
+    if(!recordName) recordName = hostname;
+    detectedCount++;
+
+    (function(hn, rn, s){
+      // 获取用户选择的线路 value 和 label（label 用于兜底匹配）
+      var selLine = s.line || '0';
+      var selLineLabel = s.lineLabel || '';
+      $.ajax({
+        type: 'POST',
+        url: '/record/list',
+        data: {id: s.domainId, rr: rn},
+        dataType: 'json',
+        success: function(res){
+          var existingRecord = null;
+          if(res.code === 0 && res.data && res.data.length > 0){
+            for(var i = 0; i < res.data.length; i++){
+              var recType = (res.data[i].Type || '').toUpperCase();
+              if(allowedTypes.indexOf(recType) === -1) continue;
+              var recLine = String(res.data[i].Line || res.data[i].line || '');
+              var recLineName = res.data[i].LineName || (res.data[i].line_name || '');
+              // 线路精确匹配：优先比较 value，不匹配则用 label 兜底
+              var isLineMatch = (recLine === selLine);
+              if(!isLineMatch && selLineLabel && recLineName){
+                isLineMatch = (recLineName === selLineLabel);
+              }
+              if(isLineMatch){
+                existingRecord = res.data[i];
+                break;
+              }
+            }
+          }
+          if(existingRecord){
+            modifyList.push(hn);
+            modifySet[hn] = existingRecord;
+          } else {
+            addList.push(hn);
+            addSet[hn] = true;
+          }
+          checkDone();
+        },
+        error: function(){
+          failList.push(hn);
+          checkDone();
+        }
+      });
+    })(hostname, recordName, sel);
+  });
+}
+
+// 执行 CF 优选操作
+function executeCfOptimized(cnameTarget, dnsDomains, recordType){
+  var confirmBtn = $("#cfOptimizedConfirmBtn");
+  confirmBtn.prop('disabled', true).text('处理中...');
+
+  var ii = layer.load(2);
+  var batchResults = {success: 0, failed: 0, errors: []};
+  var processedCount = 0;
+  var totalCount = batchCfOptimizedData.length;
+  var execRecordType = recordType || 'CNAME';
+  // 执行阶段：A/CNAME/AAAA 在同一线路互斥，找到任一种都走修改路径（用用户选择的类型覆盖）
+  var allowedTypes = ['A', 'AAAA', 'CNAME'];
+
+  function checkCompletion(){
+    if(processedCount === totalCount){
+      layer.close(ii);
+      resetCfOptimizedState();
+      $("#modal-cf-optimized").modal('hide');
+      var msg = 'CF 优选解析完成：成功 ' + batchResults.success + ' 个，失败 ' + batchResults.failed + ' 个';
+      if(batchResults.errors.length > 0) msg += '\n\n失败详情：\n' + batchResults.errors.join('\n');
+      layer.alert(msg, {icon: batchResults.failed > 0 ? 2 : 1});
+    }
+  }
+
+  // 处理单个模式的预存 RecordId
+  var singlePendingId = null;
+  if(cfOptimizedSingleHostname && confirmBtn.data('cfExistingId')){
+    singlePendingId = confirmBtn.data('cfExistingId');
+    cfOptimizedSingleHostname = null;
+  }
+
+  function processOneItem(item, line){
+    var hostname = item.hostname;
+    var sel = item._dnsSel;
+
+    // _dnsSel 为空时 fallback 到 targets 数据
+    if(!sel && item.targets && item.targets.length > 0){
+      sel = {domainId: item.targets[0].domain_id, line: line};
+    }
+
+    // 直接从主机名和 DNS 域名计算 record_name
+    var dnsDomain = item.dnsDomain || '';
+    var recordName = hostname;
+    if(dnsDomain && hostname.length > dnsDomain.length && hostname.substr(hostname.length - dnsDomain.length - 1) === '.' + dnsDomain){
+      recordName = hostname.substr(0, hostname.length - dnsDomain.length - 1);
+    } else if(hostname === dnsDomain){
+      recordName = '@';
+    }
+    if(!recordName) recordName = hostname;
+
+    if(!sel || !sel.domainId){
+      batchResults.failed++; batchResults.errors.push(hostname + ': 无匹配的DNS服务商'); processedCount++; checkCompletion(); return;
+    }
+
+    // 如果有预存的单个模式 RecordId 且是同一个主机名，直接使用
+    var useExistingId = singlePendingId && batchCfOptimizedData.length === 1;
+    if(useExistingId){
+      submitOneRecord(sel.domainId, recordName, cnameTarget, line, singlePendingId, hostname, batchResults, execRecordType, function(){
+        processedCount++; checkCompletion();
+      });
+      return;
+    }
+
+    // 否则检测后提交（按用户选择的线路匹配）
+    $.ajax({
+      type: 'POST',
+      url: '/record/list',
+      data: {id: sel.domainId, rr: recordName},
+      dataType: 'json',
+      success: function(res){
+        var existingRecordId = null;
+        if(res.code === 0 && res.data && res.data.length > 0){
+          for(var i = 0; i < res.data.length; i++){
+            var recType = (res.data[i].Type || '').toUpperCase();
+            var recLine = String(res.data[i].Line || res.data[i].line || '');
+            if(allowedTypes.indexOf(recType) !== -1 && recLine === line){
+              existingRecordId = res.data[i].RecordId; break;
+            }
+          }
+        }
+        submitOneRecord(sel.domainId, recordName, cnameTarget, line, existingRecordId, hostname, batchResults, execRecordType, function(){
+          processedCount++; checkCompletion();
+        });
+      },
+      error: function(){
+        batchResults.failed++; batchResults.errors.push(hostname + ': 检测已有记录失败'); processedCount++; checkCompletion();
+      }
+    });
+  }
+
+  function submitOneRecord(domainId, recordName, cnameTarget, line, existingRecordId, hostname, br, recType, cb){
+    var postData = {name: recordName, type: (recType || 'CNAME'), value: cnameTarget, line: line, ttl: 600, mx: 1, weight: 0, remark: 'Cloudflare 优选解析'};
+    if(existingRecordId) postData.recordid = existingRecordId;
+    var url = existingRecordId ? ('/record/update/' + domainId) : ('/record/add/' + domainId);
+    var actionMsg = existingRecordId ? '修改' : '添加';
+
+    $.ajax({
+      type: 'POST', url: url, data: postData, dataType: 'json',
+      success: function(res){
+        if(res.code === 0){
+          br.success++;
+        } else {
+          if(existingRecordId && res.code !== 0){
+            var retryData = {name: recordName, type: (recType || 'CNAME'), value: cnameTarget, line: line, ttl: 600, mx: 1, weight: 0, remark: 'Cloudflare 优选解析'};
+            $.ajax({
+              type: 'POST', url: '/record/add/' + domainId, data: retryData, dataType: 'json',
+              success: function(retryRes){
+                if(retryRes.code === 0){ br.success++; } else { br.failed++; br.errors.push(hostname + ': 添加失败 - ' + (retryRes.msg || '')); }
+                cb();
+              },
+              error: function(){ br.failed++; br.errors.push(hostname + ': 添加网络错误'); cb(); }
+            });
+            return;
+          }
+          br.failed++;
+          br.errors.push(hostname + ': ' + actionMsg + '失败 - ' + (res.msg || ''));
+        }
+        cb();
+      },
+      error: function(){
+        br.failed++; br.errors.push(hostname + ': 网络错误'); cb();
+      }
+    });
+  }
+
+  // 每个主机名使用自己组选择的线路，直接处理
+  batchCfOptimizedData.forEach(function(item){
+    var itemLine = (item._dnsSel && item._dnsSel.line) ? item._dnsSel.line : '0';
+    processOneItem(item, itemLine);
+  });
+}
+
 function submitBatchTxtRecord(txtName, txtValue, target, remark, callback){
   // 先获取目标域名的默认线路
   $.ajax({
