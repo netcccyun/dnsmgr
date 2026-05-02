@@ -167,6 +167,7 @@ Route::group(function () {
     Route::get('/system/mailtest', 'system/mailtest');
     Route::get('/system/tgbottest', 'system/tgbottest');
     Route::get('/system/webhooktest', 'system/webhooktest');
+    Route::get('/system/customwebhooktest', 'system/customwebhooktest');
     Route::post('/system/proxytest', 'system/proxytest');
     Route::get('/system/cronset', 'system/cronset');
 

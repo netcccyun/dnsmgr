@@ -41,7 +41,7 @@ class ExpireNoticeService
         $count = $this->refreshExpiringDomainList($max_day);
         if ($count > 0) return;
 
-        if (!empty($days) && (config_get('expire_notice_mail') == '1' || config_get('expire_notice_wxtpl') == '1' || config_get('expire_notice_tgbot') == '1' || config_get('expire_notice_webhook') == '1') && date('H') >= 9) {
+        if (!empty($days) && (config_get('expire_notice_mail') == '1' || config_get('expire_notice_wxtpl') == '1' || config_get('expire_notice_tgbot') == '1' || config_get('expire_notice_webhook') == '1' || config_get('expire_notice_custom_webhook') == '1') && date('H') >= 9) {
             $this->noticeExpiringDomainList($max_day, $days);
         }
     }
