@@ -25,10 +25,10 @@ class Schedule extends BaseController
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
 
-        $select = Db::name('sctask')->alias('A')->join('domain B', 'A.did = B.id');
+        $select = Db::name('sctask')->alias('a')->join('domain b', 'a.did = b.id');
         if (!empty($kw)) {
             if ($type == 1) {
-                $select->whereLike('rr|B.name', '%' . $kw . '%');
+                $select->whereLike('rr|b.name', '%' . $kw . '%');
             } elseif ($type == 2) {
                 $select->where('recordid', $kw);
             } elseif ($type == 3) {
@@ -41,7 +41,7 @@ class Schedule extends BaseController
             $select->where('type', $stype);
         }
         $total = $select->count();
-        $list = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name domain')->select()->toArray();
+        $list = $select->order('a.id', 'desc')->limit($offset, $limit)->field('a.*,b.name domain')->select()->toArray();
 
         foreach ($list as &$row) {
             $row['addtimestr'] = date('Y-m-d H:i:s', $row['addtime']);
@@ -151,7 +151,7 @@ class Schedule extends BaseController
         }
 
         $domains = [];
-        $domainList = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->field('A.id,A.name,B.type')->select();
+        $domainList = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')->field('a.id,a.name,b.type')->select();
         foreach ($domainList as $row) {
             $domains[] = ['id'=>$row['id'], 'name'=>$row['name'], 'type'=>$row['type']];
         }

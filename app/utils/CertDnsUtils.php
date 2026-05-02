@@ -12,9 +12,9 @@ class CertDnsUtils
     {
         $cnameDomainList = [];
         foreach ($dnsList as $mainDomain => $list) {
-            $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.name', $mainDomain)->field('A.*,B.type')->find();
+            $drow = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')->where('a.name', $mainDomain)->field('a.*,b.type')->find();
             if (!$drow && preg_match('/^xn--/', $mainDomain)) {
-                $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.name', idn_to_utf8($mainDomain))->field('A.*,B.type')->find();
+                $drow = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')->where('a.name', idn_to_utf8($mainDomain))->field('a.*,b.type')->find();
             }
             if (!$drow) {
                 if ($cname) {
@@ -24,7 +24,7 @@ class CertDnsUtils
                         } else {
                             $domain = str_replace('_acme-challenge.', '', $row['name']) . '.' . $mainDomain;
                         }
-                        $cname_row = Db::name('cert_cname')->alias('A')->join('domain B', 'A.did = B.id')->where('A.domain', $domain)->field('A.*,B.name cnamedomain')->find();
+                        $cname_row = Db::name('cert_cname')->alias('a')->join('domain b', 'a.did = b.id')->where('a.domain', $domain)->field('a.*,b.name cnamedomain')->find();
                         if ($cname_row) {
                             $row['name'] = $cname_row['rr'];
                             $cnameDomainList[$cname_row['cnamedomain']][] = $row;
@@ -104,9 +104,9 @@ class CertDnsUtils
     {
         $cnameDomainList = [];
         foreach ($dnsList as $mainDomain => $list) {
-            $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.name', $mainDomain)->field('A.*,B.type')->find();
+            $drow = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')->where('a.name', $mainDomain)->field('a.*,b.type')->find();
             if (!$drow && preg_match('/^xn--/', $mainDomain)) {
-                $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.name', idn_to_utf8($mainDomain))->field('A.*,B.type')->find();
+                $drow = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')->where('a.name', idn_to_utf8($mainDomain))->field('a.*,b.type')->find();
             }
             if (!$drow) {
                 if ($cname) {
@@ -116,7 +116,7 @@ class CertDnsUtils
                         } else {
                             $domain = str_replace('_acme-challenge.', '', $row['name']) . '.' . $mainDomain;
                         }
-                        $cname_row = Db::name('cert_cname')->alias('A')->join('domain B', 'A.did = B.id')->where('A.domain', $domain)->field('A.*,B.name cnamedomain')->find();
+                        $cname_row = Db::name('cert_cname')->alias('a')->join('domain b', 'a.did = b.id')->where('a.domain', $domain)->field('a.*,b.name cnamedomain')->find();
                         if ($cname_row) {
                             $row['name'] = $cname_row['rr'];
                             $cnameDomainList[$cname_row['cnamedomain']][] = $row;

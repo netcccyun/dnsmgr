@@ -58,6 +58,40 @@ return [
             'fields_cache'    => true,
         ],
 
+        'pgsql' => [
+            // 数据库类型
+            'type'            => 'pgsql',
+            // 自定义 builder：修复 pdo_pgsql 多行 INSERT 时的类型推断问题
+            'builder'         => '\\app\\db\\builder\\Pgsql',
+            // 服务器地址
+            'hostname'        => env('database.hostname', '127.0.0.1'),
+            // 数据库名
+            'database'        => env('database.database', ''),
+            // 用户名
+            'username'        => env('database.username', 'postgres'),
+            // 密码
+            'password'        => env('database.password', ''),
+            // 端口
+            'hostport'        => env('database.hostport', '5432'),
+            // 数据库连接参数
+            'params'          => [],
+            // 数据库编码默认采用utf8
+            'charset'         => env('database.charset', 'utf8'),
+            // 数据库 schema
+            'schema'          => env('database.schema', 'public'),
+            // 数据库表前缀
+            'prefix'          => env('database.prefix', ''),
+
+            'deploy'          => 0,
+            'rw_separate'     => false,
+            'master_num'      => 1,
+            'slave_no'        => '',
+            'fields_strict'   => true,
+            'break_reconnect' => true,
+            'trigger_sql'     => env('app_debug', true),
+            'fields_cache'    => true,
+        ],
+
         // 更多的数据库配置信息
     ],
 ];

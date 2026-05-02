@@ -66,7 +66,15 @@ class ExpireNoticeService
 
     private function refreshExpiringDomainList($max_day)
     {
-        $domainList = Db::name('domain')->field('id,name')->whereRaw('expiretime>=(NOW() - INTERVAL 5 DAY) AND expiretime<=(NOW() + INTERVAL ' . $max_day . ' DAY) AND checktime<=(NOW() - INTERVAL 1 DAY)')->select();
+        $now = time();
+        $minExpire = date('Y-m-d H:i:s', $now - 5 * 86400);
+        $maxExpire = date('Y-m-d H:i:s', $now + $max_day * 86400);
+        $maxCheck = date('Y-m-d H:i:s', $now - 86400);
+        $domainList = Db::name('domain')->field('id,name')
+            ->where('expiretime', '>=', $minExpire)
+            ->where('expiretime', '<=', $maxExpire)
+            ->where('checktime', '<=', $maxCheck)
+            ->select();
         $count = 0;
         foreach ($domainList as $domain) {
             $res = $this->updateDomainDate($domain['id'], $domain['name']);
@@ -84,7 +92,19 @@ class ExpireNoticeService
 
     private function noticeExpiringDomainList($max_day, $days)
     {
-        $domainList = Db::name('domain')->field('id,name,expiretime')->whereRaw('expiretime>=NOW() AND expiretime<=(NOW() + INTERVAL ' . $max_day . ' DAY) AND is_notice=1 AND (noticetime IS NULL OR noticetime<=(NOW() - INTERVAL 20 HOUR))')->order('expiretime', 'asc')->select();
+        $now = time();
+        $nowDate = date('Y-m-d H:i:s', $now);
+        $maxExpire = date('Y-m-d H:i:s', $now + $max_day * 86400);
+        $maxNotice = date('Y-m-d H:i:s', $now - 20 * 3600);
+        $domainList = Db::name('domain')->field('id,name,expiretime')
+            ->where('expiretime', '>=', $nowDate)
+            ->where('expiretime', '<=', $maxExpire)
+            ->where('is_notice', 1)
+            ->where(function ($q) use ($maxNotice) {
+                $q->whereNull('noticetime')->whereOr('noticetime', '<=', $maxNotice);
+            })
+            ->order('expiretime', 'asc')
+            ->select();
         $noticeList = [];
         foreach ($domainList as $domain) {
             $expireDay = intval((strtotime($domain['expiretime']) - time()) / 86400);

@@ -56,12 +56,11 @@ class Index extends BaseController
             $this->db_update();
         }
 
-        $tmp = 'version()';
-        $mysqlVersion = Db::query("select version()")[0][$tmp];
+        $dbVersion = Db::query("select version() as v")[0]['v'] ?? '';
         $info = [
             'framework_version' => app()->version(),
             'php_version' => PHP_VERSION,
-            'mysql_version' => $mysqlVersion,
+            'mysql_version' => $dbVersion,
             'software' => $_SERVER['SERVER_SOFTWARE'] ?? '未知',
             'os' => php_uname(),
             'date' => date("Y-m-d H:i:s"),
@@ -73,13 +72,15 @@ class Index extends BaseController
 
     private function db_update()
     {
-        $sqls = file_get_contents(app()->getAppPath() . 'sql/update.sql');
-        $mysql_prefix = env('database.prefix', 'dnsmgr_');
+        $driver = env('database.driver', 'mysql');
+        $file = $driver === 'pgsql' ? 'sql/update.pgsql.sql' : 'sql/update.sql';
+        $sqls = file_get_contents(app()->getAppPath() . $file);
+        $db_prefix = env('database.prefix', 'dnsmgr_');
         $sqls = explode(';', $sqls);
         foreach ($sqls as $value) {
             $value = trim($value);
             if (empty($value)) continue;
-            $value = str_replace('dnsmgr_', $mysql_prefix, $value);
+            $value = str_replace('dnsmgr_', $db_prefix, $value);
             try {
                 Db::execute($value);
             } catch (Exception $e) {

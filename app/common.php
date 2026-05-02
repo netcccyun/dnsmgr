@@ -258,7 +258,12 @@ function config_get($key, $default = null, $force = false)
 
 function config_set($key, $value)
 {
-    $res = Db::name('config')->replace()->insert(['key' => $key, 'value' => $value]);
+    $exists = Db::name('config')->where('key', $key)->find();
+    if ($exists) {
+        $res = Db::name('config')->where('key', $key)->update(['value' => $value]);
+    } else {
+        $res = Db::name('config')->insert(['key' => $key, 'value' => $value]);
+    }
     return $res !== false;
 }
 
@@ -611,6 +616,10 @@ function getDomainDate($domain)
 function checkTableExists($table)
 {
     $prefix = env('database.prefix', 'dnsmgr_');
-    $res = Db::query("SHOW TABLES LIKE '" . $prefix . $table . "'");
-    return !empty($res);
+    try {
+        $tables = Db::getConnection()->getTables();
+    } catch (\Exception $e) {
+        return false;
+    }
+    return in_array($prefix . $table, $tables, true);
 }

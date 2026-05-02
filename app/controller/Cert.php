@@ -217,32 +217,32 @@ class Cert extends BaseController
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
 
-        $select = Db::name('cert_order')->alias('A')->leftJoin('cert_account B', 'A.aid = B.id');
+        $select = Db::name('cert_order')->alias('a')->leftJoin('cert_account b', 'a.aid = b.id');
         if (!empty($id)) {
-            $select->where('A.id', $id);
+            $select->where('a.id', $id);
         } elseif (!empty($domain)) {
             $oids = Db::name('cert_domain')->where('domain', 'like', '%' . $domain . '%')->column('oid');
-            $select->whereIn('A.id', $oids);
+            $select->whereIn('a.id', $oids);
         }
         if (!empty($aid)) {
-            $select->where('A.aid', $aid);
+            $select->where('a.aid', $aid);
         }
         if (!empty($type)) {
-            $select->where('B.type', $type);
+            $select->where('b.type', $type);
         }
         if (!isNullOrEmpty($status)) {
             if ($status == '5') {
-                $select->where('A.status', '<', 0);
+                $select->where('a.status', '<', 0);
             } elseif ($status == '6') {
-                $select->where('A.expiretime', '<', date('Y-m-d H:i:s', time() + 86400 * 7))->where('A.expiretime', '>=', date('Y-m-d H:i:s'));
+                $select->where('a.expiretime', '<', date('Y-m-d H:i:s', time() + 86400 * 7))->where('a.expiretime', '>=', date('Y-m-d H:i:s'));
             } elseif ($status == '7') {
-                $select->where('A.expiretime', '<', date('Y-m-d H:i:s'));
+                $select->where('a.expiretime', '<', date('Y-m-d H:i:s'));
             } else {
-                $select->where('A.status', $status);
+                $select->where('a.status', $status);
             }
         }
         $total = $select->count();
-        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->order('id', 'desc')->limit($offset, $limit)->select();
+        $rows = $select->fieldRaw('a.*,b.type,b.remark aremark')->order('id', 'desc')->limit($offset, $limit)->select();
 
         $list = [];
         foreach ($rows as $row) {
@@ -505,7 +505,7 @@ class Cert extends BaseController
             $mainDomain = getMainDomain($domain);
             $drow = Db::name('domain')->where('name', $mainDomain)->find();
             if (!$drow) {
-                $drow = Db::name('domain_alias')->alias('A')->join('domain B', 'A.did = B.id')->where('A.name', $mainDomain)->find();
+                $drow = Db::name('domain_alias')->alias('a')->join('domain b', 'a.did = b.id')->where('a.name', $mainDomain)->find();
                 if (!$drow) {
                     if (substr($domain, 0, 2) == '*.') $domain = substr($domain, 2);
                     if (!$cname || !Db::name('cert_cname')->where('domain', $domain)->where('status', 1)->find()) {
@@ -651,27 +651,27 @@ class Cert extends BaseController
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
 
-        $select = Db::name('cert_deploy')->alias('A')->leftJoin('cert_account B', 'A.aid = B.id')->leftJoin('cert_order C', 'A.oid = C.id')->leftJoin('cert_account D', 'C.aid = D.id');
+        $select = Db::name('cert_deploy')->alias('a')->leftJoin('cert_account b', 'a.aid = b.id')->leftJoin('cert_order c', 'a.oid = c.id')->leftJoin('cert_account d', 'c.aid = d.id');
         if (!empty($oid)) {
-            $select->where('A.oid', $oid);
+            $select->where('a.oid', $oid);
         } elseif (!empty($domain)) {
             $oids = Db::name('cert_domain')->where('domain', 'like', '%' . $domain . '%')->column('oid');
             $select->whereIn('oid', $oids);
         }
         if (!empty($aid)) {
-            $select->where('A.aid', $aid);
+            $select->where('a.aid', $aid);
         }
         if (!empty($type)) {
-            $select->where('B.type', $type);
+            $select->where('b.type', $type);
         }
         if (!isNullOrEmpty($status)) {
-            $select->where('A.status', $status);
+            $select->where('a.status', $status);
         }
         if (!empty($remark)) {
-            $select->where('A.remark', $remark);
+            $select->where('a.remark', $remark);
         }
         $total = $select->count();
-        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark,B.name aname,D.type certtype,D.id certaid')->order('id', 'desc')->limit($offset, $limit)->select();
+        $rows = $select->fieldRaw('a.*,b.type,b.remark aremark,b.name aname,d.type certtype,d.id certaid')->order('id', 'desc')->limit($offset, $limit)->select();
 
         $list = [];
         foreach ($rows as $row) {
@@ -812,7 +812,7 @@ class Cert extends BaseController
         $task = null;
         if ($action == 'edit') {
             $id = input('get.id/d');
-            $task = Db::name('cert_deploy')->alias('A')->join('cert_account B', 'A.aid = B.id')->where('A.id', $id)->fieldRaw('A.id,A.aid,A.oid,A.config,A.remark,B.type')->find();
+            $task = Db::name('cert_deploy')->alias('a')->join('cert_account b', 'a.aid = b.id')->where('a.id', $id)->fieldRaw('a.id,a.aid,a.oid,a.config,a.remark,b.type')->find();
             if (empty($task)) return $this->alert('error', '自动部署任务不存在');
         }
 
@@ -827,7 +827,7 @@ class Cert extends BaseController
         View::assign('accounts', $accounts);
 
         $orders = [];
-        foreach (Db::name('cert_order')->alias('A')->leftJoin('cert_account B', 'A.aid = B.id')->where('status', '<>', 4)->fieldRaw('A.id,A.aid,B.type,B.remark aremark')->order('id', 'desc')->select() as $row) {
+        foreach (Db::name('cert_order')->alias('a')->leftJoin('cert_account b', 'a.aid = b.id')->where('status', '<>', 4)->fieldRaw('a.id,a.aid,b.type,b.remark aremark')->order('id', 'desc')->select() as $row) {
             $domains = Db::name('cert_domain')->where('oid', $row['id'])->order('sort', 'ASC')->column('domain');
             $domainstr = count($domains) > 2 ? implode('、', array_slice($domains, 0, 2)) . '等' . count($domains) . '个域名' : implode('、', $domains);
             if ($row['aid'] == 0) {
@@ -863,12 +863,12 @@ class Cert extends BaseController
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
 
-        $select = Db::name('cert_cname')->alias('A')->leftJoin('domain B', 'A.did = B.id');
+        $select = Db::name('cert_cname')->alias('a')->leftJoin('domain b', 'a.did = b.id');
         if (!empty($kw)) {
-            $select->whereLike('A.domain', '%' . $kw . '%');
+            $select->whereLike('a.domain', '%' . $kw . '%');
         }
         $total = $select->count();
-        $rows = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name cnamedomain')->select();
+        $rows = $select->order('a.id', 'desc')->limit($offset, $limit)->field('a.*,b.name cnamedomain')->select();
 
         $list = [];
         foreach ($rows as $row) {
@@ -937,7 +937,7 @@ class Cert extends BaseController
             return json(['code' => 0]);
         } elseif ($action == 'check') {
             $id = input('post.id/d');
-            $row = Db::name('cert_cname')->alias('A')->join('domain B', 'A.did = B.id')->where('A.id', $id)->field('A.*,B.name cnamedomain')->find();
+            $row = Db::name('cert_cname')->alias('a')->join('domain b', 'a.did = b.id')->where('a.id', $id)->field('a.*,b.name cnamedomain')->find();
             if (!$row) return json(['code' => -1, 'msg' => '自动部署任务不存在']);
 
             $status = 1;

@@ -31,27 +31,25 @@ class Install extends BaseController
                     return json(['code' => 0, 'msg' => '必填项不能为空']);
                 }
 
-                $sqls = file_get_contents(app()->getAppPath() . 'sql/install.sql');
-                $sqls = explode(';', $sqls);
-                $mysql_prefix = env('database.prefix', 'dnsmgr_');
-
-                $password = password_hash($admin_password, PASSWORD_DEFAULT);
-                $sqls[] = "REPLACE INTO `" . $mysql_prefix . "config` VALUES ('sys_key', '" . random(16) . "')";
-                $sqls[] = "INSERT INTO `" . $mysql_prefix . "user` (`username`,`password`,`level`,`regtime`,`lasttime`,`status`) VALUES ('" . addslashes($admin_username) . "', '$password', 2, NOW(), NOW(), 1)";
+                $driver = env('database.driver', 'mysql');
+                $prefix = env('database.prefix', 'dnsmgr_');
+                $sqls = $this->loadInstallSqls($driver);
+                $sqls = array_merge($sqls, $this->buildSeedSqls($driver, $prefix, $admin_username, $admin_password));
 
                 $success = 0;
-                $error = 0;
                 $errorMsg = null;
                 foreach ($sqls as $value) {
                     $value = trim($value);
                     if (empty($value)) continue;
-                    $value = str_replace('dnsmgr_', $mysql_prefix, $value);
-                    if (Db::execute($value) === false) {
-                        $error++;
-                        $dberror = Db::getErrorInfo();
-                        $errorMsg .= $dberror . "\n";
-                    } else {
-                        $success++;
+                    $value = str_replace('dnsmgr_', $prefix, $value);
+                    try {
+                        if (Db::execute($value) === false) {
+                            $errorMsg .= Db::getLastSql() . "\n";
+                        } else {
+                            $success++;
+                        }
+                    } catch (Exception $e) {
+                        $errorMsg .= $e->getMessage() . "\n";
                     }
                 }
                 if (empty($errorMsg)) {
@@ -61,30 +59,43 @@ class Install extends BaseController
                     return json(['code' => 0, 'msg' => $errorMsg]);
                 }
             } else {
-                $mysql_host = input('post.mysql_host', null, 'trim');
-                $mysql_port = intval(input('post.mysql_port', '3306'));
-                $mysql_user = input('post.mysql_user', null, 'trim');
-                $mysql_pwd = input('post.mysql_pwd', null, 'trim');
-                $mysql_name = input('post.mysql_name', null, 'trim');
-                $mysql_prefix = input('post.mysql_prefix', 'cloud_', 'trim');
+                $db_type = input('post.db_type', 'mysql', 'trim');
+                if (!in_array($db_type, ['mysql', 'pgsql'], true)) {
+                    return json(['code' => 0, 'msg' => '不支持的数据库类型']);
+                }
+                $db_host = input('post.mysql_host', null, 'trim');
+                $db_port = intval(input('post.mysql_port', $db_type === 'pgsql' ? '5432' : '3306'));
+                $db_user = input('post.mysql_user', null, 'trim');
+                $db_pwd = input('post.mysql_pwd', null, 'trim');
+                $db_name = input('post.mysql_name', null, 'trim');
+                $db_prefix = input('post.mysql_prefix', 'dnsmgr_', 'trim');
                 $admin_username = input('post.admin_username', null, 'trim');
                 $admin_password = input('post.admin_password', null, 'trim');
 
-                if (!$mysql_host || !$mysql_user || !$mysql_pwd || !$mysql_name || !$admin_username || !$admin_password) {
+                if (!$db_host || !$db_user || !$db_pwd || !$db_name || !$admin_username || !$admin_password) {
                     return json(['code' => 0, 'msg' => '必填项不能为空']);
                 }
 
                 $configData = file_get_contents(app()->getRootPath() . '.example.env');
-                $configData = str_replace(['{dbhost}', '{dbname}', '{dbuser}', '{dbpwd}', '{dbport}', '{dbprefix}'], [$mysql_host, $mysql_name, $mysql_user, $mysql_pwd, $mysql_port, $mysql_prefix], $configData);
+                $configData = str_replace(
+                    ['{dbdriver}', '{dbtype}', '{dbhost}', '{dbname}', '{dbuser}', '{dbpwd}', '{dbport}', '{dbprefix}'],
+                    [$db_type, $db_type, $db_host, $db_name, $db_user, $db_pwd, $db_port, $db_prefix],
+                    $configData
+                );
 
                 try {
-                    $DB = new PDO("mysql:host=" . $mysql_host . ";dbname=" . $mysql_name . ";port=" . $mysql_port, $mysql_user, $mysql_pwd);
+                    if ($db_type === 'pgsql') {
+                        $dsn = "pgsql:host={$db_host};port={$db_port};dbname={$db_name}";
+                    } else {
+                        $dsn = "mysql:host={$db_host};port={$db_port};dbname={$db_name}";
+                    }
+                    $DB = new PDO($dsn, $db_user, $db_pwd);
                 } catch (Exception $e) {
                     if ($e->getCode() == 2002) {
                         $errorMsg = '连接数据库失败：数据库地址填写错误！';
-                    } elseif ($e->getCode() == 1045) {
+                    } elseif ($e->getCode() == 1045 || $e->getCode() == '28P01' || $e->getCode() == '28000') {
                         $errorMsg = '连接数据库失败：数据库用户名或密码填写错误！';
-                    } elseif ($e->getCode() == 1049) {
+                    } elseif ($e->getCode() == 1049 || $e->getCode() == '3D000') {
                         $errorMsg = '连接数据库失败：数据库名不存在！';
                     } else {
                         $errorMsg = '连接数据库失败：' . $e->getMessage();
@@ -92,25 +103,23 @@ class Install extends BaseController
                     return json(['code' => 0, 'msg' => $errorMsg]);
                 }
                 $DB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
-                $DB->exec("set sql_mode = ''");
-                $DB->exec("set names utf8");
+                if ($db_type === 'mysql') {
+                    $DB->exec("set sql_mode = ''");
+                    $DB->exec("set names utf8");
+                } else {
+                    $DB->exec("set client_encoding to 'UTF8'");
+                }
 
-                $sqls = file_get_contents(app()->getAppPath() . 'sql/install.sql');
-                $sqls = explode(';', $sqls);
-
-                $password = password_hash($admin_password, PASSWORD_DEFAULT);
-                $sqls[] = "REPLACE INTO `" . $mysql_prefix . "config` VALUES ('sys_key', '" . random(16) . "')";
-                $sqls[] = "INSERT INTO `" . $mysql_prefix . "user` (`username`,`password`,`level`,`regtime`,`lasttime`,`status`) VALUES ('" . addslashes($admin_username) . "', '$password', 2, NOW(), NOW(), 1)";
+                $sqls = $this->loadInstallSqls($db_type);
+                $sqls = array_merge($sqls, $this->buildSeedSqls($db_type, $db_prefix, $admin_username, $admin_password));
 
                 $success = 0;
-                $error = 0;
                 $errorMsg = null;
                 foreach ($sqls as $value) {
                     $value = trim($value);
                     if (empty($value)) continue;
-                    $value = str_replace('dnsmgr_', $mysql_prefix, $value);
+                    $value = str_replace('dnsmgr_', $db_prefix, $value);
                     if ($DB->exec($value) === false) {
-                        $error++;
                         $dberror = $DB->errorInfo();
                         $errorMsg .= $dberror[2] . "\n";
                     } else {
@@ -130,5 +139,30 @@ class Install extends BaseController
         }
         View::assign('dbconfig', $dbconfig);
         return view();
+    }
+
+    private function loadInstallSqls(string $driver): array
+    {
+        $file = $driver === 'pgsql' ? 'sql/install.pgsql.sql' : 'sql/install.sql';
+        $content = file_get_contents(app()->getAppPath() . $file);
+        return explode(';', $content);
+    }
+
+    private function buildSeedSqls(string $driver, string $prefix, string $admin_username, string $admin_password): array
+    {
+        $password = password_hash($admin_password, PASSWORD_DEFAULT);
+        $sysKey = random(16);
+        $userName = addslashes($admin_username);
+
+        if ($driver === 'pgsql') {
+            return [
+                "INSERT INTO {$prefix}config (\"key\", value) VALUES ('sys_key', '{$sysKey}') ON CONFLICT (\"key\") DO UPDATE SET value = EXCLUDED.value",
+                "INSERT INTO {$prefix}user (username, password, level, regtime, lasttime, status) VALUES ('{$userName}', '{$password}', 2, NOW(), NOW(), 1)",
+            ];
+        }
+        return [
+            "REPLACE INTO `{$prefix}config` VALUES ('sys_key', '{$sysKey}')",
+            "INSERT INTO `{$prefix}user` (`username`,`password`,`level`,`regtime`,`lasttime`,`status`) VALUES ('{$userName}', '{$password}', 2, NOW(), NOW(), 1)",
+        ];
     }
 }

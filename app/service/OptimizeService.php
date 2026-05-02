@@ -189,7 +189,7 @@ class OptimizeService
                 continue;
             }
 
-            $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.id', $row['did'])->field('A.*,B.type')->find();
+            $drow = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')->where('a.id', $row['did'])->field('a.*,b.type')->find();
             if (!$drow) {
                 throw new Exception('域名不存在（ID：'.$row['did'].'）');
             }

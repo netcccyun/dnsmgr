@@ -194,46 +194,46 @@ class Domain extends BaseController
         $id = input('post.id');
         $aid = input('post.aid', null, 'trim');
 
-        $select = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id');
+        $select = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id');
         if (!empty($id)) {
-            $select->where('A.id', $id);
+            $select->where('a.id', $id);
         } elseif (!empty($kw)) {
-            $select->whereLike('A.name|A.remark', '%' . $kw . '%');
+            $select->whereLike('a.name|a.remark', '%' . $kw . '%');
         }
         if (!empty($aid)) {
-            $select->where('A.aid', $aid);
+            $select->where('a.aid', $aid);
         }
         if (!empty($type)) {
-            $select->whereLike('B.type', $type);
+            $select->whereLike('b.type', $type);
         }
         if (request()->user['level'] == 1) {
-            $select->where('is_hide', 0)->where('A.name', 'in', request()->user['permission']);
+            $select->where('is_hide', 0)->where('a.name', 'in', request()->user['permission']);
         }
         if (!isNullOrEmpty($status)) {
             if ($status == '2') {
-                $select->where('A.expiretime', '<=', date('Y-m-d H:i:s'));
+                $select->where('a.expiretime', '<=', date('Y-m-d H:i:s'));
             } elseif ($status == '1') {
-                $select->where('A.expiretime', '<=', date('Y-m-d H:i:s', time() + 86400 * 30))->where('A.expiretime', '>', date('Y-m-d H:i:s'));
+                $select->where('a.expiretime', '<=', date('Y-m-d H:i:s', time() + 86400 * 30))->where('a.expiretime', '>', date('Y-m-d H:i:s'));
             }
         }
         $total = $select->count();
         switch ($order) {
             case '1':
-                $select->order('A.regtime', 'asc');
+                $select->order('a.regtime', 'asc');
                 break;
             case '2':
-                $select->order('A.regtime', 'desc');
+                $select->order('a.regtime', 'desc');
                 break;
             case '3':
-                $select->order('A.expiretime', 'asc');
+                $select->order('a.expiretime', 'asc');
                 break;
             case '4':
-                $select->order('A.expiretime', 'desc');
+                $select->order('a.expiretime', 'desc');
                 break;
             default:
-                $select->order('A.id', 'desc');
+                $select->order('a.id', 'desc');
         }
-        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->limit($offset, $limit)->select();
+        $rows = $select->fieldRaw('a.*,b.type,b.remark aremark')->limit($offset, $limit)->select();
 
         $list = [];
         foreach ($rows as $row) {
@@ -1011,9 +1011,9 @@ class Domain extends BaseController
             return redirect('/record/' . request()->user['id']);
         }
 
-        $list = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')
-            ->field('A.id, A.name, A.aid, B.type')
-            ->order('A.name', 'asc')
+        $list = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')
+            ->field('a.id, a.name, a.aid, b.type')
+            ->order('a.name', 'asc')
             ->select();
 
         $domainList = [];

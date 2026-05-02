@@ -46,10 +46,10 @@ class Optimizeip extends BaseController
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
 
-        $select = Db::name('optimizeip')->alias('A')->join('domain B', 'A.did = B.id');
+        $select = Db::name('optimizeip')->alias('a')->join('domain b', 'a.did = b.id');
         if (!empty($kw)) {
             if ($type == 1) {
-                $select->whereLike('rr|B.name', '%' . $kw . '%');
+                $select->whereLike('rr|b.name', '%' . $kw . '%');
             } elseif ($type == 2) {
                 $select->whereLike('remark', '%' . $kw . '%');
             }
@@ -58,7 +58,7 @@ class Optimizeip extends BaseController
             $select->where('status', intval($status));
         }
         $total = $select->count();
-        $list = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name domain')->select();
+        $list = $select->order('a.id', 'desc')->limit($offset, $limit)->field('a.*,b.name domain')->select();
 
         return json(['total' => $total, 'rows' => $list]);
     }
@@ -156,7 +156,7 @@ class Optimizeip extends BaseController
         }
 
         $domains = [];
-        foreach (Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->field('A.*')->where('B.type', '<>', 'cloudflare')->select() as $row) {
+        foreach (Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')->field('a.*')->where('b.type', '<>', 'cloudflare')->select() as $row) {
             $domains[$row['id']] = $row['name'];
         }
         View::assign('domains', $domains);

@@ -165,32 +165,40 @@
             {if $dbconfig!='1'}
             <div class="form-group">
                 <div class="form-field">
-                    <label>MySQL 数据库地址</label>
+                    <label>数据库类型</label>
+                    <select name="db_type" style="width:100%;padding:15px 15px 15px 180px;border:2px solid transparent;background:#fff;box-sizing:border-box;">
+                        <option value="mysql">MySQL / MariaDB</option>
+                        <option value="pgsql">PostgreSQL</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label>数据库地址</label>
                     <input type="text" name="mysql_host" value="localhost" required="">
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 数据库端口</label>
+                    <label>数据库端口</label>
                     <input type="number" name="mysql_port" value="3306">
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 用户名</label>
+                    <label>用户名</label>
                     <input type="text" name="mysql_user" value="" required="">
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 密码</label>
+                    <label>密码</label>
                     <input type="text" name="mysql_pwd" value="" required="">
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 数据库名</label>
+                    <label>数据库名</label>
                     <input type="text" name="mysql_name" value="" required="">
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 数据表前缀</label>
+                    <label>数据表前缀</label>
                     <input type="text" name="mysql_prefix" value="dnsmgr_">
                 </div>
             </div>
@@ -219,6 +227,11 @@
 <script src="//cdn.staticfile.org/jquery/2.1.4/jquery.min.js"></script>
 <script>
     $(function () {
+        $('select[name="db_type"]').on('change', function () {
+            var type = $(this).val();
+            $('input[name="mysql_port"]').val(type === 'pgsql' ? 5432 : 3306);
+            $('input[name="mysql_user"]').val(type === 'pgsql' ? 'postgres' : '');
+        });
         $('form').on('submit', function (e) {
             e.preventDefault();
             var form = this;
