@@ -17,6 +17,6 @@ class AppService extends Service
 
     public function boot()
     {
-        error_reporting(error_reporting() & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+        // 服务启动
     }
 }
