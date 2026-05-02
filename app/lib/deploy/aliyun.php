@@ -54,6 +54,8 @@ class aliyun implements DeployInterface
                 $this->deploy_oss($cert_id, $config);
             } elseif ($config['product'] == 'waf') {
                 $this->deploy_waf($cert_id, $config);
+            } elseif ($config['product'] == 'wafres') {
+                $this->deploy_waf_res($cert_id, $config);
             } elseif ($config['product'] == 'waf2') {
                 $this->deploy_waf2($cert_id, $config);
             } elseif ($config['product'] == 'ddoscoo') {
@@ -157,9 +159,9 @@ class aliyun implements DeployInterface
         if (empty($config['domain'])) throw new Exception('DCDN绑定域名不能为空');
         $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, 'dcdn.aliyuncs.com', '2018-01-15', $this->proxy);
         foreach (explode(',', $config['domain']) as $domain) {
-        $param = [
-            'Action' => 'SetDcdnDomainSSLCertificate',
-            'DomainName' => $domain,
+            $param = [
+                'Action' => 'SetDcdnDomainSSLCertificate',
+                'DomainName' => $domain,
                 'CertName' => $cert_name,
                 'CertType' => 'cas',
                 'SSLProtocol' => 'on',
@@ -436,6 +438,119 @@ class aliyun implements DeployInterface
             $data = $client->request($param);
 
             $this->log('WAF域名 ' . $domain . ' 部署证书成功！');
+        }
+    }
+
+    private function deploy_waf_res($cert_id, $config)
+    {
+        if (empty($config['waf_resource_id'])) throw new Exception('云产品防护对象ID不能为空');
+        $deploy_type = isset($config['deploy_type']) ? intval($config['deploy_type']) : 0;
+
+        if ($config['region'] == 'ap-southeast-1') {
+            $cert_id .= '-ap-southeast-1';
+        } else {
+            $cert_id .= '-cn-hangzhou';
+        }
+
+        $endpoint = 'wafopenapi.' . $config['region'] . '.aliyuncs.com';
+
+        $client = new AliyunClient($this->AccessKeyId, $this->AccessKeySecret, $endpoint, '2021-10-01', $this->proxy);
+
+        $param = [
+            'Action' => 'DescribeInstance',
+            'RegionId' => $config['region'],
+        ];
+        try {
+            $data = $client->request($param, 'GET');
+        } catch (Exception $e) {
+            throw new Exception('获取WAF实例详情失败：' . $e->getMessage());
+        }
+        if (empty($data['InstanceId'])) throw new Exception('当前账号未找到WAF实例');
+        $instance_id = $data['InstanceId'];
+        $this->log('获取WAF实例ID成功 InstanceId=' . $instance_id);
+
+        foreach (explode(',', $config['waf_resource_id']) as $waf_resource_id) {
+            $parts = explode('-', $waf_resource_id);
+            $resource_instance_id = $parts[count($parts) - 3] ?? '';
+            if (empty($resource_instance_id)) {
+                throw new Exception('ResourceInstanceId解析失败：' . $waf_resource_id);
+            }
+            $param = [
+                'Action' => 'DescribeCloudResourceList',
+                'InstanceId' => $instance_id,
+                'CloudResourceId' => $waf_resource_id,
+                'RegionId' => $config['region'],
+            ];
+            try {
+                $data = $client->request($param, 'GET');
+            } catch (Exception $e) {
+                throw new Exception('查询云产品接入WAF配置失败：' . $e->getMessage());
+            }
+            if (empty($data['CloudResourceList'])) {
+                throw new Exception('WAF云产品接入实例不存在：' . $waf_resource_id);
+            }
+
+            if ($deploy_type == 0) {
+                $param = [
+                    'Action' => 'ModifyCloudResourceDefaultCert',
+                    'InstanceId' => $instance_id,
+                    'CloudResourceId' => $waf_resource_id,
+                    'CertId' => $cert_id,
+                    'RegionId' => $config['region'],
+                ];
+                $client->request($param);
+                $this->log('WAF云产品防护对象 ' . $waf_resource_id . ' 部署默认证书成功！');
+            } else {
+                $param = [
+                    'Action' => 'CreateCloudResourceExtensionCert',
+                    'InstanceId' => $instance_id,
+                    'CloudResourceId' => $waf_resource_id,
+                    'CertId' => $cert_id,
+                    'RegionId' => $config['region'],
+                ];
+                $client->request($param);
+                $this->log('WAF云产品防护对象 ' . $waf_resource_id . ' 部署扩展证书成功！');
+
+                $this->clean_waf_res_expired_certs($client, $instance_id, $resource_instance_id, $waf_resource_id, $config['region']);
+            }
+        }
+    }
+
+    private function clean_waf_res_expired_certs($client, $instance_id, $resource_instance_id, $waf_resource_id, $region)
+    {
+        $param = [
+            'Action' => 'DescribeResourceInstanceCerts',
+            'InstanceId' => $instance_id,
+            'ResourceInstanceId' => $resource_instance_id,
+            'RegionId' => $region,
+        ];
+        try {
+            $data = $client->request($param, 'GET');
+        } catch (Exception $e) {
+            $this->log('查询扩展证书列表失败：' . $e->getMessage());
+            return;
+        }
+        if (empty($data['Certs'])) return;
+
+        $now = time();
+        foreach ($data['Certs'] as $cert) {
+            if (empty($cert['CertIdentifier']) || empty($cert['AfterDate'])) continue;
+            $expire_time = strtotime($cert['AfterDate']);
+            if ($expire_time !== false && $expire_time < $now) {
+                $param = [
+                    'Action' => 'DeleteCloudResourceExtensionCert',
+                    'InstanceId' => $instance_id,
+                    'CloudResourceId' => $waf_resource_id,
+                    'CertId' => $cert['CertIdentifier'],
+                    'RegionId' => $region,
+                ];
+                try {
+                    $client->request($param);
+                    $this->log('已删除过期扩展证书：' . $cert['CertIdentifier']);
+                } catch (Exception $e) {
+                    $this->log('删除过期扩展证书失败：' . $cert['CertIdentifier'] . ' ' . $e->getMessage());
+                }
+            }
         }
     }
 
