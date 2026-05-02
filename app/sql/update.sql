@@ -199,3 +199,17 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_domain_alias` (
   KEY `did` (`did`),
   KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `dnsmgr_domain_category` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `name` varchar(50) NOT NULL,
+  `remark` varchar(100) DEFAULT NULL,
+  `sort` int(11) NOT NULL DEFAULT '0',
+  `addtime` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `sort` (`sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `dnsmgr_domain`
+ADD COLUMN `cid` int(11) unsigned NOT NULL DEFAULT '0',
+ADD KEY `cid` (`cid`);

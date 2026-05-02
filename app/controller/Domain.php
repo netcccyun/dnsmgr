@@ -8,6 +8,7 @@ use think\facade\View;
 use think\facade\Cache;
 use app\lib\DnsHelper;
 use app\service\ExpireNoticeService;
+use app\utils\DnsQueryUtils;
 use Exception;
 
 class Domain extends BaseController
@@ -157,8 +158,10 @@ class Domain extends BaseController
             }
             $accounts[] = ['id' => $row['id'], 'name' => $name, 'type' => DnsHelper::$dns_config[$row['type']]['name'], 'add' => DnsHelper::$dns_config[$row['type']]['add']];
         }
+        $categorys = Db::name('domain_category')->order('sort', 'asc')->order('id', 'desc')->select();
         View::assign('accounts', $accounts);
         View::assign('types', $types);
+        View::assign('categorys', $categorys);
         return view();
     }
 
@@ -188,6 +191,7 @@ class Domain extends BaseController
         $kw = input('post.kw', null, 'trim');
         $type = input('post.type', null, 'trim');
         $status = input('post.status', null, 'trim');
+        $cid = input('post.cid', null, 'trim');
         $order = input('post.order', null, 'trim');
         $offset = input('post.offset/d', 0);
         $limit = input('post.limit/d', 10);
@@ -205,6 +209,9 @@ class Domain extends BaseController
         }
         if (!empty($type)) {
             $select->whereLike('B.type', $type);
+        }
+        if (!isNullOrEmpty($cid)) {
+            $select->where('A.cid', $cid);
         }
         if (request()->user['level'] == 1) {
             $select->where('is_hide', 0)->where('A.name', 'in', request()->user['permission']);
@@ -235,10 +242,12 @@ class Domain extends BaseController
         }
         $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->limit($offset, $limit)->select();
 
+        $categorys = Db::name('domain_category')->column('name', 'id');
         $list = [];
         foreach ($rows as $row) {
             $row['typename'] = DnsHelper::$dns_config[$row['type']]['name'];
             $row['icon'] = DnsHelper::$dns_config[$row['type']]['icon'];
+            $row['category_name'] = isset($categorys[$row['cid']]) ? $categorys[$row['cid']] : '';
             $list[] = $row;
         }
 
@@ -290,6 +299,7 @@ class Domain extends BaseController
             $is_hide = input('post.is_hide/d');
             $is_sso = input('post.is_sso/d');
             $is_notice = input('post.is_notice/d');
+            $cid = input('post.cid/d', 0);
             $expiretime = input('post.expiretime', null, 'trim');
             $remark = input('post.remark', null, 'trim');
             if (empty($remark)) $remark = null;
@@ -297,6 +307,7 @@ class Domain extends BaseController
                 'is_hide' => $is_hide,
                 'is_sso' => $is_sso,
                 'is_notice' => $is_notice,
+                'cid' => $cid,
                 'expiretime' => $expiretime ? $expiretime : null,
                 'remark' => $remark,
             ]);
@@ -1279,5 +1290,235 @@ class Domain extends BaseController
         if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
         $result = (new ExpireNoticeService())->updateDomainDate($id, $drow['name']);
         return json($result);
+    }
+
+    public function record_check()
+    {
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if (!$drow) {
+            return json(['code' => -1, 'msg' => '域名不存在']);
+        }
+        if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
+
+        $recordid = input('post.recordid', null, 'trim');
+        $name = input('post.name', null, 'trim');
+        $type = input('post.type', null, 'trim');
+        $value = input('post.value', null, 'trim');
+
+        if (empty($recordid) || empty($name) || empty($type)) {
+            return json(['code' => -1, 'msg' => '参数不能为空']);
+        }
+
+        $domain = $name === '@' ? $drow['name'] : $name . '.' . $drow['name'];
+        $domain = strtolower($domain);
+
+        $supported_types = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA', 'PTR', 'LOC', 'LUA'];
+        if (!in_array($type, $supported_types)) {
+            return json(['code' => -1, 'msg' => '该记录类型暂不支持检测']);
+        }
+
+        $dns_records = DnsQueryUtils::get_dns_records($domain, $type);
+        if ($dns_records === false || empty($dns_records)) {
+            $dns_records = DnsQueryUtils::query_dns_doh($domain, $type);
+        }
+
+        if ($dns_records === false || empty($dns_records)) {
+            return json(['code' => 0, 'data' => ['status' => 'not_found', 'message' => '未查询到该解析记录', 'actual' => []]]);
+        }
+
+        $dns_records = array_map('strtolower', $dns_records);
+        $expected_value = strtolower(trim($value));
+
+        if (in_array($expected_value, $dns_records)) {
+            return json(['code' => 0, 'data' => ['status' => 'active', 'message' => '解析已生效', 'actual' => $dns_records]]);
+        } else {
+            return json(['code' => 0, 'data' => ['status' => 'mismatch', 'message' => '解析值不匹配', 'expected' => $expected_value, 'actual' => $dns_records]]);
+        }
+    }
+
+    public function dnscheck()
+    {
+        if (!checkPermission(1)) return $this->alert('error', '无权限');
+        
+        if (request()->isAjax()) {
+            $domain = input('post.domain', null, 'trim');
+            $type = input('post.type', null, 'trim');
+            $dns_server = input('post.dns_server', 'default', 'trim');
+            
+            if (empty($domain) || empty($type)) {
+                return json(['code' => -1, 'msg' => '域名和记录类型不能为空']);
+            }
+            
+            $domain = strtolower($domain);
+            
+            $supported_types = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA', 'PTR'];
+            if (!in_array($type, $supported_types)) {
+                return json(['code' => -1, 'msg' => '该记录类型暂不支持检测']);
+            }
+            
+            $result = $this->query_dns_with_server($domain, $type, $dns_server);
+            
+            return json($result);
+        }
+        
+        return view();
+    }
+    
+    private function query_dns_with_server($domain, $type, $dns_server)
+    {
+        $dns_servers = [
+            'alidns' => ['223.5.5.5', '223.6.6.6'],
+            'dnspod' => ['119.29.29.29', '182.254.116.116'],
+            'google' => ['8.8.8.8', '8.8.4.4'],
+            'cloudflare' => ['1.1.1.1', '1.0.0.1'],
+        ];
+        
+        $server_names = [
+            'default' => '系统默认',
+            'alidns' => '阿里DNS',
+            'dnspod' => 'DNSPod',
+            'google' => 'Google DNS',
+            'cloudflare' => 'Cloudflare',
+        ];
+        
+        if ($dns_server != 'default' && isset($dns_servers[$dns_server])) {
+            $records = $this->query_dns_custom_server($domain, $type, $dns_servers[$dns_server][0]);
+        } else {
+            $records = DnsQueryUtils::get_dns_records($domain, $type);
+            if ($records === false || empty($records)) {
+                $records = DnsQueryUtils::query_dns_doh($domain, $type);
+            }
+        }
+        
+        if ($records === false) {
+            return ['code' => 0, 'data' => ['status' => 'error', 'message' => '查询失败', 'dns_server' => $server_names[$dns_server] ?? $dns_server]];
+        }
+        
+        if (empty($records)) {
+            return ['code' => 0, 'data' => ['status' => 'not_found', 'message' => '未找到该类型的DNS记录', 'dns_server' => $server_names[$dns_server] ?? $dns_server]];
+        }
+        
+        return ['code' => 0, 'data' => ['status' => 'success', 'records' => $records, 'dns_server' => $server_names[$dns_server] ?? $dns_server]];
+    }
+    
+    private function query_dns_custom_server($domain, $type, $server)
+    {
+        $dns_type = ['A' => DNS_A, 'AAAA' => DNS_AAAA, 'CNAME' => DNS_CNAME, 'MX' => DNS_MX, 'TXT' => DNS_TXT, 'NS' => DNS_NS, 'SOA' => DNS_SOA, 'PTR' => DNS_PTR, 'SRV' => DNS_SRV, 'CAA' => DNS_CAA];
+        
+        if (!array_key_exists($type, $dns_type)) {
+            return false;
+        }
+        
+        try {
+            $cmd = 'dig +short +time=5 @' . escapeshellarg($server) . ' ' . escapeshellarg($domain) . ' ' . escapeshellarg($type) . ' 2>/dev/null';
+            $output = shell_exec($cmd);
+            
+            if (empty($output)) {
+                return false;
+            }
+            
+            $lines = explode("\n", trim($output));
+            $result = [];
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (!empty($line)) {
+                    $result[] = $line;
+                }
+            }
+            
+            return empty($result) ? false : $result;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    public function category()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        return view();
+    }
+
+    public function category_data()
+    {
+        if (!checkPermission(2)) return json(['total' => 0, 'rows' => []]);
+        $offset = input('post.offset/d', 0);
+        $limit = input('post.limit/d', 10);
+
+        $select = Db::name('domain_category');
+        $total = $select->count();
+        $rows = $select->order('sort', 'asc')->order('id', 'desc')->limit($offset, $limit)->select()->toArray();
+
+        foreach ($rows as &$row) {
+            $row['domain_count'] = Db::name('domain')->where('cid', $row['id'])->count();
+        }
+
+        return json(['total' => $total, 'rows' => $rows]);
+    }
+
+    public function category_op()
+    {
+        if (!checkPermission(2)) return json(['code' => -1, 'msg' => '无权限']);
+        $action = input('param.action');
+        if ($action == 'add') {
+            $name = input('post.name', null, 'trim');
+            $remark = input('post.remark', null, 'trim');
+            $sort = input('post.sort/d', 0);
+            if (empty($name)) return json(['code' => -1, 'msg' => '分类名称不能为空']);
+            if (Db::name('domain_category')->where('name', $name)->find()) {
+                return json(['code' => -1, 'msg' => '分类名称已存在']);
+            }
+            Db::name('domain_category')->insert([
+                'name' => $name,
+                'remark' => $remark,
+                'sort' => $sort,
+                'addtime' => date('Y-m-d H:i:s'),
+            ]);
+            return json(['code' => 0, 'msg' => '添加分类成功！']);
+        } elseif ($action == 'edit') {
+            $id = input('post.id/d');
+            $row = Db::name('domain_category')->where('id', $id)->find();
+            if (!$row) return json(['code' => -1, 'msg' => '分类不存在']);
+            $name = input('post.name', null, 'trim');
+            $remark = input('post.remark', null, 'trim');
+            $sort = input('post.sort/d', 0);
+            if (empty($name)) return json(['code' => -1, 'msg' => '分类名称不能为空']);
+            if (Db::name('domain_category')->where('name', $name)->where('id', '<>', $id)->find()) {
+                return json(['code' => -1, 'msg' => '分类名称已存在']);
+            }
+            Db::name('domain_category')->where('id', $id)->update([
+                'name' => $name,
+                'remark' => $remark,
+                'sort' => $sort,
+            ]);
+            return json(['code' => 0, 'msg' => '修改分类成功！']);
+        } elseif ($action == 'del') {
+            $id = input('post.id/d');
+            $count = Db::name('domain')->where('cid', $id)->count();
+            if ($count > 0) return json(['code' => -1, 'msg' => '该分类下存在域名，无法删除']);
+            Db::name('domain_category')->where('id', $id)->delete();
+            return json(['code' => 0, 'msg' => '删除分类成功！']);
+        }
+        return json(['code' => -3]);
+    }
+
+    public function category_list()
+    {
+        if (!checkPermission(2)) return json(['code' => -1, 'msg' => '无权限']);
+        $list = Db::name('domain_category')->order('sort', 'asc')->order('id', 'desc')->select();
+        foreach ($list as &$row) {
+            $row['domain_count'] = Db::name('domain')->where('cid', $row['id'])->count();
+        }
+        return json(['code' => 0, 'data' => $list]);
+    }
+
+    public function domain_set_category()
+    {
+        if (!checkPermission(2)) return json(['code' => -1, 'msg' => '无权限']);
+        $ids = input('post.ids');
+        $cid = input('post.cid/d', 0);
+        if (empty($ids)) return json(['code' => -1, 'msg' => '请选择要操作的域名']);
+        $count = Db::name('domain')->where('id', 'in', $ids)->update(['cid' => $cid]);
+        return json(['code' => 0, 'msg' => '成功设置' . $count . '个域名的分类！']);
     }
 }

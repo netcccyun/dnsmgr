@@ -350,6 +350,10 @@ $(document).ready(function(){
 					if(dnsconfig.remark == 1){
 						html += '<a href="javascript:setRemark(\''+row.RecordId+'\')" class="btn btn-info btn-xs">备注</a>&nbsp;&nbsp;';
 					}
+					var supportedTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA', 'PTR', 'LOC', 'LUA', 'REDIRECT_URL', 'FORWARD_URL'];
+					if(supportedTypes.includes(row.Type)){
+						html += '<a href="javascript:checkRecord(\''+row.RecordId+'\')" class="btn btn-success btn-xs" title="检测解析生效"><i class="fa fa-check-circle-o"></i></a>&nbsp;&nbsp;';
+					}
 					if(row.Type == 'A' || row.Type == 'CNAME' || row.Type == 'AAAA' || row.Type == 'REDIRECT_URL' || row.Type == 'FORWARD_URL'){
 						if(row.Name === "@") var domain = "{$domainName}";
 						else var domain = row.Name + ".{$domainName}";
@@ -724,6 +728,49 @@ function advanceSearch(){
 		$("#searchbox2").slideUp();
 		$("#searchbox1").slideDown();
 	}
+}
+function checkRecord(recordid) {
+	var row = $("#listTable").bootstrapTable('getRowByUniqueId', recordid);
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/record/check/{$domainId}',
+		data : {recordid: recordid, name: row.Name, type: row.Type, value: row.Value},
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				var result = data.data;
+				var icon = result.status === 'active' ? 1 : (result.status === 'not_found' ? 0 : 2);
+				var title = result.status === 'active' ? '解析已生效' : (result.status === 'not_found' ? '未查询到解析' : '解析值不匹配');
+				var content = '<div style="padding:15px;">';
+				content += '<p><strong>主机记录：</strong>' + row.Name + '</p>';
+				content += '<p><strong>记录类型：</strong>' + row.Type + '</p>';
+				content += '<p><strong>记录值：</strong>' + htmlEscape(row.Value) + '</p>';
+				content += '<hr style="margin:10px 0;">';
+				content += '<p><strong>检测结果：</strong>' + result.message + '</p>';
+				if(result.actual && result.actual.length > 0){
+					content += '<p><strong>实际解析值：</strong></p>';
+					content += '<ul style="max-height:150px;overflow-y:auto;">';
+					for(var i = 0; i < result.actual.length; i++){
+						content += '<li>' + htmlEscape(result.actual[i]) + '</li>';
+					}
+					content += '</ul>';
+				}
+				if(result.expected){
+					content += '<p><strong>期望解析值：</strong>' + htmlEscape(result.expected) + '</p>';
+				}
+				content += '</div>';
+				layer.alert(content, {title: title, icon: icon, area: ['450px']});
+			}else{
+				layer.alert(data.msg, {icon: 2});
+			}
+		},
+		error: function(){
+			layer.close(ii);
+			layer.msg('服务器错误', {icon: 2});
+		}
+	});
 }
 function copyToClipboard(text, selector) {
     if (!text && selector) {

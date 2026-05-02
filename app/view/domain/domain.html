@@ -107,12 +107,23 @@
 						</div>
 					</div>
 					<div class="form-group">
-						<label class="col-sm-3 control-label no-padding-right">备注</label>
-						<div class="col-sm-9">
-							<input type="text" class="form-control" name="remark" placeholder="">
-						</div>
+					<label class="col-sm-3 control-label">所属分类</label>
+					<div class="col-sm-9">
+						<select name="cid" class="form-control">
+							<option value="0">未分类</option>
+							{foreach $categorys as $item}
+							<option value="{$item.id}">{$item.name}</option>
+							{/foreach}
+						</select>
 					</div>
-				</form>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-3 control-label no-padding-right">备注</label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control" name="remark" placeholder="">
+					</div>
+				</div>
+			</form>
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
@@ -139,6 +150,9 @@
 	{/foreach}</select>
   </div>
   <div class="form-group">
+	<select name="cid" class="form-control"><option value="">所有分类</option>{foreach $categorys as $item}<option value="{$item.id}">{$item.name}</option>{/foreach}</select>
+  </div>
+  <div class="form-group">
 	<select name="status" class="form-control"><option value="">所有状态</option><option value="1">即将到期</option><option value="2">已到期</option></select>
   </div>
   <div class="form-group">
@@ -149,7 +163,7 @@
   {if $user['level'] eq 2}<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
-	<ul class="dropdown-menu"><li><a href="/domain/add">添加域名</a></li><li><a href="javascript:operation('editremark')">修改域名备注</a></li><li><a href="javascript:operation('opennotice')">开启到期提醒</a></li><li><a href="javascript:operation('closenotice')">关闭到期提醒</a></li><li><a href="javascript:operation('updateexpire')">刷新到期时间</a></li><li><a href="javascript:operation('delete')">删除域名</a></li><li role="separator" class="divider"></li><li><a href="javascript:operation('addrecord')">添加解析</a></li><li><a href="javascript:operation('editrecord')">修改解析</a></li></ul>
+	<ul class="dropdown-menu"><li><a href="/domain/add">添加域名</a></li><li><a href="javascript:operation('setcategory')">设置分类</a></li><li><a href="javascript:operation('editremark')">修改域名备注</a></li><li><a href="javascript:operation('opennotice')">开启到期提醒</a></li><li><a href="javascript:operation('closenotice')">关闭到期提醒</a></li><li><a href="javascript:operation('updateexpire')">刷新到期时间</a></li><li><a href="javascript:operation('delete')">删除域名</a></li><li role="separator" class="divider"></li><li><a href="javascript:operation('addrecord')">添加解析</a></li><li><a href="javascript:operation('editrecord')">修改解析</a></li></ul>
   </div>
   <a href="/domain/expirenotice" class="btn btn-default">到期提醒设置</a>{/if}
 </form>
@@ -199,6 +213,13 @@ $(document).ready(function(){
 				title: '平台账户',
 				formatter: function(value, row, index) {
 					return '<img src="/static/images/'+row.icon+'" class="type-logo"></img>'+(row.aremark?row.aremark:value+'('+row.aid+')');
+				}
+			},
+			{
+				field: 'category_name',
+				title: '分类',
+				formatter: function(value, row, index) {
+					return value ? '<span class="label label-primary">' + value + '</span>' : '-';
 				}
 			},
             {
@@ -400,6 +421,7 @@ function editframe(id){
 	$("#form-store2 select[name=is_hide]").val(row.is_hide);
 	$("#form-store2 select[name=is_sso]").val(row.is_sso);
 	$("#form-store2 select[name=is_notice]").val(row.is_notice);
+	$("#form-store2 select[name=cid]").val(row.cid ? row.cid : 0);
 	$("#form-store2 input[name=remark]").val(row.remark);
 
 	$("#form-store2 input[name=expiretime]").datetimepicker({
@@ -504,6 +526,9 @@ function operation(action){
 	if(action == 'editremark'){
 		batch_edit_remark(ids)
 		return;
+	}else if(action == 'setcategory'){
+		batch_set_category(ids)
+		return;
 	}else if(action == 'addrecord'){
 		sessionStorage.setItem('domains', JSON.stringify(rows));
 		window.location.href = '/record/batchadd';
@@ -588,6 +613,56 @@ function batch_edit_remark(ids) {
 				type : 'POST',
 				url : '/domain/op/act/batchedit',
 				data : {ids:ids, remark:remark},
+				dataType : 'json',
+				success : function(data) {
+					layer.close(ii);
+					layer.alert(data.msg,{
+						icon: 1,
+						closeBtn: false
+					}, function(){
+						layer.closeAll();
+						searchRefresh();
+					});
+				},
+				error:function(data){
+					layer.close(ii);
+					layer.msg('服务器错误');
+				}
+			});
+		}
+	});
+}
+
+function batch_set_category(ids) {
+	var categoryOptions = '<option value="0">未分类</option>';
+	$.ajax({
+		type : 'GET',
+		url : '/domain/category/list',
+		dataType : 'json',
+		async: false,
+		success : function(data) {
+			if(data.code == 0 && data.data){
+				$.each(data.data, function(index, item){
+					categoryOptions += '<option value="' + item.id + '">' + item.name + '</option>';
+				});
+			}
+		}
+	});
+	
+	layer.open({
+		type: 1,
+		area: ['350px'],
+		closeBtn: 2,
+		title: '批量设置分类',
+		content: '<div style="padding:15px"><div class="form-group"><select class="form-control" name="category_id">' + categoryOptions + '</select></div></div>',
+		btn: ['确认', '取消'],
+		yes: function(){
+			var cid = $("select[name='category_id']").val();
+			var ii = layer.load(2, {shade:[0.1,'#fff']});
+			$.ajax({
+				type : 'POST',
+				url : '/domain/setcategory',
+				data : {ids:ids, cid:cid},
 				dataType : 'json',
 				success : function(data) {
 					layer.close(ii);

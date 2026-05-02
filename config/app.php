@@ -33,5 +33,5 @@ return [
 
     'version' => '1049',
 
-    'dbversion' => '1048'
+    'dbversion' => '1049'
 ];
