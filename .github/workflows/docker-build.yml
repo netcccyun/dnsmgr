@@ -40,7 +40,7 @@ jobs:
           password: ${{ secrets.HUAWEI_SWR_PASSWORD }}
 
       - name: Build and push (Docker Hub + Huawei SWR, latest only)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .github/docker
           file: .github/docker/Dockerfile
