@@ -188,7 +188,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   {if $dnsconfig.type=='dnspod'}<a href="/record/alias/{$domainId}" class="btn btn-default">域名别名</a>{/if}
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
-	<ul class="dropdown-menu"><li><a href="/record/batchadd/{$domainId}">添加</a></li><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('edit')">修改记录</a></li><li><a href="javascript:operation('editline')">修改线路</a></li>{if $dnsconfig.remark == 1}<li><a href="javascript:operation('editremark')">修改备注</a></li>{/if}<li><a href="javascript:operation('delete')">删除</a></li></ul>
+	<ul class="dropdown-menu"><li><a href="/record/batchadd/{$domainId}">添加</a></li><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('edit')">修改记录</a></li><li><a href="javascript:operation('editline')">修改线路</a></li>{if $dnsconfig.remark == 1}<li><a href="javascript:operation('editremark')">修改备注</a></li>{/if}{if $dnsconfig.type=='aliyun' || $dnsconfig.type=='dnspod'}<li><a href="javascript:operation('editgroup')">修改分组</a></li>{/if}<li><a href="javascript:operation('delete')">删除</a></li></ul>
   </div>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">日志 <span class="caret"></span></button>
@@ -223,6 +223,11 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   <div class="form-group">
 	<input type="text" class="form-control" name="value" placeholder="输入记录值">
   </div>
+  {if $dnsconfig.type=='aliyun' || $dnsconfig.type=='dnspod'}
+  <div class="form-group">
+	<select name="groupid" id="groupid" class="form-control"></select>
+  </div>
+  {/if}
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新解析记录列表"><i class="fa fa-refresh"></i> 刷新</a>
   <a href="javascript:advanceSearch()" class="btn"><i class="fa fa-angle-up"></i> 收起</a>
@@ -241,7 +246,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 <script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
 <script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
-<script src="/static/js/custom.js?v=1003"></script>
+<script src="/static/js/custom.js?v=1004"></script>
 <script>
 var recordLine = {$recordLine|json_encode|raw};
 var dnsconfig = {$dnsconfig|json_encode|raw};
@@ -397,6 +402,7 @@ $(document).ready(function(){
 			$("#searchToolbar select[name='line']").append('<option value="'+item.id+'">'+item.name+'</option>');
 		}
 	})
+
 })
 function initLine(option, elem){
 	option = option || '';
@@ -588,6 +594,9 @@ function operation(action){
 	}else if(action == 'editremark'){
 		batch_edit_remark(rows)
 		return;
+	}else if(action == 'editgroup'){
+		batch_edit_group(rows)
+		return;
 	}
 
 	layer.confirm('确定要'+(action=='open'?'启用':(action=='pause'?'暂停':'删除'))+'所选记录吗？', {title: '提示', icon: 0}, function(){
@@ -714,6 +723,74 @@ function batch_edit_remark(rows) {
 		}
 	});
 }
+function batch_edit_group(rows) {
+	var showDialog = function(options){
+		layer.open({
+			type: 1,
+			area: ['350px'],
+			closeBtn: 2,
+			title: '批量修改分组',
+			content: '<div style="padding:15px"><div class="form-group"><select class="form-control" id="batch_groupid">'+options+'</select></div></div>',
+			btn: ['确认', '取消'],
+			yes: function(){
+				var groupid = $('#batch_groupid').val();
+				var recordIds = rows.map(function(r){ return r.RecordId; });
+				var ii = layer.load(2, {shade:[0.1,'#fff']});
+				$.ajax({
+					type: 'POST',
+					url: '/record/batch/{$domainId}',
+					data: {action:'group', recordinfo: JSON.stringify(rows), groupid: groupid},
+					dataType: 'json',
+					success: function(data){
+						layer.close(ii);
+						layer.alert(data.msg, {icon: data.code==0?1:2, closeBtn: false}, function(){
+							layer.closeAll();
+							if(data.code == 0) searchRefresh();
+							groupLoaded = false;
+						});
+					},
+					error: function(){
+						layer.close(ii);
+						layer.msg('服务器错误');
+					}
+				});
+			}
+		});
+	};
+	if(groupLoaded && $('#groupid').length > 0){
+		var options = '';
+		$('#groupid option').each(function(){ options += '<option value="'+$(this).val()+'">'+$(this).text()+'</option>'; });
+		showDialog(options);
+	}else{
+		var ii = layer.load(2);
+		$.post('/record/groups/{$domainId}', function(res){
+			layer.close(ii);
+			if(res.code == 0){
+				var options = '';
+				$.each(res.data, function(i, item){
+					options += '<option value="'+item.id+'">'+item.name+'</option>';
+				});
+				showDialog(options);
+			}else{
+				layer.alert(res.msg, {icon: 2});
+			}
+		}, 'json');
+	}
+}
+var groupLoaded = false;
+function loadRecordGroups(){
+	if(groupLoaded || (dnsconfig.type != 'aliyun' && dnsconfig.type != 'dnspod')) return;
+	groupLoaded = true;
+	$.post('/record/groups/{$domainId}', function(res){
+		if(res.code == 0){
+			$('#groupid').empty();
+			$.each(res.data, function(i, item){
+				$('#groupid').append('<option value="'+item.id+'">'+item.name+'</option>');
+			});
+			updateToolbar();
+		}
+	}, 'json');
+}
 function advanceSearch(){
 	$('#searchToolbar').find('input[name]').each(function() {
 		$(this).val('');
@@ -724,6 +801,7 @@ function advanceSearch(){
 	if($("#searchbox1").is(":visible")){
 		$("#searchbox1").slideUp();
 		$("#searchbox2").slideDown();
+		loadRecordGroups();
 	}else{
 		$("#searchbox2").slideUp();
 		$("#searchbox1").slideDown();

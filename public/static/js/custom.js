@@ -49,7 +49,7 @@ function updateToolbar(){
 function updateQueryStr(obj){
 	var arr = [];
     for (var p in obj){
-		if (obj.hasOwnProperty(p) && typeof obj[p] != 'undefined' && obj[p] != '') {
+		if (obj.hasOwnProperty(p) && typeof obj[p] != 'undefined' && obj[p] != null && obj[p] != '') {
 			arr.push(p + "=" + encodeURIComponent(obj[p]));
 		}
 	}

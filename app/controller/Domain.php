@@ -771,6 +771,18 @@ class Domain extends BaseController
                 }
             }
             $msg = '批量修改备注，成功' . $success . '条，失败' . $fail . '条';
+        } else if ($action == 'group') {
+            $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+            if (!in_array($dnstype, ['aliyun', 'dnspod'])) {
+                return json(['code' => -1, 'msg' => '该DNS类型不支持分组']);
+            }
+            $groupid = input('post.groupid', '', 'trim');
+            $recordIdList = array_column($recordinfo, 'RecordId');
+            if ($dns->changeRecordGroup($recordIdList, $groupid)) {
+                $msg = '成功修改' . count($recordIdList) . '条记录的分组';
+            } else {
+                return json(['code' => -1, 'msg' => '修改分组失败，' . $dns->getError()]);
+            }
         }
         return json(['code' => 0, 'msg' => $msg]);
     }
@@ -1076,6 +1088,38 @@ class Domain extends BaseController
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage()]);
         }
+    }
+
+    public function record_groups()
+    {
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if (!$drow) {
+            return json(['code' => -1, 'msg' => '域名不存在']);
+        }
+        if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
+
+        $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+        if (!in_array($dnstype, ['aliyun', 'dnspod'])) {
+            return json(['code' => -1, 'msg' => '该DNS类型不支持分组']);
+        }
+
+        $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+        $groups = $dns->getRecordGroups();
+        if ($groups === false) {
+            return json(['code' => -1, 'msg' => '获取分组列表失败，' . $dns->getError()]);
+        }
+        $groupList = [];
+        if ($dnstype == 'dnspod') {
+            $groupList[] = ['id' => '', 'name' => '全部记录'];
+        }
+        foreach ($groups as $group) {
+            $groupList[] = [
+                'id' => $group['GroupId'],
+                'name' => $group['GroupName'] . (isset($group['RecordCount']) ? '(' . $group['RecordCount'] . ')' : ''),
+            ];
+        }
+        return json(['code' => 0, 'data' => $groupList]);
     }
 
     private function add_log($domain, $action, $data)

@@ -108,6 +108,7 @@ Route::group(function () {
     Route::get('/record/batchadd', 'domain/record_batch_add2');
     Route::any('/record/batchedit', 'domain/record_batch_edit2');
     Route::any('/record/log/:id', 'domain/record_log');
+    Route::post('/record/groups/:id', 'domain/record_groups');
     Route::post('/record/list', 'domain/record_list');
     Route::post('/record/weight/data/:id', 'domain/weight_data');
     Route::any('/record/weight/:id', 'domain/weight');

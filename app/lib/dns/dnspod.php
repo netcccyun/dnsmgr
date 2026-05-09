@@ -66,7 +66,8 @@ class dnspod implements DnsInterface
     public function getDomainRecords($PageNumber = 1, $PageSize = 20, $KeyWord = null, $SubDomain = null, $Value = null, $Type = null, $Line = null, $Status = null)
     {
         $offset = ($PageNumber - 1) * $PageSize;
-        if (!isNullOrEmpty($Status) || !isNullOrEmpty($Value)) {
+        $groupid = request()->post('groupid');
+        if (!isNullOrEmpty($Status) || !isNullOrEmpty($Value) || !empty($groupid)) {
             $action = 'DescribeRecordFilterList';
             $param = ['Domain' => $this->domain, 'Offset' => $offset, 'Limit' => $PageSize, 'RecordValue' => $Value];
             if (!isNullOrEmpty($SubDomain)) $param['SubDomain'] = $SubDomain;
@@ -78,6 +79,7 @@ class dnspod implements DnsInterface
             }
             if (!isNullOrEmpty($Type)) $param['RecordType'] = [$this->convertType($Type)];
             if (!isNullOrEmpty($Line)) $param['RecordLine'] = [$Line];
+            if (!empty($groupid)) $param['GroupId'] = [intval($groupid)];
         } else {
             $action = 'DescribeRecordList';
             $param = ['Domain' => $this->domain, 'Subdomain' => $SubDomain, 'RecordType' => $this->convertType($Type), 'RecordLineId' => $Line, 'Keyword' => $KeyWord, 'Offset' => $offset, 'Limit' => $PageSize];
@@ -361,6 +363,28 @@ class dnspod implements DnsInterface
             'Domain' => $this->domain,
             'DomainAliasId' => $id,
         ];
+        $data = $this->send_request($action, $param);
+        return is_array($data);
+    }
+
+    //获取解析记录分组列表
+    public function getRecordGroups()
+    {
+        $action = 'DescribeRecordGroupList';
+        $param = ['Domain' => $this->domain];
+        $data = $this->send_request($action, $param);
+        if ($data) {
+            return $data['GroupList'];
+        }
+        return false;
+    }
+
+    //将记录移动到分组
+    public function changeRecordGroup($RecordIdList, $GroupId)
+    {
+        $action = 'ModifyRecordToGroup';
+        $RecordIdList = implode('|', $RecordIdList);
+        $param = ['Domain' => $this->domain, 'GroupId' => intval($GroupId), 'RecordId' => strval($RecordIdList)];
         $data = $this->send_request($action, $param);
         return is_array($data);
     }

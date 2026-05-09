@@ -72,6 +72,10 @@ class aliyun implements DnsInterface
             $Status = $Status == '1' ? 'Enable' : 'Disable';
             $param += ['Status' => $Status];
         }
+        $groupid = request()->post('groupid');
+        if (!empty($groupid)) {
+            $param += ['GroupId' => $groupid];
+        }
         $data = $this->request($param, true);
         if ($data) {
             $list = [];
@@ -234,7 +238,7 @@ class aliyun implements DnsInterface
     public function getDomainInfo()
     {
         if (!empty($this->domainInfo)) return $this->domainInfo;
-        $param = ['Action' => 'DescribeDomainInfo', 'DomainName' => $this->domain, 'NeedDetailAttributes' => 'true'];
+        $param = ['Action' => 'DescribeDomainInfo', 'DomainName' => $this->domain, 'NeedDetailAttributes' => 'true', 'Lang' => 'zh'];
         $data = $this->request($param, true);
         if ($data) {
             $this->domainInfo = $data;
@@ -251,6 +255,24 @@ class aliyun implements DnsInterface
             return $data['MinTtl'];
         }
         return false;
+    }
+
+    //获取解析记录分组列表
+    public function getRecordGroups()
+    {
+        $param = ['Action' => 'DescribeRecordGroups', 'DomainName' => $this->domain, 'PageSize' => 100, 'Lang' => 'zh'];
+        $data = $this->request($param, true);
+        if ($data) {
+            return $data['RecordGroups']['RecordGroup'];
+        }
+        return false;
+    }
+
+    //修改解析记录分组
+    public function changeRecordGroup($RecordIdList, $GroupId)
+    {
+        $param = ['Action' => 'ChangeRecordGroup', 'DomainName' => $this->domain, 'RecordIdList' => json_encode($RecordIdList), 'GroupId' => $GroupId];
+        return $this->request($param);
     }
 
     //获取权重配置子域名列表
