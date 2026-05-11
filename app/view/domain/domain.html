@@ -189,9 +189,9 @@
 var userLevel = "{$user['level']|default=''}";
 $(document).ready(function(){
 	updateToolbar();
-	const defaultPageSize = getCookie('domain_pagesize') ? getCookie('domain_pagesize') : 15;
+	const pageSizeKey = 'domain_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	const pageSize = getStoredPageSize(pageSizeKey);
 
 	$("#listTable").bootstrapTable({
 		url: '/domain/data',
@@ -326,9 +326,7 @@ $(document).ready(function(){
 			$('[data-toggle="tooltip"]').tooltip()
 		},
 		onPageChange: function(number, size){
-			if(size != defaultPageSize){
-				setCookie('domain_pagesize', size, 24 * 3600 * 30);
-			}
+			setStoredPageSize(pageSizeKey, size);
 		},
 	})
 

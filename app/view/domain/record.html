@@ -255,9 +255,9 @@ var sidePagination = dnsconfig.page ? 'client' : 'server';
 var showWeight = dnsconfig.weight;
 $(document).ready(function(){
 	updateToolbar();
-	let defaultPageSize = getCookie('record_pagesize') ? getCookie('record_pagesize') : 15;
+	const pageSizeKey = 'record_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	const pageSize = getStoredPageSize(pageSizeKey);
 
 	$("#listTable").bootstrapTable({
 		url: '/record/data/{$domainId}',
@@ -370,9 +370,7 @@ $(document).ready(function(){
 			},
 		],
 		onPageChange: function(number, size){
-			if(size != defaultPageSize){
-				setCookie('record_pagesize', size, 24 * 3600 * 30);
-			}
+			setStoredPageSize(pageSizeKey, size);
 		},
 	});
 

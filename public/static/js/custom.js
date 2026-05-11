@@ -56,6 +56,9 @@ function updateQueryStr(obj){
 	history.replaceState({}, null, '?'+arr.join("&"));
 }
 
+var VALID_PAGE_SIZES = [10, 15, 20, 30, 50, 100, 200, 300, 500];
+var DEFAULT_PAGE_SIZE = 15;
+
 if (typeof $.fn.bootstrapTable !== "undefined") {
     $.fn.bootstrapTable.custom = {
         method: 'post',
@@ -64,8 +67,8 @@ if (typeof $.fn.bootstrapTable !== "undefined") {
         pagination: true,
         sidePagination: 'server',
         pageNumber: 1,
-        pageSize: 20,
-        pageList: [10, 15, 20, 30, 50, 100],
+        pageSize: 15,
+        pageList: VALID_PAGE_SIZES,
 		loadingFontSize: '18px',
 		toolbar: '#searchToolbar',
 		showColumns: true,
@@ -170,5 +173,27 @@ function delCookie(name)
     var cval=getCookie(name);
     if(cval!=null){
       document.cookie= name + "="+cval+";expires="+exp.toGMTString();
+    }
+}
+
+function getStoredPageSize(key) {
+    var urlSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : null;
+    if (urlSize && VALID_PAGE_SIZES.indexOf(urlSize) !== -1) {
+        return urlSize;
+    }
+    var stored = localStorage.getItem(key);
+    if (stored) {
+        var storedSize = parseInt(stored);
+        if (VALID_PAGE_SIZES.indexOf(storedSize) !== -1) {
+            return storedSize;
+        }
+    }
+    return DEFAULT_PAGE_SIZE;
+}
+
+function setStoredPageSize(key, size) {
+    var intSize = parseInt(size);
+    if (VALID_PAGE_SIZES.indexOf(intSize) !== -1) {
+        localStorage.setItem(key, intSize);
     }
 }

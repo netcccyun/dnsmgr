@@ -58,9 +58,9 @@ pre.pre-log{height: 330px;overflow-y: auto;width: 100%;background-color: rgba(51
 <script>
 $(document).ready(function(){
 	updateToolbar();
-	const defaultPageSize = 10;
+	const pageSizeKey = 'deploytask_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	const pageSize = getStoredPageSize(pageSizeKey);
 
 	$("#listTable").bootstrapTable({
 		url: '/cert/deploy/data',
@@ -173,7 +173,10 @@ $(document).ready(function(){
 				}
 				$(e.target).children('.dropdown-menu').css({position:'fixed', top:top, left:left});
 			});
-		}
+		},
+		onPageChange: function(number, size){
+			setStoredPageSize(pageSizeKey, size);
+		},
 	})
 })
 function showmsg(msg){

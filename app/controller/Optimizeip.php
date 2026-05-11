@@ -45,6 +45,7 @@ class Optimizeip extends BaseController
         $status = input('post.status', null);
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $limit = $this->validateLimit($limit);
 
         $select = Db::name('optimizeip')->alias('A')->join('domain B', 'A.did = B.id');
         if (!empty($kw)) {

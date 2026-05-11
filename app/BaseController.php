@@ -96,6 +96,11 @@ abstract class BaseController
         return $v->failException(true)->check($data);
     }
 
+    protected function validateLimit(int $limit, int $default = 15): int
+    {
+        $validSizes = [10, 15, 20, 30, 50, 100, 200, 300, 500];
+        return in_array($limit, $validSizes) ? $limit : $default;
+    }
 
     protected function alert($code, $msg = '', $url = null, $wait = 3)
     {

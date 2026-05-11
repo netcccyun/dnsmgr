@@ -32,9 +32,9 @@
 var userLevel = "{$user['level']|default=''}";
 $(document).ready(function(){
 	updateToolbar();
-	const defaultPageSize = 15;
+	const pageSizeKey = 'account_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	const pageSize = getStoredPageSize(pageSizeKey);
 
 	$("#listTable").bootstrapTable({
 		url: '/account/data',
@@ -78,6 +78,9 @@ $(document).ready(function(){
 				}
 			},
 		],
+		onPageChange: function(number, size){
+			setStoredPageSize(pageSizeKey, size);
+		},
 	})
 })
 function delItem(id) {

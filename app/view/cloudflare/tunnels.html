@@ -172,12 +172,14 @@ var selectedTunnelName = '';
 $(document).ready(function(){
   $("#form-tunnel").bootstrapValidator();
 
+  const pageSizeKey = 'tunnels_pagesize';
   $("#listTable").bootstrapTable({
     url: '/cloudflare/tunnels/data/{$accountId}',
     method: 'post',
     toolbar: '',
     classes: 'table table-striped table-hover table-bordered',
     uniqueId: 'id',
+    pageSize: getStoredPageSize(pageSizeKey),
     responseHandler: tableResponseHandler,
     columns: [
       {field: 'name', title: '名称'},
@@ -197,7 +199,10 @@ $(document).ready(function(){
             + '<a href="javascript:deleteTunnel(\''+row.id+'\', \''+htmlEscape(row.name)+'\')" class="btn btn-danger btn-xs">删除</a>';
         }
       }
-    ]
+    ],
+    onPageChange: function(number, size){
+      setStoredPageSize(pageSizeKey, size);
+    },
   });
 
   $("#publicTable").bootstrapTable({

@@ -37,9 +37,9 @@ tbody tr>td:nth-child(4){overflow: hidden;text-overflow: ellipsis;white-space: n
 var action_name = {$info.action_name|json_encode|raw};
 $(document).ready(function(){
 	updateToolbar();
-	const defaultPageSize = 15;
+	const pageSizeKey = 'dmtaskinfo_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	const pageSize = getStoredPageSize(pageSizeKey);
 
 	$("#listTable").bootstrapTable({
 		url: '/dmonitor/task/log/data/{$info.id}',
@@ -67,6 +67,9 @@ $(document).ready(function(){
 				title: '异常原因'
 			}
 		],
+		onPageChange: function(number, size){
+			setStoredPageSize(pageSizeKey, size);
+		},
 	})
 })
 </script>
