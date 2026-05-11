@@ -68,6 +68,8 @@ $(document).ready(function(){
 	let defaultPageSize = getCookie('category_pagesize') ? getCookie('category_pagesize') : 10;
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
 	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	var urlSort = typeof window.$_GET['sortName'] != 'undefined' ? window.$_GET['sortName'] : undefined;
+	var urlOrder = typeof window.$_GET['sortOrder'] != 'undefined' ? window.$_GET['sortOrder'] : undefined;
 
 	$("#listTable").bootstrapTable({
 		url: '/domain/category/data',
@@ -75,25 +77,57 @@ $(document).ready(function(){
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
 		uniqueId: 'id',
+		sortReset: false,
+		sortName: urlSort,
+		sortOrder: urlOrder,
+		onSort: function(name, order) {
+			var $table = $('#listTable');
+			if (!name) {
+				$table.data('_sortClicks', null);
+				return;
+			}
+			var clicks = $table.data('_sortClicks') || {};
+			if (clicks._last !== name) {
+				clicks = {_last: name};
+				clicks[name] = 1;
+				this.sortOrder = 'desc';
+			} else {
+				clicks[name] = (clicks[name] || 0) + 1;
+				if (clicks[name] === 1) {
+					this.sortOrder = 'desc';
+				} else if (clicks[name] === 2) {
+					this.sortOrder = 'asc';
+				} else {
+					this.sortName = undefined;
+					this.sortOrder = undefined;
+					clicks = {};
+				}
+			}
+			$table.data('_sortClicks', clicks);
+		},
 		columns: [
 			{
 				field: 'id',
-				title: 'ID'
+				title: 'ID',
+				sortable: true
 			},
 			{
 				field: 'name',
-				title: '分类名称'
+				title: '分类名称',
+				sortable: true
 			},
 			{
 				field: 'remark',
 				title: '备注',
+				sortable: true,
 				formatter: function(value, row, index) {
 					return value ? value : '-';
 				}
 			},
 			{
 				field: 'sort',
-				title: '排序'
+				title: '排序',
+				sortable: true
 			},
 			{
 				field: 'domain_count',
@@ -104,7 +138,8 @@ $(document).ready(function(){
 			},
 			{
 				field: 'addtime',
-				title: '添加时间'
+				title: '添加时间',
+				sortable: true
 			},
 			{
 				field: 'action',

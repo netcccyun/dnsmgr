@@ -61,6 +61,8 @@ $(document).ready(function(){
 	const defaultPageSize = 10;
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
 	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	var urlSort = typeof window.$_GET['sortName'] != 'undefined' ? window.$_GET['sortName'] : undefined;
+	var urlOrder = typeof window.$_GET['sortOrder'] != 'undefined' ? window.$_GET['sortOrder'] : undefined;
 
 	$("#listTable").bootstrapTable({
 		url: '/cert/deploy/data',
@@ -68,6 +70,34 @@ $(document).ready(function(){
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
 		uniqueId: 'id',
+		sortReset: false,
+		sortName: urlSort,
+		sortOrder: urlOrder,
+		onSort: function(name, order) {
+			var $table = $('#listTable');
+			if (!name) {
+				$table.data('_sortClicks', null);
+				return;
+			}
+			var clicks = $table.data('_sortClicks') || {};
+			if (clicks._last !== name) {
+				clicks = {_last: name};
+				clicks[name] = 1;
+				this.sortOrder = 'desc';
+			} else {
+				clicks[name] = (clicks[name] || 0) + 1;
+				if (clicks[name] === 1) {
+					this.sortOrder = 'desc';
+				} else if (clicks[name] === 2) {
+					this.sortOrder = 'asc';
+				} else {
+					this.sortName = undefined;
+					this.sortOrder = undefined;
+					clicks = {};
+				}
+			}
+			$table.data('_sortClicks', clicks);
+		},
 		columns: [
 			{
 				field: '',
@@ -75,11 +105,13 @@ $(document).ready(function(){
 			},
 			{
 				field: 'id',
-				title: 'ID'
+				title: 'ID',
+				sortable: true
 			},
 			{
 				field: 'typename',
 				title: '自动部署账户',
+				sortable: true,
 				formatter: function(value, row, index) {
 					if(!value) return '已被删除'
 					return '<span title="'+row.aname+'" data-toggle="tooltip" data-placement="right"><img src="/static/images/'+row.icon+'" class="type-logo">'+(row.aremark?row.aremark:value+'('+row.aid+')')+'</span>';
@@ -97,22 +129,25 @@ $(document).ready(function(){
 			},
 			{
 				field: 'remark',
-				title: '备注'
+				title: '备注',
+				sortable: true
 			},
 			{
 				field: 'active',
 				title: '任务开关',
+				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1){
-						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}else{
-						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}
 				}
 			},
 			{
 				field: 'lasttime',
 				title: '上次执行时间',
+				sortable: true,
 				formatter: function(value, row, index) {
 					return value ? value : '暂未执行'
 				}
@@ -120,14 +155,15 @@ $(document).ready(function(){
 			{
 				field: 'status',
 				title: '状态',
+				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1) {
-						return '<span class="label label-success">已完成</span>';
+				return '<span class="label label-success">已完成</span>';
 					} else if(value == 0) {
 						if(row.islock == 1) return '<span class="label" style="background-color: #3e76fb;">正在处理</span>';
 						else return '<span class="label label-info">待处理</span>';
 					} else {
-						return '<span class="label label-danger">处理失败</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
+				return '<span class="label label-danger">处理失败</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
 					}
 				}
 			},

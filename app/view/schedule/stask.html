@@ -52,12 +52,42 @@ $(document).ready(function(){
 	const defaultPageSize = 15;
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
 	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	var urlSort = typeof window.$_GET['sortName'] != 'undefined' ? window.$_GET['sortName'] : undefined;
+	var urlOrder = typeof window.$_GET['sortOrder'] != 'undefined' ? window.$_GET['sortOrder'] : undefined;
 
 	$("#listTable").bootstrapTable({
 		url: '/schedule/stask/data',
 		pageNumber: pageNumber,
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
+		sortReset: false,
+		sortName: urlSort,
+		sortOrder: urlOrder,
+		onSort: function(name, order) {
+			var $table = $('#listTable');
+			if (!name) {
+				$table.data('_sortClicks', null);
+				return;
+			}
+			var clicks = $table.data('_sortClicks') || {};
+			if (clicks._last !== name) {
+				clicks = {_last: name};
+				clicks[name] = 1;
+				this.sortOrder = 'desc';
+			} else {
+				clicks[name] = (clicks[name] || 0) + 1;
+				if (clicks[name] === 1) {
+					this.sortOrder = 'desc';
+				} else if (clicks[name] === 2) {
+					this.sortOrder = 'asc';
+				} else {
+					this.sortName = undefined;
+					this.sortOrder = undefined;
+					clicks = {};
+				}
+			}
+			$table.data('_sortClicks', clicks);
+		},
 		columns: [
 			{
 				field: '',
@@ -65,11 +95,13 @@ $(document).ready(function(){
 			},
 			{
 				field: 'id',
-				title: 'ID'
+				title: 'ID',
+				sortable: true
 			},
 			{
 				field: 'rr',
 				title: '域名',
+				sortable: true,
 				formatter: function(value, row, index) {
 					return '<span title="'+row.remark+'" data-toggle="tooltip" data-placement="right">' + value + '.' + row.domain + '</span>';
 				}
@@ -77,6 +109,7 @@ $(document).ready(function(){
 			{
 				field: 'type',
 				title: '时间设置',
+				sortable: true,
 				formatter: function(value, row, index) {
                     if(value == 1){
                         var text = '<span class="label bg-purple">周期执行</span> ';
@@ -97,46 +130,52 @@ $(document).ready(function(){
 			{
 				field: 'switchtype',
 				title: '切换设置',
+				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1) {
-						return '启用解析';
+				return '启用解析';
 					} else if(value == 2) {
-						return '暂停解析';
+				return '暂停解析';
 					} else if(value == 3) {
-						return '删除解析';
+				return '删除解析';
 					} else {
-						return '修改解析['+row.value+']';
+				return '修改解析['+row.value+']';
 					}
 				}
 			},
 			{
 				field: 'active',
 				title: '运行开关',
+				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1){
-						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}else{
-						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}
 				}
 			},
 			{
 				field: 'updatetimestr',
-				title: '上次切换时间'
+				title: '上次切换时间',
+				sortable: true
 			},
             {
 				field: 'nexttimestr',
 				title: '下次切换时间',
+				sortable: true,
 				visible: false
 			},
 			{
 				field: 'addtimestr',
 				title: '添加时间',
+				sortable: true,
 				visible: false
 			},
 			{
 				field: 'remark',
-				title: '备注'
+				title: '备注',
+				sortable: true
 			},
 			{
 				field: 'action',
