@@ -56,9 +56,6 @@ function updateQueryStr(obj){
 	history.replaceState({}, null, '?'+arr.join("&"));
 }
 
-var VALID_PAGE_SIZES = [10, 15, 20, 30, 50, 100, 200, 300, 500];
-var DEFAULT_PAGE_SIZE = 15;
-
 if (typeof $.fn.bootstrapTable !== "undefined") {
     $.fn.bootstrapTable.custom = {
         method: 'post',
