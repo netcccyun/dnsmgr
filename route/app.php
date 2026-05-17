@@ -107,6 +107,8 @@ Route::group(function () {
     Route::any('/record/batchadd/:id', 'domain/record_batch_add');
     Route::get('/record/batchadd', 'domain/record_batch_add2');
     Route::any('/record/batchedit', 'domain/record_batch_edit2');
+    Route::any('/record/export/:id', 'domain/record_export');
+    Route::any('/record/import/:id', 'domain/record_import');
     Route::any('/record/log/:id', 'domain/record_log');
     Route::post('/record/groups/:id', 'domain/record_groups');
     Route::post('/record/list', 'domain/record_list');

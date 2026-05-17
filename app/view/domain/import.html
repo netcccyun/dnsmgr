@@ -1,0 +1,214 @@
+{extend name="common/layout" /}
+{block name="title"}导入解析记录 - {$domainName}{/block}
+{block name="main"}
+<div class="row">
+	<div class="col-xs-12 center-block" style="float: none;">
+	<div class="panel panel-default">
+	<div class="panel-heading">
+		<h3 class="panel-title"><a href="/record/{$domainId}" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>导入解析记录 - {$domainName}</h3>
+	</div>
+	<div class="panel-body">
+		<form class="form-horizontal" id="form-import" enctype="multipart/form-data">
+			<div class="form-group">
+				<label class="col-sm-2 control-label">导入格式</label>
+				<div class="col-sm-10">
+					<select name="format" class="form-control" id="format-select" style="max-width:200px;">
+						<option value="json">JSON格式</option>
+						<option value="csv">CSV格式</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label">重复处理</label>
+				<div class="col-sm-10">
+					<select name="override" class="form-control" style="max-width:200px;">
+						<option value="0">跳过重复记录</option>
+						<option value="1">强制导入（不检查重复）</option>
+					</select>
+					<span class="help-block">选择"跳过重复记录"将自动跳过与现有记录相同的条目</span>
+				</div>
+			</div>
+			<div class="form-group" id="json-input-group">
+				<label class="col-sm-2 control-label">导入数据</label>
+				<div class="col-sm-10">
+					<textarea name="data" class="form-control" rows="20" placeholder="请粘贴JSON格式的解析记录数据" required></textarea>
+				</div>
+			</div>
+			<div class="form-group" id="csv-file-group" style="display:none;">
+				<label class="col-sm-2 control-label">CSV文件</label>
+				<div class="col-sm-10">
+					<input type="file" name="csvfile" class="form-control" accept=".csv,.txt" style="max-width:400px;">
+					<span class="help-block">支持 .csv 或 .txt 格式的文件</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label"></label>
+				<div class="col-sm-10">
+					<span class="help-block" id="format-help">
+						<strong>JSON格式示例：</strong><br>
+						<pre style="margin-top:5px;">{
+  "domain": "example.com",
+  "records": [
+    {
+      "Name": "www",
+      "Type": "A",
+      "Value": "1.2.3.4",
+      "Line": "default",
+      "TTL": 600,
+      "MX": "",
+      "Weight": "",
+      "Remark": ""
+    }
+  ]
+}</pre>
+					</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="col-sm-offset-2 col-sm-10">
+					<button type="button" class="btn btn-primary" onclick="importRecords()">开始导入</button>
+					<a href="/record/{$domainId}" class="btn btn-default">返回</a>
+				</div>
+			</div>
+		</form>
+	</div>
+	</div>
+	</div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script>
+var csvHelp = '<strong>CSV格式说明：</strong><br>' +
+	'<pre style="margin-top:5px;">主机记录,记录类型,记录值,线路类型,TTL,MX优先级,权重,备注,状态\n' +
+	'www,A,1.2.3.4,默认,600,,,,启用\n' +
+	'mail,MX,mail.example.com,默认,600,10,,,启用\n' +
+	'@,TXT,v=spf1 include:_spf.example.com ~all,默认,600,,,,启用</pre>' +
+	'<span class="text-muted">CSV文件列顺序：主机记录、记录类型、记录值、线路类型、TTL、MX优先级、权重、备注、状态</span>';
+
+var jsonHelp = '<strong>JSON格式示例：</strong><br>' +
+	'<pre style="margin-top:5px;">{\n' +
+	'  "domain": "example.com",\n' +
+	'  "records": [\n' +
+	'    {\n' +
+	'      "Name": "www",\n' +
+	'      "Type": "A",\n' +
+	'      "Value": "1.2.3.4",\n' +
+	'      "Line": "default",\n' +
+	'      "TTL": 600,\n' +
+	'      "MX": "",\n' +
+	'      "Weight": "",\n' +
+	'      "Remark": ""\n' +
+	'    }\n' +
+	'  ]\n' +
+	'}</pre>';
+
+$(document).ready(function(){
+	$('#format-select').change(function(){
+		if($(this).val() === 'csv'){
+			$('#format-help').html(csvHelp);
+			$('#json-input-group').hide();
+			$('#json-input-group textarea').removeAttr('required');
+			$('#csv-file-group').show();
+			$('#csv-file-group input').attr('required', 'required');
+		} else {
+			$('#format-help').html(jsonHelp);
+			$('#json-input-group').show();
+			$('#json-input-group textarea').attr('required', 'required');
+			$('#csv-file-group').hide();
+			$('#csv-file-group input').removeAttr('required');
+		}
+	});
+});
+
+function importRecords(){
+	var format = $('#format-select').val();
+	var formData = new FormData();
+	formData.append('format', format);
+	formData.append('override', $('select[name="override"]').val());
+	
+	if(format === 'json'){
+		var data = $('textarea[name="data"]').val();
+		if(!data){
+			layer.msg('请输入导入数据', {icon: 2});
+			return;
+		}
+		formData.append('data', data);
+	} else {
+		var file = $('input[name="csvfile"]')[0].files[0];
+		if(!file){
+			layer.msg('请选择CSV文件', {icon: 2});
+			return;
+		}
+		formData.append('csvfile', file);
+	}
+	
+	layer.confirm('确定要开始导入解析记录吗？', {icon: 3, title:'提示'}, function(index){
+		layer.close(index);
+		var ii = layer.load(2, {shade:[0.1,'#fff']});
+		$.ajax({
+			type : 'POST',
+			url : '/record/import/{$domainId}',
+			data : formData,
+			processData: false,
+			contentType: false,
+			dataType : 'json',
+			success : function(data) {
+				layer.close(ii);
+				if(data.code == 0){
+					var resultHtml = '<div style="padding:10px;">';
+					resultHtml += '<p><strong>' + data.msg + '</strong></p>';
+					if(data.data && data.data.errors && data.data.errors.length > 0){
+						resultHtml += '<hr><p><strong>错误详情（前10条）：</strong></p><ul>';
+						for(var i = 0; i < data.data.errors.length; i++){
+							resultHtml += '<li>' + htmlEscape(data.data.errors[i]) + '</li>';
+						}
+						resultHtml += '</ul>';
+					}
+					resultHtml += '</div>';
+					layer.alert(resultHtml, {
+						icon: 1,
+						area: ['500px', '400px'],
+						title: '导入结果'
+					}, function(){
+						layer.closeAll();
+						if(data.data && data.data.success > 0){
+							window.location.href = '/record/{$domainId}';
+						}
+					});
+				}else{
+					var errorHtml = '<div style="padding:10px;">';
+					errorHtml += '<p><strong>' + data.msg + '</strong></p>';
+					if(data.data && data.data.errors && data.data.errors.length > 0){
+						errorHtml += '<hr><p><strong>错误详情：</strong></p><ul>';
+						for(var i = 0; i < data.data.errors.length; i++){
+							errorHtml += '<li>' + htmlEscape(data.data.errors[i]) + '</li>';
+						}
+						errorHtml += '</ul>';
+					}
+					errorHtml += '</div>';
+					layer.alert(errorHtml, {
+						icon: 2,
+						area: ['500px', '400px'],
+						title: '导入失败'
+					});
+				}
+			},
+			error:function(){
+				layer.close(ii);
+				layer.msg('服务器错误', {icon: 2});
+			}
+		});
+	});
+}
+
+function htmlEscape(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+</script>
+{/block}
