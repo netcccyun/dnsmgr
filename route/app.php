@@ -38,8 +38,10 @@ Route::group(function () {
     Route::any('/setpwd', 'index/setpwd');
     Route::any('/totp/:action', 'index/totp');
     Route::get('/test', 'index/test');
+    Route::get('/setapi', 'index/setapi');
 
     Route::post('/user/data', 'user/user_data');
+    Route::post('/user/api_manage/:act', 'user/api_manage');
     Route::post('/user/op', 'user/user_op');
     Route::get('/user', 'user/user');
     
