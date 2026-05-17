@@ -47,20 +47,52 @@ $(document).ready(function(){
 	const pageSizeKey = 'opiplist_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
 	const pageSize = getStoredPageSize(pageSizeKey);
+	var urlSort = typeof window.$_GET['sortName'] != 'undefined' ? window.$_GET['sortName'] : undefined;
+	var urlOrder = typeof window.$_GET['sortOrder'] != 'undefined' ? window.$_GET['sortOrder'] : undefined;
 
 	$("#listTable").bootstrapTable({
 		url: '/optimizeip/opiplist/data',
 		pageNumber: pageNumber,
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
+		sortReset: false,
+		sortName: urlSort,
+		sortOrder: urlOrder,
+		onSort: function(name, order) {
+			var $table = $('#listTable');
+			if (!name) {
+				$table.data('_sortClicks', null);
+				return;
+			}
+			var clicks = $table.data('_sortClicks') || {};
+			if (clicks._last !== name) {
+				clicks = {_last: name};
+				clicks[name] = 1;
+				this.sortOrder = 'desc';
+			} else {
+				clicks[name] = (clicks[name] || 0) + 1;
+				if (clicks[name] === 1) {
+					this.sortOrder = 'desc';
+				} else if (clicks[name] === 2) {
+					this.sortOrder = 'asc';
+				} else {
+					this.sortName = undefined;
+					this.sortOrder = undefined;
+					clicks = {};
+				}
+			}
+			$table.data('_sortClicks', clicks);
+		},
 		columns: [
 			{
 				field: 'id',
-				title: 'ID'
+				title: 'ID',
+				sortable: true
 			},
 			{
 				field: 'rr',
 				title: '域名',
+				sortable: true,
 				formatter: function(value, row, index) {
 					return '<span title="'+row.remark+'" data-toggle="tooltip" data-placement="right">' + value + '.' + row.domain + '</span>';
 				}
@@ -68,23 +100,25 @@ $(document).ready(function(){
 			{
 				field: 'cdn_type',
 				title: 'CDN运营商',
+				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1){
-						return 'CloudFlare';
+				return 'CloudFlare';
 					}else if(value == 2){
-						return 'CloudFront';
+				return 'CloudFront';
 					}else if(value == 3){
-						return 'Gcore';
+				return 'Gcore';
 					}else if(value == 4){
-						return 'EdgeOne';
+				return 'EdgeOne';
 					}else{
-						return '未知';
+				return '未知';
 					}
 				}
 			},
 			{
 				field: 'recordnum',
 				title: '解析数量',
+				sortable: true,
 				formatter: function(value, row, index) {
 					return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="TTL：'+row.ttl+'" class="tips">'+value+'</span>';
 				}
@@ -92,6 +126,7 @@ $(document).ready(function(){
 			{
 				field: 'ip_type',
 				title: '解析IP类型',
+				sortable: true,
 				formatter: function(value, row, index) {
 					var value = value.split(',')
 					value.forEach((element, index) => {
@@ -104,17 +139,19 @@ $(document).ready(function(){
 			{
 				field: 'active',
 				title: '任务开关',
+				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1){
-						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}else{
-						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}
 				}
 			},
 			{
 				field: 'updatetime',
 				title: '上次更新时间',
+				sortable: true,
 				formatter: function(value, row, index) {
 					return value ? value : '无';
 				}
@@ -122,13 +159,14 @@ $(document).ready(function(){
 			{
 				field: 'status',
 				title: '上次更新结果',
+				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1) {
-						return '<span class="label label-success">成功</span>';
+				return '<span class="label label-success">成功</span>';
 					} else if(value == 2) {
-						return '<span class="label label-danger">失败</span> <span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="'+row.errmsg+'" class="tips"><i class="fa fa-info-circle"></i></span>';
+				return '<span class="label label-danger">失败</span> <span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="'+row.errmsg+'" class="tips"><i class="fa fa-info-circle"></i></span>';
 					} else {
-						return '<span class="label label-warning">未运行</span>';
+				return '<span class="label label-warning">未运行</span>';
 					}
 				}
 			},

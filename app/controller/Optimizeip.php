@@ -45,6 +45,8 @@ class Optimizeip extends BaseController
         $status = input('post.status', null);
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('optimizeip')->alias('A')->join('domain B', 'A.did = B.id');
         if (!empty($kw)) {
@@ -58,7 +60,13 @@ class Optimizeip extends BaseController
             $select->where('status', intval($status));
         }
         $total = $select->count();
-        $list = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name domain')->select();
+        $allowedSort = ['id' => 'A.id', 'rr' => 'A.rr', 'cdn_type' => 'A.cdn_type', 'recordnum' => 'A.recordnum', 'ip_type' => 'A.ip_type', 'active' => 'A.active', 'updatetime' => 'A.updatetime', 'status' => 'A.status'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('A.id', 'desc');
+        }
+        $list = $select->limit($offset, $limit)->field('A.*,B.name domain')->select();
 
         return json(['total' => $total, 'rows' => $list]);
     }

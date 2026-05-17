@@ -40,31 +40,65 @@ $(document).ready(function(){
 	const pageSizeKey = 'dmtaskinfo_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
 	const pageSize = getStoredPageSize(pageSizeKey);
+	var urlSort = typeof window.$_GET['sortName'] != 'undefined' ? window.$_GET['sortName'] : undefined;
+	var urlOrder = typeof window.$_GET['sortOrder'] != 'undefined' ? window.$_GET['sortOrder'] : undefined;
 
 	$("#listTable").bootstrapTable({
 		url: '/dmonitor/task/log/data/{$info.id}',
 		pageNumber: pageNumber,
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
+		sortReset: false,
+		sortName: urlSort,
+		sortOrder: urlOrder,
+		onSort: function(name, order) {
+			var $table = $('#listTable');
+			if (!name) {
+				$table.data('_sortClicks', null);
+				return;
+			}
+			var clicks = $table.data('_sortClicks') || {};
+			if (clicks._last !== name) {
+				clicks = {_last: name};
+				clicks[name] = 1;
+				this.sortOrder = 'desc';
+			} else {
+				clicks[name] = (clicks[name] || 0) + 1;
+				if (clicks[name] === 1) {
+					this.sortOrder = 'desc';
+				} else if (clicks[name] === 2) {
+					this.sortOrder = 'asc';
+				} else {
+					this.sortName = undefined;
+					this.sortOrder = undefined;
+					clicks = {};
+				}
+			}
+			$table.data('_sortClicks', clicks);
+		},
 		columns: [
 			{
 				field: 'id',
-				title: 'ID'
+				title: 'ID',
+				sortable: true
 			},
 			{
 				field: 'action',
 				title: '操作类型',
+				sortable: true,
 				formatter: function(value, row, index) {
 					return action_name[value];
 				}
 			},
 			{
 				field: 'date',
-				title: '时间'
+				title: '时间',
+				sortable: true
 			},
 			{
 				field: 'errmsg',
-				title: '异常原因'
+				title: '异常原因',
+				sortable: true
 			}
 		],
 		onPageChange: function(number, size){

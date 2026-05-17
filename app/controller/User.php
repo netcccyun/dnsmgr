@@ -28,13 +28,21 @@ class User extends BaseController
         $kw = input('post.kw', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('user');
         if (!empty($kw)) {
             $select->whereLike('id|username', $kw);
         }
         $total = $select->count();
-        $rows = $select->order('id', 'desc')->limit($offset, $limit)->select();
+        $allowedSort = ['id' => 'id', 'username' => 'username', 'level' => 'level', 'is_api' => 'is_api', 'regtime' => 'regtime', 'lasttime' => 'lasttime', 'status' => 'status'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('id', 'desc');
+        }
+        $rows = $select->limit($offset, $limit)->select();
 
         return json(['total' => $total, 'rows' => $rows]);
     }
@@ -165,6 +173,8 @@ class User extends BaseController
         $domain = input('post.domain', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('log');
         if ($this->request->user['type'] == 'domain') {
@@ -181,7 +191,13 @@ class User extends BaseController
             $select->where('domain', $domain);
         }
         $total = $select->count();
-        $rows = $select->order('id', 'desc')->limit($offset, $limit)->select();
+        $allowedSort = ['id' => 'id', 'uid' => 'uid', 'domain' => 'domain', 'action' => 'action', 'data' => 'data', 'addtime' => 'addtime'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('id', 'desc');
+        }
+        $rows = $select->limit($offset, $limit)->select();
 
         return json(['total' => $total, 'rows' => $rows]);
     }
