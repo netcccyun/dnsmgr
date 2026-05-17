@@ -36,9 +36,9 @@ Route::group(function () {
     Route::post('/changeskin', 'index/changeskin');
     Route::get('/cleancache', 'index/cleancache');
     Route::any('/setpwd', 'index/setpwd');
+    Route::any('/setapi', 'index/setapi');
     Route::any('/totp/:action', 'index/totp');
     Route::get('/test', 'index/test');
-    Route::get('/setapi', 'index/setapi');
 
     Route::post('/user/data', 'user/user_data');
     Route::post('/user/api_manage/:act', 'user/api_manage');
