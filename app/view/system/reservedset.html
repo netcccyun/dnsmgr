@@ -1,0 +1,52 @@
+{extend name="common/layout" /}
+{block name="title"}预留主机记录设置{/block}
+{block name="main"}
+<div class="row">
+  <div class="col-xs-12 col-sm-10 col-md-8 col-lg-6 center-block" style="float: none;">
+    <div class="panel panel-warning">
+      <div class="panel-heading"><h3 class="panel-title">预留主机记录设置</h3></div>
+      <div class="panel-body">
+        <div class="alert alert-warning">
+          <i class="fa fa-exclamation-triangle"></i>
+          设置预留的主机记录后，普通用户将无法添加这些主机记录的解析。多个主机记录请用逗号分隔，例如：www,@,mail,ftp
+        </div>
+        <div class="form-group">
+          <label class="control-label">预留主机记录列表</label>
+          <textarea class="form-control" id="reserved_records" rows="5" placeholder="请输入预留的主机记录，多个用逗号分隔">{$reserved_records}</textarea>
+        </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-primary" onclick="saveReserved()"><i class="fa fa-save"></i>
+            保存设置
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title">说明</h3></div>
+      <div class="panel-body">
+        <ul>
+          <li>预留主机记录是系统级别的设置，对所有域名生效</li>
+          <li>普通用户（非管理员）无法添加预留的主机记录</li>
+          <li>管理员不受限制，可以添加任何主机记录</li>
+          <li>常见需要预留的主机记录：www, @, mail, ftp, admin, api 等</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+  function saveReserved() {
+    var records = $("#reserved_records").val().trim();
+    $.post('/system/set', {reserved_records: records}, function (res) {
+      if (res.code == 0) {
+        layer.msg('保存成功', {icon: 1, time: 1000});
+      } else {
+        layer.alert(res.msg, {icon: 2});
+      }
+    });
+  }
+</script>
+{/block}

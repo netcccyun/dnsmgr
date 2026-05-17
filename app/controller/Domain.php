@@ -569,6 +569,11 @@ class Domain extends BaseController
             return json(['code' => -1, 'msg' => '参数不能为空']);
         }
 
+        $reservedCheck = $this->checkReservedRecord($name);
+        if ($reservedCheck['is_reserved']) {
+            return json(['code' => -1, 'msg' => $reservedCheck['msg']]);
+        }
+
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         $recordid = $dns->addDomainRecord($name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if ($recordid) {
@@ -602,6 +607,11 @@ class Domain extends BaseController
 
         if (empty($recordid) || empty($name) || empty($type) || empty($value)) {
             return json(['code' => -1, 'msg' => '参数不能为空']);
+        }
+
+        $reservedCheck = $this->checkReservedRecord($name);
+        if ($reservedCheck['is_reserved']) {
+            return json(['code' => -1, 'msg' => $reservedCheck['msg']]);
         }
 
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
@@ -881,10 +891,17 @@ class Domain extends BaseController
 
             $success = 0;
             $fail = 0;
+            $reservedList = [];
             foreach ($recordlist as $record) {
                 $record = trim($record);
                 $arr = explode(' ', $record);
                 if (empty($record) || empty($arr[0]) || empty($arr[1])) continue;
+                $reservedCheck = $this->checkReservedRecord($arr[0]);
+                if ($reservedCheck['is_reserved']) {
+                    $reservedList[] = $arr[0];
+                    $fail++;
+                    continue;
+                }
                 $thistype = empty($type) ? getDnsType($arr[1]) : $type;
                 $recordid = $dns->addDomainRecord($arr[0], $thistype, $arr[1], $line, $ttl, $mx, null, $remark);
                 if ($recordid) {
@@ -1739,5 +1756,29 @@ class Domain extends BaseController
         }
         
         return $records;
+    }
+
+    private function checkReservedRecord($recordName)
+    {
+        if (isset(request()->user['level']) && request()->user['level'] == 2) {
+            return ['is_reserved' => false];
+        }
+
+        $reservedConfig = config_get('reserved_records', '');
+        if (empty($reservedConfig)) {
+            return ['is_reserved' => false];
+        }
+
+        $reservedList = array_map('trim', explode(',', $reservedConfig));
+        $reservedList = array_filter($reservedList);
+
+        if (in_array($recordName, $reservedList)) {
+            return [
+                'is_reserved' => true,
+                'msg' => '主机记录 "' . $recordName . '" 已被系统预留，无法使用'
+            ];
+        }
+
+        return ['is_reserved' => false];
     }
 }
