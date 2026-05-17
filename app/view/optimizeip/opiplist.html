@@ -40,13 +40,13 @@ tbody tr>td:nth-child(2){overflow: hidden;text-overflow: ellipsis;white-space: n
 <script src="/static/js/layer/layer.js"></script>
 <script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
 <script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
-<script src="/static/js/custom.js"></script>
+<script src="/static/js/custom.js?v=1006"></script>
 <script>
 $(document).ready(function(){
 	updateToolbar();
-	const defaultPageSize = 15;
+	const pageSizeKey = 'opiplist_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	const pageSize = getStoredPageSize(pageSizeKey);
 
 	$("#listTable").bootstrapTable({
 		url: '/optimizeip/opiplist/data',
@@ -146,7 +146,10 @@ $(document).ready(function(){
 		],
 		onLoadSuccess: function(data) {
 			$('[data-toggle="tooltip"]').tooltip()
-		}
+		},
+		onPageChange: function(number, size){
+			setStoredPageSize(pageSizeKey, size);
+		},
 	})
 })
 function setActive(id, active){

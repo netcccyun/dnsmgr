@@ -51,6 +51,7 @@
 {block name="script"}
 <script src="/static/js/vue-2.7.16.min.js"></script>
 <script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/custom.js?v=1006"></script>
 <script>
 new Vue({
     el: '#app',
@@ -58,7 +59,7 @@ new Vue({
 		aid: '',
 		domainList: [],
 		page: 1,
-		pagesize: 10,
+		pagesize: getStoredPageSize('domainadd_pagesize'),
 		checkall: false,
     },
     watch: {

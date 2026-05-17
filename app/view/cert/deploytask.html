@@ -54,13 +54,13 @@ pre.pre-log{height: 330px;overflow-y: auto;width: 100%;background-color: rgba(51
 <script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
 <script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
 <script src="/static/js/FileSaver-2.0.5.min.js"></script>
-<script src="/static/js/custom.js"></script>
+<script src="/static/js/custom.js?v=1006"></script>
 <script>
 $(document).ready(function(){
 	updateToolbar();
-	const defaultPageSize = 10;
+	const pageSizeKey = 'deploytask_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	const pageSize = getStoredPageSize(pageSizeKey);
 
 	$("#listTable").bootstrapTable({
 		url: '/cert/deploy/data',
@@ -173,7 +173,10 @@ $(document).ready(function(){
 				}
 				$(e.target).children('.dropdown-menu').css({position:'fixed', top:top, left:left});
 			});
-		}
+		},
+		onPageChange: function(number, size){
+			setStoredPageSize(pageSizeKey, size);
+		},
 	})
 })
 function showmsg(msg){

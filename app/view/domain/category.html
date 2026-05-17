@@ -61,13 +61,13 @@
 <script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
 <script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
 <script src="/static/js/bootstrapValidator.min.js"></script>
-<script src="/static/js/custom.js?v=1003"></script>
+<script src="/static/js/custom.js?v=1006"></script>
 <script>
 $(document).ready(function(){
 	updateToolbar();
-	let defaultPageSize = getCookie('category_pagesize') ? getCookie('category_pagesize') : 10;
+	const pageSizeKey = 'category_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	const pageSize = getStoredPageSize(pageSizeKey);
 
 	$("#listTable").bootstrapTable({
 		url: '/domain/category/data',
@@ -118,9 +118,7 @@ $(document).ready(function(){
 			},
 		],
 		onPageChange: function(number, size){
-			if(size != defaultPageSize){
-				setCookie('category_pagesize', size, 24 * 3600 * 30);
-			}
+			setStoredPageSize(pageSizeKey, size);
 		},
 	});
 

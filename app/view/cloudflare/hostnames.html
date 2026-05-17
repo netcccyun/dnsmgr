@@ -458,7 +458,7 @@
 <script src="/static/js/bootstrapValidator.min.js"></script>
 <script src="/static/js/select2-4.0.13.min.js"></script>
 <script src="/static/js/select2-i18n-zh-CN-4.0.13.min.js"></script>
-<script src="/static/js/custom.js?v=1005"></script>
+<script src="/static/js/custom.js?v=1006"></script>
 <script>
 var currentVerificationHostnameId = '';
 var allHostnameData = []; // 保存完整的原始数据用于客户端搜索
@@ -468,6 +468,7 @@ $(document).ready(function(){
   $("#form-store").bootstrapValidator();
   loadFallbackOrigin();
   loadDcvDelegationUuid();
+  const pageSizeKey = 'hostnames_pagesize';
   $("#listTable").bootstrapTable({
     url: '/cloudflare/hostnames/data/{$domainId}',
     method: 'post',
@@ -476,8 +477,7 @@ $(document).ready(function(){
     uniqueId: 'id',
     sidePagination: 'client',
     pagination: true,
-    pageSize: 20,
-    pageList: [10, 20, 50, 100],
+    pageSize: getStoredPageSize(pageSizeKey),
     queryParams: function(params){ return {}; },
     responseHandler: hostnameResponseHandler,
     columns: [
@@ -502,7 +502,10 @@ $(document).ready(function(){
             + '<a href="javascript:deleteHostname(\''+row.id+'\', \''+htmlEscape(row.hostname)+'\')" class="btn btn-danger btn-xs">删除</a>';
         }
       }
-    ]
+    ],
+    onPageChange: function(number, size){
+      setStoredPageSize(pageSizeKey, size);
+    },
   });
   
   // 添加复选框事件监听

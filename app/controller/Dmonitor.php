@@ -43,6 +43,7 @@ class Dmonitor extends BaseController
         $kw = input('post.kw', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $limit = $this->validateLimit($limit);
 
         $select = Db::name('dmtask')->alias('A')->join('domain B', 'A.did = B.id');
         if (!empty($kw)) {
@@ -233,6 +234,7 @@ class Dmonitor extends BaseController
         $taskid = input('param.id/d');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $limit = $this->validateLimit($limit);
         $action = input('post.action/d', 0);
 
         $select = Db::name('dmlog')->where('taskid', $taskid);

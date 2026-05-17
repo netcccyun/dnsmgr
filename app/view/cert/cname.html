@@ -74,13 +74,13 @@ tbody tr>td:nth-child(4){word-break:break-all;max-width:260px;}
 <script src="/static/js/clipboard-1.7.1.min.js"></script>
 <script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
 <script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
-<script src="/static/js/custom.js"></script>
+<script src="/static/js/custom.js?v=1006"></script>
 <script>
 $(document).ready(function(){
 	updateToolbar();
-	const defaultPageSize = 15;
+	const pageSizeKey = 'cname_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = typeof window.$_GET['pageSize'] != 'undefined' ? parseInt(window.$_GET['pageSize']) : defaultPageSize;
+	const pageSize = getStoredPageSize(pageSizeKey);
 
 	$("#listTable").bootstrapTable({
 		url: '/cert/cname/data',
@@ -146,6 +146,9 @@ $(document).ready(function(){
 			clipboard.on('error', function (e) {
 				layer.msg('复制失败', {icon: 2});
 			});
+		},
+		onPageChange: function(number, size){
+			setStoredPageSize(pageSizeKey, size);
 		},
 	})
 })
