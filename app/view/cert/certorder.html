@@ -61,7 +61,7 @@ $(document).ready(function(){
 	updateToolbar();
 	const pageSizeKey = 'certorder_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
-	const pageSize = getStoredPageSize(pageSizeKey);
+	const pageSize = getStoredPageSize(pageSizeKey, 10);
 
 	$("#listTable").bootstrapTable({
 		url: '/cert/order/data',

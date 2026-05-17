@@ -26,7 +26,6 @@ class Domain extends BaseController
         $kw = $this->request->post('kw', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
-        $limit = $this->validateLimit($limit);
 
         $select = Db::name('account');
         if (!empty($kw)) {
@@ -196,7 +195,6 @@ class Domain extends BaseController
         $order = input('post.order', null, 'trim');
         $offset = input('post.offset/d', 0);
         $limit = input('post.limit/d', 10);
-        $limit = $this->validateLimit($limit);
         $id = input('post.id');
         $aid = input('post.aid', null, 'trim');
 
@@ -383,7 +381,6 @@ class Domain extends BaseController
         $kw = input('post.kw', null, 'trim');
         $page = input('?post.page') ? input('post.page/d') : 1;
         $pagesize = input('?post.pagesize') ? input('post.pagesize/d') : 10;
-        $pagesize = $this->validateLimit($pagesize);
         $dns = DnsHelper::getModel($aid);
         $result = $dns->getDomainList($kw, $page, $pagesize);
         if (!$result) return json(['code' => -1, 'msg' => '获取域名列表失败，' . $dns->getError()]);
@@ -489,7 +486,6 @@ class Domain extends BaseController
         $status = input('post.status', null, 'trim');
         $offset = input('post.offset/d', 0);
         $limit = input('post.limit/d', 10);
-        $limit = $this->validateLimit($limit);
         if ($limit == 0) {
             $page = 1;
         } else {
@@ -1020,7 +1016,6 @@ class Domain extends BaseController
         if (request()->isPost()) {
             $offset = input('post.offset/d');
             $limit = input('post.limit/d');
-            $limit = $this->validateLimit($limit);
             $page = $offset / $limit + 1;
             $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
             $domainRecords = $dns->getDomainRecordLog($page, $limit);
@@ -1215,7 +1210,6 @@ class Domain extends BaseController
         $keyword = input('post.keyword', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
-        $limit = $this->validateLimit($limit);
         if ($limit == 0) {
             $page = 1;
         } else {
@@ -1398,7 +1392,6 @@ class Domain extends BaseController
         if (!checkPermission(2)) return json(['total' => 0, 'rows' => []]);
         $offset = input('post.offset/d', 0);
         $limit = input('post.limit/d', 10);
-        $limit = $this->validateLimit($limit);
 
         $select = Db::name('domain_category');
         $total = $select->count();

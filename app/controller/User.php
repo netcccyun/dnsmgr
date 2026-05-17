@@ -28,7 +28,6 @@ class User extends BaseController
         $kw = input('post.kw', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
-        $limit = $this->validateLimit($limit);
 
         $select = Db::name('user');
         if (!empty($kw)) {
@@ -166,7 +165,6 @@ class User extends BaseController
         $domain = input('post.domain', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
-        $limit = $this->validateLimit($limit);
 
         $select = Db::name('log');
         if ($this->request->user['type'] == 'domain') {
