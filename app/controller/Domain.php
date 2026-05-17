@@ -256,12 +256,12 @@ class Domain extends BaseController
 
     public function domain_op()
     {
-        if (!checkPermission(1)) return $this->alert('error', '无权限');
         $act = input('param.act');
         if ($act == 'get') {
             $id = input('post.id/d');
             $row = Db::name('domain')->where('id', $id)->find();
             if (!$row) return json(['code' => -1, 'msg' => '域名不存在']);
+            if (!checkPermission(0, $row['name'])) return json(['code' => -1, 'msg' => '无权限']);
             return json(['code' => 0, 'data' => $row]);
         } elseif ($act == 'add') {
             if (!checkPermission(2)) return $this->alert('error', '无权限');

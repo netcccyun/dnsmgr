@@ -299,11 +299,11 @@ $(document).ready(function(){
 			   formatter: function(value, row, index) {
 				   var copyId = 'copy-value-' + row.RecordId;
 				   if(row.Type == 'MX' && dnsconfig.type!='huawei') {
-					   return '<span id="'+copyId+'" data-value="'+htmlEscape(value)+'">'+value+'</span>'
+					   return '<span id="'+copyId+'" data-value="'+htmlEscape(value)+'">'+htmlEscape(value)+'</span>'
 						   + '<a href="javascript:void(0);" title="复制记录值" onclick="copyToClipboard(null, \'#'+copyId+'\')" style="padding-left:6px;"><i class=\"fa fa-copy\"></i></a>'
 						   + '<span class="mx-priority"> | '+row.MX+'</span>';
 				   } else {
-					   return '<span id="'+copyId+'" data-value="'+htmlEscape(value)+'">'+value+'</span>'
+					   return '<span id="'+copyId+'" data-value="'+htmlEscape(value)+'">'+htmlEscape(value)+'</span>'
 						   + '<a href="javascript:void(0);" title="复制记录值" onclick="copyToClipboard(null, \'#'+copyId+'\')" style="padding-left:6px;"><i class=\"fa fa-copy\"></i></a>';
 				   }
 			   }
