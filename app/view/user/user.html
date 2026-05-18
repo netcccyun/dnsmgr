@@ -120,24 +120,57 @@ $(document).ready(function(){
 	const pageSizeKey = 'user_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
 	const pageSize = getStoredPageSize(pageSizeKey);
+	var urlSort = typeof window.$_GET['sortName'] != 'undefined' ? window.$_GET['sortName'] : undefined;
+	var urlOrder = typeof window.$_GET['sortOrder'] != 'undefined' ? window.$_GET['sortOrder'] : undefined;
 
 	$("#listTable").bootstrapTable({
 		url: '/user/data',
 		pageNumber: pageNumber,
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
+		sortReset: false,
+		sortName: urlSort,
+		sortOrder: urlOrder,
+		onSort: function(name, order) {
+			var $table = $('#listTable');
+			if (!name) {
+				$table.data('_sortClicks', null);
+				return;
+			}
+			var clicks = $table.data('_sortClicks') || {};
+			if (clicks._last !== name) {
+				clicks = {_last: name};
+				clicks[name] = 1;
+				this.sortOrder = 'desc';
+			} else {
+				clicks[name] = (clicks[name] || 0) + 1;
+				if (clicks[name] === 1) {
+					this.sortOrder = 'desc';
+				} else if (clicks[name] === 2) {
+					this.sortOrder = 'asc';
+				} else {
+					this.sortName = undefined;
+					this.sortOrder = undefined;
+					clicks = {};
+				}
+			}
+			$table.data('_sortClicks', clicks);
+		},
 		columns: [
 			{
 				field: 'id',
-				title: 'UID'
+				title: 'UID',
+				sortable: true
 			},
 			{
 				field: 'username',
-				title: '用户名'
+				title: '用户名',
+				sortable: true
 			},
 			{
 				field: 'level',
 				title: '用户等级',
+				sortable: true,
 				formatter: function(value, row, index) {
 					switch(value){
 						case 1: return '<font color="blue">普通用户</font>';break;
@@ -148,6 +181,7 @@ $(document).ready(function(){
             {
 				field: 'is_api',
 				title: 'API接口',
+				sortable: true,
 				formatter: function(value, row, index) {
 					switch(value){
 						case 0: return '<font color="grey">关闭</font>';break;
@@ -157,15 +191,18 @@ $(document).ready(function(){
 			},
 			{
 				field: 'regtime',
-				title: '添加时间'
+				title: '添加时间',
+				sortable: true
 			},
 			{
 				field: 'lasttime',
-				title: '上次登录时间'
+				title: '上次登录时间',
+				sortable: true
 			},
 			{
 				field: 'status',
 				title: '状态',
+				sortable: true,
 				formatter: function(value, row, index) {
 					switch(value){
 						case 0: return '<a href="javascript:setStatus('+row.id+',1)"><font color=red><i class="fa fa-times-circle"></i>封禁</font></a>';break;

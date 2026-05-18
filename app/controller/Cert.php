@@ -33,13 +33,21 @@ class Cert extends BaseController
         $kw = $this->request->post('kw', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('cert_account')->where('deploy', $deploy);
         if (!empty($kw)) {
             $select->whereLike('name|remark', '%' . $kw . '%')->whereOr('id', $kw);
         }
         $total = $select->count();
-        $rows = $select->order('id', 'desc')->limit($offset, $limit)->select();
+        $allowedSort = ['id' => 'id', 'typename' => 'type', 'name' => 'name', 'remark' => 'remark', 'addtime' => 'addtime'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('id', 'desc');
+        }
+        $rows = $select->limit($offset, $limit)->select();
 
         $list = [];
         foreach ($rows as $row) {
@@ -216,6 +224,8 @@ class Cert extends BaseController
         $status = input('post.status', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('cert_order')->alias('A')->leftJoin('cert_account B', 'A.aid = B.id');
         if (!empty($id)) {
@@ -242,7 +252,13 @@ class Cert extends BaseController
             }
         }
         $total = $select->count();
-        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->order('id', 'desc')->limit($offset, $limit)->select();
+        $allowedSort = ['id' => 'A.id', 'typename' => 'B.type', 'keytype' => 'A.keytype', 'isauto' => 'A.isauto', 'issuetime' => 'A.issuetime', 'end_day' => 'A.expiretime', 'status' => 'A.status'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('A.id', 'desc');
+        }
+        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->limit($offset, $limit)->select();
 
         $list = [];
         foreach ($rows as $row) {
@@ -650,6 +666,8 @@ class Cert extends BaseController
         $remark = input('post.remark', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('cert_deploy')->alias('A')->leftJoin('cert_account B', 'A.aid = B.id')->leftJoin('cert_order C', 'A.oid = C.id')->leftJoin('cert_account D', 'C.aid = D.id');
         if (!empty($oid)) {
@@ -671,7 +689,13 @@ class Cert extends BaseController
             $select->where('A.remark', $remark);
         }
         $total = $select->count();
-        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark,B.name aname,D.type certtype,D.id certaid')->order('id', 'desc')->limit($offset, $limit)->select();
+        $allowedSort = ['id' => 'A.id', 'typename' => 'B.type', 'remark' => 'A.remark', 'active' => 'A.active', 'lasttime' => 'A.lasttime', 'status' => 'A.status'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('A.id', 'desc');
+        }
+        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark,B.name aname,D.type certtype,D.id certaid')->limit($offset, $limit)->select();
 
         $list = [];
         foreach ($rows as $row) {
@@ -862,13 +886,21 @@ class Cert extends BaseController
         $kw = $this->request->post('kw', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('cert_cname')->alias('A')->leftJoin('domain B', 'A.did = B.id');
         if (!empty($kw)) {
             $select->whereLike('A.domain', '%' . $kw . '%');
         }
         $total = $select->count();
-        $rows = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name cnamedomain')->select();
+        $allowedSort = ['id' => 'A.id', 'domain' => 'A.domain', 'status' => 'A.status', 'addtime' => 'A.addtime'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('A.id', 'desc');
+        }
+        $rows = $select->limit($offset, $limit)->field('A.*,B.name cnamedomain')->select();
 
         $list = [];
         foreach ($rows as $row) {

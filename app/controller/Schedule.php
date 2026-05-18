@@ -24,6 +24,8 @@ class Schedule extends BaseController
         $stype = input('post.stype', null);
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('sctask')->alias('A')->join('domain B', 'A.did = B.id');
         if (!empty($kw)) {
@@ -41,7 +43,13 @@ class Schedule extends BaseController
             $select->where('type', $stype);
         }
         $total = $select->count();
-        $list = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name domain')->select()->toArray();
+        $allowedSort = ['id' => 'A.id', 'rr' => 'A.rr', 'type' => 'A.type', 'switchtype' => 'A.switchtype', 'active' => 'A.active', 'updatetimestr' => 'A.updatetime', 'nexttimestr' => 'A.nexttime', 'addtimestr' => 'A.addtime', 'remark' => 'A.remark'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('A.id', 'desc');
+        }
+        $list = $select->limit($offset, $limit)->field('A.*,B.name domain')->select()->toArray();
 
         foreach ($list as &$row) {
             $row['addtimestr'] = date('Y-m-d H:i:s', $row['addtime']);

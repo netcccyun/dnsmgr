@@ -26,13 +26,21 @@ class Domain extends BaseController
         $kw = $this->request->post('kw', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('account');
         if (!empty($kw)) {
             $select->whereLike('name|remark', '%' . $kw . '%');
         }
         $total = $select->count();
-        $rows = $select->order('id', 'desc')->limit($offset, $limit)->select();
+        $allowedSort = ['id' => 'id', 'typename' => 'type', 'name' => 'name', 'remark' => 'remark', 'addtime' => 'addtime'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('id', 'desc');
+        }
+        $rows = $select->limit($offset, $limit)->select();
 
         $list = [];
         foreach ($rows as $row) {
@@ -192,7 +200,8 @@ class Domain extends BaseController
         $type = input('post.type', null, 'trim');
         $status = input('post.status', null, 'trim');
         $cid = input('post.cid', null, 'trim');
-        $order = input('post.order', null, 'trim');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
         $offset = input('post.offset/d', 0);
         $limit = input('post.limit/d', 10);
         $id = input('post.id');
@@ -224,21 +233,11 @@ class Domain extends BaseController
             }
         }
         $total = $select->count();
-        switch ($order) {
-            case '1':
-                $select->order('A.regtime', 'asc');
-                break;
-            case '2':
-                $select->order('A.regtime', 'desc');
-                break;
-            case '3':
-                $select->order('A.expiretime', 'asc');
-                break;
-            case '4':
-                $select->order('A.expiretime', 'desc');
-                break;
-            default:
-                $select->order('A.id', 'desc');
+        $allowedSort = ['id' => 'A.id', 'name' => 'A.name', 'recordcount' => 'A.recordcount', 'addtime' => 'A.addtime', 'regtime' => 'A.regtime', 'expiretime' => 'A.expiretime', 'is_notice' => 'A.is_notice', 'is_hide' => 'A.is_hide', 'is_sso' => 'A.is_sso', 'typename' => 'B.type', 'category_name' => 'A.cid', 'remark' => 'A.remark'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('A.id', 'desc');
         }
         $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->limit($offset, $limit)->select();
 
@@ -1392,10 +1391,18 @@ class Domain extends BaseController
         if (!checkPermission(2)) return json(['total' => 0, 'rows' => []]);
         $offset = input('post.offset/d', 0);
         $limit = input('post.limit/d', 10);
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('domain_category');
         $total = $select->count();
-        $rows = $select->order('sort', 'asc')->order('id', 'desc')->limit($offset, $limit)->select()->toArray();
+        $allowedSort = ['id' => 'id', 'name' => 'name', 'remark' => 'remark', 'sort' => 'sort', 'addtime' => 'addtime'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('id', 'desc');
+        }
+        $rows = $select->limit($offset, $limit)->select()->toArray();
 
         foreach ($rows as &$row) {
             $row['domain_count'] = Db::name('domain')->where('cid', $row['id'])->count();

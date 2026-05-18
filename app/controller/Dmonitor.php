@@ -43,6 +43,8 @@ class Dmonitor extends BaseController
         $kw = input('post.kw', null, 'trim');
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('dmtask')->alias('A')->join('domain B', 'A.did = B.id');
         if (!empty($kw)) {
@@ -62,7 +64,13 @@ class Dmonitor extends BaseController
             $select->where('status', intval($status));
         }
         $total = $select->count();
-        $list = $select->order('A.id', 'desc')->limit($offset, $limit)->field('A.*,B.name domain')->select()->toArray();
+        $allowedSort = ['id' => 'A.id', 'rr' => 'A.rr', 'main_value' => 'A.main_value', 'type' => 'A.type', 'checktype' => 'A.checktype', 'frequency' => 'A.frequency', 'status' => 'A.status', 'active' => 'A.active', 'checktimestr' => 'A.checktime', 'addtimestr' => 'A.addtime', 'remark' => 'A.remark'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('A.id', 'desc');
+        }
+        $list = $select->limit($offset, $limit)->field('A.*,B.name domain')->select()->toArray();
 
         foreach ($list as &$row) {
             $row['addtimestr'] = date('Y-m-d H:i:s', $row['addtime']);
@@ -234,13 +242,21 @@ class Dmonitor extends BaseController
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
         $action = input('post.action/d', 0);
+        $sort = input('post.sortName', null, 'trim');
+        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('dmlog')->where('taskid', $taskid);
         if ($action > 0) {
             $select->where('action', $action);
         }
         $total = $select->count();
-        $list = $select->order('id', 'desc')->limit($offset, $limit)->select();
+        $allowedSort = ['id' => 'id', 'action' => 'action', 'date' => 'date', 'errmsg' => 'errmsg'];
+        if ($sort && isset($allowedSort[$sort])) {
+            $select->order($allowedSort[$sort], $orderDir);
+        } else {
+            $select->order('id', 'desc');
+        }
+        $list = $select->limit($offset, $limit)->select();
 
         return json(['total' => $total, 'rows' => $list]);
     }
