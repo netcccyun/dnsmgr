@@ -22,16 +22,13 @@ return [
     // 禁止URL访问的应用列表（自动多应用模式有效）
     'deny_app_list'    => [],
 
-    // 异常页面的模板文件
-    'exception_tmpl'   => app()->getThinkPath() . 'tpl/think_exception.tpl',
-
     // 错误显示信息,非调试模式有效
     'error_message'    => '页面错误！请稍后再试～',
     // 显示错误信息
-    'show_error_msg'   => true,
+    'show_error_msg'   => false,
     'exception_tmpl'   => \think\facade\App::getAppPath() . 'view/exception.tpl',
 
     'version' => '1050',
 
-    'dbversion' => '1049'
+    'dbversion' => '1050'
 ];

@@ -7,23 +7,198 @@
 <div class="panel-heading"><h3 class="panel-title">登录验证码设置</h3></div>
 <div class="panel-body">
     <div class="form-group">
-        <div class="form-group">
-            <label class="col-sm-3 control-label">开启图形验证码</label>
-            <div class="col-sm-9"><div class="material-switch"><input id="vocde_switch" type="checkbox" {if config_get('vcode', '1')=='1'}checked{/if} onchange="setvcode()"><label for="vocde_switch" class="label-primary"></label></div></div>
+        <label class="col-sm-3 control-label">开启图形验证码</label>
+        <div class="col-sm-9"><div class="material-switch"><input id="vocde_switch" type="checkbox" {if config_get('vcode', '1')=='1'}checked{/if} onchange="setvcode()"><label for="vocde_switch" class="label-primary"></label></div></div>
+    </div>
+</div>
+</div>
+</div>
+
+<div class="col-xs-12 col-sm-8 col-lg-6 center-block" style="float: none;">
+<div class="panel panel-danger">
+<div class="panel-heading"><h3 class="panel-title">第三方登录设置</h3></div>
+<div class="panel-body">
+    <div class="form-group">
+        <label class="col-sm-3 control-label">禁用密码登录</label>
+        <div class="col-sm-9">
+            <div class="material-switch"><input id="oauth_disable_password_switch" type="checkbox" {if config_get('oauth_disable_password', '0')=='1'}checked{/if} onchange="setOauthDisablePassword()"><label for="oauth_disable_password_switch" class="label-danger"></label></div>
+            <p class="help-block text-danger">
+                <strong>警告：</strong>开启后所有用户将无法使用密码登录，仅能通过已绑定的第三方账号登录。<br/>
+                开启前请确保至少有一个管理员账号已绑定第三方登录，否则将无法登录后台！<br/>
+                如需关闭且无法登录，可在网站根目录执行：<code>php think reset oauth_disable_password</code>
+            </p>
         </div>
     </div>
 </div>
 </div>
 </div>
+
+<div class="col-xs-12 col-sm-8 col-lg-6 center-block" style="float: none;">
+<div class="panel panel-default">
+<div class="panel-heading clearfix">
+    <h3 class="panel-title pull-left" style="padding-top:7px;">OAuth 提供商</h3>
+    <button type="button" class="btn btn-primary btn-sm pull-right" onclick="showEdit()"><i class="fa fa-plus"></i> 添加</button>
+</div>
+<div class="panel-body" style="padding:0;">
+    <table class="table table-striped table-hover" style="margin-bottom:0;">
+        <thead>
+            <tr><th style="width:45px;">ID</th><th>名称</th><th style="width:100px;">类型</th><th style="width:55px;">状态</th><th style="width:55px;">排序</th><th style="width:130px;">操作</th></tr>
+        </thead>
+        <tbody id="provider-tbody">
+            <tr id="provider-empty"><td colspan="6" class="text-center text-muted">暂无提供商，点击"添加"按钮创建</td></tr>
+        </tbody>
+    </table>
+</div>
+<div class="panel-footer">
+    <i class="fa fa-info-circle"></i> 回调地址格式：<code>{:htmlspecialchars($siteurl)}/oauth/callback/</code><b> + 提供商ID</b>。在 OAuth 平台填写回调地址时请先添加提供商获取 ID。
+</div>
+</div>
+</div>
+</div>
+
+<div class="modal" id="modal-edit" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modal-title">添加提供商</h4>
+            </div>
+            <div class="modal-body">
+                <form id="form-edit" onsubmit="return saveProvider()" class="form-horizontal">
+                    <input type="hidden" name="id" value="">
+                    <input type="hidden" name="enabled" value="0">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">提供商类型</label>
+                        <div class="col-sm-9">
+                            <select name="type" class="form-control" onchange="onTypeChange()" required>
+                                <option value="">请选择类型</option>
+                                <option value="qq">QQ互联</option>
+                                <option value="github">GitHub</option>
+                                <option value="cccyun">彩虹聚合登录</option>
+                                <option value="oauth2">自定义 OAuth 2.0</option>
+                                <option value="oidc">自定义 OIDC</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">显示名称</label>
+                        <div class="col-sm-9"><input type="text" name="name" class="form-control" placeholder="如：GitHub" required></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">Logo图标</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="logo" class="form-control" placeholder="Font Awesome类名或图片URL">
+                            <span class="help-block">如 <code>fa-github</code>、<code>fa-qq</code> 或 <code>https://example.com/logo.png</code></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">Client ID</label>
+                        <div class="col-sm-9"><input type="text" name="client_id" class="form-control" placeholder="App ID / Client ID" required></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">Client Secret</label>
+                        <div class="col-sm-9">
+                            <input type="password" name="client_secret" class="form-control" placeholder="App Secret / Client Secret" autocomplete="off" required>
+                            <span class="help-block text-muted edit-hint" style="display:none;">编辑时留空则不修改已保存的密钥</span>
+                        </div>
+                    </div>
+                    <div class="form-group scopes-field">
+                        <label class="col-sm-3 control-label">Scopes</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="scopes" class="form-control" placeholder="留空使用默认值">
+                        </div>
+                    </div>
+                    <div class="oauth2-fields" style="display:none;">
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">授权端点 URL</label>
+                            <div class="col-sm-9"><input type="text" name="oauth_authorize_url" class="form-control" placeholder="https://example.com/oauth/authorize"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">Token 端点 URL</label>
+                            <div class="col-sm-9"><input type="text" name="oauth_token_url" class="form-control" placeholder="https://example.com/oauth/token"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">用户信息端点 URL</label>
+                            <div class="col-sm-9"><input type="text" name="oauth_userinfo_url" class="form-control" placeholder="https://example.com/api/user"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">字段映射 (JSON)</label>
+                            <div class="col-sm-9">
+                                <input type="text" name="userinfo_fields" class="form-control" placeholder='{"openid":"id","nickname":"name","email":"email","avatar":"avatar_url"}'>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="oidc-fields" style="display:none;">
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">Issuer URL</label>
+                            <div class="col-sm-9">
+                                <input type="text" name="oidc_issuer" class="form-control" placeholder="https://accounts.google.com">
+                                <span class="help-block">系统将自动通过 <code>/.well-known/openid-configuration</code> 发现端点</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="qq-fields" style="display:none;">
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">获取UnionID</label>
+                            <div class="col-sm-9">
+                                <div class="material-switch"><input id="unionid_switch" type="checkbox" value="1"><label for="unionid_switch" class="label-primary"></label></div>
+                                <span class="help-block">开启后使用 UnionID 作为用户唯一标识（跨应用统一）。需要在 QQ 互联平台申请 UnionID 权限。</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cccyun-fields" style="display:none;">
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">接口域名</label>
+                            <div class="col-sm-9">
+                                <input type="text" name="cccyun_url" class="form-control" placeholder="https://u.cccyun.cc/">
+                                <span class="help-block">自建彩虹聚合登录填写基础域名即可，系统会自动补齐 <code>/connect.php</code>。留空使用官方接口。</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">登录方式</label>
+                            <div class="col-sm-9">
+                                <select name="cccyun_type" class="form-control">
+                                    <option value="qq">QQ</option>
+                                    <option value="wx">微信</option>
+                                    <option value="alipay">支付宝</option>
+                                    <option value="sina">微博</option>
+                                    <option value="baidu">百度</option>
+                                    <option value="huawei">华为</option>
+                                    <option value="xiaomi">小米</option>
+                                    <option value="douyin">抖音</option>
+                                    <option value="bilibili">哔哩哔哩</option>
+                                    <option value="dingtalk">钉钉</option>
+                                </select>
+                                <span class="help-block">对应彩虹聚合登录接口的 type 参数。Client ID 填写 appid，Client Secret 填写 appkey。已有用户绑定后修改登录方式会影响原绑定账号登录。</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">排序</label>
+                        <div class="col-sm-9"><input type="number" name="sort" class="form-control" value="0"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">启用</label>
+                        <div class="col-sm-9">
+                            <div class="material-switch"><input id="enabled_checkbox" type="checkbox" checked onchange="$('input[name=enabled]').val(this.checked?'1':'0')"><label for="enabled_checkbox" class="label-primary"></label></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="$('#form-edit').submit()">保存</button>
+            </div>
+        </div>
+    </div>
 </div>
 {/block}
 {block name="script"}
 <script src="/static/js/layer/layer.js"></script>
 <script>
-var items = $("select[default]");
-for (i = 0; i < items.length; i++) {
-	$(items[i]).val($(items[i]).attr("default")||0);
-}
+var oauthEditorMode = 'add';
+var oauthEditorId = 0;
+
 function setvcode(){
     var status = $("#vocde_switch").is(':checked') ? '1' : '2';
     $.post('/system/set', {vcode: status}, function(res){
@@ -31,9 +206,292 @@ function setvcode(){
             layer.msg(status == '1' ? '图形验证码已开启' : '图形验证码已关闭', {icon: 1, time: 1000});
         }else{
             layer.alert(res.msg, {icon: 2});
-            $("#vocde_switch").prop('checked', !status);
+            $("#vocde_switch").prop('checked', status == '2');
         }
     });
 }
+
+function setOauthDisablePassword(){
+    var status = $("#oauth_disable_password_switch").is(':checked') ? '1' : '0';
+    $.post('/system/set', {oauth_disable_password: status}, function(res){
+        if(res.code == 0){
+            layer.msg(status == '1' ? '密码登录已禁用' : '密码登录已启用', {icon: 1, time: 1000});
+        }else{
+            layer.alert(res.msg, {icon: 2});
+            $("#oauth_disable_password_switch").prop('checked', status == '0');
+        }
+    }).fail(function(){
+        layer.alert('请求失败，请重试', {icon: 2});
+        $("#oauth_disable_password_switch").prop('checked', status == '0');
+    });
+}
+
+function escapeHtml(value){
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+}
+function safeLogoHtml(logo){
+    logo = String(logo || '');
+    if(/^https?:\/\//i.test(logo)){
+        return '<img src="'+escapeHtml(logo)+'" style="height:18px;margin-right:6px;">';
+    }
+    if(/^fa-[a-z0-9-]+$/i.test(logo)){
+        return '<i class="fa '+escapeHtml(logo)+' fa-fw" style="margin-right:4px;"></i>';
+    }
+    return '';
+}
+
+function loadProviders(){
+    $.post('/system/oauth/data', {offset:0, limit:50, sort:'sort', order:'asc'}, function(res){
+        var tbody = $('#provider-tbody');
+        tbody.empty();
+        if(!res.rows || !Array.isArray(res.rows) || res.rows.length === 0){
+            tbody.html('<tr><td colspan="6" class="text-center text-muted">暂无提供商，点击"添加"按钮创建</td></tr>');
+            return;
+        }
+        var typeMap = {qq:'QQ互联', github:'GitHub', cccyun:'彩虹聚合登录', oauth2:'自定义OAuth2.0', oidc:'自定义OIDC'};
+        for(var i=0; i<res.rows.length; i++){
+            var r = res.rows[i];
+            var logoHtml = safeLogoHtml(r.logo);
+            var statusHtml = r.enabled == 1 ? '<span class="label label-success">启用</span>' : '<span class="label label-default">禁用</span>';
+            var name = escapeHtml(r.name);
+            var type = escapeHtml(typeMap[r.type] || r.type);
+            var sort = escapeHtml(r.sort);
+            var tr = '<tr>'
+                + '<td>'+escapeHtml(r.id)+'</td>'
+                + '<td>' + logoHtml + name + '</td>'
+                + '<td>'+type+'</td>'
+                + '<td>'+statusHtml+'</td>'
+                + '<td>'+sort+'</td>'
+                + '<td>'
+                + '<button type="button" class="btn btn-xs btn-info" data-id="'+escapeHtml(r.id)+'" onclick="openEditProvider($(this).data(\'id\'))"><i class="fa fa-edit"></i> 编辑</button> '
+                + '<button type="button" class="btn btn-xs btn-danger" data-id="'+escapeHtml(r.id)+'" data-name="'+name+'" onclick="deleteProvider($(this).data(\'id\'), $(this).data(\'name\'))"><i class="fa fa-trash"></i> 删除</button>'
+                + '</td></tr>';
+            tbody.append(tr);
+        }
+    }).fail(function(){
+        $('#provider-tbody').html('<tr><td colspan="6" class="text-center text-danger">加载失败，请刷新页面重试</td></tr>');
+    });
+}
+
+function resetProviderForm(){
+    $('#form-edit')[0].reset();
+    $('input[name="id"]').val('');
+    $('input[name="enabled"]').val('1');
+    $('#enabled_checkbox').prop('checked', true);
+    $('#unionid_switch').prop('checked', false);
+    $('input[name="cccyun_url"]').val('');
+    $('select[name="cccyun_type"]').val('qq');
+    $('.oauth2-fields,.oidc-fields,.qq-fields,.cccyun-fields').hide();
+}
+
+function openAddProvider(){
+    oauthEditorMode = 'add';
+    oauthEditorId = 0;
+    resetProviderForm();
+    $('#modal-title').text('添加提供商');
+    $('input[name="client_secret"]').attr('required', true).val('').attr('placeholder', 'App Secret / Client Secret');
+    $('.edit-hint').hide();
+    $('#modal-edit').modal('show');
+}
+
+function showOAuthAdminRequestFailed(){
+    layer.alert('请求失败，请检查网络连接并确认当前后台登录未过期；如仍失败请查看服务器日志', {icon: 2});
+}
+
+function openEditProvider(id){
+    oauthEditorMode = 'edit';
+    oauthEditorId = id;
+    resetProviderForm();
+    $('#modal-title').text('编辑提供商');
+    $('input[name="client_secret"]').removeAttr('required').val('').attr('placeholder', '留空则不修改');
+    $('.edit-hint').show();
+
+    var ii = layer.load(2, {shade:[0.1,'#fff']});
+    $.post('/system/oauth/op', {act:'get', id:id}, function(res){
+        layer.close(ii);
+        if(res.code != 0){
+            layer.alert(res.msg, {icon: 2});
+            return;
+        }
+        var data = res.data;
+        $('input[name="id"]').val(data.id);
+        $('select[name="type"]').val(data.type);
+        $('input[name="name"]').val(data.name || '');
+        $('input[name="logo"]').val(data.logo || '');
+        $('input[name="client_id"]').val(data.client_id || '');
+        $('input[name="scopes"]').val(data.scopes || '');
+        $('input[name="oauth_authorize_url"]').val(data.oauth_authorize_url || '');
+        $('input[name="oauth_token_url"]').val(data.oauth_token_url || '');
+        $('input[name="oauth_userinfo_url"]').val(data.oauth_userinfo_url || '');
+        $('input[name="oidc_issuer"]').val(data.oidc_issuer || '');
+        $('input[name="userinfo_fields"]').val(data.userinfo_fields || '');
+        $('input[name="sort"]').val(data.sort || 0);
+        $('input[name="enabled"]').val(data.enabled == 1 ? '1' : '0');
+        $('#enabled_checkbox').prop('checked', data.enabled == 1);
+
+        if(data.ext_config){
+            try {
+                var ext = JSON.parse(data.ext_config);
+                if(data.type == 'qq'){
+                    $('#unionid_switch').prop('checked', !!ext.unionid);
+                }
+                if(data.type == 'cccyun'){
+                    $('input[name="cccyun_url"]').val(ext.cccyun_url || '');
+                    $('select[name="cccyun_type"]').val(ext.cccyun_type || 'qq');
+                }
+            } catch(e) {}
+        }
+        onTypeChange();
+        $('#modal-edit').modal('show');
+    }).fail(function(){
+        layer.close(ii);
+        showOAuthAdminRequestFailed();
+    });
+}
+
+// 兼容原按钮调用
+function showEdit(id){
+    if(id){
+        openEditProvider(id);
+    }else{
+        openAddProvider();
+    }
+}
+
+function deleteProvider(id, name){
+    layer.confirm('确定要删除 <b>'+escapeHtml(name)+'</b> 吗？<br/>删除后已绑定该提供商的用户将无法使用此账号登录。', {btn: ['确定删除','取消']}, function(){
+        var ii = layer.load(2, {shade:[0.1,'#fff']});
+        $.post('/system/oauth/op', {act:'del', id:id}, function(res){
+            layer.close(ii);
+            if(res.code == 0){
+                layer.msg(res.msg, {icon: 1, time: 1000}, function(){loadProviders();});
+            }else{
+                layer.alert(res.msg, {icon: 2});
+            }
+        }).fail(function(){
+            layer.close(ii);
+            showOAuthAdminRequestFailed();
+        });
+    });
+}
+
+function onTypeChange(){
+    var type = $('select[name="type"]').val();
+    $('.scopes-field').toggle(type !== 'qq' && type !== 'cccyun');
+    if(type === 'qq' || type === 'cccyun') $('input[name="scopes"]').val('');
+    $('.oauth2-fields').toggle(type === 'oauth2');
+    $('.oidc-fields').toggle(type === 'oidc');
+    $('.qq-fields').toggle(type === 'qq');
+    $('.cccyun-fields').toggle(type === 'cccyun');
+}
+
+function buildProviderExtConfig(){
+    var type = $('select[name="type"]').val();
+    if(type === 'qq' && $('#unionid_switch').is(':checked')){
+        return {unionid:true};
+    }
+    if(type === 'cccyun'){
+        var config = {cccyun_type: $('select[name="cccyun_type"]').val() || 'qq'};
+        var cccyunUrl = $.trim($('input[name="cccyun_url"]').val());
+        if(cccyunUrl !== ''){
+            config.cccyun_url = cccyunUrl;
+        }
+        return config;
+    }
+    return {};
+}
+
+function collectProviderForm(){
+    return {
+        act: oauthEditorMode,
+        id: oauthEditorMode === 'edit' ? oauthEditorId : '',
+        type: $('select[name="type"]').val(),
+        name: $('input[name="name"]').val(),
+        logo: $('input[name="logo"]').val(),
+        client_id: $('input[name="client_id"]').val(),
+        client_secret: $('input[name="client_secret"]').val(),
+        scopes: $('input[name="scopes"]').val(),
+        oauth_authorize_url: $('input[name="oauth_authorize_url"]').val(),
+        oauth_token_url: $('input[name="oauth_token_url"]').val(),
+        oauth_userinfo_url: $('input[name="oauth_userinfo_url"]').val(),
+        oidc_issuer: $('input[name="oidc_issuer"]').val(),
+        userinfo_fields: $('input[name="userinfo_fields"]').val(),
+        ext_config: JSON.stringify(buildProviderExtConfig()),
+        sort: $('input[name="sort"]').val(),
+        enabled: $('#enabled_checkbox').is(':checked') ? '1' : '0'
+    };
+}
+
+function validateJsonObject(value, label, requireStringValues){
+    if(!value) return true;
+    var obj;
+    try {
+        obj = JSON.parse(value);
+    } catch(e) {
+        layer.alert(label + '必须是有效 JSON', {icon:2});
+        return false;
+    }
+    if(!obj || typeof obj !== 'object' || Array.isArray(obj)){
+        layer.alert(label + '必须是有效 JSON 对象', {icon:2});
+        return false;
+    }
+    if(requireStringValues){
+        for(var key in obj){
+            if(typeof obj[key] !== 'string' || obj[key].trim() === ''){
+                layer.alert(label + '字段路径必须是非空字符串', {icon:2});
+                return false;
+            }
+            var candidates = obj[key].split(',');
+            for(var i=0; i<candidates.length; i++){
+                if(candidates[i].trim() === ''){
+                    layer.alert(label + '字段路径候选项不能为空', {icon:2});
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+function saveProvider(){
+    var params = collectProviderForm();
+    if(!validateJsonObject(params.userinfo_fields, '字段映射', true)) return false;
+    if(!validateJsonObject(params.ext_config, '扩展配置', false)) return false;
+    if(params.type === 'cccyun'){
+        var cccyunUrl = $.trim($('input[name="cccyun_url"]').val());
+        if(cccyunUrl !== '' && !/^https:\/\/[^\s/?#]+\/?$/i.test(cccyunUrl)){
+            layer.alert('彩虹聚合登录接口域名请填写 https:// 开头的基础域名，例如 https://u.cccyun.cc/', {icon:2});
+            return false;
+        }
+        var cccyunType = $('select[name="cccyun_type"]').val();
+        var allowed = ['qq','wx','alipay','sina','baidu','huawei','xiaomi','douyin','bilibili','dingtalk'];
+        if(allowed.indexOf(cccyunType) === -1){
+            layer.alert('请选择有效的彩虹聚合登录方式', {icon:2});
+            return false;
+        }
+    }
+    var ii = layer.load(2, {shade:[0.1,'#fff']});
+    $.post('/system/oauth/op', params, function(res){
+        layer.close(ii);
+        if(res.code == 0){
+            layer.msg(res.msg, {icon: 1, time: 1000}, function(){
+                $('#modal-edit').modal('hide');
+                loadProviders();
+            });
+        }else{
+            layer.alert(res.msg, {icon: 2});
+        }
+    }).fail(function(){
+        layer.close(ii);
+        showOAuthAdminRequestFailed();
+    });
+    return false;
+}
+
+$(document).ready(function(){
+    loadProviders();
+});
 </script>
 {/block}

@@ -178,15 +178,23 @@ function arrays_are_equal($array1, $array2)
 
 function checkRefererHost()
 {
-    if (!Request::header('referer')) {
+    $source = Request::header('referer') ?: Request::header('origin');
+    if (!$source) {
         return false;
     }
-    $url_arr = parse_url(Request::header('referer'));
-    $http_host = Request::header('host');
-    if (strpos($http_host, ':')) {
-        $http_host = substr($http_host, 0, strpos($http_host, ':'));
+    return isSameSiteSourceHost($source, Request::header('host'));
+}
+
+function isSameSiteSourceHost(string $source, string $host): bool
+{
+    $sourceHost = parse_url($source, PHP_URL_HOST);
+    if (!$sourceHost) {
+        return false;
     }
-    return $url_arr['host'] === $http_host;
+    if (strpos($host, ':')) {
+        $host = substr($host, 0, strpos($host, ':'));
+    }
+    return $sourceHost === $host;
 }
 
 function checkIfActive($string)
@@ -262,6 +270,31 @@ function config_set($key, $value)
     return $res !== false;
 }
 
+function build_guzzle_proxy_url($proxy_server = null, $proxy_port = null, $proxy_type = null, $proxy_user = null, $proxy_pwd = null): ?string
+{
+    $proxy_server ??= config_get('proxy_server');
+    $proxy_port = intval($proxy_port ?? config_get('proxy_port'));
+    if (empty($proxy_server) || empty($proxy_port)) {
+        return null;
+    }
+
+    $proxy_type ??= config_get('proxy_type');
+    $proxy_user = (string)($proxy_user ?? config_get('proxy_user'));
+    $proxy_pwd = (string)($proxy_pwd ?? config_get('proxy_pwd'));
+    $proxy_string = match ($proxy_type) {
+        'https' => 'https://',
+        'sock4' => 'socks4://',
+        'sock5' => 'socks5://',
+        'sock5h' => 'socks5h://',
+        default => 'http://',
+    };
+
+    if ($proxy_user !== '' || $proxy_pwd !== '') {
+        $proxy_string .= rawurlencode($proxy_user) . ':' . rawurlencode($proxy_pwd) . '@';
+    }
+    return $proxy_string . $proxy_server . ':' . $proxy_port;
+}
+
 function getMillisecond()
 {
     list($s1, $s2) = explode(' ', microtime());
@@ -325,19 +358,10 @@ function getMainDomain($host)
 
 function check_proxy($url, $proxy_server, $proxy_port, $type, $proxy_user, $proxy_pwd)
 {
-    match ($type) {
-        'https' => $proxy_string = 'https://',
-        'sock4' => $proxy_string = 'socks4://',
-        'sock5' => $proxy_string = 'socks5://',
-        'sock5h' => $proxy_string = 'socks5h://',
-        default => $proxy_string = 'http://',
-    };
-
-    if (!empty($proxy_user) && !empty($proxy_pwd)) {
-        $proxy_string .= $proxy_user . ':' . $proxy_pwd . '@';
+    $proxy_string = build_guzzle_proxy_url($proxy_server, $proxy_port, $type, $proxy_user, $proxy_pwd);
+    if ($proxy_string === null) {
+        throw new Exception('代理服务器或端口未配置');
     }
-
-    $proxy_string .= $proxy_server . ':' . intval($proxy_port);
     $options = [
         'proxy' => $proxy_string,
         'timeout' => 3,
@@ -482,28 +506,10 @@ function http_request($url, $data = null, $referer = null, $cookie = null, $head
     }
     // 处理代理
     if ($proxy) {
-        $proxy_server = config_get('proxy_server');
-        $proxy_port = intval(config_get('proxy_port'));
-        $proxy_userpwd = config_get('proxy_user').':'.config_get('proxy_pwd');
-        $proxy_type = config_get('proxy_type');
-
-        if (empty($proxy_server) || empty($proxy_port)) {
+        $proxy_string = build_guzzle_proxy_url();
+        if ($proxy_string === null) {
             throw new Exception('代理服务器或端口未配置');
         }
-
-        match ($proxy_type) {
-            'https' => $proxy_string = 'https://',
-            'sock4' => $proxy_string = 'socks4://',
-            'sock5' => $proxy_string = 'socks5://',
-            'sock5h' => $proxy_string = 'socks5h://',
-            default => $proxy_string = 'http://',
-        };
-
-        if ($proxy_userpwd != ':') {
-            $proxy_string .= $proxy_userpwd . '@';
-        }
-
-        $proxy_string .= $proxy_server . ':' . $proxy_port;
         $options['proxy'] = $proxy_string;
     }
 
@@ -610,7 +616,9 @@ function getDomainDate($domain)
 
 function checkTableExists($table)
 {
-    $prefix = env('database.prefix', 'dnsmgr_');
-    $res = Db::query("SHOW TABLES LIKE '" . $prefix . $table . "'");
+    $prefix = (string)config('database.connections.mysql.prefix', env('database.prefix', ''));
+    $tableName = $prefix . $table;
+    $pattern = addcslashes($tableName, "\\_%");
+    $res = Db::query("SHOW TABLES LIKE '" . $pattern . "'");
     return !empty($res);
 }

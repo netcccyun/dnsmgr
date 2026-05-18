@@ -3,6 +3,8 @@
 namespace app\controller;
 
 use app\BaseController;
+use app\service\oauth\OAuthAuthService;
+use app\service\oauth\OAuthProviderService;
 use Exception;
 use think\facade\Db;
 
@@ -19,6 +21,9 @@ class Auth extends BaseController
         }
 
         if ($this->request->isAjax()) {
+            if (config_get('oauth_disable_password', '0') == '1') {
+                return json(['code' => -1, 'msg' => '管理员已禁用密码登录，请使用第三方账号登录']);
+            }
             $username = input('post.username', null, 'trim');
             $password = input('post.password', null, 'trim');
             $code = input('post.code', null, 'trim');
@@ -40,6 +45,8 @@ class Auth extends BaseController
                 if ($user['status'] == 0) return json(['code' => -1, 'msg' => '此用户已被封禁', 'vcode' => 1]);
                 if (isset($user['totp_open']) && $user['totp_open'] == 1 && !empty($user['totp_secret'])) {
                     session('pre_login_user', $user['id']);
+                    session('oauth_totp_pending', null);
+                    session('totp_attempt', null);
                     if (file_exists($login_limit_file)) {
                         unlink($login_limit_file);
                     }
@@ -53,9 +60,6 @@ class Auth extends BaseController
             } else {
                 if ($user) {
                     Db::name('log')->insert(['uid' => $user['id'], 'action' => '登录失败', 'data' => 'IP:' . $this->clientip, 'addtime' => date("Y-m-d H:i:s")]);
-                    if (isset($user['totp_open']) && $user['totp_open'] == 1 && !empty($user['totp_secret'])) {
-                        return json(['code' => -1, 'msg' => '用户名或密码错误', 'vcode' => 1]);
-                    }
                 }
                 if (!file_exists($login_limit_file)) {
                     $login_limit = ['count' => 0, 'time' => 0];
@@ -72,6 +76,11 @@ class Auth extends BaseController
             }
         }
 
+        $providers = (new OAuthProviderService())->getEnabledProviders();
+        \think\facade\View::assign('oauth_providers', $providers);
+        \think\facade\View::assign('oauth_disable_password', config_get('oauth_disable_password', '0'));
+        \think\facade\View::assign('show_totp', input('get.totp/d', 0) == 1 && session('pre_login_user'));
+
         return view();
     }
 
@@ -83,17 +92,48 @@ class Auth extends BaseController
         if (empty($code)) return json(['code' => -1, 'msg' => '请输入动态口令']);
         $user = Db::name('user')->where('id', $uid)->find();
         if (!$user) return json(['code' => -1, 'msg' => '用户不存在']);
+        if ($user['status'] == 0) {
+            session('pre_login_user', null);
+            session('oauth_totp_pending', null);
+            session('totp_attempt', null);
+            return json(['code' => -1, 'msg' => '此用户已被封禁']);
+        }
         if ($user['totp_open'] == 0 || empty($user['totp_secret'])) return json(['code' => -1, 'msg' => '未开启TOTP二次验证']);
+        $totpAttempt = session('totp_attempt') ?: ['count' => 0, 'time' => 0];
+        if (!is_array($totpAttempt)) {
+            $totpAttempt = ['count' => 0, 'time' => 0];
+        }
+        if ($totpAttempt['count'] >= 5 && $totpAttempt['time'] > time() - 600) {
+            session('pre_login_user', null);
+            session('oauth_totp_pending', null);
+            session('totp_attempt', null);
+            return json(['code' => -1, 'msg' => '动态口令错误次数过多，请重新登录']);
+        }
         try {
             $totp = \app\lib\TOTP::create($user['totp_secret']);
             if (!$totp->verify($code)) {
+                $totpAttempt['count']++;
+                $totpAttempt['time'] = time();
+                session('totp_attempt', $totpAttempt);
                 return json(['code' => -1, 'msg' => '动态口令错误']);
             }
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage()]);
         }
+        try {
+            $this->completePendingOauthLogin((int)$user['id']);
+        } catch (Exception $e) {
+            session('pre_login_user', null);
+            session('oauth_totp_pending', null);
+            session('totp_attempt', null);
+            trace('OAuth TOTP binding refresh error: user_id=' . $user['id'] . ', message=' . $e->getMessage(), 'error');
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+        $this->regenerateSessionIdIfActive();
         $this->loginUser($user);
         session('pre_login_user', null);
+        session('oauth_totp_pending', null);
+        session('totp_attempt', null);
         return json(['code' => 0]);
     }
 
@@ -133,14 +173,36 @@ class Auth extends BaseController
         return redirect('/record/' . $row['id']);
     }
 
+    private function completePendingOauthLogin(int $userId): void
+    {
+        $pending = session('oauth_totp_pending');
+        if (!is_array($pending)) {
+            return;
+        }
+        if ((int)($pending['user_id'] ?? 0) !== $userId) {
+            throw new Exception('OAuth登录状态与当前二次验证用户不匹配，请重新登录');
+        }
+        if (empty($pending['provider']) || empty($pending['userInfo']) || empty($pending['tokenData'])) {
+            throw new Exception('OAuth登录状态已失效，请重新登录');
+        }
+        (new OAuthAuthService())->updateLoginBinding($pending['provider'], $pending['userInfo'], $pending['tokenData']);
+    }
+
+    private function regenerateSessionIdIfActive(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
+    }
+
     private function loginUser($user)
     {
         Db::name('log')->insert(['uid' => $user['id'], 'action' => '登录后台', 'data' => 'IP:' . $this->clientip, 'addtime' => date("Y-m-d H:i:s")]);
-        DB::name('user')->where('id', $user['id'])->update(['lasttime' => date("Y-m-d H:i:s")]);
+        Db::name('user')->where('id', $user['id'])->update(['lasttime' => date("Y-m-d H:i:s")]);
         $session = md5($user['id'] . $user['password']);
         $expiretime = time() + 2562000;
         $token = authcode("user\t{$user['id']}\t{$session}\t{$expiretime}", 'ENCODE', config_get('sys_key'));
-        cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true]);
+        cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true, 'samesite' => 'Lax', 'secure' => request()->isSsl()]);
     }
 
     private function loginDomain($row)
@@ -149,7 +211,7 @@ class Auth extends BaseController
         $session = md5($row['id'] . $row['name']);
         $expiretime = time() + 2562000;
         $token = authcode("domain\t{$row['id']}\t{$session}\t{$expiretime}", 'ENCODE', config_get('sys_key'));
-        cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true]);
+        cookie('user_token', $token, ['expire' => $expiretime, 'httponly' => true, 'samesite' => 'Lax', 'secure' => request()->isSsl()]);
     }
 
     public function verifycode()

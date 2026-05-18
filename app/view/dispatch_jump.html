@@ -27,34 +27,36 @@
     </style>
 </head>
 <body>
-<div class="system-message {$code}">
+<div class="system-message {$code|htmlentities}">
     <div class="image">
-        <img src="/static/images/{$code}.svg" alt="" width="150" />
+        <img src="/static/images/{$code|htmlentities}.svg" alt="" width="150" />
     </div>
-    <h1>{$msg}</h1>
+    <h1>{$msg|htmlentities}</h1>
     {if $url}
         <p class="jump">
-            页面将在 <span id="wait">{$wait}</span> 秒后自动跳转
+            页面将在 <span id="wait">{$wait|htmlentities}</span> 秒后自动跳转
         </p>
     {/if}
     <p class="clearfix">
         <a href="javascript:history.go(-1);" class="btn btn-grey">返回上一页</a>
         {if $url}
-            <a href="{$url}" class="btn btn-primary">立即跳转</a>
+            <a href="{$url|htmlentities}" class="btn btn-primary">立即跳转</a>
         {/if}
     </p>
 </div>
-    <script type="text/javascript">
-        (function () {
-            var wait = document.getElementById('wait');
-            var interval = setInterval(function () {
-                var time = --wait.innerHTML;
-                if (time <= 0) {
-                    location.href = "{$url}";
-                    clearInterval(interval);
-                }
-            }, 1000);
-        })();
-    </script>
+    {if $url}
+        <script type="text/javascript">
+            (function () {
+                var wait = document.getElementById('wait');
+                var interval = setInterval(function () {
+                    var time = --wait.innerHTML;
+                    if (time <= 0) {
+                        location.href = {$url|json_encode|raw};
+                        clearInterval(interval);
+                    }
+                }, 1000);
+            })();
+        </script>
+    {/if}
 </body>
 </html>

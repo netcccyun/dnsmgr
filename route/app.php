@@ -31,12 +31,19 @@ Route::any('/dmtask/status', 'dmonitor/status');
 Route::any('/optimizeip/status', 'optimizeip/status');
 Route::get('/cron', 'system/cron');
 
+Route::get('/oauth/login/:id', 'OauthController/login')->middleware(SessionInit::class)->middleware(ViewOutput::class);
+Route::get('/oauth/callback/:id', 'OauthController/callback')->middleware(SessionInit::class)->middleware(ViewOutput::class);
+
 Route::group(function () {
     Route::any('/', 'index/index');
     Route::post('/changeskin', 'index/changeskin');
     Route::get('/cleancache', 'index/cleancache');
     Route::any('/setpwd', 'index/setpwd');
     Route::any('/totp/:action', 'index/totp');
+    Route::get('/user/center', 'index/userCenter');
+
+    Route::post('/oauth/bind/:id', 'OauthController/bind')->middleware(SessionInit::class);
+    Route::post('/oauth/unbind', 'OauthController/unbind');
     Route::get('/test', 'index/test');
 
     Route::post('/user/data', 'user/user_data');
@@ -171,6 +178,9 @@ Route::group(function () {
     Route::get('/system/customwebhooktest', 'system/customwebhooktest');
     Route::post('/system/proxytest', 'system/proxytest');
     Route::get('/system/cronset', 'system/cronset');
+
+    Route::post('/system/oauth/data', 'system/oauth_data');
+    Route::post('/system/oauth/op', 'system/oauth_op');
 
 })->middleware(CheckLogin::class)
 ->middleware(ViewOutput::class);

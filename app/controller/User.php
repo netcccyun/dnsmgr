@@ -3,6 +3,7 @@
 namespace app\controller;
 
 use app\BaseController;
+use app\service\oauth\OAuthProviderService;
 use think\facade\Db;
 use think\facade\View;
 use think\facade\Request;
@@ -115,25 +116,32 @@ class User extends BaseController
             if ($level == 1 && ($id == 1000 || $id == $this->request->user['id'])) {
                 $level = 2;
             }
-            Db::name('user')->where('id', $id)->update([
-                'username' => $username,
-                'is_api' => $is_api,
-                'apikey' => $apikey,
-                'level' => $level,
-            ]);
-            Db::name('permission')->where(['uid' => $id])->delete();
-            if ($level == 1) {
-                $permission = input('post.permission/a');
-                if (!empty($permission)) {
-                    $data = [];
-                    foreach ($permission as $domain) {
-                        $data[] = ['uid' => $id, 'domain' => $domain];
+            try {
+                Db::transaction(function () use ($id, $username, $is_api, $apikey, $level, $repwd) {
+                    $this->assertOauthPasswordFallbackSafe($id, $level, 1);
+                    Db::name('user')->where('id', $id)->update([
+                        'username' => $username,
+                        'is_api' => $is_api,
+                        'apikey' => $apikey,
+                        'level' => $level,
+                    ]);
+                    Db::name('permission')->where(['uid' => $id])->delete();
+                    if ($level == 1) {
+                        $permission = input('post.permission/a');
+                        if (!empty($permission)) {
+                            $data = [];
+                            foreach ($permission as $domain) {
+                                $data[] = ['uid' => $id, 'domain' => $domain];
+                            }
+                            Db::name('permission')->insertAll($data);
+                        }
                     }
-                    Db::name('permission')->insertAll($data);
-                }
-            }
-            if (!empty($repwd)) {
-                Db::name('user')->where('id', $id)->update(['password' => password_hash($repwd, PASSWORD_DEFAULT)]);
+                    if (!empty($repwd)) {
+                        Db::name('user')->where('id', $id)->update(['password' => password_hash($repwd, PASSWORD_DEFAULT)]);
+                    }
+                });
+            } catch (\Exception $e) {
+                return json(['code' => -1, 'msg' => $e->getMessage()]);
             }
             return json(['code' => 0, 'msg' => '修改用户成功！']);
         } elseif ($act == 'set') {
@@ -145,7 +153,14 @@ class User extends BaseController
             if ($id == $this->request->user['id']) {
                 return json(['code' => -1, 'msg' => '当前登录用户无法修改状态']);
             }
-            Db::name('user')->where('id', $id)->update(['status' => $status]);
+            try {
+                Db::transaction(function () use ($id, $status) {
+                    $this->assertOauthPasswordFallbackSafe($id, 2, $status);
+                    Db::name('user')->where('id', $id)->update(['status' => $status]);
+                });
+            } catch (\Exception $e) {
+                return json(['code' => -1, 'msg' => $e->getMessage()]);
+            }
             return json(['code' => 0]);
         } elseif ($act == 'del') {
             $id = input('post.id/d');
@@ -155,10 +170,35 @@ class User extends BaseController
             if ($id == $this->request->user['id']) {
                 return json(['code' => -1, 'msg' => '当前登录用户无法删除']);
             }
-            Db::name('user')->where('id', $id)->delete();
+            try {
+                Db::transaction(function () use ($id) {
+                    $this->assertOauthPasswordFallbackSafe($id, 1, 0);
+                    Db::name('user_oauth')->where('user_id', $id)->delete();
+                    Db::name('user')->where('id', $id)->delete();
+                });
+            } catch (\Exception $e) {
+                return json(['code' => -1, 'msg' => $e->getMessage()]);
+            }
             return json(['code' => 0]);
         }
         return json(['code' => -3]);
+    }
+
+    private function assertOauthPasswordFallbackSafe(int $id, int $targetLevel, int $targetStatus): void
+    {
+        if (config_get('oauth_disable_password', '0') != '1') {
+            return;
+        }
+        $user = Db::name('user')->where('id', $id)->lock(true)->find();
+        if (!$user || (int)$user['level'] !== 2 || (int)$user['status'] !== 1) {
+            return;
+        }
+        if ($targetLevel === 2 && $targetStatus === 1) {
+            return;
+        }
+        if (!(new OAuthProviderService())->hasAdminOauthBinding(0, true, $id)) {
+            throw new \Exception('密码登录已禁用，不能移除最后一个可用的超级管理员OAuth登录入口');
+        }
     }
 
     public function log()

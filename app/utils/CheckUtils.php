@@ -48,25 +48,8 @@ class CheckUtils
         }
         // 处理代理
         if ($proxy) {
-            $proxy_server = config_get('proxy_server');
-            $proxy_port = intval(config_get('proxy_port'));
-            $proxy_userpwd = config_get('proxy_user').':'.config_get('proxy_pwd');
-            $proxy_type = config_get('proxy_type');
-
-            if (!empty($proxy_server) && !empty($proxy_port)) {
-                match ($proxy_type) {
-                    'https' => $proxy_string = 'https://',
-                    'sock4' => $proxy_string = 'socks4://',
-                    'sock5' => $proxy_string = 'socks5://',
-                    'sock5h' => $proxy_string = 'socks5h://',
-                    default => $proxy_string = 'http://',
-                };
-
-                if ($proxy_userpwd != ':') {
-                    $proxy_string .= $proxy_userpwd . '@';
-                }
-
-                $proxy_string .= $proxy_server . ':' . $proxy_port;
+            $proxy_string = build_guzzle_proxy_url();
+            if ($proxy_string !== null) {
                 $options['proxy'] = $proxy_string;
             }
         }

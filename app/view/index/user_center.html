@@ -1,0 +1,265 @@
+{extend name="common/layout" /}
+{block name="title"}用户中心{/block}
+{block name="main"}
+<div class="row">
+<div class="col-md-6">
+    <div class="panel panel-primary">
+        <div class="panel-heading"><h3 class="panel-title">个人信息</h3></div>
+        <div class="panel-body">
+            <table class="table table-striped">
+                <tr><td width="100">用户名</td><td>{:htmlspecialchars($user['username'] ?? '')}</td></tr>
+                <tr><td>用户等级</td><td>
+                    {if $user.level == 2}<span class="label label-danger">超级管理员</span>
+                    {elseif $user.level == 1}<span class="label label-warning">管理员</span>
+                    {else}<span class="label label-info">普通用户</span>
+                    {/if}
+                </td></tr>
+                <tr><td>注册时间</td><td>{:htmlspecialchars($user['regtime'] ?? '')}</td></tr>
+                <tr><td>上次登录</td><td>{:htmlspecialchars($user['lasttime'] ?? '')}</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel panel-info">
+        <div class="panel-heading"><h3 class="panel-title">第三方账号绑定</h3></div>
+        <div class="panel-body">
+            {if empty($providers)}
+            <p class="text-muted">暂无可用的第三方登录方式</p>
+            {else}
+            <div class="list-group" style="margin-bottom:0;">
+                {foreach $providers as $p}
+                <div class="list-group-item">
+                    <div class="row" style="display:flex;align-items:center;">
+                        <div class="col-xs-5">
+                            {php}
+                            $logo = (string)($p['logo'] ?? '');
+                            if (preg_match('/^https?:\/\//i', $logo)) echo '<img src="'.htmlspecialchars($logo).'" style="height:20px;margin-right:8px;" alt="">';
+                            elseif (preg_match('/^fa-[a-z0-9-]+$/i', $logo)) echo '<i class="fa '.htmlspecialchars($logo).' fa-fw"></i>';
+                            echo '<strong>'.htmlspecialchars($p['name'] ?? '').'</strong>';
+                            {/php}
+                        </div>
+                        <div class="col-xs-4">
+                            {if isset($p.bind_display_name)}
+                            {php}
+                            $avatar = (string)($p['bind_avatar'] ?? '');
+                            if (preg_match('/^https?:\/\//i', $avatar)) echo '<img src="'.htmlspecialchars($avatar).'" style="width:24px;height:24px;border-radius:50%;margin-right:6px;vertical-align:middle;" alt="">';
+                            echo '<span title="'.htmlspecialchars($p['bind_display_name']).'">'.htmlspecialchars($p['bind_display_name']).'</span>';
+                            {/php}
+                            {else}
+                            <span class="text-muted">未绑定</span>
+                            {/if}
+                        </div>
+                        <div class="col-xs-3 text-right">
+                            {if isset($p.bind_display_name)}
+                            <button type="button" class="btn btn-success btn-xs" disabled>已绑定</button>
+                            <button type="button" class="btn btn-danger btn-xs" onclick="unbindOauth({$p.id})">解绑</button>
+                            {else}
+                            <button type="button" class="btn btn-primary btn-xs" onclick="bindOauth({$p.id})">绑定</button>
+                            {/if}
+                        </div>
+                    </div>
+                </div>
+                {/foreach}
+            </div>
+            {/if}
+        </div>
+        <div class="panel-footer">
+            <span class="glyphicon glyphicon-info-sign"></span> 绑定第三方账号后，可使用第三方账号直接登录，无需输入密码。
+        </div>
+    </div>
+</div>
+
+<div class="col-md-6">
+    <div class="panel panel-default">
+        <div class="panel-heading"><h3 class="panel-title">修改密码</h3></div>
+        <div class="panel-body">
+            <form onsubmit="return changePwd()">
+                <div class="form-group">
+                    <label>旧密码</label>
+                    <input type="password" name="oldpwd" class="form-control" placeholder="请输入当前密码" required>
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" name="newpwd" class="form-control" placeholder="请输入新密码" required>
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" name="newpwd2" class="form-control" placeholder="请再次输入新密码" required>
+                </div>
+                <button type="submit" class="btn btn-success btn-block">修改密码</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel panel-warning">
+        <div class="panel-heading"><h3 class="panel-title">TOTP 二次验证</h3></div>
+        <div class="panel-body">
+            <div class="input-group">
+                {if $user.totp_open == 1}
+                <input type="text" class="form-control" value="已开启" style="color:green;" readonly>
+                <div class="input-group-btn"><button type="button" class="btn btn-info" onclick="openTotp()">重置</button></div>
+                <div class="input-group-btn"><button type="button" class="btn btn-danger" onclick="closeTotp()">关闭</button></div>
+                {else}
+                <input type="text" class="form-control" value="未开启" style="color:blue;" readonly>
+                <div class="input-group-btn"><button type="button" class="btn btn-info" onclick="openTotp()">开启</button></div>
+                {/if}
+            </div>
+        </div>
+        <div class="panel-footer">
+            <span class="glyphicon glyphicon-info-sign"></span> 开启后登录需使用支持 TOTP 的认证软件进行二次验证，提高账号安全性。
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- TOTP 绑定弹窗 -->
+<div class="modal" id="modal-totp" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">TOTP 绑定</h4>
+            </div>
+            <div class="modal-body text-center">
+                <p>使用支持 TOTP 的认证软件扫描以下二维码</p>
+                <div class="mt-4" id="qrcode"></div>
+                <p class="mt-2"><a href="javascript:;" id="copy-btn" data-clipboard-text="">复制密钥</a></p>
+                <form id="form-totp" style="text-align:left;" onsubmit="return bindTotp()">
+                    <div class="form-group mt-4">
+                        <div class="input-group">
+                            <input type="number" class="form-control input-lg" name="code" id="totp_code" placeholder="填写动态口令" autocomplete="off" required>
+                            <div class="input-group-btn"><button type="submit" class="btn btn-success btn-lg">完成绑定</button></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/jquery-qrcode-1.0.min.js"></script>
+<script src="/static/js/clipboard-1.7.1.min.js"></script>
+<script>
+var totpData = {secret:null, qrcode:null};
+
+// ----- 修改密码 -----
+function changePwd(){
+    var oldpwd = $('input[name="oldpwd"]').val();
+    var newpwd = $('input[name="newpwd"]').val();
+    var newpwd2 = $('input[name="newpwd2"]').val();
+    if(!oldpwd || !newpwd || !newpwd2){ layer.msg('请填写完整', {icon:2}); return false; }
+    if(newpwd != newpwd2){ layer.msg('两次输入的密码不一致', {icon:2}); return false; }
+    var ii = layer.load(2, {shade:[0.1,'#fff']});
+    $.post('/setpwd', {oldpwd:oldpwd, newpwd:newpwd, newpwd2:newpwd2}, function(res){
+        layer.close(ii);
+        if(res.code == 0){
+            layer.alert('密码修改成功，请重新登录。', {icon:1, closeBtn:false}, function(){
+                window.location.href = '/logout';
+            });
+        }else{
+            layer.alert(res.msg, {icon:2});
+        }
+    });
+    return false;
+}
+
+// ----- OAuth 绑定 -----
+function bindOauth(providerId){
+    var form = $('<form>', {method: 'post', action: '/oauth/bind/' + providerId});
+    $('body').append(form);
+    form.submit();
+}
+
+// ----- OAuth 解绑 -----
+function unbindOauth(providerId){
+    layer.confirm('确定要解绑该第三方账号吗？<br/>解绑后将无法使用该账号登录。', {
+        btn: ['确定解绑','取消'], btnAlign: 'c',
+    }, function(){
+        var ii = layer.load(2, {shade:[0.1,'#fff']});
+        $.post('/oauth/unbind', {provider_id: providerId}, function(res){
+            layer.close(ii);
+            if(res.code == 0){
+                layer.msg('解绑成功', {icon:1, time:1000}, function(){ window.location.reload(); });
+            }else{
+                layer.alert(res.msg, {icon:2});
+            }
+        }).fail(function(){
+            layer.close(ii);
+            layer.alert('解绑请求失败，请检查网络后重试', {icon:2});
+        });
+    });
+}
+
+// ----- TOTP -----
+function openTotp(){
+    if(!totpData.qrcode || !totpData.secret){
+        var ii = layer.load(2, {shade:[0.1,'#fff']});
+        $.post('/totp/generate', {}, function(res){
+            layer.close(ii);
+            if(res.code == 0){
+                totpData.secret = res.data.secret;
+                totpData.qrcode = res.data.qrcode;
+                $('#qrcode').qrcode({text: totpData.qrcode, width: 150, height: 150, foreground: "#000", background: "#fff", typeNumber: -1});
+                $('#copy-btn').attr('data-clipboard-text', totpData.secret);
+                $('#modal-totp').modal('show');
+                $('#totp_code').focus();
+            }else{
+                layer.alert(res.msg, {icon:2});
+            }
+        }).fail(function(){
+            layer.close(ii);
+            layer.alert('请求失败，请重试', {icon:2});
+        });
+    }else{
+        $('#modal-totp').modal('show');
+        $('#totp_code').focus();
+    }
+}
+function bindTotp(){
+    var code = $('#totp_code').val();
+    if(code.length != 6){ layer.msg('动态口令格式错误', {icon:2}); return false; }
+    $('#totp_code, #form-totp button[type="submit"]').prop('disabled', true);
+    var ii = layer.load(2, {shade:[0.1,'#fff']});
+    $.post('/totp/bind', {secret:totpData.secret, code:code}, function(res){
+        layer.close(ii);
+        $('#totp_code, #form-totp button[type="submit"]').prop('disabled', false);
+        if(res.code == 0){
+            layer.alert('TOTP 绑定成功', {icon:1}, function(){ window.location.reload(); });
+        }else{
+            layer.alert(res.msg, {icon:2});
+        }
+    }).fail(function(){
+        layer.close(ii);
+        $('#totp_code, #form-totp button[type="submit"]').prop('disabled', false);
+        layer.alert('请求失败，请重试', {icon:2});
+    });
+    return false;
+}
+function closeTotp(){
+    layer.confirm('确定要关闭 TOTP 二次验证吗？', {btn: ['确定','取消']}, function(){
+        var ii = layer.load(2, {shade:[0.1,'#fff']});
+        $.post('/totp/close', {}, function(res){
+            layer.close(ii);
+            if(res.code == 0){
+                layer.alert('TOTP 已关闭', {icon:1}, function(){ window.location.reload(); });
+            }else{
+                layer.alert(res.msg, {icon:2});
+            }
+        }).fail(function(){
+            layer.close(ii);
+            layer.alert('请求失败，请重试', {icon:2});
+        });
+    });
+}
+$(document).ready(function(){
+    var clipboard = new Clipboard('#copy-btn');
+    clipboard.on('success', function(){ layer.msg('复制成功', {icon:1, time:600}); });
+    clipboard.on('error', function(){ layer.msg('复制失败', {icon:2}); });
+    $('#totp_code').keyup(function(){
+        if($(this).val().length == 6) $('#form-totp').submit();
+    });
+});
+</script>
+{/block}

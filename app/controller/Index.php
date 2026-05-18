@@ -7,6 +7,7 @@ use Exception;
 use think\facade\Db;
 use think\facade\View;
 use think\facade\Cache;
+use app\service\oauth\OAuthProviderService;
 
 class Index extends BaseController
 {
@@ -83,6 +84,9 @@ class Index extends BaseController
             try {
                 Db::execute($value);
             } catch (Exception $e) {
+                if (str_contains($value, 'oauth_provider') || str_contains($value, 'user_oauth') || str_contains($value, 'oauth_disable_password')) {
+                    throw $e;
+                }
             }
         }
         config_set('version', config('app.dbversion'));
@@ -158,13 +162,13 @@ class Index extends BaseController
             Db::name('user')->where('id', $this->request->user['id'])->update(['password' => password_hash($newpwd, PASSWORD_DEFAULT)]);
             return json(['code' => 0, 'msg' => 'succ']);
         }
-        View::assign('user', $this->request->user);
-        return view();
+        return redirect('/user/center');
     }
 
     public function totp()
     {
         if (!checkPermission(1)) return $this->alert('error', '无权限');
+        if (!checkRefererHost()) return json(['code' => -1, 'msg' => '非法请求']);
         $action = input('param.action');
         if ($action == 'generate') {
             try {
@@ -199,5 +203,17 @@ class Index extends BaseController
     public function test()
     {
 
+    }
+
+    public function userCenter()
+    {
+        if (!checkPermission(1)) return $this->alert('error', '无权限');
+
+        $providers = (new OAuthProviderService())->getEnabledProvidersWithUserBindings((int)$this->request->user['id']);
+
+        \think\facade\View::assign('user', $this->request->user);
+        \think\facade\View::assign('providers', $providers);
+
+        return view();
     }
 }

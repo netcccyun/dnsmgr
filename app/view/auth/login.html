@@ -9,7 +9,7 @@
   <link href="/static/css/bootstrap-3.4.1.min.css" rel="stylesheet"/>
   <link href="/static/css/font-awesome-4.7.0.min.css" rel="stylesheet"/>
   <link href="/static/css/app.min.css" rel="stylesheet">
-  <link href="/static/css/skins/{$skin}.css" rel="stylesheet">
+  <link href="/static/css/skins/{:htmlspecialchars($skin ?? '')}.css" rel="stylesheet">
   <link href="/static/css/bootstrap-table.css" rel="stylesheet"/>
   <script src="/static/js/jquery-3.7.1.min.js"></script>
   <!--[if lt IE 9]>
@@ -21,18 +21,26 @@ body{color:#999;background-color:#f1f4fd;background-size:cover}
 a{color:#444}
 .login-screen{max-width:430px;padding:0;margin:100px auto 0 auto}
 .login-screen .well{border-radius:3px;-webkit-box-shadow:0 0 30px rgba(0,0,0,.1);box-shadow:0 0 30px rgba(0,0,0,.1);background:#fff;border:none;padding:0}
-@media (max-width:767px){.login-screen{padding:20px 0}
-}
+@media (max-width:767px){.login-screen{padding:20px 0}}
 .profile-img-card{width:100px;height:100px;display:block;-moz-border-radius:50%;-webkit-border-radius:50%;border-radius:50%;margin:-93px auto 30px;border:5px solid #fff}
 .profile-name-card{text-align:center}
 .login-head{background:#899fe1;border-radius:3px 3px 0 0}
-.login-form{padding:40px 30px;position:relative;z-index:99}
+.login-form{padding:40px 30px 20px 30px;position:relative;z-index:99}
 #login-form{margin-top:20px}
 #login-form .input-group{margin-bottom:15px}
 #login-form .form-control{font-size:14px}
 #totp-form{margin-top:20px}
 #totp-form .input-group{margin-bottom:15px}
 #totp-form .form-control{font-size:14px}
+.oauth-section{padding:12px 30px}
+.oauth-section.has-label{border-top:none}
+.oauth-section.oauth-only{border-top:none;padding-top:0}
+.oauth-btn{display:block;text-align:center;margin-bottom:8px;padding:8px;border-radius:3px;border:1px solid #ddd;color:#555;text-decoration:none;transition:background 0.2s}
+.oauth-btn:hover{text-decoration:none;color:#333;background:#f5f5f5;border-color:#ccc}
+.oauth-btn img,.oauth-btn i.fa{width:20px;text-align:center;margin-right:6px}
+.oauth-label{text-align:center;color:#999;font-size:12px;margin-bottom:8px}
+.login-help{text-align:center;padding:0 30px 15px 30px}
+.login-help a{color:#999;font-size:12px}
 </style>
 </head>
 <body>
@@ -43,10 +51,10 @@ a{color:#444}
                 <div class="login-head">
                     <img src="/static/images/login-head.png" style="width:100%;"/>
                 </div>
-                <div class="login-form">
+                <div class="login-form" {if $oauth_disable_password == '1' && !empty($oauth_providers)}style="padding:15px 30px 0 30px;" {/if}>
                     <img id="profile-img" class="profile-img-card" src="/static/images/user.png"/>
-                    <p id="profile-name" class="profile-name-card"></p> 
-                    <form action="" id="login-form" onsubmit="return doLogin()">
+                    <p id="profile-name" class="profile-name-card"></p>
+                    <form action="" id="login-form" onsubmit="return doLogin()" {if $show_totp || ($oauth_disable_password == '1' && !empty($oauth_providers))}style="display:none;"{/if}>
                         <div class="input-group">
                             <div class="input-group-addon"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></div>
                             <input type="text" class="form-control" placeholder="用户名" name="username" required="required"/>
@@ -65,9 +73,8 @@ a{color:#444}
                         <div class="form-group">
                             <button type="submit" class="btn btn-success btn-lg btn-block" id="submit" style="background:#708eea;">登 录</button>
                         </div>
-                        <div class="pull-right"><a href="javascript:findpwd()">忘记密码</a></div>
                     </form>
-                    <form action="" id="totp-form" onsubmit="return doTotp()" style="display:none;">
+                    <form action="" id="totp-form" onsubmit="return doTotp()" {if !$show_totp}style="display:none;"{/if}>
                         <div class="alert alert-info" role="alert">TOTP二次验证</div>
                         <div class="input-group">
                             <div class="input-group-addon"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span></div>
@@ -76,30 +83,50 @@ a{color:#444}
                         <div class="form-group">
                             <button type="submit" class="btn btn-success btn-lg btn-block" id="submit" style="background:#708eea;">登 录</button>
                         </div>
-                        <div class="pull-right"><a href="javascript:findpwd()">忘记密码</a></div>
                     </form>
+                </div>
+                {if !empty($oauth_providers)}
+                <div class="oauth-section {if $oauth_disable_password != '1'}has-label{else}oauth-only{/if}">
+                    {if $oauth_disable_password != '1'}<div class="oauth-label">— 或使用第三方账号登录 —</div>{/if}
+                    {foreach $oauth_providers as $p}
+                    <a href="/oauth/login/{$p.id}" class="oauth-btn">
+                        {php}
+                        $logo = (string)($p['logo'] ?? '');
+                        if (preg_match('/^https?:\/\//i', $logo)) echo '<img src="'.htmlspecialchars($logo).'" alt="">';
+                        elseif (preg_match('/^fa-[a-z0-9-]+$/i', $logo)) echo '<i class="fa '.htmlspecialchars($logo).' fa-fw"></i>';
+                        echo htmlspecialchars($p['name'] ?? '').' 登录';
+                        {/php}
+                    </a>
+                    {/foreach}
+                </div>
+                {/if}
+                <div class="login-help">
+                    <a href="javascript:showHelp()">无法登录？</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<div class="modal" id="modal-findpwd">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-					<span aria-hidden="true">&times;</span>
-				</button>
-				<h4 class="modal-title">忘记密码</h4>
-			</div>
-			<div class="modal-body">
-				<strong>重置密码</strong>
-                <p>进入网站根目录，执行命令：<br/><code>php think reset pwd 用户名 密码</code></p>
-                <strong>关闭TOTP</strong>
-                <p>进入网站根目录，执行命令：<br/><code>php think reset totp 用户名</code></p>
-			</div>
-		</div>
-	</div>
+<div class="modal" id="modal-help">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">无法登录</h4>
+            </div>
+            <div class="modal-body">
+                <p><strong>进入网站根目录，执行相应命令：</strong></p>
+                <p>重置密码<br/>
+                <code>php think reset pwd 用户名 密码</code></p>
+                <p>关闭TOTP<br/>
+                <code>php think reset totp 用户名</code></p>
+                <p>启用密码登录<br/>
+                <code>php think reset oauth_disable_password</code></p>
+            </div>
+        </div>
+    </div>
 </div>
 <script src="/static/js/bootstrap-3.4.1.min.js"></script>
 <script src="/static/js/layer/layer.js"></script>
@@ -142,6 +169,10 @@ function doLogin(){
                 }
                 layer.alert(data.msg, {icon: 2});
             }
+        },
+        error: function(){
+            layer.close(ii);
+            layer.alert('请求失败，请检查网络连接并确认登录服务可用后重试', {icon: 2});
         }
     });
     return false;
@@ -149,31 +180,42 @@ function doLogin(){
 function doTotp(){
     var code = $("#totp_code").val();
     if(code.length != 6){
-		layer.msg('动态口令格式错误', {icon: 2});
-		return false;
-	}
-	var ii = layer.load(2, {shade:[0.1,'#fff']});
-	$.post('/auth/totp', {code:code}, function(res){
-		layer.close(ii);
-		if(res.code == 0){
-			layer.msg('登录成功，正在跳转到首页', {icon: 1,shade: 0.01,time: 15000});
+        layer.msg('动态口令格式错误', {icon: 2});
+        return false;
+    }
+    var ii = layer.load(2, {shade:[0.1,'#fff']});
+    $.post('/auth/totp', {code:code}, function(res){
+        layer.close(ii);
+        if(res.code == 0){
+            layer.msg('登录成功，正在跳转到首页', {icon: 1,shade: 0.01,time: 15000});
             window.location.href = '/';
-		}else{
-			layer.alert(res.msg, {icon: 2});
-		}
-	});
-	return false;
+        }else{
+            layer.alert(res.msg, {icon: 2}, function(index){
+                layer.close(index);
+                if(res.msg && (res.msg.indexOf('请重新登录') !== -1 || res.msg.indexOf('错误次数过多') !== -1)){
+                    $('#totp_code').val('');
+                    $('#totp-form').hide();
+                    $('#login-form').show();
+                    $('#verifycode').attr('src', '/verifycode?r='+Math.random());
+                }
+            });
+        }
+    }).fail(function(){
+        layer.close(ii);
+        layer.alert('请求失败，请重试', {icon: 2});
+    });
+    return false;
 }
-function findpwd(){
-    $('#modal-findpwd').modal('show');
+function showHelp(){
+    $('#modal-help').modal('show');
 }
 $(document).ready(function(){
-	$("#totp_code").keyup(function(){
-		var code = $(this).val();
-		if(code.length == 6){
-			$("#totp-form").submit();
-		}
-	});
+    $("#totp_code").keyup(function(){
+        var code = $(this).val();
+        if(code.length == 6){
+            $("#totp-form").submit();
+        }
+    });
 });
 </script>
 </body>

@@ -213,3 +213,46 @@ CREATE TABLE IF NOT EXISTS `dnsmgr_domain_category` (
 ALTER TABLE `dnsmgr_domain`
 ADD COLUMN `cid` int(11) unsigned NOT NULL DEFAULT '0',
 ADD KEY `cid` (`cid`);
+
+CREATE TABLE IF NOT EXISTS `dnsmgr_oauth_provider` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `name` varchar(64) NOT NULL COMMENT '提供商名称',
+  `type` varchar(32) NOT NULL COMMENT '类型: qq/github/oauth2/oidc/cccyun',
+  `logo` varchar(255) DEFAULT NULL COMMENT 'Logo: FA图标类名或URL',
+  `client_id` varchar(255) NOT NULL,
+  `client_secret` varchar(255) NOT NULL,
+  `oauth_authorize_url` varchar(1024) DEFAULT NULL COMMENT '自定义OAuth2授权端点',
+  `oauth_token_url` varchar(1024) DEFAULT NULL COMMENT '自定义OAuth2 Token端点',
+  `oauth_userinfo_url` varchar(1024) DEFAULT NULL COMMENT '自定义OAuth2用户信息端点',
+  `oidc_issuer` varchar(1024) DEFAULT NULL COMMENT 'OIDC发行者URL',
+  `scopes` varchar(1024) DEFAULT NULL COMMENT '请求的scope',
+  `userinfo_fields` text DEFAULT NULL COMMENT '用户信息字段映射JSON',
+  `ext_config` text DEFAULT NULL COMMENT '扩展配置JSON',
+  `enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `sort` int(11) NOT NULL DEFAULT '0',
+  `addtime` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_enabled_sort` (`enabled`, `sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `dnsmgr_user_oauth` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `user_id` int(11) unsigned NOT NULL,
+  `provider_id` int(11) unsigned NOT NULL,
+  `openid` varchar(190) NOT NULL COMMENT 'OAuth用户唯一标识',
+  `nickname` varchar(128) DEFAULT NULL,
+  `email` varchar(128) DEFAULT NULL,
+  `avatar` varchar(255) DEFAULT NULL,
+  `access_token` text DEFAULT NULL COMMENT '加密存储',
+  `refresh_token` text DEFAULT NULL COMMENT '加密存储',
+  `token_expires` datetime DEFAULT NULL,
+  `addtime` datetime DEFAULT NULL,
+  `lasttime` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_provider_openid` (`provider_id`, `openid`),
+  UNIQUE KEY `uk_user_provider` (`user_id`, `provider_id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+INSERT IGNORE INTO `dnsmgr_config` (`key`, `value`) VALUES ('oauth_disable_password', '0');

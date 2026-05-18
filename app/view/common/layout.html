@@ -10,7 +10,7 @@
   <link href="/static/css/font-awesome-4.7.0.min.css" rel="stylesheet"/>
   <link href="/static/css/select2-4.0.13.min.css" rel="stylesheet"/>
   <link href="/static/css/app.min.css" rel="stylesheet">
-  <link href="/static/css/skins/{$skin}.css" rel="stylesheet">
+  <link href="/static/css/skins/{:htmlspecialchars($skin ?? '')}.css" rel="stylesheet">
   <link href="/static/css/bootstrap-table.css?v=2" rel="stylesheet"/>
   {if file_exists(public_path() . 'static/css/custom.css')}
   <link href="/static/css/custom.css" rel="stylesheet">
@@ -25,7 +25,7 @@
   </style>
 </head>
 
-<body class="hold-transition {$skin} sidebar-mini">
+<body class="hold-transition {:htmlspecialchars($skin ?? '')} sidebar-mini">
   <div class="wrapper">
     <header class="main-header">
       <!-- Logo -->
@@ -60,21 +60,21 @@
             <li class="dropdown user user-menu">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                 <img src="/static/images/user.png" class="user-image" alt="User Image">
-                <span class="hidden-xs">{$user.username}</span>
+                <span class="hidden-xs">{:htmlspecialchars($user['username'] ?? '')}</span>
               </a>
               <ul class="dropdown-menu">
                 <!-- User image -->
                 <li class="user-header">
                   <img src="/static/images/user.png" class="img-circle" alt="User Image">
                   <p>
-                    {$user.username}
-                    <small>{$user.regtime}</small>
+                    {:htmlspecialchars($user['username'] ?? '')}
+                    <small>{:htmlspecialchars($user['regtime'] ?? '')}</small>
                   </p>
                 </li>
                 <!-- Menu Footer-->
                 <li class="user-footer">
                   {if request()->user['type'] eq 'user'}<div class="pull-left">
-                    <a href="/setpwd" class="btn btn-primary"><i class="fa fa-lock"></i> 修改密码</a>
+                    <a href="/user/center" class="btn btn-primary"><i class="fa fa-user-circle"></i> 用户中心</a>
                   </div>{/if}
                   <div class="pull-right">
                     <a href="/logout" class="btn btn-danger"><i class="fa fa-sign-out"></i> 退出登录</a>
@@ -96,7 +96,7 @@
             <img src="/static/images/user.png" class="img-circle" alt="User Image">
           </div>
           <div class="pull-left info">
-            <p>{$user.username}</p>
+            <p>{:htmlspecialchars($user['username'] ?? '')}</p>
             <i class="fa fa-circle text-success"></i> Online
           </div>
         </div>
