@@ -106,6 +106,9 @@
           {if request()->user['type'] eq 'user'}<li class="{:checkIfActive('index')}">
             <a href="/"><i class="fa fa-home fa-fw"></i> <span>后台首页</span></a>
           </li>{/if}
+          <li class="{:checkIfActive('setapi')}">
+            <a href="/setapi"><i class="fa fa-key fa-fw"></i> <span>API对接</span></a>
+          </li>
           <li class="{:checkIfActive('domain,record,record_log,record_batch_add,domain_add,weight,record_batch_add2,record_batch_edit2,expire_notice,smartparse')}">
             <a href="/domain"><i class="fa fa-list-ul fa-fw"></i> <span>域名管理</span></a>
           </li>
@@ -175,6 +178,7 @@
               <li class="{:checkIfActive('loginset')}"><a href="/system/loginset"><i class="fa fa-circle-o"></i> 登录设置</a></li>
               <li class="{:checkIfActive('noticeset')}"><a href="/system/noticeset"><i class="fa fa-circle-o"></i> 通知设置</a></li>
               <li class="{:checkIfActive('proxyset')}"><a href="/system/proxyset"><i class="fa fa-circle-o"></i> 代理设置</a></li>
+              <li class="{:checkIfActive('reservedset')}"><a href="/system/reservedset"><i class="fa fa-circle-o"></i> 保留设置</a></li>
               <li><a href="https://www.showdoc.com.cn/dnsmgr/11058996709621562" target="_blank" rel="noreferrer"><i class="fa fa-circle-o"></i> <span>接口文档</span></a></li>
             </ul>
           </li>

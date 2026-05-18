@@ -1,0 +1,141 @@
+{extend name="common/layout" /}
+{block name="title"}API对接信息{/block}
+{block name="main"}
+<div class="row">
+    <div class="col-xs-12 col-sm-10 col-md-8 col-lg-6 center-block" style="float: none;">
+        <div class="panel panel-info">
+            <div class="panel-heading"><h3 class="panel-title">API对接信息</h3></div>
+            <div class="panel-body">
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i> 以下信息用于API接口对接，请妥善保管，不要泄露给他人，如怀疑密钥泄露，请及时重新生成。
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tbody>
+                        <tr>
+                            <td class="col-sm-3" style="background-color:#f5fafe;">接口地址</td>
+                            <td class="col-sm-9">
+                                <code>{$siteurl}/</code>
+                                <a href="javascript:;" class="btn btn-xs btn-primary" onclick="copyToClipboard('{$siteurl}/')" title="复制"><i class="fa fa-copy"></i></a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-sm-3" style="background-color:#f5fafe;">账户UID</td>
+                            <td class="col-sm-9">
+                                <code>{$user.id}</code>
+                                <a href="javascript:;" class="btn btn-xs btn-primary" onclick="copyToClipboard('{$user.id}')" title="复制"><i class="fa fa-copy"></i></a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-sm-3" style="background-color:#f5fafe;">API密钥</td>
+                            <td class="col-sm-9">
+                                {if $user.is_api == 1}
+                                <code id="apikey">{$user.apikey}</code>
+                                <a href="javascript:;" class="btn btn-xs btn-primary" onclick="copyToClipboard('{$user.apikey}')" title="复制"><i class="fa fa-copy"></i></a>
+                                <a href="javascript:;" class="btn btn-xs btn-warning" onclick="regenerateApiKey()" title="重新生成"><i class="fa fa-refresh"></i></a>
+                                {else}
+                                <span class="text-muted">API接口未开启</span>
+                                <a href="javascript:;" class="btn btn-xs btn-success" onclick="enableApi()"
+                                   title="开启API"><i class="fa fa-power-off"></i> 开启API</a>
+                                {/if}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-sm-3" style="background-color:#f5fafe;">API接口状态</td>
+                            <td class="col-sm-9">
+                                {if $user.is_api == 1}
+                                <span class="label label-success">已开启</span>
+                                {else}
+                                <span class="label label-default">未开启</span>
+                                {/if}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4 class="panel-title">API对接教程</h4></div>
+            <div class="panel-body">
+                <h5><strong>同系统对接</strong></h5>
+                <p>您可以通过API将本账户可管理的域名对接到您自己的<strong>聚合DNS管理系统</strong>中，实现统一管理。
+                </p>
+                <p><strong>系统下载：</strong></p>
+                <p>
+                    <a href="https://github.com/netcccyun/dnsmgr/" target="_blank" class="btn btn-primary btn-sm"><i class="fa fa-download"></i> 下载聚合DNS管理系统</a>
+                </p>
+                <p><strong>使用教程：</strong></p>
+                <ol>
+                    <li>在后台域名账户配置中选择同系统对接插件，在配置中填写相关信息</li>
+                    <li>保存配置后即可实现系统对接</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    function copyToClipboard(text) {
+        var input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        layer.msg('已复制到剪贴板', {icon: 1, time: 1000});
+    }
+
+    function regenerateApiKey() {
+        layer.confirm('确定要重新生成API密钥吗？重新生成后旧密钥将失效。', {icon: 3, title: '提示'}, function (index) {
+            var ii = layer.load(2);
+            $.ajax({
+                type: 'POST',
+                url: '/user/api_manage/regenerate_apikey',
+                dataType: 'json',
+                success: function (data) {
+                    layer.close(ii);
+                    if (data.code == 0) {
+                        layer.msg('重新生成成功', {icon: 1, time: 1000}, function () {
+                            location.reload();
+                        });
+                    } else {
+                        layer.alert(data.msg || '重新生成失败', {icon: 2});
+                    }
+                },
+                error: function () {
+                    layer.close(ii);
+                    layer.msg('服务器错误', {icon: 2});
+                }
+            });
+        });
+    }
+
+    function enableApi() {
+        layer.confirm('确定要开启API接口吗？', {icon: 3, title: '提示'}, function (index) {
+            var ii = layer.load(2);
+            $.ajax({
+                type: 'POST',
+                url: '/user/api_manage/enable_api',
+                dataType: 'json',
+                success: function (data) {
+                    layer.close(ii);
+                    if (data.code == 0) {
+                        layer.msg('开启成功', {icon: 1, time: 1000}, function () {
+                            location.reload();
+                        });
+                    } else {
+                        layer.alert(data.msg || '开启失败', {icon: 2});
+                    }
+                },
+                error: function () {
+                    layer.close(ii);
+                    layer.msg('服务器错误', {icon: 2});
+                }
+            });
+        });
+    }
+</script>
+{/block}

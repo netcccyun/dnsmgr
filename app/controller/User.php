@@ -193,4 +193,31 @@ class User extends BaseController
 
         return json(['total' => $total, 'rows' => $rows]);
     }
+
+    public function api_manage()
+    {
+        if (!checkPermission(1)) return json(['code' => -1, 'msg' => '无权限']);
+
+        $act = input('param.act');
+        $userId = $this->request->user['id'];
+
+        if ($act == 'enable_api') {
+            $apikey = random(16);
+            Db::name('user')->where('id', $userId)->update([
+                'is_api' => 1,
+                'apikey' => $apikey
+            ]);
+            return json(['code' => 0, 'msg' => 'API接口已开启', 'apikey' => $apikey]);
+        } elseif ($act == 'regenerate_apikey') {
+            $user = Db::name('user')->where('id', $userId)->find();
+            if ($user['is_api'] != 1) {
+                return json(['code' => -1, 'msg' => 'API接口未开启']);
+            }
+            $apikey = random(16);
+            Db::name('user')->where('id', $userId)->update(['apikey' => $apikey]);
+            return json(['code' => 0, 'msg' => 'API密钥已重新生成', 'apikey' => $apikey]);
+        }
+
+        return json(['code' => -3, 'msg' => '未知操作']);
+    }
 }
