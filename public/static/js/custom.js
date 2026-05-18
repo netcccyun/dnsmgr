@@ -101,7 +101,32 @@ if (typeof $.fn.bootstrapTable !== "undefined") {
 		},
 		formatNoMatches: function(){
 			return '没有找到匹配的记录';
-		}
+		},
+		onSort: function(name, order) {
+			var $table = $('#listTable');
+			if (!name) {
+				$table.data('_sortClicks', null);
+				return;
+			}
+			var clicks = $table.data('_sortClicks') || {};
+			if (clicks._last !== name) {
+				clicks = {_last: name};
+				clicks[name] = 1;
+				this.sortOrder = 'desc';
+			} else {
+				clicks[name] = (clicks[name] || 0) + 1;
+				if (clicks[name] === 1) {
+					this.sortOrder = 'desc';
+				} else if (clicks[name] === 2) {
+					this.sortOrder = 'asc';
+				} else {
+					this.sortName = undefined;
+					this.sortOrder = undefined;
+					clicks = {};
+				}
+			}
+			$table.data('_sortClicks', clicks);
+		},
     };
     $.extend($.fn.bootstrapTable.defaults, $.fn.bootstrapTable.custom);
 }

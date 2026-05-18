@@ -74,31 +74,6 @@ $(document).ready(function(){
 		sortReset: false,
 		sortName: urlSort,
 		sortOrder: urlOrder,
-		onSort: function(name, order) {
-			var $table = $('#listTable');
-			if (!name) {
-				$table.data('_sortClicks', null);
-				return;
-			}
-			var clicks = $table.data('_sortClicks') || {};
-			if (clicks._last !== name) {
-				clicks = {_last: name};
-				clicks[name] = 1;
-				this.sortOrder = 'desc';
-			} else {
-				clicks[name] = (clicks[name] || 0) + 1;
-				if (clicks[name] === 1) {
-					this.sortOrder = 'desc';
-				} else if (clicks[name] === 2) {
-					this.sortOrder = 'asc';
-				} else {
-					this.sortName = undefined;
-					this.sortOrder = undefined;
-					clicks = {};
-				}
-			}
-			$table.data('_sortClicks', clicks);
-		},
 		columns: [
 			{
 				field: '',
@@ -115,7 +90,7 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value){
-				return '<span title="'+row.aremark+'" data-toggle="tooltip" data-placement="right"><img src="/static/images/'+row.icon+'" class="type-logo">'+value+'('+row.aid+')</span>';
+						return '<span title="'+row.aremark+'" data-toggle="tooltip" data-placement="right"><img src="/static/images/'+row.icon+'" class="type-logo">'+value+'('+row.aid+')</span>';
 					}
 					return '手动续期';
 				}
@@ -141,9 +116,9 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1){
-				return '<div class="material-switch"><input id="isauto'+row.id+'" type="checkbox" checked onchange="setAuto('+row.id+',0)"/><label for="isauto'+row.id+'" class="label-primary"></label></div>';
+						return '<div class="material-switch"><input id="isauto'+row.id+'" type="checkbox" checked onchange="setAuto('+row.id+',0)"/><label for="isauto'+row.id+'" class="label-primary"></label></div>';
 					}else{
-				return '<div class="material-switch"><input id="isauto'+row.id+'" type="checkbox" onchange="setAuto('+row.id+',1)"/><label for="isauto'+row.id+'" class="label-primary"></label></div>';
+						return '<div class="material-switch"><input id="isauto'+row.id+'" type="checkbox" onchange="setAuto('+row.id+',1)"/><label for="isauto'+row.id+'" class="label-primary"></label></div>';
 					}
 				}
 			},
@@ -169,7 +144,7 @@ $(document).ready(function(){
 							return '<span title="'+row.expiretime+'" data-toggle="tooltip" data-placement="right" style="color:red">已过期<span>';
 						}
 					}else{
-				return '暂未签发';
+						return '暂未签发';
 					}
 				}
 			},
@@ -179,9 +154,9 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 4) {
-				return '<span class="label" style="background-color: #a5a5a5;">已吊销</span>';
+						return '<span class="label" style="background-color: #a5a5a5;">已吊销</span>';
 					} else if(value == 3) {
-				return '<span class="label label-success">已签发</span>';
+						return '<span class="label label-success">已签发</span>';
 					} else if(value == 2) {
 						if(row.retrytime != null){
 							var now = new Date().getTime();
@@ -193,7 +168,7 @@ $(document).ready(function(){
 								return '<span title="'+min+'分'+sec+'秒后自动验证" data-toggle="tooltip" data-placement="top" class="label" style="background-color: #3e76fb;">正在验证</span>';
 							}
 						}
-				return '<span class="label" style="background-color: #3e76fb;">正在验证</span>';
+						return '<span class="label" style="background-color: #3e76fb;">正在验证</span>';
 					} else if(value == 1) {
 						if(row.retrytime != null){
 							var now = new Date().getTime();
@@ -205,9 +180,9 @@ $(document).ready(function(){
 								return '<span title="'+min+'分'+sec+'秒后自动验证" data-toggle="tooltip" data-placement="top" class="label" style="background-color: #3e76fb;">待验证</span>';
 							}
 						}
-				return '<span class="label" style="background-color: #3e76fb;">待验证</span>';
+						return '<span class="label" style="background-color: #3e76fb;">待验证</span>';
 					} else if(value == 0) {
-				return '<span class="label label-info">待提交</span>';
+						return '<span class="label label-info">待提交</span>';
 					} else {
 						var title = '失败';
 						if(value == -1) title = '购买证书失败';
@@ -227,7 +202,7 @@ $(document).ready(function(){
 								return '<span title="'+min+'分'+sec+'秒后自动重试" data-toggle="tooltip" data-placement="top" class="label label-danger">'+title+'</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
 							}
 						}
-				return '<span class="label label-danger">'+title+'</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
+						return '<span class="label label-danger">'+title+'</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
 					}
 				}
 			},

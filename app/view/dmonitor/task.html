@@ -63,31 +63,6 @@ $(document).ready(function(){
 		sortReset: false,
 		sortName: urlSort,
 		sortOrder: urlOrder,
-		onSort: function(name, order) {
-			var $table = $('#listTable');
-			if (!name) {
-				$table.data('_sortClicks', null);
-				return;
-			}
-			var clicks = $table.data('_sortClicks') || {};
-			if (clicks._last !== name) {
-				clicks = {_last: name};
-				clicks[name] = 1;
-				this.sortOrder = 'desc';
-			} else {
-				clicks[name] = (clicks[name] || 0) + 1;
-				if (clicks[name] === 1) {
-					this.sortOrder = 'desc';
-				} else if (clicks[name] === 2) {
-					this.sortOrder = 'asc';
-				} else {
-					this.sortName = undefined;
-					this.sortOrder = undefined;
-					clicks = {};
-				}
-			}
-			$table.data('_sortClicks', clicks);
-		},
 		columns: [
 			{
 				field: '',
@@ -117,23 +92,21 @@ $(document).ready(function(){
 			{
 				field: 'type',
 				title: '切换设置',
-				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1) {
-				return '暂停解析';
+						return '暂停解析';
 					} else if(value == 2) {
-				return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="备用：'+row.backup_value+'" class="tips">切换备用</span>';
+						return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="备用：'+row.backup_value+'" class="tips">切换备用</span>';
 					} else if(value == 3) {
-				return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="同域名正常数量<='+row.cycle+'" class="tips">条件开启</span>';
+						return '<span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="同域名正常数量<='+row.cycle+'" class="tips">条件开启</span>';
 					} else {
-				return '无操作';
+						return '无操作';
 					}
 				}
 			},
 			{
 				field: 'checktype',
 				title: '检测协议',
-				sortable: true,
 				formatter: function(value, row, index) {
 					if(row.type <= 2){
 						if(value == 1) {
@@ -144,14 +117,13 @@ $(document).ready(function(){
 							return 'PING';
 						}
 					} else {
-				return '无';
+						return '无';
 					}
 				}
 			},
 			{
 				field: 'frequency',
 				title: '检测间隔',
-				sortable: true,
 				formatter: function(value, row, index) {
 					return value + '秒';
 				}
@@ -162,9 +134,9 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 0) {
-				return '<span class="label label-success">正常</span>';
+						return '<span class="label label-success">正常</span>';
 					} else {
-				return '<span class="label label-danger">异常</span>';
+						return '<span class="label label-danger">异常</span>';
 					}
 				}
 			},
@@ -174,9 +146,9 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1){
-				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}else{
-				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}
 				}
 			},

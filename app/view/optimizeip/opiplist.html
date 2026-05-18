@@ -58,31 +58,6 @@ $(document).ready(function(){
 		sortReset: false,
 		sortName: urlSort,
 		sortOrder: urlOrder,
-		onSort: function(name, order) {
-			var $table = $('#listTable');
-			if (!name) {
-				$table.data('_sortClicks', null);
-				return;
-			}
-			var clicks = $table.data('_sortClicks') || {};
-			if (clicks._last !== name) {
-				clicks = {_last: name};
-				clicks[name] = 1;
-				this.sortOrder = 'desc';
-			} else {
-				clicks[name] = (clicks[name] || 0) + 1;
-				if (clicks[name] === 1) {
-					this.sortOrder = 'desc';
-				} else if (clicks[name] === 2) {
-					this.sortOrder = 'asc';
-				} else {
-					this.sortName = undefined;
-					this.sortOrder = undefined;
-					clicks = {};
-				}
-			}
-			$table.data('_sortClicks', clicks);
-		},
 		columns: [
 			{
 				field: 'id',
@@ -103,15 +78,15 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1){
-				return 'CloudFlare';
+						return 'CloudFlare';
 					}else if(value == 2){
-				return 'CloudFront';
+						return 'CloudFront';
 					}else if(value == 3){
-				return 'Gcore';
+						return 'Gcore';
 					}else if(value == 4){
-				return 'EdgeOne';
+						return 'EdgeOne';
 					}else{
-				return '未知';
+						return '未知';
 					}
 				}
 			},
@@ -142,9 +117,9 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1){
-				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}else{
-				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}
 				}
 			},
@@ -162,11 +137,11 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1) {
-				return '<span class="label label-success">成功</span>';
+						return '<span class="label label-success">成功</span>';
 					} else if(value == 2) {
-				return '<span class="label label-danger">失败</span> <span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="'+row.errmsg+'" class="tips"><i class="fa fa-info-circle"></i></span>';
+						return '<span class="label label-danger">失败</span> <span title="" data-toggle="tooltip" data-placement="bottom" data-original-title="'+row.errmsg+'" class="tips"><i class="fa fa-info-circle"></i></span>';
 					} else {
-				return '<span class="label label-warning">未运行</span>';
+						return '<span class="label label-warning">未运行</span>';
 					}
 				}
 			},

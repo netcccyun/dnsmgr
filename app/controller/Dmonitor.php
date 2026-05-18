@@ -242,21 +242,13 @@ class Dmonitor extends BaseController
         $offset = input('post.offset/d');
         $limit = input('post.limit/d');
         $action = input('post.action/d', 0);
-        $sort = input('post.sortName', null, 'trim');
-        $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $select = Db::name('dmlog')->where('taskid', $taskid);
         if ($action > 0) {
             $select->where('action', $action);
         }
         $total = $select->count();
-        $allowedSort = ['id' => 'id', 'action' => 'action', 'date' => 'date', 'errmsg' => 'errmsg'];
-        if ($sort && isset($allowedSort[$sort])) {
-            $select->order($allowedSort[$sort], $orderDir);
-        } else {
-            $select->order('id', 'desc');
-        }
-        $list = $select->limit($offset, $limit)->select();
+        $list = $select->order('id', 'desc')->limit($offset, $limit)->select();
 
         return json(['total' => $total, 'rows' => $list]);
     }

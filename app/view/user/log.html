@@ -36,75 +36,39 @@ $(document).ready(function(){
 	const pageSizeKey = 'userlog_pagesize';
 	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
 	const pageSize = getStoredPageSize(pageSizeKey);
-	var urlSort = typeof window.$_GET['sortName'] != 'undefined' ? window.$_GET['sortName'] : undefined;
-	var urlOrder = typeof window.$_GET['sortOrder'] != 'undefined' ? window.$_GET['sortOrder'] : undefined;
 
 	$("#listTable").bootstrapTable({
 		url: '/log/data',
 		pageNumber: pageNumber,
 		pageSize: pageSize,
 		classes: 'table table-striped table-hover table-bordered',
-		sortReset: false,
-		sortName: urlSort,
-		sortOrder: urlOrder,
-		onSort: function(name, order) {
-			var $table = $('#listTable');
-			if (!name) {
-				$table.data('_sortClicks', null);
-				return;
-			}
-			var clicks = $table.data('_sortClicks') || {};
-			if (clicks._last !== name) {
-				clicks = {_last: name};
-				clicks[name] = 1;
-				this.sortOrder = 'desc';
-			} else {
-				clicks[name] = (clicks[name] || 0) + 1;
-				if (clicks[name] === 1) {
-					this.sortOrder = 'desc';
-				} else if (clicks[name] === 2) {
-					this.sortOrder = 'asc';
-				} else {
-					this.sortName = undefined;
-					this.sortOrder = undefined;
-					clicks = {};
-				}
-			}
-			$table.data('_sortClicks', clicks);
-		},
 		columns: [
 			{
 				field: 'id',
-				title: 'ID',
-				sortable: true
+				title: 'ID'
 			},
 			{
 				field: 'uid',
 				title: 'UID',
-				sortable: true,
 				formatter: function(value, row, index) {
 					return value>0?'<a href="/user?kw='+value+'" target="_blank">'+value+'</a>':'管理员';
 				}
 			},
 			{
 				field: 'domain',
-				title: '域名',
-				sortable: true
+				title: '域名'
 			},
 			{
 				field: 'action',
-				title: '操作类型',
-				sortable: true
+				title: '操作类型'
 			},
             {
 				field: 'data',
-				title: '操作详情',
-				sortable: true
+				title: '操作详情'
 			},
 			{
 				field: 'addtime',
-				title: '时间',
-				sortable: true
+				title: '时间'
 			}
 		],
 		onPageChange: function(number, size){

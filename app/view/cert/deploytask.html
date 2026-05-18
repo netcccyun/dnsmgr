@@ -73,31 +73,6 @@ $(document).ready(function(){
 		sortReset: false,
 		sortName: urlSort,
 		sortOrder: urlOrder,
-		onSort: function(name, order) {
-			var $table = $('#listTable');
-			if (!name) {
-				$table.data('_sortClicks', null);
-				return;
-			}
-			var clicks = $table.data('_sortClicks') || {};
-			if (clicks._last !== name) {
-				clicks = {_last: name};
-				clicks[name] = 1;
-				this.sortOrder = 'desc';
-			} else {
-				clicks[name] = (clicks[name] || 0) + 1;
-				if (clicks[name] === 1) {
-					this.sortOrder = 'desc';
-				} else if (clicks[name] === 2) {
-					this.sortOrder = 'asc';
-				} else {
-					this.sortName = undefined;
-					this.sortOrder = undefined;
-					clicks = {};
-				}
-			}
-			$table.data('_sortClicks', clicks);
-		},
 		columns: [
 			{
 				field: '',
@@ -138,9 +113,9 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1){
-				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" checked onchange="setActive('+row.id+',0)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}else{
-				return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
+						return '<div class="material-switch"><input id="active'+row.id+'" type="checkbox" onchange="setActive('+row.id+',1)"/><label for="active'+row.id+'" class="label-primary"></label></div>';
 					}
 				}
 			},
@@ -158,12 +133,12 @@ $(document).ready(function(){
 				sortable: true,
 				formatter: function(value, row, index) {
 					if(value == 1) {
-				return '<span class="label label-success">已完成</span>';
+						return '<span class="label label-success">已完成</span>';
 					} else if(value == 0) {
 						if(row.islock == 1) return '<span class="label" style="background-color: #3e76fb;">正在处理</span>';
 						else return '<span class="label label-info">待处理</span>';
 					} else {
-				return '<span class="label label-danger">处理失败</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
+						return '<span class="label label-danger">处理失败</span>'+(row.error?' <span onclick="showmsg(\''+row.error+'\')" class="tips" title="失败原因"><i class="fa fa-info-circle"></i></span>':'');
 					}
 				}
 			},
