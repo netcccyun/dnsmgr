@@ -121,7 +121,7 @@ class huoshan implements DeployInterface
             ],
             'UseWay' => 'https',
         ];
-        if(!empty($config['project_name'])){
+        if (!empty($config['project_name'])) {
             $param['ProjectName'] = $config['project_name'];
         }
         $result = $client->request('POST', 'CreateCert', $param);
@@ -232,7 +232,7 @@ class huoshan implements DeployInterface
                 'PrivateKey' => $privatekey,
             ],
         ];
-        if(!empty($config['project_name'])){
+        if (!empty($config['project_name'])) {
             $param['ProjectName'] = $config['project_name'];
         }
         try {
