@@ -121,6 +121,9 @@ class huoshan implements DeployInterface
             ],
             'UseWay' => 'https',
         ];
+        if(!empty($config['project_name'])){
+            $param['ProjectName'] = $config['project_name'];
+        }
         $result = $client->request('POST', 'CreateCert', $param);
         $this->log('上传证书成功 ChainID=' . $result['ChainID']);
 
