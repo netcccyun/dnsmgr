@@ -1491,6 +1491,8 @@ class Domain extends BaseController
     {
         $id = input('param.id/d');
         $format = input('get.format', 'json', 'trim');
+        $page = input('get.page/d', 0);
+        $pagesize = input('get.pagesize/d', 100);
         
         $drow = Db::name('domain')->where('id', $id)->find();
         if (!$drow) {
@@ -1499,7 +1501,22 @@ class Domain extends BaseController
         if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
 
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-        $domainRecords = $dns->getDomainRecords(1, 1000);
+        
+        if ($page === 0) {
+            $recordLine = cache('record_line_' . $id);
+            $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+            return json([
+                'code' => 0,
+                'data' => [
+                    'domain' => $drow['name'],
+                    'dnstype' => $dnstype,
+                    'recordLine' => $recordLine,
+                    'pagesize' => min($pagesize, 100)
+                ]
+            ]);
+        }
+
+        $domainRecords = $dns->getDomainRecords($page, $pagesize);
         if (!$domainRecords) return json(['code' => -1, 'msg' => '获取解析记录失败，' . $dns->getError()]);
 
         $recordLine = cache('record_line_' . $id);
@@ -1520,62 +1537,17 @@ class Domain extends BaseController
             ];
         }
 
-        $exportData = [
-            'domain' => $drow['name'],
-            'export_time' => date('Y-m-d H:i:s'),
-            'records' => $records
-        ];
-
-        if ($format === 'csv') {
-            return $this->exportCsv($exportData);
-        } else {
-            return $this->exportJson($exportData);
-        }
-    }
-
-    private function exportJson($data)
-    {
-        $filename = $data['domain'] . '_dns_records_' . date('YmdHis') . '.json';
-        $content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        
-        return response($content, 200, [
-            'Content-Type' => 'application/json; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'Content-Length' => strlen($content)
+        return json([
+            'code' => 0,
+            'data' => [
+                'records' => $records,
+                'total' => $domainRecords['total'],
+                'page' => $page,
+                'hasMore' => count($records) == $pagesize
+            ]
         ]);
     }
 
-    private function exportCsv($data)
-    {
-        $filename = $data['domain'] . '_dns_records_' . date('YmdHis') . '.csv';
-        
-        $output = fopen('php://temp', 'r+');
-        fwrite($output, "\xEF\xBB\xBF");
-        fputcsv($output, ['主机记录', '记录类型', '记录值', '线路类型', 'TTL', 'MX优先级', '权重', '备注', '状态']);
-        foreach ($data['records'] as $record) {
-            fputcsv($output, [
-                $record['Name'],
-                $record['Type'],
-                $record['Value'],
-                $record['LineName'],
-                $record['TTL'],
-                $record['MX'],
-                $record['Weight'],
-                $record['Remark'],
-                $record['Status'] == '1' ? '启用' : '暂停'
-            ]);
-        }
-        
-        rewind($output);
-        $content = stream_get_contents($output);
-        fclose($output);
-        
-        return response($content, 200, [
-            'Content-Type' => 'text/csv; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'Content-Length' => strlen($content)
-        ]);
-    }
     public function record_import()
     {
         $id = input('param.id/d');
@@ -1587,105 +1559,27 @@ class Domain extends BaseController
         if (!checkPermission(0, $drow['name'])) return $this->alert('error', '无权限');
 
         if (request()->isAjax()) {
-            $format = input('post.format', 'json', 'trim');
-            $override = input('post.override/d', 0);
-            
-            $records = [];
-            if ($format === 'json') {
-                $data = input('post.data', null, 'trim');
-                if (empty($data)) {
-                    return json(['code' => -1, 'msg' => '导入数据不能为空']);
-                }
-                $records = $this->parseJsonImport($data);
-            } else {
-                $file = request()->file('csvfile');
-                if (!$file) {
-                    return json(['code' => -1, 'msg' => '请上传CSV文件']);
-                }
-                $fileExt = strtolower($file->getOriginalExtension());
-                if (!in_array($fileExt, ['csv', 'txt'])) {
-                    return json(['code' => -1, 'msg' => '仅支持 .csv 或 .txt 格式的文件']);
-                }
-                
-                $filePath = $file->getPathname();
-                $data = file_get_contents($filePath);
-                if (empty($data)) {
-                    return json(['code' => -1, 'msg' => '文件内容为空']);
-                }
-                
-                $records = $this->parseCsvImport($data);
-            }
+            $name = input('post.name', null, 'trim');
+            $type = input('post.type', null, 'trim');
+            $value = input('post.value', null, 'trim');
+            $line = input('post.line', null, 'trim');
+            $ttl = input('post.ttl/d', 600);
+            $mx = input('post.mx/d', 1);
+            $weight = input('post.weight/d', 0);
+            $remark = input('post.remark', null, 'trim');
 
-            if (empty($records)) {
-                return json(['code' => -1, 'msg' => '解析导入数据失败，请检查数据格式']);
+            if (empty($name) || empty($type) || empty($value)) {
+                return json(['code' => -1, 'msg' => '参数不能为空']);
             }
 
             $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
-            
-            $existingRecords = [];
-            if (!$override) {
-                $domainRecords = $dns->getDomainRecords(1, 1000);
-                if ($domainRecords) {
-                    foreach ($domainRecords['list'] as $row) {
-                        $key = $row['Name'] . '|' . $row['Type'] . '|' . (is_array($row['Value']) ? implode(',', $row['Value']) : $row['Value']);
-                        $existingRecords[$key] = true;
-                    }
-                }
+            $recordid = $dns->addDomainRecord($name, $type, $value, $line, $ttl, $mx, $weight, $remark);
+            if ($recordid) {
+                $this->add_log($drow['name'], '导入解析', $name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
+                return json(['code' => 0, 'msg' => '添加解析记录成功！']);
+            } else {
+                return json(['code' => -1, 'msg' => '添加解析记录失败，' . $dns->getError()]);
             }
-
-            $success = 0;
-            $fail = 0;
-            $skip = 0;
-            $errors = [];
-
-            foreach ($records as $record) {
-                if (empty($record['Name']) || empty($record['Type']) || empty($record['Value'])) {
-                    $fail++;
-                    $errors[] = '记录缺少必填字段: ' . json_encode($record);
-                    continue;
-                }
-
-                if (!$override) {
-                    $key = $record['Name'] . '|' . $record['Type'] . '|' . $record['Value'];
-                    if (isset($existingRecords[$key])) {
-                        $skip++;
-                        continue;
-                    }
-                }
-
-                $name = $record['Name'];
-                $type = $record['Type'];
-                $value = $record['Value'];
-                $line = $record['Line'] ?? DnsHelper::$line_name[$dnstype]['DEF'] ?? 'default';
-                $ttl = $record['TTL'] ?? 600;
-                $mx = $record['MX'] ?? 1;
-                $weight = $record['Weight'] ?? null;
-                $remark = $record['Remark'] ?? null;
-
-                $recordid = $dns->addDomainRecord($name, $type, $value, $line, $ttl, $mx, $weight, $remark);
-                if ($recordid) {
-                    $this->add_log($drow['name'], '导入解析', $name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
-                    $success++;
-                } else {
-                    $fail++;
-                    $errors[] = $name . ' [' . $type . '] 添加失败: ' . $dns->getError();
-                }
-            }
-
-            $msg = '导入完成：成功 ' . $success . ' 条';
-            if ($skip > 0) $msg .= '，跳过重复 ' . $skip . ' 条';
-            if ($fail > 0) $msg .= '，失败 ' . $fail . ' 条';
-
-            return json([
-                'code' => $fail > 0 && $success == 0 ? -1 : 0,
-                'msg' => $msg,
-                'data' => [
-                    'success' => $success,
-                    'skip' => $skip,
-                    'fail' => $fail,
-                    'errors' => array_slice($errors, 0, 10)
-                ]
-            ]);
         }
 
         list($recordLine, $minTTL) = $this->get_line_and_ttl($drow);
@@ -1704,58 +1598,6 @@ class Domain extends BaseController
         View::assign('minTTL', $minTTL ? $minTTL : 1);
         View::assign('dnsconfig', $dnsconfig);
         return view('import');
-    }
-
-    private function parseJsonImport($data)
-    {
-        $json = json_decode($data, true);
-        if (!$json || !isset($json['records'])) {
-            return [];
-        }
-        return $json['records'];
-    }
-
-    private function parseCsvImport($data)
-    {
-        $records = [];
-        $lines = explode("\n", $data);
-        
-        if (isset($lines[0]) && substr($lines[0], 0, 3) === "\xEF\xBB\xBF") {
-            $lines[0] = substr($lines[0], 3);
-        }
-        
-        $startIndex = 0;
-        foreach ($lines as $i => $line) {
-            $line = trim($line);
-            if (empty($line)) continue;
-            $firstCol = strtolower(str_replace(['"', "'"], '', explode(',', $line)[0] ?? ''));
-            if (in_array($firstCol, ['主机记录', 'name', '主机名', 'record'])) {
-                $startIndex = $i + 1;
-                break;
-            }
-        }
-
-        for ($i = $startIndex; $i < count($lines); $i++) {
-            $line = trim($lines[$i]);
-            if (empty($line)) continue;
-            
-            $cols = str_getcsv($line);
-            if (count($cols) < 3) continue;
-            
-            $records[] = [
-                'Name' => trim($cols[0]),
-                'Type' => strtoupper(trim($cols[1])),
-                'Value' => trim($cols[2]),
-                'LineName' => trim($cols[3] ?? ''),
-                'TTL' => is_numeric($cols[4] ?? '') ? intval($cols[4]) : 600,
-                'MX' => is_numeric($cols[5] ?? '') ? intval($cols[5]) : 1,
-                'Weight' => is_numeric($cols[6] ?? '') ? intval($cols[6]) : null,
-                'Remark' => trim($cols[7] ?? ''),
-                'Status' => trim($cols[8] ?? '1'),
-            ];
-        }
-        
-        return $records;
     }
 
     private function checkReservedRecord($recordName)

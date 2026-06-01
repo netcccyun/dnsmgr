@@ -21,17 +21,27 @@
 			<div class="form-group">
 				<label class="col-sm-2 control-label">重复处理</label>
 				<div class="col-sm-10">
-					<select name="override" class="form-control" style="max-width:200px;">
+					<select name="override" class="form-control" id="override-select" style="max-width:200px;">
 						<option value="0">跳过重复记录</option>
 						<option value="1">强制导入（不检查重复）</option>
 					</select>
 					<span class="help-block">选择"跳过重复记录"将自动跳过与现有记录相同的条目</span>
 				</div>
 			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label">线路映射</label>
+				<div class="col-sm-10">
+					<select name="line_mapping" class="form-control" id="line-mapping-select" style="max-width:300px;">
+						<option value="auto">自动映射（推荐）</option>
+						<option value="keep">保持原线路ID</option>
+					</select>
+					<span class="help-block">自动映射会根据线路名称自动匹配当前DNS服务商的线路ID</span>
+				</div>
+			</div>
 			<div class="form-group" id="json-input-group">
 				<label class="col-sm-2 control-label">导入数据</label>
 				<div class="col-sm-10">
-					<textarea name="data" class="form-control" rows="20" placeholder="请粘贴JSON格式的解析记录数据" required></textarea>
+					<textarea name="data" class="form-control" rows="15" placeholder="请粘贴JSON格式的解析记录数据" required></textarea>
 				</div>
 			</div>
 			<div class="form-group" id="csv-file-group" style="display:none;">
@@ -48,12 +58,14 @@
 						<strong>JSON格式示例：</strong><br>
 						<pre style="margin-top:5px;">{
   "domain": "example.com",
+  "dnstype": "aliyun",
   "records": [
     {
       "Name": "www",
       "Type": "A",
       "Value": "1.2.3.4",
       "Line": "default",
+      "LineName": "默认",
       "TTL": 600,
       "MX": "",
       "Weight": "",
@@ -66,11 +78,54 @@
 			</div>
 			<div class="form-group">
 				<div class="col-sm-offset-2 col-sm-10">
-					<button type="button" class="btn btn-primary" onclick="importRecords()">开始导入</button>
+					<button type="button" class="btn btn-primary" onclick="startImport()">开始导入</button>
 					<a href="/record/{$domainId}" class="btn btn-default">返回</a>
 				</div>
 			</div>
 		</form>
+
+		<div id="import-progress" style="display:none;">
+			<div class="panel panel-info">
+				<div class="panel-heading">
+					<h3 class="panel-title">导入进度</h3>
+				</div>
+				<div class="panel-body">
+					<div class="progress">
+						<div class="progress-bar progress-bar-striped active" role="progressbar" id="progress-bar" style="width: 0%">
+							<span id="progress-text">0%</span>
+						</div>
+					</div>
+					<p id="progress-status">准备导入...</p>
+					<div class="row">
+						<div class="col-sm-3 text-center">
+							<div class="alert alert-success">
+								<strong id="success-count">0</strong><br>成功
+							</div>
+						</div>
+						<div class="col-sm-3 text-center">
+							<div class="alert alert-warning">
+								<strong id="skip-count">0</strong><br>跳过
+							</div>
+						</div>
+						<div class="col-sm-3 text-center">
+							<div class="alert alert-danger">
+								<strong id="fail-count">0</strong><br>失败
+							</div>
+						</div>
+						<div class="col-sm-3 text-center">
+							<div class="alert alert-info">
+								<strong id="total-count">0</strong><br>总计
+							</div>
+						</div>
+					</div>
+					<div id="error-list" style="max-height:200px;overflow-y:auto;display:none;">
+						<hr>
+						<p><strong>错误详情：</strong></p>
+						<ul class="list-group" id="error-items"></ul>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 	</div>
 	</div>
@@ -79,6 +134,9 @@
 {block name="script"}
 <script src="/static/js/layer/layer.js"></script>
 <script>
+var recordLine = {$recordLine|json_encode|raw};
+var dnsconfig = {$dnsconfig|json_encode|raw};
+
 var csvHelp = '<strong>CSV格式说明：</strong><br>' +
 	'<pre style="margin-top:5px;">主机记录,记录类型,记录值,线路类型,TTL,MX优先级,权重,备注,状态\n' +
 	'www,A,1.2.3.4,默认,600,,,,启用\n' +
@@ -89,12 +147,14 @@ var csvHelp = '<strong>CSV格式说明：</strong><br>' +
 var jsonHelp = '<strong>JSON格式示例：</strong><br>' +
 	'<pre style="margin-top:5px;">{\n' +
 	'  "domain": "example.com",\n' +
+	'  "dnstype": "aliyun",\n' +
 	'  "records": [\n' +
 	'    {\n' +
 	'      "Name": "www",\n' +
 	'      "Type": "A",\n' +
 	'      "Value": "1.2.3.4",\n' +
 	'      "Line": "default",\n' +
+	'      "LineName": "默认",\n' +
 	'      "TTL": 600,\n' +
 	'      "MX": "",\n' +
 	'      "Weight": "",\n' +
@@ -121,11 +181,11 @@ $(document).ready(function(){
 	});
 });
 
-function importRecords(){
+function startImport(){
 	var format = $('#format-select').val();
-	var formData = new FormData();
-	formData.append('format', format);
-	formData.append('override', $('select[name="override"]').val());
+	var override = $('#override-select').val() === '1';
+	var lineMapping = $('#line-mapping-select').val();
+	var records = [];
 	
 	if(format === 'json'){
 		var data = $('textarea[name="data"]').val();
@@ -133,73 +193,401 @@ function importRecords(){
 			layer.msg('请输入导入数据', {icon: 2});
 			return;
 		}
-		formData.append('data', data);
+		try {
+			var json = JSON.parse(data);
+			records = json.records || [];
+		} catch(e) {
+			layer.msg('JSON格式错误：' + e.message, {icon: 2});
+			return;
+		}
 	} else {
 		var file = $('input[name="csvfile"]')[0].files[0];
 		if(!file){
 			layer.msg('请选择CSV文件', {icon: 2});
 			return;
 		}
-		formData.append('csvfile', file);
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			var content = e.target.result;
+			records = parseCsv(content);
+			if(records.length === 0){
+				layer.msg('CSV文件解析失败，请检查文件格式', {icon: 2});
+				return;
+			}
+			layer.confirm('共解析到 ' + records.length + ' 条记录，确定开始导入吗？', {icon: 3, title:'提示'}, function(index){
+				layer.close(index);
+				beginImportProcess(records, override, lineMapping);
+			});
+		};
+		reader.readAsText(file);
+		return;
 	}
 	
-	layer.confirm('确定要开始导入解析记录吗？', {icon: 3, title:'提示'}, function(index){
+	if(records.length === 0){
+		layer.msg('没有找到可导入的记录', {icon: 2});
+		return;
+	}
+	
+	layer.confirm('共解析到 ' + records.length + ' 条记录，确定开始导入吗？', {icon: 3, title:'提示'}, function(index){
 		layer.close(index);
-		var ii = layer.load(2, {shade:[0.1,'#fff']});
-		$.ajax({
-			type : 'POST',
-			url : '/record/import/{$domainId}',
-			data : formData,
-			processData: false,
-			contentType: false,
-			dataType : 'json',
-			success : function(data) {
-				layer.close(ii);
-				if(data.code == 0){
-					var resultHtml = '<div style="padding:10px;">';
-					resultHtml += '<p><strong>' + data.msg + '</strong></p>';
-					if(data.data && data.data.errors && data.data.errors.length > 0){
-						resultHtml += '<hr><p><strong>错误详情（前10条）：</strong></p><ul>';
-						for(var i = 0; i < data.data.errors.length; i++){
-							resultHtml += '<li>' + htmlEscape(data.data.errors[i]) + '</li>';
-						}
-						resultHtml += '</ul>';
-					}
-					resultHtml += '</div>';
-					layer.alert(resultHtml, {
-						icon: 1,
-						area: ['500px', '400px'],
-						title: '导入结果'
-					}, function(){
-						layer.closeAll();
-						if(data.data && data.data.success > 0){
-							window.location.href = '/record/{$domainId}';
-						}
-					});
-				}else{
-					var errorHtml = '<div style="padding:10px;">';
-					errorHtml += '<p><strong>' + data.msg + '</strong></p>';
-					if(data.data && data.data.errors && data.data.errors.length > 0){
-						errorHtml += '<hr><p><strong>错误详情：</strong></p><ul>';
-						for(var i = 0; i < data.data.errors.length; i++){
-							errorHtml += '<li>' + htmlEscape(data.data.errors[i]) + '</li>';
-						}
-						errorHtml += '</ul>';
-					}
-					errorHtml += '</div>';
-					layer.alert(errorHtml, {
-						icon: 2,
-						area: ['500px', '400px'],
-						title: '导入失败'
-					});
+		beginImportProcess(records, override, lineMapping);
+	});
+}
+
+function parseCsv(data) {
+	var records = [];
+	var lines = data.split('\n');
+	
+	if(lines[0] && lines[0].charCodeAt(0) === 0xFEFF){
+		lines[0] = lines[0].substring(1);
+	}
+	
+	var startIndex = 0;
+	for(var i = 0; i < lines.length; i++){
+		var line = lines[i].trim();
+		if(!line) continue;
+		var firstCol = line.split(',')[0].replace(/["']/g, '').toLowerCase().trim();
+		if(['主机记录', 'name', '主机名', 'record'].indexOf(firstCol) !== -1){
+			startIndex = i + 1;
+			break;
+		}
+	}
+	
+	for(var i = startIndex; i < lines.length; i++){
+		var line = lines[i].trim();
+		if(!line) continue;
+		
+		var cols = parseCsvLine(line);
+		if(cols.length < 3) continue;
+		
+		records.push({
+			Name: cols[0].trim(),
+			Type: cols[1].trim().toUpperCase(),
+			Value: cols[2].trim(),
+			LineName: (cols[3] || '').trim(),
+			TTL: parseInt(cols[4]) || 600,
+			MX: parseInt(cols[5]) || 1,
+			Weight: parseInt(cols[6]) || 0,
+			Remark: (cols[7] || '').trim(),
+			Status: (cols[8] || '1').trim()
+		});
+	}
+	
+	return records;
+}
+
+function parseCsvLine(line) {
+	var result = [];
+	var current = '';
+	var inQuotes = false;
+	
+	for(var i = 0; i < line.length; i++){
+		var char = line[i];
+		if(char === '"'){
+			if(inQuotes && line[i+1] === '"'){
+				current += '"';
+				i++;
+			} else {
+				inQuotes = !inQuotes;
+			}
+		} else if(char === ',' && !inQuotes){
+			result.push(current);
+			current = '';
+		} else {
+			current += char;
+		}
+	}
+	result.push(current);
+	return result;
+}
+
+var lineNameAliases = {
+	'默认': ['default', ' DEF', '默认', '全网默认', '0', '-1', '', 'default_view'],
+	'电信': ['telecom', 'CT', '电信', 'Dianxin', 'ct', '10=0', '1', 'LTEL', '84613316902921216', '285344768', '2'],
+	'联通': ['unicom', 'CU', '联通', 'Liantong', 'cnc', '10=1', '2', 'LCNC', '84613316923892736', '285345792', '3'],
+	'移动': ['mobile', 'CM', '移动', 'Yidong', 'cmnet', '10=3', '3', 'LMOB', '84613316953252864', '285346816', '4'],
+	'海外': ['oversea', 'AB', '海外', '境外', 'Abroad', '3=0', '4', 'LFOR', '8'],
+	'教育网': ['edu', 'EDU', '教育网', '10=2', 'LEDU'],
+	'搜索引擎': ['search', 'SEO', '搜索引擎', '80=0', 'LSEO'],
+	'百度': ['baidu', '百度', '百度蜘蛛'],
+	'谷歌': ['google', '谷歌', '谷歌蜘蛛'],
+	'必应': ['bing', '必应'],
+	'铁通': ['tt', '铁通', 'Tietong'],
+	'鹏博士': ['peng', '鹏博士', 'Peng博士'],
+	'广电网': ['gdd', '广电网', '广电'],
+	'长城宽带': ['gwbn', '长城宽带'],
+	'港澳台': ['hkt', '港澳台', '香港', '澳门', '台湾'],
+	'亚太地区': ['ap', '亚太', '亚洲'],
+	'欧洲': ['eu', '欧洲'],
+	'北美': ['na', '北美', '美国'],
+	'非洲': ['af', '非洲'],
+	'南美': ['sa', '南美'],
+	'大洋洲': ['oc', '大洋洲'],
+	'国内': ['domestic', '国内', '中国大陆'],
+	'国外': ['foreign', '国外', '国外用户'],
+};
+
+function buildLineNameMap() {
+	var map = {};
+	for(var i = 0; i < recordLine.length; i++){
+		var item = recordLine[i];
+		map[item.name] = item.id;
+		for(var standardName in lineNameAliases){
+			var aliases = lineNameAliases[standardName];
+			if(aliases.indexOf(item.name) !== -1){
+				for(var j = 0; j < aliases.length; j++){
+					map[aliases[j]] = item.id;
 				}
+			}
+		}
+	}
+	return map;
+}
+
+function normalizeLineName(name) {
+	if(!name) return '';
+	name = String(name).trim();
+	var map = {
+		'全网默认': '默认', 'DEF': '默认', 'default_view': '默认',
+		'Dianxin': '电信', 'ct': '电信', 'LTEL': '电信',
+		'Liantong': '联通', 'cnc': '联通', 'LCNC': '联通',
+		'Yidong': '移动', 'cmnet': '移动', 'LMOB': '移动',
+		'Abroad': '海外', 'LFOR': '海外', '境外': '海外',
+		'LEDU': '教育网',
+		'LSEO': '搜索引擎',
+	};
+	return map[name] || name;
+}
+
+function mapLineId(lineId, lineName, lineMapping) {
+	if(lineMapping === 'keep'){
+		return lineId || getDefaultLineId();
+	}
+
+	if(lineId && recordLine.some(function(item){ return item.id === lineId; })){
+		return lineId;
+	}
+
+	var lineNameMap = buildLineNameMap();
+
+	var normalizedName = normalizeLineName(lineName);
+	if(normalizedName && lineNameMap[normalizedName]){
+		return lineNameMap[normalizedName];
+	}
+
+	if(lineName && lineNameMap[lineName]){
+		return lineNameMap[lineName];
+	}
+
+	var allAliases = [];
+	for(var key in lineNameAliases){
+		allAliases = allAliases.concat(lineNameAliases[key]);
+	}
+
+	if(lineId){
+		var idStr = String(lineId).trim();
+		if(lineNameMap[idStr]){
+			return lineNameMap[idStr];
+		}
+		for(var i = 0; i < allAliases.length; i++){
+			if(idStr === allAliases[i] || idStr.indexOf(allAliases[i]) !== -1){
+				for(var standardName in lineNameAliases){
+					if(lineNameAliases[standardName].indexOf(allAliases[i]) !== -1){
+						if(lineNameMap[standardName]){
+							return lineNameMap[standardName];
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if(lineName){
+		var nameStr = String(lineName).trim();
+		for(var i = 0; i < allAliases.length; i++){
+			if(nameStr === allAliases[i] || nameStr.indexOf(allAliases[i]) !== -1){
+				for(var standardName in lineNameAliases){
+					if(lineNameAliases[standardName].indexOf(allAliases[i]) !== -1){
+						if(lineNameMap[standardName]){
+							return lineNameMap[standardName];
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return getDefaultLineId();
+}
+
+function getDefaultLineId() {
+	for(var i = 0; i < recordLine.length; i++){
+		var name = recordLine[i].name;
+		if(name === '默认' || name === '全网默认' || name === 'DEF' || name === '仅DNS'){
+			return recordLine[i].id;
+		}
+	}
+	if(recordLine.length > 0){
+		return recordLine[0].id;
+	}
+	return 'default';
+}
+
+function beginImportProcess(records, override, lineMapping) {
+	$('#form-import').hide();
+	$('#import-progress').show();
+	
+	var total = records.length;
+	var success = 0;
+	var skip = 0;
+	var fail = 0;
+	var errors = [];
+	var processed = 0;
+	var existingRecords = {};
+	
+	$('#total-count').text(total);
+	
+	if(!override){
+		loadExistingRecords(function(existing){
+			existingRecords = existing;
+			processNext();
+		});
+	} else {
+		processNext();
+	}
+	
+	function loadExistingRecords(callback) {
+		$('#progress-status').text('正在加载现有记录...');
+		var existing = {};
+		var page = 1;
+		
+		function loadPage() {
+			$.ajax({
+				type: 'POST',
+				url: '/record/data/{$domainId}',
+				data: {offset: (page-1)*100, limit: 100},
+				dataType: 'json',
+				success: function(data) {
+					if(data.rows){
+						for(var i = 0; i < data.rows.length; i++){
+							var row = data.rows[i];
+							var key = row.Name + '|' + row.Type + '|' + row.Value;
+							existing[key] = true;
+						}
+					}
+					if(data.rows && data.rows.length === 100 && page * 100 < data.total){
+						page++;
+						loadPage();
+					} else {
+						callback(existing);
+					}
+				},
+				error: function(){
+					callback(existing);
+				}
+			});
+		}
+		loadPage();
+	}
+	
+	function processNext() {
+		if(processed >= total){
+			finishImport();
+			return;
+		}
+		
+		var record = records[processed];
+		processed++;
+		
+		var progress = Math.round((processed / total) * 100);
+		$('#progress-bar').css('width', progress + '%');
+		$('#progress-text').text(progress + '%');
+		$('#progress-status').text('正在导入：' + record.Name + ' [' + record.Type + ']');
+		
+		if(!record.Name || !record.Type || !record.Value){
+			fail++;
+			errors.push('第' + processed + '条记录缺少必填字段');
+			updateCounts();
+			setTimeout(processNext, 100);
+			return;
+		}
+		
+		if(!override){
+			var key = record.Name + '|' + record.Type + '|' + record.Value;
+			if(existingRecords[key]){
+				skip++;
+				updateCounts();
+				setTimeout(processNext, 50);
+				return;
+			}
+		}
+		
+		var line = mapLineId(record.Line, record.LineName, lineMapping);
+		
+		$.ajax({
+			type: 'POST',
+			url: '/record/import/{$domainId}',
+			data: {
+				name: record.Name,
+				type: record.Type,
+				value: record.Value,
+				line: line,
+				ttl: record.TTL || 600,
+				mx: record.MX || 1,
+				weight: record.Weight || 0,
+				remark: record.Remark || ''
 			},
-			error:function(){
-				layer.close(ii);
-				layer.msg('服务器错误', {icon: 2});
+			dataType: 'json',
+			success: function(data) {
+				if(data.code === 0){
+					success++;
+				} else {
+					fail++;
+					errors.push(record.Name + ' [' + record.Type + ']: ' + data.msg);
+				}
+				updateCounts();
+				setTimeout(processNext, 100);
+			},
+			error: function(){
+				fail++;
+				errors.push(record.Name + ' [' + record.Type + ']: 网络错误');
+				updateCounts();
+				setTimeout(processNext, 100);
 			}
 		});
-	});
+	}
+	
+	function updateCounts() {
+		$('#success-count').text(success);
+		$('#skip-count').text(skip);
+		$('#fail-count').text(fail);
+		
+		if(errors.length > 0){
+			$('#error-list').show();
+			var html = '';
+			for(var i = 0; i < Math.min(errors.length, 20); i++){
+				html += '<li class="list-group-item list-group-item-danger">' + htmlEscape(errors[i]) + '</li>';
+			}
+			if(errors.length > 20){
+				html += '<li class="list-group-item">还有 ' + (errors.length - 20) + ' 条错误...</li>';
+			}
+			$('#error-items').html(html);
+		}
+	}
+	
+	function finishImport() {
+		$('#progress-bar').removeClass('active');
+		$('#progress-status').text('导入完成！成功 ' + success + ' 条，跳过 ' + skip + ' 条，失败 ' + fail + ' 条');
+		
+		layer.alert('导入完成！<br>成功：' + success + ' 条<br>跳过：' + skip + ' 条<br>失败：' + fail + ' 条', {
+			icon: fail > 0 ? (success > 0 ? 3 : 2) : 1,
+			title: '导入结果'
+		}, function(){
+			if(success > 0){
+				window.location.href = '/record/{$domainId}';
+			}
+		});
+	}
 }
 
 function htmlEscape(str) {
