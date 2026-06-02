@@ -2035,6 +2035,12 @@ ctrl+x 保存退出<br/>',
                     'show' => 'product==\'clb\'||product==\'alb\'',
                     'required' => true,
                 ],
+                'project_name' => [
+                    'name' => '证书上传项目名称',
+                    'type' => 'input',
+                    'placeholder' => '证书实例所属的火山引擎项目名称。如果不设置该参数，证书实例会属于default项目。',
+                    'required' => false,
+                ],
             ],
         ],
         'west' => [

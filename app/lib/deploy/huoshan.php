@@ -33,7 +33,7 @@ class huoshan implements DeployInterface
         if ($config['product'] == 'live') {
             $this->deploy_live($fullchain, $privatekey, $config);
         } else {
-            $cert_id = $this->get_cert_id($fullchain, $privatekey);
+            $cert_id = $this->get_cert_id($fullchain, $privatekey, $config);
             if (!$cert_id) throw new Exception('获取证书ID失败');
             $info['cert_id'] = $cert_id;
             if (!isset($config['product']) || $config['product'] == 'cdn') {
@@ -121,6 +121,9 @@ class huoshan implements DeployInterface
             ],
             'UseWay' => 'https',
         ];
+        if (!empty($config['project_name'])) {
+            $param['ProjectName'] = $config['project_name'];
+        }
         $result = $client->request('POST', 'CreateCert', $param);
         $this->log('上传证书成功 ChainID=' . $result['ChainID']);
 
@@ -214,7 +217,7 @@ class huoshan implements DeployInterface
         $this->log('ALB监听器 ' . $config['listener_id'] . ' 部署证书成功！');
     }
 
-    private function get_cert_id($fullchain, $privatekey)
+    private function get_cert_id($fullchain, $privatekey, $config)
     {
         $certInfo = openssl_x509_parse($fullchain, true);
         if (!$certInfo) throw new Exception('证书解析失败');
@@ -229,6 +232,9 @@ class huoshan implements DeployInterface
                 'PrivateKey' => $privatekey,
             ],
         ];
+        if (!empty($config['project_name'])) {
+            $param['ProjectName'] = $config['project_name'];
+        }
         try {
             $data = $client->request('POST', 'ImportCertificate', $param);
         } catch (Exception $e) {
@@ -237,7 +243,7 @@ class huoshan implements DeployInterface
         if (!empty($data['InstanceId'])) {
             $cert_id = $data['InstanceId'];
             $this->log('上传证书成功 CertId=' . $cert_id);
-
+            sleep(1);
             $param = [
                 'InstanceId' => $cert_id,
                 'Options' => [
