@@ -44,6 +44,10 @@ class wangsu implements DeployInterface
             $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
             $serial_no = strtolower($certInfo['serialNumberHex']);
             $this->get_cert_id($fullchain, $privatekey, $cert_name, $config['cert_id'], $serial_no, true);
+
+        } elseif ($config['product'] == 'cdnpro_certificate') {
+            $this->deploy_cdnpro_certificate($fullchain, $privatekey, $config, $info);
+
         } else {
             throw new Exception('未知的产品类型');
         }
@@ -213,6 +217,56 @@ class wangsu implements DeployInterface
         $info['cert_id'] = $cert_id;
     }
 
+    public function deploy_cdnpro_certificate($fullchain, $privatekey, $config, &$info)
+    {
+        $certInfo = openssl_x509_parse($fullchain, true);
+        if (!$certInfo) {
+            throw new Exception('证书解析失败');
+        }
+
+        $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
+        $cert_id = isset($config['cert_id']) ? $config['cert_id'] : null;
+        if (empty($cert_id)) {
+            throw new Exception('证书ID不能为空');
+        }
+
+        $result = $this->update_cert_id_cdnpro($fullchain, $privatekey, $cert_name, $cert_id);
+        $cert_id = $result['cert_id'];
+
+        if (empty($result['updated'])) {
+            $info['cert_id'] = $cert_id;
+            return;
+        }
+
+        $certVersion = $result['version'];
+
+        // 下发证书部署任务
+        $deploymentTasks = [
+            'target' => 'production',
+            'actions' => [
+                [
+                    'action' => 'deploy_cert',
+                    'certificateId' => $cert_id,
+                    'version' => intval($certVersion),
+                ]
+            ],
+            'name' => 'Deploy certificate ' . $cert_name,
+        ];
+
+        try {
+            $data = $this->request('/cdn/deploymentTasks', $deploymentTasks, true, null, 'POST', false, ['Check-Certificate' => 'no', 'Check-Usage' => 'no']);
+        } catch (Exception $e) {
+            throw new Exception('下发证书部署任务失败：' . $e->getMessage());
+        }
+
+        $url_parts = parse_url($data);
+        $path_parts = explode('/', $url_parts['path']);
+        $deploymentTaskId = end($path_parts);
+
+        $this->log('证书部署任务下发成功，部署任务ID：' . $deploymentTaskId);
+        $info['cert_id'] = $cert_id;
+    }
+
     private function get_cert_id($fullchain, $privatekey, $cert_name, $cert_id = null, $serial_no = null, $overwrite = false)
     {
         if ($cert_id) {
@@ -347,6 +401,49 @@ class wangsu implements DeployInterface
         usleep(500000);
 
         return $cert_id;
+    }
+
+    private function update_cert_id_cdnpro($fullchain, $privatekey, $cert_name, $cert_id)
+    {
+        try {
+            $data = $this->request('/cdn/certificates/' . $cert_id);
+        } catch (Exception $e) {
+            throw new Exception('证书ID ' . $cert_id . ' 不存在或获取失败：' . $e->getMessage());
+        }
+
+        if (isset($data['name']) && $data['name'] == $cert_name) {
+            $this->log('证书已是最新，无需更新，证书ID：' . $cert_id);
+            return ['cert_id' => $cert_id, 'updated' => false];
+        }
+
+        $this->log('证书已过期，准备更新...');
+
+        $date = gmdate("D, d M Y H:i:s T");
+        $encryptedKey = $this->encryptPrivateKey($privatekey, $date);
+        $param = [
+            'name' => $cert_name,
+            'newVersion' => [
+                'privateKey' => $encryptedKey,
+                'certificate' => $fullchain,
+                'comments' => $cert_name,
+            ]
+        ];
+
+        try {
+            $location = $this->request('/cdn/certificates/' . $cert_id, $param, true, $date, 'PATCH', true);
+        } catch (Exception $e) {
+            throw new Exception('更新证书失败：' . $e->getMessage());
+        }
+
+        // 从 Location 头解析版本号，格式：.../certificates/{id}/versions/{version}
+        $version = 1;
+        if (is_string($location)) {
+            $path_parts = explode('/', parse_url($location, PHP_URL_PATH));
+            $version = intval(end($path_parts));
+        }
+
+        $this->log('更新证书成功，证书ID：' . $cert_id . '，版本号：' . $version);
+        return ['cert_id' => $cert_id, 'version' => $version, 'updated' => true];
     }
 
     private function encryptPrivateKey($privateKey, $date = null)

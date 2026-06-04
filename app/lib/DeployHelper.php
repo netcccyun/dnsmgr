@@ -2122,6 +2122,7 @@ ctrl+x 保存退出<br/>',
                     'options' => [
                         ['value'=>'cdn', 'label'=>'CDN'],
                         ['value'=>'cdnpro', 'label'=>'CDN Pro'],
+                        ['value'=>'cdnpro_certificate', 'label'=>'CDN Pro证书管理'],
                         ['value'=>'certificate', 'label'=>'证书管理']
                     ],
                     'value' => 'cdn',
@@ -2144,7 +2145,7 @@ ctrl+x 保存退出<br/>',
                 'cert_id' => [
                     'name' => '证书ID',
                     'type' => 'input',
-                    'show' => 'product==\'certificate\'',
+                    'show' => 'product==\'certificate\'||product==\'cdnpro_certificate\'',
                     'placeholder' => '',
                     'required' => true,
                 ],
