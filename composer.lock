@@ -68,16 +68,16 @@
         },
         {
             "name": "cccyun/think-captcha",
-            "version": "3.0.11",
+            "version": "3.0.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/netcccyun/think-captcha.git",
-                "reference": "40012811bf27b41011b1b60bcfadf16ad339931c"
+                "reference": "e20974d9f86a7e3039ead56a66995c396109a757"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/netcccyun/think-captcha/zipball/40012811bf27b41011b1b60bcfadf16ad339931c",
-                "reference": "40012811bf27b41011b1b60bcfadf16ad339931c",
+                "url": "https://api.github.com/repos/netcccyun/think-captcha/zipball/e20974d9f86a7e3039ead56a66995c396109a757",
+                "reference": "e20974d9f86a7e3039ead56a66995c396109a757",
                 "shasum": ""
             },
             "require": {
@@ -114,9 +114,9 @@
             ],
             "description": "captcha package for thinkphp",
             "support": {
-                "source": "https://github.com/netcccyun/think-captcha/tree/3.0.11"
+                "source": "https://github.com/netcccyun/think-captcha/tree/3.0.12"
             },
-            "time": "2025-04-26T08:37:18+00:00"
+            "time": "2026-06-23T15:30:22+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",
