@@ -31,7 +31,6 @@ class Sendcloud
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
         $json = curl_exec($ch);
-        curl_close($ch);
         $arr = json_decode($json, true);
         if ($arr['statusCode'] == 200) {
             return true;

@@ -63,10 +63,8 @@ class Aliyun
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         if ($errno) {
             $errmsg = curl_error($ch);
-            curl_close($ch);
             throw new Exception('Curl error: ' . $errmsg);
         }
-        curl_close($ch);
 
         $arr = json_decode($response, true);
         if ($httpCode == 200) {

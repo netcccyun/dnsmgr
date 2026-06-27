@@ -286,7 +286,6 @@ class AWS
         $errno = curl_errno($ch);
         if ($errno) {
             $errmsg = curl_error($ch);
-            curl_close($ch);
             throw new Exception('Curl error: ' . $errmsg);
         }
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -297,7 +296,6 @@ class AWS
             $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
             $response = substr($response, $headerSize);
         }
-        curl_close($ch);
 
         if ($httpCode >= 200 && $httpCode < 300) {
             if (empty($response)) return true;

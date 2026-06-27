@@ -175,7 +175,6 @@ class k8s implements DeployInterface
         $resp = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         $err  = curl_error($ch);
-        curl_close($ch);
         return [$code, $resp, $err];
     }
 

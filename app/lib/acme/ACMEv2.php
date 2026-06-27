@@ -29,7 +29,6 @@ class ACMEv2
 	public function __destruct()
 	{
 		if (PHP_MAJOR_VERSION < 8 && $this->account_key) openssl_pkey_free($this->account_key);
-		if ($this->ch) curl_close($this->ch);
 	}
 
 	public function loadAccountKey($account_key_pem)
@@ -377,7 +376,7 @@ class ACMEv2
 		if (!empty($headers['content-type'])) {
 			switch ($headers['content-type']) {
 				case 'application/json':
-					if ($code[0] == '2') { // on non 2xx response: fall through to problem+json case
+					if (!is_null($code) && $code[0] == '2') { // on non 2xx response: fall through to problem+json case
 						$body = $this->json_decode($body);
 						if (isset($body['error']) && !(isset($body['status']) && $body['status'] === 'valid')) {
 							$this->handleError($body['error']);
@@ -391,7 +390,7 @@ class ACMEv2
 			}
 		}
 
-		if ($code[0] != '2') {
+		if (!is_null($code) && $code[0] != '2') {
 			throw new Exception('Invalid HTTP-Status-Code received: ' . $code . ': ' . print_r($body, true));
 		}
 
