@@ -120,10 +120,8 @@ class AliyunOSS
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         if ($errno) {
             $errmsg = curl_error($ch);
-            curl_close($ch);
             throw new Exception('Curl error: ' . $errmsg);
         }
-        curl_close($ch);
 
         if ($httpCode >= 200 && $httpCode < 300) {
             if (empty($response)) return true;

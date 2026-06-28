@@ -105,11 +105,9 @@ class s3storage implements DeployInterface
         $errno = curl_errno($ch);
         if ($errno) {
             $errmsg = curl_error($ch);
-            curl_close($ch);
             throw new Exception('Curl error: ' . $errmsg);
         }
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode >= 200 && $httpCode < 300) {
             return $response;

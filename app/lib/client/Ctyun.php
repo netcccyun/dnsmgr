@@ -150,10 +150,8 @@ class Ctyun
         $errno = curl_errno($ch);
         if ($errno) {
             $errmsg = curl_error($ch);
-            curl_close($ch);
             throw new Exception('Curl error: ' . $errmsg);
         }
-        curl_close($ch);
 
         $arr = json_decode($response, true);
         if (isset($arr['statusCode']) && ($arr['statusCode'] == 100000 || $arr['statusCode'] == 0 && $this->endpoint == 'cf-global.ctapi.ctyun.cn')) {
