@@ -442,6 +442,41 @@ class DnsHelper
             'page' => true,
             'add' => false,
         ],
+        'henet' => [
+            'name' => 'HE DNS',
+            'icon' => 'he.ico',
+            'note' => '',
+            'config' => [
+                'username' => [
+                    'name' => '用户名/邮箱',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '密码',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'remark' => 0,
+            'status' => false,
+            'redirect' => false,
+            'log' => false,
+            'weight' => false,
+            'page' => true,
+            'add' => false,
+        ],
         'spaceship' => [
             'name' => 'Spaceship',
             'icon' => 'spaceship.ico',
@@ -699,6 +734,7 @@ class DnsHelper
         'qingcloud' => ['DEF' => '0', 'CT' => '2', 'CU' => '3', 'CM' => '4', 'AB' => '8'],
         'cloudflare' => ['DEF' => '0'],
         'namesilo' => ['DEF' => 'default'],
+        'henet' => ['DEF' => 'default'],
         'powerdns' => ['DEF' => 'default'],
         'spaceship' => ['DEF' => 'default'],
         'aliyunesa' => ['DEF' => '0'],
