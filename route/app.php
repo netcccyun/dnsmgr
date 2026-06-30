@@ -36,10 +36,12 @@ Route::group(function () {
     Route::post('/changeskin', 'index/changeskin');
     Route::get('/cleancache', 'index/cleancache');
     Route::any('/setpwd', 'index/setpwd');
+    Route::any('/setapi', 'index/setapi');
     Route::any('/totp/:action', 'index/totp');
     Route::get('/test', 'index/test');
 
     Route::post('/user/data', 'user/user_data');
+    Route::post('/user/api_manage/:act', 'user/api_manage');
     Route::post('/user/op', 'user/user_op');
     Route::get('/user', 'user/user');
     
@@ -107,6 +109,8 @@ Route::group(function () {
     Route::any('/record/batchadd/:id', 'domain/record_batch_add');
     Route::get('/record/batchadd', 'domain/record_batch_add2');
     Route::any('/record/batchedit', 'domain/record_batch_edit2');
+    Route::any('/record/export/:id', 'domain/record_export');
+    Route::any('/record/import/:id', 'domain/record_import');
     Route::any('/record/log/:id', 'domain/record_log');
     Route::post('/record/groups/:id', 'domain/record_groups');
     Route::post('/record/list', 'domain/record_list');
@@ -171,6 +175,7 @@ Route::group(function () {
     Route::get('/system/customwebhooktest', 'system/customwebhooktest');
     Route::post('/system/proxytest', 'system/proxytest');
     Route::get('/system/cronset', 'system/cronset');
+    Route::get('/system/reservedset', 'system/reservedset');
 
 })->middleware(CheckLogin::class)
 ->middleware(ViewOutput::class);

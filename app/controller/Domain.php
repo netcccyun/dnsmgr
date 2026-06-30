@@ -568,6 +568,11 @@ class Domain extends BaseController
             return json(['code' => -1, 'msg' => '参数不能为空']);
         }
 
+        $reservedCheck = $this->checkReservedRecord($name);
+        if ($reservedCheck['is_reserved']) {
+            return json(['code' => -1, 'msg' => $reservedCheck['msg']]);
+        }
+
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
         $recordid = $dns->addDomainRecord($name, $type, $value, $line, $ttl, $mx, $weight, $remark);
         if ($recordid) {
@@ -601,6 +606,11 @@ class Domain extends BaseController
 
         if (empty($recordid) || empty($name) || empty($type) || empty($value)) {
             return json(['code' => -1, 'msg' => '参数不能为空']);
+        }
+
+        $reservedCheck = $this->checkReservedRecord($name);
+        if ($reservedCheck['is_reserved']) {
+            return json(['code' => -1, 'msg' => $reservedCheck['msg']]);
         }
 
         $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
@@ -880,10 +890,17 @@ class Domain extends BaseController
 
             $success = 0;
             $fail = 0;
+            $reservedList = [];
             foreach ($recordlist as $record) {
                 $record = trim($record);
                 $arr = explode(' ', $record);
                 if (empty($record) || empty($arr[0]) || empty($arr[1])) continue;
+                $reservedCheck = $this->checkReservedRecord($arr[0]);
+                if ($reservedCheck['is_reserved']) {
+                    $reservedList[] = $arr[0];
+                    $fail++;
+                    continue;
+                }
                 $thistype = empty($type) ? getDnsType($arr[1]) : $type;
                 $recordid = $dns->addDomainRecord($arr[0], $thistype, $arr[1], $line, $ttl, $mx, null, $remark);
                 if ($recordid) {
@@ -1475,5 +1492,142 @@ class Domain extends BaseController
         if (empty($ids)) return json(['code' => -1, 'msg' => '请选择要操作的域名']);
         $count = Db::name('domain')->where('id', 'in', $ids)->update(['cid' => $cid]);
         return json(['code' => 0, 'msg' => '成功设置' . $count . '个域名的分类！']);
+    }
+
+    public function record_export()
+    {
+        $id = input('param.id/d');
+        $format = input('get.format', 'json', 'trim');
+        $page = input('get.page/d', 0);
+        $pagesize = input('get.pagesize/d', 100);
+        
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if (!$drow) {
+            return json(['code' => -1, 'msg' => '域名不存在']);
+        }
+        if (!checkPermission(0, $drow['name'])) return json(['code' => -1, 'msg' => '无权限']);
+
+        $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+        
+        if ($page === 0) {
+            $recordLine = cache('record_line_' . $id);
+            $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+            return json([
+                'code' => 0,
+                'data' => [
+                    'domain' => $drow['name'],
+                    'dnstype' => $dnstype,
+                    'recordLine' => $recordLine,
+                    'pagesize' => min($pagesize, 100)
+                ]
+            ]);
+        }
+
+        $domainRecords = $dns->getDomainRecords($page, $pagesize);
+        if (!$domainRecords) return json(['code' => -1, 'msg' => '获取解析记录失败，' . $dns->getError()]);
+
+        $recordLine = cache('record_line_' . $id);
+        $records = [];
+        foreach ($domainRecords['list'] as $row) {
+            $lineName = isset($recordLine[$row['Line']]) ? $recordLine[$row['Line']]['name'] : $row['Line'];
+            $records[] = [
+                'Name' => $row['Name'],
+                'Type' => $row['Type'],
+                'Value' => is_array($row['Value']) ? implode(',', $row['Value']) : $row['Value'],
+                'Line' => $row['Line'],
+                'LineName' => $lineName,
+                'TTL' => $row['TTL'],
+                'MX' => $row['MX'] ?? '',
+                'Weight' => $row['Weight'] ?? '',
+                'Remark' => $row['Remark'] ?? '',
+                'Status' => $row['Status'],
+            ];
+        }
+
+        return json([
+            'code' => 0,
+            'data' => [
+                'records' => $records,
+                'total' => $domainRecords['total'],
+                'page' => $page,
+                'hasMore' => count($records) == $pagesize
+            ]
+        ]);
+    }
+
+    public function record_import()
+    {
+        $id = input('param.id/d');
+        $drow = Db::name('domain')->where('id', $id)->find();
+        if (!$drow) {
+            return $this->alert('error', '域名不存在');
+        }
+        $dnstype = Db::name('account')->where('id', $drow['aid'])->value('type');
+        if (!checkPermission(0, $drow['name'])) return $this->alert('error', '无权限');
+
+        if (request()->isAjax()) {
+            $name = input('post.name', null, 'trim');
+            $type = input('post.type', null, 'trim');
+            $value = input('post.value', null, 'trim');
+            $line = input('post.line', null, 'trim');
+            $ttl = input('post.ttl/d', 600);
+            $mx = input('post.mx/d', 1);
+            $weight = input('post.weight/d', 0);
+            $remark = input('post.remark', null, 'trim');
+
+            if (empty($name) || empty($type) || empty($value)) {
+                return json(['code' => -1, 'msg' => '参数不能为空']);
+            }
+
+            $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+            $recordid = $dns->addDomainRecord($name, $type, $value, $line, $ttl, $mx, $weight, $remark);
+            if ($recordid) {
+                $this->add_log($drow['name'], '导入解析', $name.' ['.$type.'] '.$value.' (线路:'.$line.' TTL:'.$ttl.')');
+                return json(['code' => 0, 'msg' => '添加解析记录成功！']);
+            } else {
+                return json(['code' => -1, 'msg' => '添加解析记录失败，' . $dns->getError()]);
+            }
+        }
+
+        list($recordLine, $minTTL) = $this->get_line_and_ttl($drow);
+
+        $recordLineArr = [];
+        foreach ($recordLine as $key => $item) {
+            $recordLineArr[] = ['id' => strval($key), 'name' => $item['name'], 'parent' => $item['parent']];
+        }
+
+        $dnsconfig = DnsHelper::$dns_config[$dnstype];
+        $dnsconfig['type'] = $dnstype;
+
+        View::assign('domainId', $id);
+        View::assign('domainName', $drow['name']);
+        View::assign('recordLine', $recordLineArr);
+        View::assign('minTTL', $minTTL ? $minTTL : 1);
+        View::assign('dnsconfig', $dnsconfig);
+        return view('import');
+    }
+
+    private function checkReservedRecord($recordName)
+    {
+        if (isset(request()->user['level']) && request()->user['level'] == 2) {
+            return ['is_reserved' => false];
+        }
+
+        $reservedConfig = config_get('reserved_records', '');
+        if (empty($reservedConfig)) {
+            return ['is_reserved' => false];
+        }
+
+        $reservedList = array_map('trim', explode(',', $reservedConfig));
+        $reservedList = array_filter($reservedList);
+
+        if (in_array($recordName, $reservedList)) {
+            return [
+                'is_reserved' => true,
+                'msg' => '主机记录 "' . $recordName . '" 已被系统预留，无法使用'
+            ];
+        }
+
+        return ['is_reserved' => false];
     }
 }

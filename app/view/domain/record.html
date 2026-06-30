@@ -188,7 +188,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   {if $dnsconfig.type=='dnspod'}<a href="/record/alias/{$domainId}" class="btn btn-default">域名别名</a>{/if}
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
-	<ul class="dropdown-menu"><li><a href="/record/batchadd/{$domainId}">添加</a></li><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('edit')">修改记录</a></li><li><a href="javascript:operation('editline')">修改线路</a></li>{if $dnsconfig.remark == 1}<li><a href="javascript:operation('editremark')">修改备注</a></li>{/if}{if $dnsconfig.type=='aliyun' || $dnsconfig.type=='dnspod'}<li><a href="javascript:operation('editgroup')">修改分组</a></li>{/if}<li><a href="javascript:operation('delete')">删除</a></li></ul>
+	<ul class="dropdown-menu"><li><a href="/record/batchadd/{$domainId}">添加</a></li><li><a href="javascript:operation('open')">启用</a></li><li><a href="javascript:operation('pause')">暂停</a></li><li><a href="javascript:operation('edit')">修改记录</a></li><li><a href="javascript:operation('editline')">修改线路</a></li>{if $dnsconfig.remark == 1}<li><a href="javascript:operation('editremark')">修改备注</a></li>{/if}{if $dnsconfig.type=='aliyun' || $dnsconfig.type=='dnspod'}<li><a href="javascript:operation('editgroup')">修改分组</a></li>{/if}<li><a href="javascript:operation('delete')">删除</a></li><li><a href="javascript:exportRecords('json')">导出JSON</a></li><li><a href="javascript:exportRecords('csv')">导出CSV</a></li><li><a href="/record/import/{$domainId}">导入记录</a></li></ul>
   </div>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">日志 <span class="caret"></span></button>
@@ -847,6 +847,142 @@ function checkRecord(recordid) {
 		}
 	});
 }
+function exportRecords(format) {
+    var ii = layer.load(2, {shade: [0.1, '#fff']});
+    $.ajax({
+        type: 'GET',
+        url: '/record/export/{$domainId}',
+        data: {format: format, page: 0, pagesize: 100},
+        dataType: 'json',
+        success: function(res) {
+            if(res.code !== 0){
+                layer.close(ii);
+                layer.alert(res.msg, {icon: 2});
+                return;
+            }
+            var domain = res.data.domain;
+            var recordLineMap = res.data.recordLine || {};
+            var pagesize = res.data.pagesize || 100;
+            var allRecords = [];
+            var currentPage = 1;
+
+            function fetchPage() {
+                $('#progress-status').text('正在导出第 ' + currentPage + ' 页...');
+                $.ajax({
+                    type: 'GET',
+                    url: '/record/export/{$domainId}',
+                    data: {format: format, page: currentPage, pagesize: pagesize},
+                    dataType: 'json',
+                    success: function(pageRes) {
+                        if(pageRes.code !== 0){
+                            layer.close(ii);
+                            layer.alert('导出失败：' + pageRes.msg, {icon: 2});
+                            return;
+                        }
+                        var records = pageRes.data.records || [];
+                        for(var i = 0; i < records.length; i++){
+                            var row = records[i];
+                            var lineName = recordLineMap[row.Line] ? recordLineMap[row.Line].name : row.Line;
+                            allRecords.push({
+                                Name: row.Name,
+                                Type: row.Type,
+                                Value: row.Value,
+                                Line: row.Line,
+                                LineName: lineName,
+                                TTL: row.TTL,
+                                MX: row.MX || '',
+                                Weight: row.Weight || '',
+                                Remark: row.Remark || '',
+                                Status: row.Status
+                            });
+                        }
+                        if(pageRes.data.hasMore && records.length > 0){
+                            currentPage++;
+                            fetchPage();
+                        } else {
+                            layer.close(ii);
+                            doExportFile(domain, format, allRecords);
+                        }
+                    },
+                    error: function(){
+                        layer.close(ii);
+                        layer.msg('导出失败，网络错误', {icon: 2});
+                    }
+                });
+            }
+            fetchPage();
+        },
+        error: function(){
+            layer.close(ii);
+            layer.msg('导出失败，网络错误', {icon: 2});
+        }
+    });
+}
+
+function doExportFile(domain, format, records) {
+    if(format === 'json'){
+        var exportData = {
+            domain: domain,
+            dnstype: dnsconfig.type,
+            export_time: new Date().toLocaleString(),
+            records: records
+        };
+        var content = JSON.stringify(exportData, null, 2);
+        var blob = new Blob([content], {type: 'application/json;charset=utf-8'});
+        var filename = domain + '_dns_records_' + formatDate(new Date()) + '.json';
+        downloadBlob(blob, filename);
+    } else {
+        var csvContent = '\uFEFF';
+        csvContent += '主机记录,记录类型,记录值,线路类型,TTL,MX优先级,权重,备注,状态\n';
+        for(var i = 0; i < records.length; i++){
+            var r = records[i];
+            csvContent += escapeCsv(r.Name) + ',' +
+                r.Type + ',' +
+                escapeCsv(r.Value) + ',' +
+                escapeCsv(r.LineName) + ',' +
+                r.TTL + ',' +
+                (r.MX || '') + ',' +
+                (r.Weight || '') + ',' +
+                escapeCsv(r.Remark || '') + ',' +
+                (r.Status == '1' ? '启用' : '暂停') + '\n';
+        }
+        var blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8'});
+        var filename = domain + '_dns_records_' + formatDate(new Date()) + '.csv';
+        downloadBlob(blob, filename);
+    }
+    layer.msg('导出成功，共 ' + records.length + ' 条记录', {icon: 1});
+}
+
+function escapeCsv(value) {
+    if(value == null) return '';
+    value = String(value);
+    if(value.indexOf(',') !== -1 || value.indexOf('"') !== -1 || value.indexOf('\n') !== -1){
+        return '"' + value.replace(/"/g, '""') + '"';
+    }
+    return value;
+}
+
+function formatDate(date) {
+    var y = date.getFullYear();
+    var m = String(date.getMonth()+1).padStart(2, '0');
+    var d = String(date.getDate()).padStart(2, '0');
+    var h = String(date.getHours()).padStart(2, '0');
+    var min = String(date.getMinutes()).padStart(2, '0');
+    var s = String(date.getSeconds()).padStart(2, '0');
+    return y + m + d + h + min + s;
+}
+
+function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 function copyToClipboard(text, selector) {
     if (!text && selector) {
         var el = document.querySelector(selector);
