@@ -312,7 +312,7 @@ function getMainDomain($host)
         }
     }
     $domain_root = file_get_contents(app()->getBasePath() . 'data' . DIRECTORY_SEPARATOR . 'domain_root.txt');
-    $domain_root = explode("\r\n", $domain_root);
+    $domain_root = explode("\n", $domain_root);
     $data = explode('.', $host);
     $co_ta = count($data);
     if ($co_ta <= 2) return $host;

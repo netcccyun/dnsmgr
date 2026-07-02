@@ -534,7 +534,7 @@ class henet implements DnsInterface
     private function saveCachedSession()
     {
         if ($this->cookie !== '') {
-            Cache::set($this->cacheKey, $this->cookie, 3600);
+            Cache::set($this->cacheKey, $this->cookie, 3600 * 12);
         }
     }
 
