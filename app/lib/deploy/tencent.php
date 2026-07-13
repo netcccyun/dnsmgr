@@ -400,7 +400,7 @@ class tencent implements DeployInterface
 
         $retry = 0;
         $resource_result = null;
-        while ($retry++ < 30) {
+        while ($retry++ < 60) {
             sleep(2);
             $param = [
                 'TaskIds' => [$task_id],
@@ -412,15 +412,16 @@ class tencent implements DeployInterface
                 throw new Exception('查询关联云资源任务结果失败：' . $e->getMessage());
             }
             $taskResult = $data['SyncTaskBindResourceResult'][0];
+            $this->log('查询关联云资源结果轮询中... 第' . $retry . '次，状态=' . $taskResult['Status']);
             if ($taskResult['Status'] == 1) {
                 $resource_result = $taskResult['BindResourceResult'];
                 break;
             } elseif ($taskResult['Status'] == 2) {
-                throw new Exception('关联云资源查询任务执行失败：' . isset($taskResult['Error']) ? $taskResult['Error']['Message'] : '未知错误');
+                throw new Exception('关联云资源查询任务执行失败：' . (isset($taskResult['Error']) ? $taskResult['Error']['Message'] : '未知错误'));
             }
         }
         if (!$resource_result) {
-            throw new Exception('关联云资源查询任务超时未完成，请稍后重试');
+            $this->log('关联云资源查询任务超时（120秒），将跳过资源查询，仅上传新证书');
         }
 
         // 需要地域信息的云资源类型
@@ -428,30 +429,78 @@ class tencent implements DeployInterface
 
         $resourceTypes = [];
         $resourceTypesRegions = [];
-        foreach ($resource_result as $res) {
-            $totalCount = 0;
-            $regions = [];
-            foreach ($res['BindResourceRegionResult'] as $regionRes) {
-                if ($regionRes['TotalCount'] > 0) {
-                    $totalCount += $regionRes['TotalCount'];
-                    if (!empty($regionRes['Region'])) {
-                        $regions[] = $regionRes['Region'];
+        if (!empty($resource_result)) {
+            foreach ($resource_result as $res) {
+                $totalCount = 0;
+                $regions = [];
+                foreach ($res['BindResourceRegionResult'] as $regionRes) {
+                    if ($regionRes['TotalCount'] > 0) {
+                        $totalCount += $regionRes['TotalCount'];
+                        if (!empty($regionRes['Region'])) {
+                            $regions[] = $regionRes['Region'];
+                        }
                     }
                 }
-            }
-            if ($totalCount > 0) {
-                $resourceTypes[] = $res['ResourceType'];
-                if (in_array($res['ResourceType'], $region_types) && !empty($regions)) {
-                    $resourceTypesRegions[] = [
-                        'ResourceType' => $res['ResourceType'],
-                        'Regions' => $regions,
-                    ];
+                if ($totalCount > 0) {
+                    $resourceTypes[] = $res['ResourceType'];
+                    if (in_array($res['ResourceType'], $region_types) && !empty($regions)) {
+                        $resourceTypesRegions[] = [
+                            'ResourceType' => $res['ResourceType'],
+                            'Regions' => $regions,
+                        ];
+                    }
                 }
             }
         }
 
         if (empty($resourceTypes)) {
-            throw new Exception('未找到该证书关联的云资源，无需更新');
+            // 没有关联云资源，仅上传新证书并回写ID
+            $this->log('未检测到该证书关联的云资源实例，将仅上传新证书');
+            $new_cert_id = null;
+            try {
+                $certInfo = openssl_x509_parse($fullchain, true);
+                if (!$certInfo) throw new Exception('证书解析失败');
+                $cert_name = str_replace('*.', '', $certInfo['subject']['CN']) . '-' . $certInfo['validFrom_time_t'];
+                $upload_param = [
+                    'CertificatePublicKey' => $fullchain,
+                    'CertificatePrivateKey' => $privatekey,
+                    'CertificateType' => 'SVR',
+                    'Alias' => $cert_name,
+                    'Repeatable' => true,
+                    'AllowDownload' => true,
+                ];
+                $data = $this->client->request('UploadCertificate', $upload_param);
+                $new_cert_id = $data['CertificateId'];
+                $this->log('新证书上传成功 CertificateId=' . $new_cert_id);
+                $info['config']['cert_id'] = $new_cert_id;
+                $this->log('证书ID已更新为：' . $new_cert_id);
+
+                // 关闭到期提醒
+                usleep(300000);
+                $this->client->request('ModifyCertificatesExpiringNotificationSwitch', [
+                    'CertificateIds' => [$new_cert_id],
+                    'SwitchStatus' => 1,
+                ]);
+            } catch (Exception $e) {
+                $this->log('上传新证书失败：' . $e->getMessage());
+            }
+
+            // 如果勾选了删除旧证书选项，则删除腾讯云上的旧证书
+            if (!empty($config['delete_old_cert'])) {
+                if ($new_cert_id && $new_cert_id == $old_cert_id) {
+                    $this->log('新证书ID与旧证书ID相同（证书内容未变），跳过删除');
+                } else {
+                    try {
+                        $this->client->request('DeleteCertificate', [
+                            'CertificateId' => $old_cert_id,
+                        ]);
+                        $this->log('旧证书 ' . $old_cert_id . ' 已从腾讯云删除');
+                    } catch (Exception $e) {
+                        $this->log('删除旧证书 ' . $old_cert_id . ' 失败：' . $e->getMessage());
+                    }
+                }
+            }
+            return;
         }
 
         $this->log('发现关联云资源类型：' . implode(', ', $resourceTypes));
@@ -497,13 +546,17 @@ class tencent implements DeployInterface
 
         // 如果勾选了删除旧证书选项，则删除腾讯云上的旧证书
         if (!empty($config['delete_old_cert'])) {
-            try {
-                $this->client->request('DeleteCertificate', [
-                    'CertificateId' => $old_cert_id,
-                ]);
-                $this->log('旧证书 ' . $old_cert_id . ' 已从腾讯云删除');
-            } catch (Exception $e) {
-                $this->log('删除旧证书 ' . $old_cert_id . ' 失败：' . $e->getMessage());
+            if ($new_cert_id && $new_cert_id == $old_cert_id) {
+                $this->log('新证书ID与旧证书ID相同（证书内容未变），跳过删除');
+            } else {
+                try {
+                    $this->client->request('DeleteCertificate', [
+                        'CertificateId' => $old_cert_id,
+                    ]);
+                    $this->log('旧证书 ' . $old_cert_id . ' 已从腾讯云删除');
+                } catch (Exception $e) {
+                    $this->log('删除旧证书 ' . $old_cert_id . ' 失败：' . $e->getMessage());
+                }
             }
         }
 
