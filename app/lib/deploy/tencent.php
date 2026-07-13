@@ -34,6 +34,9 @@ class tencent implements DeployInterface
         if ($config['product'] == 'update') {
             return $this->update_cert($fullchain, $privatekey, $config);
         }
+        if ($config['product'] == 'update_new') {
+            return $this->update_cert_new($fullchain, $privatekey, $config, $info);
+        }
         $cert_id = $this->get_cert_id($fullchain, $privatekey);
         if (!$cert_id) throw new Exception('证书ID获取失败');
         $info['cert_id'] = $cert_id;
@@ -373,6 +376,177 @@ class tencent implements DeployInterface
             sleep(1);
         }
         $this->log('更新证书内容成功，可能需要一些时间完成各资源的证书更新部署');
+    }
+
+    private function update_cert_new($fullchain, $privatekey, $config, &$info)
+    {
+        if (empty($config['cert_id'])) throw new Exception('证书ID不能为空');
+
+        $old_cert_id = $config['cert_id'];
+
+        // 查询旧证书关联的云资源
+        $param = [
+            'CertificateIds' => [$old_cert_id],
+            'IsCache' => 1,
+        ];
+        try {
+            $data = $this->client->request('CreateCertificateBindResourceSyncTask', $param);
+            if (empty($data['CertTaskIds'])) throw new Exception('返回任务ID为空');
+        } catch (Exception $e) {
+            throw new Exception('创建关联云资源查询任务失败：' . $e->getMessage());
+        }
+        $task_id = $data['CertTaskIds'][0]['TaskId'];
+        $this->log('创建关联云资源查询任务成功 TaskId=' . $task_id);
+
+        $retry = 0;
+        $resource_result = null;
+        while ($retry++ < 30) {
+            sleep(2);
+            $param = [
+                'TaskIds' => [$task_id],
+            ];
+            try {
+                $data = $this->client->request('DescribeCertificateBindResourceTaskResult', $param);
+                if (empty($data['SyncTaskBindResourceResult'])) throw new Exception('返回结果为空');
+            } catch (Exception $e) {
+                throw new Exception('查询关联云资源任务结果失败：' . $e->getMessage());
+            }
+            $taskResult = $data['SyncTaskBindResourceResult'][0];
+            if ($taskResult['Status'] == 1) {
+                $resource_result = $taskResult['BindResourceResult'];
+                break;
+            } elseif ($taskResult['Status'] == 2) {
+                throw new Exception('关联云资源查询任务执行失败：' . isset($taskResult['Error']) ? $taskResult['Error']['Message'] : '未知错误');
+            }
+        }
+        if (!$resource_result) {
+            throw new Exception('关联云资源查询任务超时未完成，请稍后重试');
+        }
+
+        // 需要地域信息的云资源类型
+        $region_types = ['clb', 'tke', 'apigateway', 'waf', 'tcb', 'tse', 'cos', 'mqtt', 'scf', 'tdmq'];
+
+        $resourceTypes = [];
+        $resourceTypesRegions = [];
+        foreach ($resource_result as $res) {
+            $totalCount = 0;
+            $regions = [];
+            foreach ($res['BindResourceRegionResult'] as $regionRes) {
+                if ($regionRes['TotalCount'] > 0) {
+                    $totalCount += $regionRes['TotalCount'];
+                    if (!empty($regionRes['Region'])) {
+                        $regions[] = $regionRes['Region'];
+                    }
+                }
+            }
+            if ($totalCount > 0) {
+                $resourceTypes[] = $res['ResourceType'];
+                if (in_array($res['ResourceType'], $region_types) && !empty($regions)) {
+                    $resourceTypesRegions[] = [
+                        'ResourceType' => $res['ResourceType'],
+                        'Regions' => $regions,
+                    ];
+                }
+            }
+        }
+
+        if (empty($resourceTypes)) {
+            throw new Exception('未找到该证书关联的云资源，无需更新');
+        }
+
+        $this->log('发现关联云资源类型：' . implode(', ', $resourceTypes));
+
+        // 直接传证书内容，让API内部自行处理，避免单独上传的证书ID匹配不上
+        $param = [
+            'OldCertificateId' => $old_cert_id,
+            'CertificatePublicKey' => $fullchain,
+            'CertificatePrivateKey' => $privatekey,
+            'ResourceTypes' => $resourceTypes,
+        ];
+        if (!empty($resourceTypesRegions)) {
+            $param['ResourceTypesRegions'] = $resourceTypesRegions;
+        }
+
+        $this->log('UpdateCertificateInstance 请求参数(已隐藏证书内容)：' . json_encode(array_merge($param, [
+            'CertificatePublicKey' => '***',
+            'CertificatePrivateKey' => '***',
+        ]), JSON_UNESCAPED_UNICODE));
+
+        $new_cert_id = null;
+        $retry = 0;
+        while ($retry++ < 10) {
+            try {
+                $data = $this->client->request('UpdateCertificateInstance', $param);
+            } catch (Exception $e) {
+                throw new Exception('一键更新旧证书资源失败：' . $e->getMessage());
+            }
+            if (isset($data['DeployRecordId']) && $data['DeployRecordId'] > 0) {
+                $this->log('一键更新任务创建成功 DeployRecordId=' . $data['DeployRecordId']);
+                // 查询新生成的证书ID，用于回写到本地数据库
+                $new_cert_id = $this->find_new_cert_id($fullchain);
+                break;
+            }
+            sleep(2);
+        }
+
+        // 将新证书ID回写到 $info，使下次更新时使用新的证书ID
+        if ($new_cert_id) {
+            $info['config']['cert_id'] = $new_cert_id;
+            $this->log('证书ID已更新为：' . $new_cert_id);
+        }
+
+        // 如果勾选了删除旧证书选项，则删除腾讯云上的旧证书
+        if (!empty($config['delete_old_cert'])) {
+            try {
+                $this->client->request('DeleteCertificate', [
+                    'CertificateId' => $old_cert_id,
+                ]);
+                $this->log('旧证书 ' . $old_cert_id . ' 已从腾讯云删除');
+            } catch (Exception $e) {
+                $this->log('删除旧证书 ' . $old_cert_id . ' 失败：' . $e->getMessage());
+            }
+        }
+
+        $this->log('一键更新旧证书资源已提交，可能需要一些时间完成各资源的证书更新部署');
+    }
+
+    /**
+     * 根据证书内容查询腾讯云上新生成的证书ID
+     */
+    private function find_new_cert_id($fullchain)
+    {
+        $certInfo = openssl_x509_parse($fullchain, true);
+        if (!$certInfo) return null;
+        $cn = $certInfo['subject']['CN'] ?? '';
+        if (empty($cn)) return null;
+
+        try {
+            $param = [
+                'SearchKey' => str_replace('*.', '', $cn),
+                'Limit' => 20,
+            ];
+            $data = $this->client->request('DescribeCertificates', $param);
+            if (empty($data['Certificates'])) return null;
+
+            // 在返回结果中匹配与CN相同域名、状态正常的证书，取过期时间最晚的
+            $matched = [];
+            foreach ($data['Certificates'] as $cert) {
+                if ($cert['Status'] != 1) continue; // 只取已签发的
+                if ($cert['Domain'] != $cn && $cert['Domain'] != str_replace('*.', '', $cn)) continue;
+                $matched[] = $cert;
+            }
+            if (empty($matched)) return null;
+
+            // 按过期时间降序，取最新的
+            usort($matched, function ($a, $b) {
+                return strtotime($b['CertEndTime']) - strtotime($a['CertEndTime']);
+            });
+
+            return $matched[0]['CertificateId'];
+        } catch (Exception $e) {
+            $this->log('查询新证书ID失败：' . $e->getMessage());
+            return null;
+        }
     }
 
     public function setLogger($func)
