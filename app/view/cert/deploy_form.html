@@ -27,7 +27,11 @@
     </div>
     <div class="form-group">
         <label class="col-sm-3 control-label no-padding-right" is-required>关联SSL证书</label>
-        <div class="col-sm-6"><select name="oid" v-model="set.oid" class="form-control select2" placeholder="选择要部署的SSL证书">
+        <div class="col-sm-6"><select name="oid" v-if="action=='edit'" v-model="set.oid" class="form-control select2" placeholder="选择要部署的SSL证书">
+            {foreach $orders as $k=>$v}
+                <option value="{$k}">{$v.name}</option>
+            {/foreach}
+        </select><select name="oid[]" v-else multiple class="form-control select2" placeholder="选择要部署的SSL证书（可多选，将为每个证书单独提交部署任务）">
             {foreach $orders as $k=>$v}
                 <option value="{$k}">{$v.name}</option>
             {/foreach}
@@ -122,6 +126,7 @@ new Vue({
             remark: '',
             type: '',
         },
+        oids: [],
         inputs: {},
         config: {},
         typeList: typeList,
@@ -179,28 +184,46 @@ new Vue({
         var that = this;
         this.$nextTick(function () {
             $('[data-toggle="tooltip"]').tooltip();
-            $('select[name=oid]').select2({placeholder: '选择要部署的SSL证书'}).on('select2:select', function(e){
-                that.set.oid = e.params.data.id
-            });
-            if(document.referrer.indexOf('&oid=') > 0){
-                var oid = document.referrer.split('&oid=')[1].split('&')[0];
-                if(oid){
-                    $('select[name=oid]').val(oid).trigger('change');
-                    that.set.oid = oid;
+            if(that.action == 'edit'){
+                $('select[name=oid]').select2({placeholder: '选择要部署的SSL证书'}).on('select2:select', function(e){
+                    that.set.oid = e.params.data.id
+                });
+                if(document.referrer.indexOf('&oid=') > 0){
+                    var oid = document.referrer.split('&oid=')[1].split('&')[0];
+                    if(oid){
+                        $('select[name=oid]').val(oid).trigger('change');
+                        that.set.oid = oid;
+                    }
+                }
+            }else{
+                $('select[name="oid[]"]').select2({placeholder: '选择要部署的SSL证书（可多选，将为每个证书单独提交部署任务）'}).on('change', function(){
+                    that.oids = $(this).val() || [];
+                });
+                if(document.referrer.indexOf('&oid=') > 0){
+                    var oid = document.referrer.split('&oid=')[1].split('&')[0];
+                    if(oid){
+                        $('select[name="oid[]"]').val([oid]).trigger('change');
+                    }
                 }
             }
         })
     },
     methods: {
         submit(){
-            var that=this;
             if(this.set.aid == ''){
                 layer.msg('请选择自动部署账户', {icon: 2, time:900});
                 return false;
             }
-            if(this.set.oid == ''){
-                layer.msg('请选择要部署的SSL证书', {icon: 2, time:900});
-                return false;
+            if(this.action == 'edit'){
+                if(this.set.oid == ''){
+                    layer.msg('请选择要部署的SSL证书', {icon: 2, time:900});
+                    return false;
+                }
+            }else{
+                if(this.oids.length == 0){
+                    layer.msg('请选择要部署的SSL证书', {icon: 2, time:900});
+                    return false;
+                }
             }
             Object.keys(this.config).forEach((key) => {
                 if(this.config[key] && typeof this.config[key] == 'string'){
@@ -208,29 +231,77 @@ new Vue({
                 }
             })
             this.set.config = JSON.stringify(this.config);
+            if(this.action == 'edit'){
+                this.submitSingle();
+            }else{
+                this.submitMultiple();
+            }
+        },
+        postTask(payload){
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    type: "POST",
+                    url: "",
+                    data: payload,
+                    dataType: 'json',
+                    success: function(data) {
+                        resolve(data);
+                    },
+                    error: function(){
+                        reject();
+                    }
+                });
+            });
+        },
+        submitSingle(){
+            var that = this;
             var ii = layer.load(2, {shade:[0.1,'#fff']});
-            $.ajax({
-                type: "POST",
-                url: "",
-                data: this.set,
-                dataType: 'json',
-                success: function(data) {
+            this.postTask(this.set).then(function(data){
+                layer.close(ii);
+                if(data.code == 0){
+                    layer.alert(data.msg, {icon: 1}, function(){
+                        if(document.referrer.indexOf('/cert/deploytask?') > 0)
+                            window.location.href = document.referrer;
+                        else
+                            window.location.href = '/cert/deploytask';
+                    });
+                }else{
+                    layer.alert(data.msg, {icon: 2});
+                }
+            }).catch(function(){
+                layer.close(ii);
+                layer.msg('服务器错误');
+            });
+        },
+        async submitMultiple(){
+            var success = 0, fail = 0, errors = [];
+            for(var i=0; i<this.oids.length; i++){
+                var oid = this.oids[i];
+                var ii = layer.msg('正在提交（'+(i+1)+'/'+this.oids.length+'）', {icon: 16, shade: 0.1, time: 0});
+                try{
+                    var data = await this.postTask(Object.assign({}, this.set, {oid: oid}));
                     layer.close(ii);
                     if(data.code == 0){
-                        layer.alert(data.msg, {icon: 1}, function(){
-                            if(document.referrer.indexOf('/cert/deploytask?') > 0)
-                                window.location.href = document.referrer;
-                            else
-                                window.location.href = '/cert/deploytask';
-                        });
+                        success++;
                     }else{
-                        layer.alert(data.msg, {icon: 2});
+                        fail++;
+                        errors.push('证书'+oid+'：'+data.msg);
                     }
-                },
-                error: function(data){
+                }catch(e){
                     layer.close(ii);
-                    layer.msg('服务器错误');
+                    fail++;
+                    errors.push('证书'+oid+'：服务器错误');
                 }
+            }
+            var msg = '提交完成，成功'+success+'个，失败'+fail+'个';
+            if(errors.length > 0){
+                msg += '<br/><span style="color:red">'+errors.join('<br/>')+'</span>';
+            }
+            layer.alert(msg, {icon: success>0?1:2}, function(){
+                if(document.referrer.indexOf('/cert/deploytask?') > 0)
+                    window.location.href = document.referrer;
+                else
+                    window.location.href = '/cert/deploytask';
             });
         },
         isShow(show){

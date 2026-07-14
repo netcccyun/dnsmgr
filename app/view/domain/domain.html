@@ -157,6 +157,7 @@
   </div>
   <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名列表"><i class="fa fa-refresh"></i> 刷新</a>
+  <a href="javascript:copySelected()" class="btn btn-default" title="复制选中域名"><i class="fa fa-copy"></i> 复制选中</a>
   {if $user['level'] eq 2}<a href="javascript:addframe()" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
   <div class="btn-group" role="group">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">批量操作 <span class="caret"></span></button>
@@ -524,6 +525,25 @@ function getDomainList(){
 		},
 		cache:false
 	});
+}
+function copySelected(){
+	var rows = $("#listTable").bootstrapTable('getSelections');
+	if(rows.length == 0){
+		layer.msg('请先选择要复制的域名');
+		return;
+	}
+	var text = rows.map(function(item){
+		return item.name;
+	}).join('\n');
+	var tempInput = document.createElement('textarea');
+	tempInput.style.position = 'absolute';
+	tempInput.style.left = '-9999px';
+	tempInput.value = text;
+	document.body.appendChild(tempInput);
+	tempInput.select();
+	document.execCommand('copy');
+	document.body.removeChild(tempInput);
+	layer.msg('已复制'+rows.length+'个域名到剪贴板', {icon: 1, time: 800});
 }
 function operation(action){
 	var rows = $("#listTable").bootstrapTable('getSelections');

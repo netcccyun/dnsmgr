@@ -68,7 +68,7 @@
     </div>
 
     <div class="form-group">
-        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button></div>
+        <div class="col-sm-offset-3 col-sm-6"><button type="button" class="btn btn-primary" @click="submit">提交</button> <button type="button" class="btn btn-default" v-show="action!='edit' && set.aid!=-1 && set.domains.length>1" title="将每个域名分别提交为单独的证书订单，而不是合并为一个多域名证书" @click="submitEach">单独提交</button></div>
     </div>
     <div class="panel panel-default" v-show="set.aid!=-1"><div class="panel-body"><p><b style="color:#39b603;"><i class="fa fa-info-circle fa-fw"></i></b>提示：添加或修改订单信息，点击提交后，不会立即执行签发，只能通过计划任务或列表手动点击来执行</p><p>证书签发之前确保该主域名下没有CAA类型记录，避免证书验证失败。</p></div></div>
     <div class="panel panel-default" v-show="set.aid==-1"><div class="panel-body"><p><b style="color:#39b603;"><i class="fa fa-info-circle fa-fw"></i></b>提示：选择手动续期，到达设置的续期天数，只会发送消息通知。</p></div></div>
@@ -171,6 +171,71 @@ new Vue({
                     layer.close(ii);
                     layer.msg('服务器错误');
                 }
+            });
+        },
+        submitEach(){
+            var that = this;
+            $("#taskform").data("bootstrapValidator").validate();
+            if(!$("#taskform").data("bootstrapValidator").isValid()){
+                return false;
+            }
+            if(this.set.domains.length <= 1){
+                this.submit();
+                return;
+            }
+            layer.confirm('将 '+this.set.domains.length+' 个域名分别单独提交为 '+this.set.domains.length+' 个独立的证书订单，是否继续？', {
+                btn: ['确定','取消'], title: '单独提交', icon: 3
+            }, function(){
+                layer.closeAll('dialog');
+                that.doSubmitEach();
+            });
+        },
+        submitOne(domain){
+            var payload = Object.assign({}, this.set, {domains: [domain]});
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    type: "POST",
+                    url: "",
+                    data: payload,
+                    dataType: 'json',
+                    success: function(data) {
+                        resolve(data);
+                    },
+                    error: function(){
+                        reject();
+                    }
+                });
+            });
+        },
+        async doSubmitEach(){
+            var success = 0, fail = 0, errors = [];
+            for(var i=0; i<this.set.domains.length; i++){
+                var domain = this.set.domains[i];
+                var ii = layer.msg('正在提交（'+(i+1)+'/'+this.set.domains.length+'）：'+domain, {icon: 16, shade: 0.1, time: 0});
+                try{
+                    var data = await this.submitOne(domain);
+                    layer.close(ii);
+                    if(data.code == 0){
+                        success++;
+                    }else{
+                        fail++;
+                        errors.push(domain+'：'+data.msg);
+                    }
+                }catch(e){
+                    layer.close(ii);
+                    fail++;
+                    errors.push(domain+'：服务器错误');
+                }
+            }
+            var msg = '提交完成，成功'+success+'个，失败'+fail+'个';
+            if(errors.length > 0){
+                msg += '<br/><span style="color:red">'+errors.join('<br/>')+'</span>';
+            }
+            layer.alert(msg, {icon: success>0?1:2}, function(){
+                if(document.referrer.indexOf('/cert/certorder?') > 0)
+                    window.location.href = document.referrer;
+                else
+                    window.location.href = '/cert/certorder';
             });
         },
         upload(name){

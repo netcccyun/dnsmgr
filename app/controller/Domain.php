@@ -380,12 +380,19 @@ class Domain extends BaseController
         $kw = input('post.kw', null, 'trim');
         $page = input('?post.page') ? input('post.page/d') : 1;
         $pagesize = input('?post.pagesize') ? input('post.pagesize/d') : 10;
+        $unadded = input('post.unadded/d', 0);
         $dns = DnsHelper::getModel($aid);
         $result = $dns->getDomainList($kw, $page, $pagesize);
         if (!$result) return json(['code' => -1, 'msg' => '获取域名列表失败，' . $dns->getError()]);
 
         foreach ($result['list'] as &$row) {
             $row['disabled'] = Db::name('domain')->where('aid', $aid)->where('name', $row['Domain'])->find() != null;
+        }
+        unset($row);
+        if ($unadded) {
+            $result['list'] = array_values(array_filter($result['list'], function ($row) {
+                return !$row['disabled'];
+            }));
         }
         return json(['code' => 0, 'data' => ['total' => $result['total'], 'list' => $result['list']]]);
     }
