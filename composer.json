@@ -52,7 +52,7 @@
         "ext-ssh2": "*",
         "cccyun/php-whois": "^1.0",
         "cccyun/think-captcha": "^3.0",
-        "guzzlehttp/guzzle": "^7.0",
+        "guzzlehttp/guzzle": "^8.0",
         "phpmailer/phpmailer": "^7.0",
         "symfony/polyfill-intl-idn": "^1.32",
         "symfony/polyfill-mbstring": "^1.32",
