@@ -279,7 +279,7 @@
           </select>
         </div>
         <div id="singleSubLineArea" style="display:none;" class="form-group">
-          <label>子线路</label>
+          <label>子集线路（非必填）</label>
           <select id="singleSubLineSelect" class="form-control">
             <option value="">请选择</option>
           </select>
@@ -499,6 +499,7 @@ $(document).ready(function(){
             + '<a href="javascript:openEditDialog(\''+row.id+'\')" class="btn btn-info btn-xs">编辑</a> '
             + '<a href="javascript:openVerificationDialog(\''+row.id+'\')" class="btn btn-primary btn-xs">验证</a> '
             + '<a href="javascript:openCfOptimizedForHostname(\''+htmlEscape(row.hostname)+'\')" class="btn btn-warning btn-xs">CF优选解析</a> '
+            + '<a href="javascript:openDcvForHostname(\''+htmlEscape(row.hostname)+'\')" class="btn btn-info btn-xs">DCV委派</a> '
             + '<a href="javascript:deleteHostname(\''+row.id+'\', \''+htmlEscape(row.hostname)+'\')" class="btn btn-danger btn-xs">删除</a>';
         }
       }
@@ -1767,7 +1768,7 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
 
     groupHtml += '<div id="lineArea_' + groupIndex + '" style="margin-top:6px;display:none;"><label style="font-size:13px;color:#555;">解析线路</label>';
     groupHtml += '<select id="lineSelect_' + groupIndex + '" class="form-control input-sm cf-line-main"><option value="">加载中...</option></select>';
-    groupHtml += '<div id="subLineArea_' + groupIndex + '" style="margin-top:4px;display:none;"><label style="font-size:12px;color:#999;">子线路</label>';
+    groupHtml += '<div id="subLineArea_' + groupIndex + '" style="margin-top:4px;display:none;"><label style="font-size:12px;color:#999;">子集线路（非必填）</label>';
     groupHtml += '<select id="subLineSelect_' + groupIndex + '" class="form-control input-sm"><option value="">请选择</option></select></div></div>';
 
     groupHtml += '</div></div>';
@@ -1831,13 +1832,15 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
               }
             }
             lineSelect.html(opts || '<option value="" selected>请选择</option>');
+            lineSelect.trigger('change.cfsub');
           } else {
             var defLine = (res.code === 0 && res.data && res.data.default_line) ? res.data.default_line : '0';
             lineSelect.html('<option value="' + htmlEscape(defLine) + '" selected>默认</option>');
             lineSelect.data('allLines', []);
+            subLineArea.hide();
           }
         },
-        error: function(){ lineSelect.html('<option value="0" selected>默认</option>'); lineSelect.data('allLines', []); }
+        error: function(){ lineSelect.html('<option value="0" selected>默认</option>'); lineSelect.data('allLines', []); subLineArea.hide(); }
       });
     });
 
@@ -1848,25 +1851,7 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
       var subLineSelect = $('#subLineSelect_' + groupIndex);
       var allLines = $(this).data('allLines') || [];
       var selectedVal = $(this).val();
-
-      // 找该父线路的子线路
-      var children = [];
-      for(var ci = 0; ci < allLines.length; ci++){
-        if(allLines[ci].parent === selectedVal){
-          children.push(allLines[ci]);
-        }
-      }
-
-      if(children.length > 0){
-        var opts = '';
-        for(var si = 0; si < children.length; si++){
-          opts += '<option value="' + htmlEscape(children[si].value) + '">' + htmlEscape(children[si].label) + '</option>';
-        }
-        subLineSelect.html(opts);
-        subLineArea.show();
-      } else {
-        subLineArea.hide();
-      }
+      fillCfOptimizedSubLines(subLineArea, subLineSelect, allLines, selectedVal);
     });
 
     // 单域名模式：DNS 服务商选择 → 加载线路
@@ -1894,13 +1879,15 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
               }
             }
             lineSelect.html(opts || '<option value="" selected>请选择</option>');
+            lineSelect.trigger('change.cfsub');
           } else {
             var defLine = (res.code === 0 && res.data && res.data.default_line) ? res.data.default_line : '0';
             lineSelect.html('<option value="' + htmlEscape(defLine) + '" selected>默认</option>');
             lineSelect.data('allLines', []);
+            subLineArea.hide();
           }
         },
-        error: function(){ lineSelect.html('<option value="0" selected>默认</option>'); lineSelect.data('allLines', []); }
+        error: function(){ lineSelect.html('<option value="0" selected>默认</option>'); lineSelect.data('allLines', []); subLineArea.hide(); }
       });
     });
 
@@ -1910,27 +1897,32 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
       var subLineSelect = $('#singleSubLineSelect');
       var allLines = $(this).data('allLines') || [];
       var selectedVal = $(this).val();
-
-      var children = [];
-      for(var ci = 0; ci < allLines.length; ci++){
-        if(allLines[ci].parent === selectedVal){
-          children.push(allLines[ci]);
-        }
-      }
-
-      if(children.length > 0){
-        var opts = '';
-        for(var si = 0; si < children.length; si++){
-          opts += '<option value="' + htmlEscape(children[si].value) + '">' + htmlEscape(children[si].label) + '</option>';
-        }
-        subLineSelect.html(opts);
-        subLineArea.show();
-      } else {
-        subLineArea.hide();
-      }
+      fillCfOptimizedSubLines(subLineArea, subLineSelect, allLines, selectedVal);
     });
   }
   bindLineEvents();
+}
+
+// 与域名解析页一致：有子线路时首项为「子集线路（非必填）」，值为父线路，不强制选子线路
+function fillCfOptimizedSubLines(subLineArea, subLineSelect, allLines, selectedVal){
+  var children = [];
+  for(var ci = 0; ci < allLines.length; ci++){
+    if(allLines[ci].parent === selectedVal){
+      children.push(allLines[ci]);
+    }
+  }
+  if(children.length > 0){
+    // N. 开头为继续嵌套的中间节点，不提供“非必填”父级项（与 record.html 一致）
+    var opts = (String(selectedVal || '').substr(0, 2) === 'N.') ? '' : '<option value="' + htmlEscape(selectedVal) + '">子集线路（非必填）</option>';
+    for(var si = 0; si < children.length; si++){
+      opts += '<option value="' + htmlEscape(children[si].value) + '">' + htmlEscape(children[si].label) + '</option>';
+    }
+    subLineSelect.html(opts);
+    subLineArea.show();
+  } else {
+    subLineSelect.html('<option value="">请选择</option>');
+    subLineArea.hide();
+  }
 }
 
 // 确认处理
@@ -2590,25 +2582,47 @@ function showDcvDelegationHelp(){
   $("#modal-dcv-help").modal('show');
 }
 
-function quickAddDcvDelegation(){
+function getDcvUuidFromInput(){
   var fullCnameTarget = $.trim($('#dcvDelegationUuid').val());
-  if(!fullCnameTarget){
+  if(!fullCnameTarget) return '';
+  var match = fullCnameTarget.match(/\.([a-f0-9-]+)\.dcv\.cloudflare\.com$/i);
+  if(match && match[1]) return match[1];
+  return fullCnameTarget;
+}
+
+// 行内：指定主机名直接走 DCV 委派（跳过主机名选择）
+function openDcvForHostname(hostname){
+  hostname = (hostname || '').toLowerCase();
+  if(!hostname){
+    layer.msg('主机名无效', {icon: 0});
+    return;
+  }
+  var uuid = getDcvUuidFromInput();
+  if(!uuid){
     layer.msg('请先获取 DCV 委派 UUID', {icon: 0});
     return;
   }
+  currentDcvUuid = uuid;
+  var cnameFullName = '_acme-challenge.' + hostname;
+  var cnameTarget = hostname + '.' + uuid + '.dcv.cloudflare.com';
+  resolveDcvCnameTargets(cnameFullName, function(targets){
+    if(!targets.length){
+      layer.alert('系统中未找到与该域名对应的托管域名，请手动到解析页添加 CNAME 记录<br><br>'
+        + '记录类型：CNAME<br>主机记录：<code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(cnameFullName) + '</code><br>记录值：<code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(cnameTarget) + '</code>', {icon: 2, maxWidth: 350});
+      return;
+    }
+    if(targets.length === 1){
+      confirmQuickAddDcvCnameRecord(cnameFullName, cnameTarget, targets[0]);
+      return;
+    }
+    openDcvTargetPicker(cnameFullName, cnameTarget, targets);
+  });
+}
 
-  // 从完整的 CNAME 目标中提取 UUID
-  var uuid = '';
-  var match = fullCnameTarget.match(/\.([a-f0-9-]+)\.dcv\.cloudflare\.com$/i);
-  if(match && match[1]){
-    uuid = match[1];
-  } else {
-    // 尝试直接使用输入值作为 UUID
-    uuid = fullCnameTarget;
-  }
-
+function quickAddDcvDelegation(){
+  var uuid = getDcvUuidFromInput();
   if(!uuid){
-    layer.msg('无法从 DCV 委派值中提取 UUID', {icon: 2});
+    layer.msg('请先获取 DCV 委派 UUID', {icon: 0});
     return;
   }
 
