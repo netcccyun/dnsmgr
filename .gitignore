@@ -5,3 +5,5 @@
 .env
 .ace-tool/
 /.codex-tmp/dns-panel-ref/
+/runtime
+!/runtime/.gitignore

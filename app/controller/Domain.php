@@ -1373,11 +1373,22 @@ class Domain extends BaseController
         $dns_records = array_map('strtolower', $dns_records);
         $expected_value = strtolower(rtrim(trim($value), '.'));
 
-        if (in_array($expected_value, $dns_records)) {
+        if (self::recordValueMatches($expected_value, $dns_records)) {
             return json(['code' => 0, 'data' => ['status' => 'active', 'actual' => $dns_records]]);
         } else {
             return json(['code' => 0, 'data' => ['status' => 'mismatch', 'expected' => $expected_value, 'actual' => $dns_records]]);
         }
+    }
+
+    private static function recordValueMatches($expected, $result)
+    {
+        if (in_array($expected, $result)) return true;
+        $expectedBin = @inet_pton($expected);
+        if ($expectedBin !== false) {
+            $normalized = array_map(fn($v) => @inet_pton($v) ?: $v, $result);
+            return in_array($expectedBin, $normalized);
+        }
+        return false;
     }
 
     public function category()

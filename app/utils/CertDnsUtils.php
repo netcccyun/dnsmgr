@@ -169,14 +169,27 @@ class CertDnsUtils
                 if ($row['type'] == 'CAA') continue;
                 $domain = $row['name'] . '.' . $mainDomain;
                 $result = DnsQueryUtils::get_dns_records($domain, $row['type']);
-                if (!$result || !in_array($row['value'], $result) && !in_array(strtolower($row['value']), $result)) {
+                if (!self::valueMatches($row['value'], $result)) {
                     $result = DnsQueryUtils::query_dns_doh($domain, $row['type']);
-                    if (!$result || !in_array($row['value'], $result) && !in_array(strtolower($row['value']), $result)) {
+                    if (!self::valueMatches($row['value'], $result)) {
                         return false;
                     }
                 }
             }
         }
         return true;
+    }
+
+    private static function valueMatches($expected, $result)
+    {
+        if (empty($result)) return false;
+        if (in_array($expected, $result)) return true;
+        if (in_array(strtolower($expected), $result)) return true;
+        $expectedBin = @inet_pton($expected);
+        if ($expectedBin !== false) {
+            $normalized = array_map(fn($v) => @inet_pton($v) ?: $v, $result);
+            return in_array($expectedBin, $normalized);
+        }
+        return false;
     }
 }
