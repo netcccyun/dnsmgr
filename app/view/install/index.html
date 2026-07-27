@@ -69,7 +69,7 @@
             border-bottom-right-radius: 4px;
         }
 
-        .form-field input {
+        .form-field input, .form-field select {
             background: #fff;
             margin: 0 0 2px;
             border: 2px solid transparent;
@@ -79,7 +79,7 @@
             box-sizing: border-box;
         }
 
-        .form-field input:focus {
+        .form-field input:focus, .form-field select:focus {
             border-color: #4e73df;
             background: #fff;
             color: #444;
@@ -165,33 +165,41 @@
             {if $dbconfig!='1'}
             <div class="form-group">
                 <div class="form-field">
-                    <label>MySQL 数据库地址</label>
-                    <input type="text" name="mysql_host" value="localhost" required="">
+                    <label>数据库类型</label>
+                    <select name="db_type" id="db_type">
+                        <option value="mysql">MySQL / MariaDB</option>
+                        <option value="pgsql">PostgreSQL</option>
+                    </select>
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 数据库端口</label>
-                    <input type="number" name="mysql_port" value="3306">
+                    <label>数据库地址</label>
+                    <input type="text" name="db_host" value="localhost" required="">
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 用户名</label>
-                    <input type="text" name="mysql_user" value="" required="">
+                    <label>数据库端口</label>
+                    <input type="number" name="db_port" id="db_port" value="3306">
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 密码</label>
-                    <input type="text" name="mysql_pwd" value="" required="">
+                    <label>用户名</label>
+                    <input type="text" name="db_user" value="" required="">
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 数据库名</label>
-                    <input type="text" name="mysql_name" value="" required="">
+                    <label>密码</label>
+                    <input type="text" name="db_pwd" value="" required="">
                 </div>
 
                 <div class="form-field">
-                    <label>MySQL 数据表前缀</label>
-                    <input type="text" name="mysql_prefix" value="dnsmgr_">
+                    <label>数据库名</label>
+                    <input type="text" name="db_name" value="" required="">
+                </div>
+
+                <div class="form-field">
+                    <label>数据表前缀</label>
+                    <input type="text" name="db_prefix" value="dnsmgr_">
                 </div>
             </div>
             {/if}
@@ -216,9 +224,19 @@
         </form>
     </div>
 </div>
-<script src="//cdn.staticfile.org/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@2.1.4/dist/jquery.min.js"></script>
 <script>
     $(function () {
+        // Auto-change port based on database type
+        $('#db_type').on('change', function () {
+            var dbType = $(this).val();
+            if (dbType === 'pgsql') {
+                $('#db_port').val('5432');
+            } else {
+                $('#db_port').val('3306');
+            }
+        });
+
         $('form').on('submit', function (e) {
             e.preventDefault();
             var form = this;

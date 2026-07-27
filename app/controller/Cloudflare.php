@@ -387,10 +387,10 @@ class Cloudflare extends BaseController
             }
 
             // 查询域名信息
-            $domainRow = Db::name('domain')->alias('A')
-                ->join('account B', 'A.aid = B.id')
-                ->where('A.id', $domainId)
-                ->field('A.*, B.type, B.config account_config')
+            $domainRow = Db::name('domain')->alias('a')
+                ->join('account b', 'a.aid = b.id')
+                ->where('a.id', $domainId)
+                ->field('a.*, b.type, b.config account_config')
                 ->find();
 
             if (!$domainRow) {
@@ -815,10 +815,10 @@ class Cloudflare extends BaseController
         if (!checkPermission(2)) {
             throw new Exception('无权限');
         }
-        $row = Db::name('domain')->alias('A')
-            ->join('account B', 'A.aid = B.id')
-            ->where('A.id', $domainId)
-            ->field('A.*,B.type,B.config account_config,B.name account_name,B.remark account_remark')
+        $row = Db::name('domain')->alias('a')
+            ->join('account b', 'a.aid = b.id')
+            ->where('a.id', $domainId)
+            ->field('a.*,b.type,b.config account_config,b.name account_name,b.remark account_remark')
             ->find();
         if (!$row) {
             throw new Exception('域名不存在');
@@ -1089,9 +1089,9 @@ class Cloudflare extends BaseController
 
     private function findTxtRecordTargetDomains(array $currentDomain, string $hostname): array
     {
-        $rows = Db::name('domain')->alias('D')
-            ->join('account A', 'D.aid = A.id')
-            ->field('D.id,D.aid,D.name,A.type account_type,A.name account_name,A.remark account_remark')
+        $rows = Db::name('domain')->alias('d')
+            ->join('account a', 'd.aid = a.id')
+            ->field('d.id,d.aid,d.name,a.type account_type,a.name account_name,a.remark account_remark')
             ->select()
             ->toArray();
 

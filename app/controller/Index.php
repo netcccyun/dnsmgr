@@ -56,16 +56,29 @@ class Index extends BaseController
             $this->db_update();
         }
 
-        $tmp = 'version()';
-        $mysqlVersion = Db::query("select version()")[0][$tmp];
-        $info = [
-            'framework_version' => app()->version(),
-            'php_version' => PHP_VERSION,
-            'mysql_version' => $mysqlVersion,
-            'software' => $_SERVER['SERVER_SOFTWARE'] ?? '未知',
-            'os' => php_uname(),
-            'date' => date("Y-m-d H:i:s"),
-        ];
+        $dbType = env('database.type', 'mysql');
+        if ($dbType == 'pgsql') {
+            $version = Db::query("SELECT version() as ver")[0]['ver'];
+            $info = [
+                'framework_version' => app()->version(),
+                'php_version' => PHP_VERSION,
+                'db_version' => $version,
+                'software' => $_SERVER['SERVER_SOFTWARE'] ?? '未知',
+                'os' => php_uname(),
+                'date' => date("Y-m-d H:i:s"),
+            ];
+        } else {
+            $tmp = 'version()';
+            $mysqlVersion = Db::query("select version()")[0][$tmp];
+            $info = [
+                'framework_version' => app()->version(),
+                'php_version' => PHP_VERSION,
+                'db_version' => $mysqlVersion,
+                'software' => $_SERVER['SERVER_SOFTWARE'] ?? '未知',
+                'os' => php_uname(),
+                'date' => date("Y-m-d H:i:s"),
+            ];
+        }
         View::assign('info', $info);
         View::assign('checkupdate', '//auth.cccyun.cc/app/dnsmgr.php?ver=' . config('app.version'));
         return view();
@@ -73,7 +86,9 @@ class Index extends BaseController
 
     private function db_update()
     {
-        $sqls = file_get_contents(app()->getAppPath() . 'sql/update.sql');
+        $dbType = env('database.type', 'mysql');
+        $sqlFile = $dbType == 'pgsql' ? 'update_pgsql.sql' : 'update.sql';
+        $sqls = file_get_contents(app()->getAppPath() . 'sql/' . $sqlFile);
         $mysql_prefix = env('database.prefix', 'dnsmgr_');
         $sqls = explode(';', $sqls);
         foreach ($sqls as $value) {

@@ -31,13 +31,20 @@ class Install extends BaseController
                     return json(['code' => 0, 'msg' => '必填项不能为空']);
                 }
 
-                $sqls = file_get_contents(app()->getAppPath() . 'sql/install.sql');
+                $dbType = env('database.type', 'mysql');
+                $sqlFile = $dbType == 'pgsql' ? 'install_pgsql.sql' : 'install.sql';
+                $sqls = file_get_contents(app()->getAppPath() . 'sql/' . $sqlFile);
                 $sqls = explode(';', $sqls);
                 $mysql_prefix = env('database.prefix', 'dnsmgr_');
 
                 $password = password_hash($admin_password, PASSWORD_DEFAULT);
-                $sqls[] = "REPLACE INTO `" . $mysql_prefix . "config` VALUES ('sys_key', '" . random(16) . "')";
-                $sqls[] = "INSERT INTO `" . $mysql_prefix . "user` (`username`,`password`,`level`,`regtime`,`lasttime`,`status`) VALUES ('" . addslashes($admin_username) . "', '$password', 2, NOW(), NOW(), 1)";
+                if ($dbType == 'pgsql') {
+                    $sqls[] = "INSERT INTO " . $mysql_prefix . "config (key, value) VALUES ('sys_key', '" . random(16) . "') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value";
+                    $sqls[] = "INSERT INTO " . $mysql_prefix . "user (username,password,level,regtime,lasttime,status) VALUES ('" . addslashes($admin_username) . "', '$password', 2, NOW(), NOW(), 1)";
+                } else {
+                    $sqls[] = "REPLACE INTO `" . $mysql_prefix . "config` VALUES ('sys_key', '" . random(16) . "')";
+                    $sqls[] = "INSERT INTO `" . $mysql_prefix . "user` (`username`,`password`,`level`,`regtime`,`lasttime`,`status`) VALUES ('" . addslashes($admin_username) . "', '$password', 2, NOW(), NOW(), 1)";
+                }
 
                 $success = 0;
                 $error = 0;
@@ -61,60 +68,106 @@ class Install extends BaseController
                     return json(['code' => 0, 'msg' => $errorMsg]);
                 }
             } else {
-                $mysql_host = input('post.mysql_host', null, 'trim');
-                $mysql_port = intval(input('post.mysql_port', '3306'));
-                $mysql_user = input('post.mysql_user', null, 'trim');
-                $mysql_pwd = input('post.mysql_pwd', null, 'trim');
-                $mysql_name = input('post.mysql_name', null, 'trim');
-                $mysql_prefix = input('post.mysql_prefix', 'cloud_', 'trim');
+                $db_type = input('post.db_type', 'mysql', 'trim');
+                $db_host = input('post.db_host', null, 'trim');
+                $db_port = intval(input('post.db_port', $db_type == 'pgsql' ? '5432' : '3306'));
+                $db_user = input('post.db_user', null, 'trim');
+                $db_pwd = input('post.db_pwd', null, 'trim');
+                $db_name = input('post.db_name', null, 'trim');
+                $db_prefix = input('post.db_prefix', 'dnsmgr_', 'trim');
                 $admin_username = input('post.admin_username', null, 'trim');
                 $admin_password = input('post.admin_password', null, 'trim');
 
-                if (!$mysql_host || !$mysql_user || !$mysql_pwd || !$mysql_name || !$admin_username || !$admin_password) {
+                if (!$db_host || !$db_user || !$db_pwd || !$db_name || !$admin_username || !$admin_password) {
                     return json(['code' => 0, 'msg' => '必填项不能为空']);
                 }
 
                 $configData = file_get_contents(app()->getRootPath() . '.example.env');
-                $configData = str_replace(['{dbhost}', '{dbname}', '{dbuser}', '{dbpwd}', '{dbport}', '{dbprefix}'], [$mysql_host, $mysql_name, $mysql_user, $mysql_pwd, $mysql_port, $mysql_prefix], $configData);
+                $configData = str_replace(
+                    ['{dbtype}', '{dbhost}', '{dbname}', '{dbuser}', '{dbpwd}', '{dbport}', '{dbprefix}'],
+                    [$db_type, $db_host, $db_name, $db_user, $db_pwd, $db_port, $db_prefix],
+                    $configData
+                );
 
-                try {
-                    $DB = new PDO("mysql:host=" . $mysql_host . ";dbname=" . $mysql_name . ";port=" . $mysql_port, $mysql_user, $mysql_pwd);
-                } catch (Exception $e) {
-                    if ($e->getCode() == 2002) {
-                        $errorMsg = '连接数据库失败：数据库地址填写错误！';
-                    } elseif ($e->getCode() == 1045) {
-                        $errorMsg = '连接数据库失败：数据库用户名或密码填写错误！';
-                    } elseif ($e->getCode() == 1049) {
-                        $errorMsg = '连接数据库失败：数据库名不存在！';
-                    } else {
-                        $errorMsg = '连接数据库失败：' . $e->getMessage();
+                if ($db_type == 'pgsql') {
+                    try {
+                        $DB = new PDO("pgsql:host=" . $db_host . ";dbname=" . $db_name . ";port=" . $db_port, $db_user, $db_pwd);
+                    } catch (Exception $e) {
+                        if ($e->getCode() == 2002) {
+                            $errorMsg = '连接数据库失败：数据库地址填写错误！';
+                        } elseif ($e->getCode() == 1045) {
+                            $errorMsg = '连接数据库失败：数据库用户名或密码填写错误！';
+                        } elseif ($e->getCode() == 1049) {
+                            $errorMsg = '连接数据库失败：数据库名不存在！';
+                        } else {
+                            $errorMsg = '连接数据库失败：' . $e->getMessage();
+                        }
+                        return json(['code' => 0, 'msg' => $errorMsg]);
                     }
-                    return json(['code' => 0, 'msg' => $errorMsg]);
-                }
-                $DB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
-                $DB->exec("set sql_mode = ''");
-                $DB->exec("set names utf8");
+                    $DB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
-                $sqls = file_get_contents(app()->getAppPath() . 'sql/install.sql');
-                $sqls = explode(';', $sqls);
+                    $sqls = file_get_contents(app()->getAppPath() . 'sql/install_pgsql.sql');
+                    $sqls = explode(';', $sqls);
 
-                $password = password_hash($admin_password, PASSWORD_DEFAULT);
-                $sqls[] = "REPLACE INTO `" . $mysql_prefix . "config` VALUES ('sys_key', '" . random(16) . "')";
-                $sqls[] = "INSERT INTO `" . $mysql_prefix . "user` (`username`,`password`,`level`,`regtime`,`lasttime`,`status`) VALUES ('" . addslashes($admin_username) . "', '$password', 2, NOW(), NOW(), 1)";
+                    $password = password_hash($admin_password, PASSWORD_DEFAULT);
+                    $sqls[] = "INSERT INTO " . $db_prefix . "config (key, value) VALUES ('sys_key', '" . random(16) . "') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value";
+                    $sqls[] = "INSERT INTO " . $db_prefix . "user (username,password,level,regtime,lasttime,status) VALUES ('" . addslashes($admin_username) . "', '$password', 2, NOW(), NOW(), 1)";
 
-                $success = 0;
-                $error = 0;
-                $errorMsg = null;
-                foreach ($sqls as $value) {
-                    $value = trim($value);
-                    if (empty($value)) continue;
-                    $value = str_replace('dnsmgr_', $mysql_prefix, $value);
-                    if ($DB->exec($value) === false) {
-                        $error++;
-                        $dberror = $DB->errorInfo();
-                        $errorMsg .= $dberror[2] . "\n";
-                    } else {
-                        $success++;
+                    $success = 0;
+                    $error = 0;
+                    $errorMsg = null;
+                    foreach ($sqls as $value) {
+                        $value = trim($value);
+                        if (empty($value)) continue;
+                        $value = str_replace('dnsmgr_', $db_prefix, $value);
+                        if ($DB->exec($value) === false) {
+                            $error++;
+                            $dberror = $DB->errorInfo();
+                            $errorMsg .= $dberror[2] . "\n";
+                        } else {
+                            $success++;
+                        }
+                    }
+                } else {
+                    try {
+                        $DB = new PDO("mysql:host=" . $db_host . ";dbname=" . $db_name . ";port=" . $db_port, $db_user, $db_pwd);
+                    } catch (Exception $e) {
+                        if ($e->getCode() == 2002) {
+                            $errorMsg = '连接数据库失败：数据库地址填写错误！';
+                        } elseif ($e->getCode() == 1045) {
+                            $errorMsg = '连接数据库失败：数据库用户名或密码填写错误！';
+                        } elseif ($e->getCode() == 1049) {
+                            $errorMsg = '连接数据库失败：数据库名不存在！';
+                        } else {
+                            $errorMsg = '连接数据库失败：' . $e->getMessage();
+                        }
+                        return json(['code' => 0, 'msg' => $errorMsg]);
+                    }
+                    $DB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+                    $DB->exec("set sql_mode = ''");
+                    $DB->exec("set names utf8");
+
+                    $sqls = file_get_contents(app()->getAppPath() . 'sql/install.sql');
+                    $sqls = explode(';', $sqls);
+
+                    $password = password_hash($admin_password, PASSWORD_DEFAULT);
+                    $sqls[] = "REPLACE INTO `" . $db_prefix . "config` VALUES ('sys_key', '" . random(16) . "')";
+                    $sqls[] = "INSERT INTO `" . $db_prefix . "user` (`username`,`password`,`level`,`regtime`,`lasttime`,`status`) VALUES ('" . addslashes($admin_username) . "', '$password', 2, NOW(), NOW(), 1)";
+
+                    $success = 0;
+                    $error = 0;
+                    $errorMsg = null;
+                    foreach ($sqls as $value) {
+                        $value = trim($value);
+                        if (empty($value)) continue;
+                        $value = str_replace('dnsmgr_', $db_prefix, $value);
+                        if ($DB->exec($value) === false) {
+                            $error++;
+                            $dberror = $DB->errorInfo();
+                            $errorMsg .= $dberror[2] . "\n";
+                        } else {
+                            $success++;
+                        }
                     }
                 }
                 if (empty($errorMsg)) {

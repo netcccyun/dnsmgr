@@ -48,6 +48,8 @@
         "ext-mbstring": "*",
         "ext-openssl": "*",
         "ext-pdo": "*",
+        "ext-pdo_pgsql": "*",
+        "ext-pgsql": "*",
         "ext-sockets": "*",
         "ext-ssh2": "*",
         "cccyun/php-whois": "^1.0",

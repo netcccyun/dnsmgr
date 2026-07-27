@@ -48,10 +48,10 @@ class Optimizeip extends BaseController
         $sort = input('post.sortName', null, 'trim');
         $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
-        $select = Db::name('optimizeip')->alias('A')->join('domain B', 'A.did = B.id');
+        $select = Db::name('optimizeip')->alias('a')->join('domain b', 'a.did = b.id');
         if (!empty($kw)) {
             if ($type == 1) {
-                $select->whereLike('rr|B.name', '%' . $kw . '%');
+                $select->whereLike('rr|b.name', '%' . $kw . '%');
             } elseif ($type == 2) {
                 $select->whereLike('remark', '%' . $kw . '%');
             }
@@ -60,13 +60,13 @@ class Optimizeip extends BaseController
             $select->where('status', intval($status));
         }
         $total = $select->count();
-        $allowedSort = ['id' => 'A.id', 'rr' => 'A.rr', 'cdn_type' => 'A.cdn_type', 'recordnum' => 'A.recordnum', 'ip_type' => 'A.ip_type', 'active' => 'A.active', 'updatetime' => 'A.updatetime', 'status' => 'A.status'];
+        $allowedSort = ['id' => 'a.id', 'rr' => 'a.rr', 'cdn_type' => 'a.cdn_type', 'recordnum' => 'a.recordnum', 'ip_type' => 'a.ip_type', 'active' => 'a.active', 'updatetime' => 'a.updatetime', 'status' => 'a.status'];
         if ($sort && isset($allowedSort[$sort])) {
             $select->order($allowedSort[$sort], $orderDir);
         } else {
-            $select->order('A.id', 'desc');
+            $select->order('a.id', 'desc');
         }
-        $list = $select->limit($offset, $limit)->field('A.*,B.name domain')->select();
+        $list = $select->limit($offset, $limit)->field('a.*,b.name domain')->select();
 
         return json(['total' => $total, 'rows' => $list]);
     }
@@ -164,7 +164,7 @@ class Optimizeip extends BaseController
         }
 
         $domains = [];
-        foreach (Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->field('A.*')->where('B.type', '<>', 'cloudflare')->select() as $row) {
+        foreach (Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')->field('a.*')->where('b.type', '<>', 'cloudflare')->select() as $row) {
             $domains[$row['id']] = $row['name'];
         }
         View::assign('domains', $domains);

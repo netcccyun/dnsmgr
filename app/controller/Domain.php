@@ -207,39 +207,39 @@ class Domain extends BaseController
         $id = input('post.id');
         $aid = input('post.aid', null, 'trim');
 
-        $select = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id');
+        $select = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id');
         if (!empty($id)) {
-            $select->where('A.id', $id);
+            $select->where('a.id', $id);
         } elseif (!empty($kw)) {
-            $select->whereLike('A.name|A.remark', '%' . $kw . '%');
+            $select->whereLike('a.name|a.remark', '%' . $kw . '%');
         }
         if (!empty($aid)) {
-            $select->where('A.aid', $aid);
+            $select->where('a.aid', $aid);
         }
         if (!empty($type)) {
-            $select->whereLike('B.type', $type);
+            $select->whereLike('b.type', $type);
         }
         if (!isNullOrEmpty($cid)) {
-            $select->where('A.cid', $cid);
+            $select->where('a.cid', $cid);
         }
         if (request()->user['level'] == 1) {
-            $select->where('is_hide', 0)->where('A.name', 'in', request()->user['permission']);
+            $select->where('is_hide', 0)->where('a.name', 'in', request()->user['permission']);
         }
         if (!isNullOrEmpty($status)) {
             if ($status == '2') {
-                $select->where('A.expiretime', '<=', date('Y-m-d H:i:s'));
+                $select->where('a.expiretime', '<=', date('Y-m-d H:i:s'));
             } elseif ($status == '1') {
-                $select->where('A.expiretime', '<=', date('Y-m-d H:i:s', time() + 86400 * 30))->where('A.expiretime', '>', date('Y-m-d H:i:s'));
+                $select->where('a.expiretime', '<=', date('Y-m-d H:i:s', time() + 86400 * 30))->where('a.expiretime', '>', date('Y-m-d H:i:s'));
             }
         }
         $total = $select->count();
-        $allowedSort = ['id' => 'A.id', 'name' => 'A.name', 'recordcount' => 'A.recordcount', 'addtime' => 'A.addtime', 'regtime' => 'A.regtime', 'expiretime' => 'A.expiretime', 'is_notice' => 'A.is_notice', 'is_hide' => 'A.is_hide', 'is_sso' => 'A.is_sso', 'typename' => 'B.type', 'category_name' => 'A.cid', 'remark' => 'A.remark'];
+        $allowedSort = ['id' => 'a.id', 'name' => 'a.name', 'recordcount' => 'a.recordcount', 'addtime' => 'a.addtime', 'regtime' => 'a.regtime', 'expiretime' => 'a.expiretime', 'is_notice' => 'a.is_notice', 'is_hide' => 'a.is_hide', 'is_sso' => 'a.is_sso', 'typename' => 'b.type', 'category_name' => 'a.cid', 'remark' => 'a.remark'];
         if ($sort && isset($allowedSort[$sort])) {
             $select->order($allowedSort[$sort], $orderDir);
         } else {
-            $select->order('A.id', 'desc');
+            $select->order('a.id', 'desc');
         }
-        $rows = $select->fieldRaw('A.*,B.type,B.remark aremark')->limit($offset, $limit)->select();
+        $rows = $select->fieldRaw('a.*,b.type,b.remark aremark')->limit($offset, $limit)->select();
 
         $categorys = Db::name('domain_category')->column('name', 'id');
         $list = [];
@@ -1033,9 +1033,9 @@ class Domain extends BaseController
             return redirect('/record/' . request()->user['id']);
         }
 
-        $list = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')
-            ->field('A.id, A.name, A.aid, B.type')
-            ->order('A.name', 'asc')
+        $list = Db::name('domain')->alias('a')->join('account b', 'a.aid = b.id')
+            ->field('a.id, a.name, a.aid, b.type')
+            ->order('a.name', 'asc')
             ->select();
 
         $domainList = [];

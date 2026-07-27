@@ -74,7 +74,7 @@ class CertOrderService
                 $drow = Db::name('domain')->where('name', idn_to_utf8($mainDomain))->find();
             }
             if (!$drow) {
-                $drow = Db::name('domain_alias')->alias('A')->join('domain B', 'A.did = B.id')->where('A.name', $mainDomain)->field('A.name as alias,B.name as maindomain')->find();
+                $drow = Db::name('domain_alias')->alias('a')->join('domain b', 'a.did = b.id')->where('a.name', $mainDomain)->field('a.name as alias,b.name as maindomain')->find();
                 if ($drow) {
                     $this->domainsAliasList[$drow['alias']] = $drow['maindomain'];
                 }
@@ -428,7 +428,7 @@ class CertOrderService
     //检查域名CNAME代理记录
     private function checkDomainCname($id)
     {
-        $row = Db::name('cert_cname')->alias('A')->join('domain B', 'A.did = B.id')->where('A.id', $id)->field('A.*,B.name cnamedomain')->find();
+        $row = Db::name('cert_cname')->alias('a')->join('domain b', 'a.did = b.id')->where('a.id', $id)->field('a.*,b.name cnamedomain')->find();
         $domain = '_acme-challenge.' . $row['domain'];
         $record = $row['rr'] . '.' . $row['cnamedomain'];
         $result = \app\utils\DnsQueryUtils::get_dns_records($domain, 'CNAME');

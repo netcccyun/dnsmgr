@@ -258,7 +258,16 @@ function config_get($key, $default = null, $force = false)
 
 function config_set($key, $value)
 {
-    $res = Db::name('config')->replace()->insert(['key' => $key, 'value' => $value]);
+    $dbType = env('database.type', 'mysql');
+    if ($dbType == 'pgsql') {
+        try {
+            $res = Db::name('config')->insert(['key' => $key, 'value' => $value]);
+        } catch (\Exception $e) {
+            $res = Db::name('config')->where('key', $key)->update(['value' => $value]);
+        }
+    } else {
+        $res = Db::name('config')->replace()->insert(['key' => $key, 'value' => $value]);
+    }
     return $res !== false;
 }
 
@@ -611,6 +620,13 @@ function getDomainDate($domain)
 function checkTableExists($table)
 {
     $prefix = env('database.prefix', 'dnsmgr_');
-    $res = Db::query("SHOW TABLES LIKE '" . $prefix . $table . "'");
-    return !empty($res);
+    $dbType = env('database.type', 'mysql');
+    if ($dbType == 'pgsql') {
+        $sql = "SELECT COUNT(*) as cnt FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '" . $prefix . $table . "'";
+        $res = Db::query($sql);
+        return $res[0]['cnt'] > 0;
+    } else {
+        $res = Db::query("SHOW TABLES LIKE '" . $prefix . $table . "'");
+        return !empty($res);
+    }
 }

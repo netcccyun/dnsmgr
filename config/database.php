@@ -58,6 +58,41 @@ return [
             'fields_cache'    => true,
         ],
 
+        'pgsql' => [
+            // 数据库类型
+            'type'            => 'pgsql',
+            // 服务器地址
+            'hostname'        => env('database.hostname', '127.0.0.1'),
+            // 数据库名
+            'database'        => env('database.database', ''),
+            // 用户名
+            'username'        => env('database.username', 'postgres'),
+            // 密码
+            'password'        => env('database.password', ''),
+            // 端口
+            'hostport'        => env('database.hostport', '5432'),
+            // 数据库连接参数
+            'params'          => [],
+            // 数据库编码默认采用utf8
+            'charset'         => 'utf8',
+            // 数据库表前缀
+            'prefix'          => env('database.prefix', ''),
+            // 数据库部署方式
+            'deploy'          => 0,
+            // 读写分离
+            'rw_separate'     => false,
+            'master_num'      => 1,
+            'slave_no'        => '',
+            // 是否严格检查字段是否存在
+            'fields_strict'   => true,
+            // 是否需要断线重连
+            'break_reconnect' => true,
+            // 监听SQL
+            'trigger_sql'     => env('app_debug', true),
+            // 开启字段缓存
+            'fields_cache'    => false,
+        ],
+
         // 更多的数据库配置信息
     ],
 ];
