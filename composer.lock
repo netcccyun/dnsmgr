@@ -1882,16 +1882,16 @@
     "packages-dev": [
         {
             "name": "swoole/ide-helper",
-            "version": "6.0.2",
+            "version": "6.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/swoole/ide-helper.git",
-                "reference": "6f12243dce071714c5febe059578d909698f9a52"
+                "reference": "ad91a281e135f498426fb2e5297376581a4e2dca"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/swoole/ide-helper/zipball/6f12243dce071714c5febe059578d909698f9a52",
-                "reference": "6f12243dce071714c5febe059578d909698f9a52",
+                "url": "https://api.github.com/repos/swoole/ide-helper/zipball/ad91a281e135f498426fb2e5297376581a4e2dca",
+                "reference": "ad91a281e135f498426fb2e5297376581a4e2dca",
                 "shasum": ""
             },
             "type": "library",
@@ -1908,9 +1908,9 @@
             "description": "IDE help files for Swoole.",
             "support": {
                 "issues": "https://github.com/swoole/ide-helper/issues",
-                "source": "https://github.com/swoole/ide-helper/tree/6.0.2"
+                "source": "https://github.com/swoole/ide-helper/tree/6.2.2"
             },
-            "time": "2025-03-23T07:31:41+00:00"
+            "time": "2026-07-25T08:15:29+00:00"
         },
         {
             "name": "symfony/var-dumper",
