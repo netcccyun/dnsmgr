@@ -45,7 +45,7 @@ jobs:
           context: .github/docker
           file: .github/docker/Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: true
+          outputs: type=registry,oci-mediatypes=false
           # 每次运行唯一，打破「下载源码 + composer」等层的缓存，否则会一直用首次构建时的层
           build-args: |
             CACHE_BUST=${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
