@@ -1,0 +1,207 @@
+{extend name="common/layout" /}
+{block name="title"}在线更新{/block}
+{block name="main"}
+<div class="row">
+<div class="col-xs-12 col-sm-10 col-lg-8 center-block" style="float: none;">
+
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">当前版本</h3></div>
+<table class="table table-bordered table-striped">
+  <tbody>
+    <tr>
+      <td width="30%">程序版本 (Build)</td>
+      <td><b id="local_version">{$local_version}</b></td>
+    </tr>
+    <tr>
+      <td>数据库版本</td>
+      <td>{$local_dbversion}</td>
+    </tr>
+    <tr>
+      <td>PHP 版本</td>
+      <td>{$php_version}</td>
+    </tr>
+    <tr>
+      <td>根目录可写</td>
+      <td>{if $writable}<font color="green">是</font>{else/}<font color="red">否（更新前请先赋予写入权限）</font>{/if}</td>
+    </tr>
+    <tr>
+      <td>ZIP 解压能力</td>
+      <td>{if $has_zip}<font color="green">可用</font>{else/}<font color="orange">未检测到 php-zip，将尝试系统命令解压</font>{/if}</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="panel panel-primary">
+<div class="panel-heading"><h3 class="panel-title">检查更新</h3></div>
+<div class="panel-body">
+  <p>从 GitHub 官方仓库 <code>netcccyun/dnsmgr</code> 获取最新 Release。官方安装包为扁平结构并含 <code>vendor</code>。</p>
+  <p>
+    <button type="button" class="btn btn-info" id="btn-check" onclick="checkUpdate()"><i class="fa fa-refresh"></i> 检查更新</button>
+    <button type="button" class="btn btn-success" id="btn-apply" onclick="applyUpdate(false)" disabled><i class="fa fa-cloud-download"></i> 一键更新</button>
+    <button type="button" class="btn btn-warning" id="btn-force" onclick="applyUpdate(true)" disabled><i class="fa fa-repeat"></i> 强制重装此版本</button>
+  </p>
+  <div id="update-result" style="display:none;">
+    <table class="table table-bordered">
+      <tbody>
+        <tr>
+          <td width="30%">最新版本</td>
+          <td id="remote_name">-</td>
+        </tr>
+        <tr>
+          <td>远程 Build</td>
+          <td id="remote_version">-</td>
+        </tr>
+        <tr>
+          <td>发布时间</td>
+          <td id="remote_time">-</td>
+        </tr>
+        <tr>
+          <td>状态</td>
+          <td id="remote_status">-</td>
+        </tr>
+        <tr>
+          <td>更新说明</td>
+          <td><pre id="remote_body" style="max-height:220px;overflow:auto;white-space:pre-wrap;margin:0;background:transparent;border:0;padding:0;"></pre></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="panel-footer">
+  <p><b>说明：</b></p>
+  <ul style="padding-left:18px;margin-bottom:0;">
+    <li>与官方手动更新相同：下载安装包后覆盖程序文件。</li>
+    <li><strong>不会</strong>覆盖 <code>.env</code>、<code>runtime/</code>、<code>.git/</code>，以及本站在线更新功能自身文件。</li>
+    <li>若已自定义 <code>public/static/css/custom.css</code>，不会被官方空文件覆盖。</li>
+    <li>官方包含 <code>vendor/</code> 时会同步覆盖依赖；源码包不含则保留本地 vendor。</li>
+    <li>更新后自动执行 <code>update.sql</code>，并尝试恢复菜单入口。</li>
+    <li>无法访问 GitHub 时，请先在「代理设置」配置可用代理。</li>
+    <li>直接访问地址：<code>/update</code></li>
+  </ul>
+</div>
+</div>
+
+<div class="panel panel-default" id="step-panel" style="display:none;">
+<div class="panel-heading"><h3 class="panel-title">更新过程</h3></div>
+<div class="panel-body">
+  <pre id="step-log" style="max-height:320px;overflow:auto;background:#f8f8f8;padding:10px;margin:0;"></pre>
+</div>
+</div>
+
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script>
+var updateInfo = null;
+
+function checkUpdate(){
+  var ii = layer.load(2, {shade:[0.1,'#fff']});
+  $.ajax({
+    type: 'GET',
+    url: '/update/check',
+    dataType: 'json',
+    timeout: 60000,
+    success: function(res){
+      layer.close(ii);
+      if(!res || typeof res !== 'object'){
+        layer.alert('检查失败：返回数据无效', {icon: 2});
+        return;
+      }
+      if(res.code != 0){
+        layer.alert(res.msg || '检查失败', {icon: 2});
+        return;
+      }
+      updateInfo = res.data || {};
+      $('#update-result').show();
+      $('#remote_name').text(updateInfo.name || updateInfo.tag || '-');
+      $('#remote_version').text(updateInfo.remote_version || '-');
+      $('#remote_time').text(updateInfo.published_at || '-');
+      $('#remote_body').text(updateInfo.body || '无');
+      $('#btn-force').prop('disabled', !(updateInfo.download_url || updateInfo.zipball_url));
+      if(updateInfo.has_update){
+        $('#remote_status').html('<font color="red">发现新版本，可一键更新</font>');
+        $('#btn-apply').prop('disabled', false);
+      }else{
+        $('#remote_status').html('<font color="green">当前已是最新版本（仍可强制重装）</font>');
+        $('#btn-apply').prop('disabled', true);
+      }
+    },
+    error: function(xhr, textStatus){
+      layer.close(ii);
+      var detail = textStatus || 'error';
+      if(xhr){
+        if(xhr.status) detail += ' HTTP ' + xhr.status;
+        if(xhr.responseText){
+          var t = xhr.responseText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+          if(t) detail += '：' + t.substring(0, 180);
+        }
+      }
+      layer.alert('检查失败：' + detail, {icon: 2});
+    }
+  });
+}
+
+function applyUpdate(force){
+  if(!updateInfo){
+    layer.msg('请先检查更新');
+    return;
+  }
+  if(!force && !updateInfo.has_update){
+    layer.msg('当前已是最新版本');
+    return;
+  }
+  var tip = force
+    ? '确认强制重新下载并覆盖安装远程版本？本地二次开发改动可能被覆盖。'
+    : '确认从 GitHub 下载并覆盖更新到最新版本？建议先备份整站。<br>更新期间请勿关闭页面。';
+  layer.confirm(tip, {icon: 3, title: force ? '强制重装' : '确认更新'}, function(index){
+    layer.close(index);
+    var ii = layer.msg('正在下载并更新，请耐心等待…', {icon: 16, shade: 0.3, time: 0});
+    $('#step-panel').show();
+    $('#step-log').text('开始更新…\n');
+    $.ajax({
+      type: 'POST',
+      url: '/update/apply',
+      data: {
+        download_url: updateInfo.download_url || '',
+        force: force ? 1 : 0
+      },
+      dataType: 'json',
+      timeout: 600000,
+      success: function(res){
+        layer.close(ii);
+        var steps = (res.data && res.data.steps) ? res.data.steps : [];
+        if(steps.length){
+          $('#step-log').text(steps.join('\n'));
+        }
+        if(res.code == 0){
+          layer.alert(res.msg, {
+            icon: 1,
+            closeBtn: false
+          }, function(){
+            window.location.href = '/update';
+          });
+        }else{
+          layer.alert(res.msg || '更新失败', {icon: 2});
+        }
+      },
+      error: function(xhr){
+        layer.close(ii);
+        var msg = '服务器错误';
+        if(xhr && xhr.responseText){
+          msg += '：' + xhr.responseText.substring(0, 200);
+        }
+        $('#step-log').append('\n' + msg);
+        layer.alert(msg, {icon: 2});
+      }
+    });
+  });
+}
+
+$(function(){
+  checkUpdate();
+});
+</script>
+{/block}

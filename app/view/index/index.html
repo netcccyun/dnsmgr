@@ -159,7 +159,10 @@
             </div>
             <ul class="list-group text-dark" id="checkupdate"></ul>
         </div>
-		<button class="btn btn-default btn-block" onclick="cleancache()"><i class="fa fa-trash"></i>清理缓存</button><br/>
+		{if request()->user['level'] eq 2}
+			<a href="/update" class="btn btn-primary btn-block"><i class="fa fa-cloud-download"></i> 在线更新</a>
+			{/if}
+			<button class="btn btn-default btn-block" onclick="cleancache()"><i class="fa fa-trash"></i>清理缓存</button><br/>
     </div>
 </div>
 {/block}
