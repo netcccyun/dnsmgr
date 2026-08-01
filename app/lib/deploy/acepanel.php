@@ -146,7 +146,7 @@ class acepanel implements DeployInterface
         ]);
 
         // 计算签名
-        $timestamp = time();
+        $timestamp = (string)time();
         $stringToSign = implode("\n", [
             'HMAC-SHA256',
             $timestamp,
