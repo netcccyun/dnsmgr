@@ -738,6 +738,69 @@ class DnsHelper
             'add' => false,
             'sort' => false,
         ],
+        'goedge' => [
+            'name' => 'GoEdge智能DNS',
+            'icon' => 'logo.png',
+            'note' => '需要填写GoEdge HTTP API节点地址，不是管理后台地址或gRPC地址',
+            'config' => [
+                'base_url' => [
+                    'name' => 'API节点地址',
+                    'type' => 'input',
+                    'placeholder' => '例如：https://api.example.com:8004',
+                    'required' => true,
+                ],
+                'accessKeyId' => [
+                    'name' => 'AccessKey ID',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'accessKey' => [
+                    'name' => 'AccessKey',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'type' => [
+                    'name' => 'AccessKey类型',
+                    'type' => 'radio',
+                    'options' => [
+                        'admin' => '管理员',
+                        'user' => '用户',
+                    ],
+                    'value' => 'admin',
+                ],
+                'nsClusterId' => [
+                    'name' => 'DNS集群ID',
+                    'type' => 'input',
+                    'placeholder' => '例如：1',
+                    'required' => true,
+                ],
+                'userId' => [
+                    'name' => 'GoEdge用户ID（可选）',
+                    'type' => 'input',
+                    'placeholder' => '留空表示不指定用户',
+                    'required' => false,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0',
+                ],
+            ],
+            'remark' => 2,
+            'status' => true,
+            'redirect' => false,
+            'log' => false,
+            'weight' => true,
+            'page' => false,
+            'add' => true,
+            'sort' => false,
+        ],
     ];
 
     public static $line_name = [
@@ -759,6 +822,7 @@ class DnsHelper
         'aliyunesa' => ['DEF' => '0'],
         'tencenteo' => ['DEF' => 'Default'],
         'cccyun' => ['DEF' => 'default'],
+        'goedge' => ['DEF' => 'default'],
     ];
 
     public static function getList()
@@ -781,7 +845,9 @@ class DnsHelper
         $account = self::getConfig($aid);
         if (!$account) return false;
         $dnstype = $account['type'];
-        $class = "\\app\\lib\\dns\\{$dnstype}";
+        $class = strtolower($dnstype) === 'goedge'
+            ? '\\app\\lib\\dns\\GoEdge'
+            : "\\app\\lib\\dns\\{$dnstype}";
         if (class_exists($class)) {
             $config = json_decode($account['config'] ?? '', true);
             $config['domain'] = $domain;
@@ -798,7 +864,9 @@ class DnsHelper
     public static function getModel2($account)
     {
         $dnstype = $account['type'];
-        $class = "\\app\\lib\\dns\\{$dnstype}";
+        $class = strtolower($dnstype) === 'goedge'
+            ? '\\app\\lib\\dns\\GoEdge'
+            : "\\app\\lib\\dns\\{$dnstype}";
         if (class_exists($class)) {
             $config = json_decode($account['config'] ?? '', true);
             $config['domain'] = $account['name'];
