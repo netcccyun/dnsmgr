@@ -1795,6 +1795,37 @@ ctrl+x 保存退出<br/>',
                 ],
             ],
         ],
+        'axisnow' => [
+            'name' => 'AxisNow',
+            'class' => 2,
+            'icon' => 'axisnow.png',
+            'desc' => '支持上传证书到AxisNow平台',
+            'note' => '支持上传证书到AxisNow平台',
+            'inputs' => [
+                'name' => [
+                    'name' => '租户名',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'token' => [
+                    'name' => 'API 令牌',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [],
+        ],
         'upyun' => [
             'name' => '又拍云',
             'class' => 2,
