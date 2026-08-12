@@ -94,6 +94,10 @@
 	  <div class="col-sm-9"><input type="text" name="tgbot_chatid" value="{:config_get('tgbot_chatid')}" class="form-control"/></div>
 	</div>
 	<div class="form-group">
+	  <label class="col-sm-3 control-label">Topic Id</label>
+	  <div class="col-sm-9"><input type="text" name="tgbot_topicid" value="{:config_get('tgbot_topicid')}" class="form-control" placeholder="非必填"/></div>
+	</div>
+	<div class="form-group">
 	  <label class="col-sm-3 control-label">使用代理服务器</label>
 	  <div class="col-sm-9"><select class="form-control" name="tgbot_proxy" default="{:config_get('tgbot_proxy')}"><option value="0">否</option><option value="1">是</option><option value="2">自定义反代URL</option></select></div>
 	</div>
@@ -110,7 +114,7 @@
   </form>
 </div>
 <div class="panel-footer">
-与<a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">@BotFather</a>对话，使用/newbot命令创建一个新的机器人，根据提示输入机器人的名称和用户名，可得到Token，或使用/mybots命令查看已创建的机器人；与<a href="https://t.me/getmyid_bot" target="_blank" rel="noopener noreferrer">@getmyid_bot</a>对话，可得到Chat Id<br/>
+与<a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">@BotFather</a>对话，使用/newbot命令创建一个新的机器人，根据提示输入机器人的名称和用户名，可得到Token，或使用/mybots命令查看已创建的机器人；与<a href="https://t.me/getmyid_bot" target="_blank" rel="noopener noreferrer">@getmyid_bot</a>对话，可得到Chat Id。超级群话题可填写 Topic Id，不填则发送到群默认位置<br/>
 </div>
 </div>
 <div class="panel panel-info">

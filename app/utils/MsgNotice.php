@@ -255,6 +255,10 @@ class MsgNotice
         }
         $url = $tgbot_url.'/bot'.$tgbot_token.'/sendMessage';
         $post = ['chat_id' => $tgbot_chatid, 'text' => $content, 'parse_mode' => 'HTML'];
+        $tgbot_topicid = intval(config_get('tgbot_topicid'));
+        if ($tgbot_topicid > 0) {
+            $post['message_thread_id'] = $tgbot_topicid;
+        }
         $result = self::telegram_curl($url, http_build_query($post));
         if (!$result) return '请求失败';
         $arr = json_decode($result, true);
