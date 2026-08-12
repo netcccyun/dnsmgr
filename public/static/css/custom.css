@@ -1,0 +1,12 @@
+.fixed .main-sidebar {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.fixed .sidebar {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
