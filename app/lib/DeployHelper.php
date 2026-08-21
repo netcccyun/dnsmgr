@@ -349,6 +349,63 @@ class DeployHelper
                 ],
             ],
         ],
+        'directadmin' => [
+            'name' => 'DirectAdmin',
+            'class' => 1,
+            'icon' => 'directadmin.png',
+            'desc' => '通过 DirectAdmin 官方 API 自动部署域名 SSL 证书',
+            'note' => '使用 HTTPS 和 HTTP Basic Authentication。认证密码可填写 DirectAdmin 账户密码；如服务商开放 Login Key，也可填写 Login Key。',
+            'tasknote' => '填写 DirectAdmin 中已存在的目标域名。多个域名可用换行或逗号分隔；系统会分别调用 CMD_API_SSL 更新证书。',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'https://server.example.com:2222',
+                    'note' => '必须使用 HTTPS，不要带 CMD_API_SSL 等路径',
+                    'required' => true,
+                ],
+                'username' => [
+                    'name' => '用户名',
+                    'type' => 'input',
+                    'placeholder' => 'DirectAdmin 登录用户名',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '认证密码',
+                    'type' => 'input',
+                    'placeholder' => 'DirectAdmin 账户密码或 Login Key',
+                    'required' => true,
+                ],
+                'verify_tls' => [
+                    'name' => '验证面板 TLS 证书',
+                    'type' => 'radio',
+                    'options' => [
+                        '1' => '是（推荐）',
+                        '0' => '否',
+                    ],
+                    'value' => '1',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0',
+                ],
+            ],
+            'taskinputs' => [
+                'domain' => [
+                    'name' => 'DirectAdmin 域名',
+                    'type' => 'textarea',
+                    'placeholder' => "example.com\nsecond.example",
+                    'note' => '必须是该 DirectAdmin 账户中已存在的域名；多个域名可换行或用逗号分隔。',
+                    'required' => true,
+                ],
+            ],
+        ],
         'btwaf' => [
             'name' => '堡塔云WAF',
             'class' => 1,
