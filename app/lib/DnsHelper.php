@@ -801,6 +801,36 @@ class DnsHelper
             'add' => true,
             'sort' => false,
         ],
+        'dynv6' => [
+            'name' => 'dynv6',
+            'icon' => 'dynv6.ico',
+            'note' => '',
+            'config' => [
+                'token' => [
+                    'name' => 'API Token',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'remark' => 0,
+            'status' => false,
+            'redirect' => false,
+            'log' => false,
+            'weight' => false,
+            'page' => false,
+            'add' => false,
+            'sort' => false,
+        ],
     ];
 
     public static $line_name = [
@@ -823,6 +853,7 @@ class DnsHelper
         'tencenteo' => ['DEF' => 'Default'],
         'cccyun' => ['DEF' => 'default'],
         'goedge' => ['DEF' => 'default'],
+        'dynv6' => ['DEF' => 'default'],
     ];
 
     public static function getList()
