@@ -137,7 +137,7 @@ class AWS
      */
     public function requestXmlN($method, $path, $params = [], $xml = null, $etag = false)
     {
-        if (!empty($params)) {
+        if (is_array($params) && !empty($params)) {
             $params = array_filter($params, function ($a) {
                 return $a !== null;
             });
@@ -147,7 +147,9 @@ class AWS
         $body = '';
         $query = [];
         if ($method == 'GET' || $method == 'DELETE') {
-            $query = $params;
+            $query = is_array($params) ? $params : [];
+        } elseif (is_string($params)) {
+            $body = $params;
         } else {
             $body = !empty($params) ? $this->array2xml($params, $xml) : '';
         }
@@ -308,6 +310,9 @@ class AWS
             $arr = $this->xml2array($response);
             if (isset($arr['Error']['Message'])) {
                 throw new Exception($arr['Error']['Message']);
+            } elseif (isset($arr['Messages']['Message'])) {
+                $msg = $arr['Messages']['Message'];
+                throw new Exception(is_array($msg) ? implode('; ', $msg) : $msg);
             } else {
                 throw new Exception('HTTP Code: ' . $httpCode);
             }
