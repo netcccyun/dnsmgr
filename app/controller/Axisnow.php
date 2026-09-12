@@ -914,9 +914,9 @@ class Axisnow extends BaseController
         $normalized = strtolower(trim($value));
         $normalized = preg_replace('/[\s_.\/-]+/u', '', $normalized) ?: $normalized;
         return in_array($normalized, [
-            'hk', 'hkg', '810', 'hongkong', '香港',
-            'mo', 'mac', 'macao', 'macau', '446', '澳门',
-            'tw', 'twn', 'taiwan', '158', '台湾',
+            'hk', 'hkg', '91', '910000', 'hongkong', '香港',
+            'mo', 'mac', 'macao', 'macau', '92', '920000', '澳门',
+            'tw', 'twn', 'taiwan', '71', '710000', '台湾',
         ], true) || str_ends_with($normalized, 'hk') || str_ends_with($normalized, 'mo') || str_ends_with($normalized, 'tw')
             || str_contains($normalized, 'hongkong') || str_contains($normalized, 'macao') || str_contains($normalized, 'macau') || str_contains($normalized, 'taiwan');
     }
