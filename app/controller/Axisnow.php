@@ -893,6 +893,93 @@ class Axisnow extends BaseController
         return $parts ? implode(' + ', $parts) : '-';
     }
 
+    private function axisNowGeoValues($value): array
+    {
+        if (is_scalar($value)) {
+            $value = trim((string)$value);
+            return $value === '' ? [] : [$value];
+        }
+        if (!is_array($value)) return [];
+        $values = [];
+        foreach (['code', 'value', 'id', 'name', 'label'] as $key) {
+            if (!array_key_exists($key, $value) || !is_scalar($value[$key])) continue;
+            $item = trim((string)$value[$key]);
+            if ($item !== '') $values[] = $item;
+        }
+        return $values;
+    }
+
+    private function axisNowIsSpecialRegion(string $value): bool
+    {
+        $normalized = strtolower(trim($value));
+        $normalized = preg_replace('/[\s_.\/-]+/u', '', $normalized) ?: $normalized;
+        return in_array($normalized, [
+            'hk', 'hkg', '810', 'hongkong', '香港',
+            'mo', 'mac', 'macao', 'macau', '446', '澳门',
+            'tw', 'twn', 'taiwan', '158', '台湾',
+        ], true) || str_ends_with($normalized, 'hk') || str_ends_with($normalized, 'mo') || str_ends_with($normalized, 'tw')
+            || str_contains($normalized, 'hongkong') || str_contains($normalized, 'macao') || str_contains($normalized, 'macau') || str_contains($normalized, 'taiwan');
+    }
+
+    private function axisNowGeoField(array $geo, array $keys, bool $preferSpecial = false): string
+    {
+        $values = [];
+        foreach ($keys as $key) {
+            $values = array_merge($values, $this->axisNowGeoValues($geo[$key] ?? null));
+        }
+        if ($preferSpecial) {
+            foreach ($values as $value) {
+                if ($this->axisNowIsSpecialRegion((string)$value)) return $value;
+            }
+        }
+        return $values[0] ?? '';
+    }
+
+    private function axisNowGeoMeta(array $eip): array
+    {
+        $geo = is_array($eip['geo'] ?? null) ? $eip['geo'] : $eip;
+        $nested = [];
+        foreach (['geo', 'location', 'address', 'region_info', 'subdivision_info'] as $key) {
+            if (is_array($geo[$key] ?? null)) {
+                $nested = $geo[$key];
+                break;
+            }
+        }
+        $countryCode = $this->axisNowGeoField($geo, ['country_code', 'countryCode', 'country']);
+        $provinceKeys = [
+            'province_code', 'provinceCode',
+            'region_code', 'regionCode',
+            'subdivision_code', 'subdivisionCode',
+            'state_code', 'stateCode',
+            'province', 'region', 'subdivision', 'state',
+        ];
+        $provinceCandidates = [$this->axisNowGeoField($geo, $provinceKeys, true)];
+        $cityName = $this->axisNowGeoField($geo, ['city_name', 'cityName', 'city']);
+        $ispName = $this->axisNowGeoField($geo, ['isp_name', 'ispName', 'isp']);
+        if ($nested) {
+            $countryCode = $countryCode !== '' ? $countryCode : $this->axisNowGeoField($nested, ['country_code', 'countryCode', 'country']);
+            $provinceCandidates[] = $this->axisNowGeoField($nested, $provinceKeys, true);
+            $cityName = $cityName !== '' ? $cityName : $this->axisNowGeoField($nested, ['city_name', 'cityName', 'city']);
+            $ispName = $ispName !== '' ? $ispName : $this->axisNowGeoField($nested, ['isp_name', 'ispName', 'isp']);
+        }
+        $provinceCandidates = array_values(array_filter($provinceCandidates, static fn($value) => $value !== ''));
+        $provinceCode = '';
+        foreach ($provinceCandidates as $candidate) {
+            if ($this->axisNowIsSpecialRegion((string)$candidate)) {
+                $provinceCode = (string)$candidate;
+                break;
+            }
+        }
+        if ($provinceCode === '') $provinceCode = (string)($provinceCandidates[0] ?? '');
+        return [
+            'country_code' => $countryCode,
+            'province_code' => $provinceCode,
+            'isp_name' => $ispName,
+            'provider_name' => trim((string)($eip['provider_name'] ?? '')),
+            'tag_names' => is_array($eip['tag_names'] ?? null) ? array_values($eip['tag_names']) : [],
+        ];
+    }
+
     private function rulePresentation(array $row, array $tagNames, array $eipsByUuid, array $dnsRecords, array $latestEvent, ?array $probeStatuses = null): array
     {
         $conf = $row['action']['conf'] ?? [];
@@ -911,14 +998,7 @@ class Axisnow extends BaseController
             if ($uuid !== '') {
                 $addressByUuid[$uuid] = $address;
                 $eip = $eipsByUuid[$uuid] ?? [];
-                $geo = is_array($eip['geo'] ?? null) ? $eip['geo'] : [];
-                $poolMetaByAddress[$addressKey($address)] = [
-                    'country_code' => trim((string)($geo['country_code'] ?? '')),
-                    'province_code' => trim((string)($geo['province_code'] ?? '')),
-                    'isp_name' => trim((string)($geo['isp_name'] ?? '')),
-                    'provider_name' => trim((string)($eip['provider_name'] ?? '')),
-                    'tag_names' => is_array($eip['tag_names'] ?? null) ? array_values($eip['tag_names']) : [],
-                ];
+                $poolMetaByAddress[$addressKey($address)] = $this->axisNowGeoMeta($eip);
             }
         }
 
