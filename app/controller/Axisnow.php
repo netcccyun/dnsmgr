@@ -98,16 +98,60 @@ class Axisnow extends BaseController
             } catch (Exception $e) {
                 // 路由规则列表仍可降级展示 AxisNow 原始线路值。
             }
+            $tagNames = [];
+            try {
+                $tagNames = $this->indexNames($context['service']->listTags());
+            } catch (Exception $e) {
+                // 标签名称解析失败时回退展示标签 UUID，不影响规则列表加载。
+            }
+            $eipsByUuid = [];
+            try {
+                foreach ($this->availableEips($context) as $eip) {
+                    $eip['tag_names'] = [];
+                    foreach (($eip['tag_uuids'] ?? []) as $tagUuid) {
+                        $eip['tag_names'][] = $tagNames[$tagUuid] ?? $tagUuid;
+                    }
+                    $eipUuid = strtolower(trim((string)($eip['uuid'] ?? '')));
+                    if ($eipUuid !== '') $eipsByUuid[$eipUuid] = $eip;
+                }
+            } catch (Exception $e) {
+                // EIP 元数据加载失败时仍展示地址和评分。
+            }
             $rows = array_values(array_filter($context['service']->listRules(), static fn($row) => ($row['dns_domain_uuid'] ?? '') === $domainUuid));
+            $recordsByRule = [];
+            $ruleUuids = array_values(array_filter(array_map(
+                static fn($row) => trim((string)($row['uuid'] ?? '')),
+                $rows
+            )));
+            foreach ($context['service']->listDnsRecordsByRuleUuids($ruleUuids) as $record) {
+                if (!is_array($record)) continue;
+                $ruleUuid = strtolower(trim((string)($record['dns_rule_uuid'] ?? $record['rule_uuid'] ?? '')));
+                if ($ruleUuid !== '') $recordsByRule[$ruleUuid][] = $record;
+            }
+            $latestEventsByRule = [];
+            foreach ($context['service']->listLatestRuleEventsByRuleUuids($ruleUuids) as $event) {
+                if (!is_array($event)) continue;
+                $ruleInfo = is_array($event['dns_rule_info'] ?? null) ? $event['dns_rule_info'] : [];
+                $ruleUuid = strtolower(trim((string)($ruleInfo['dns_rule_uuid'] ?? $event['dns_rule_uuid'] ?? $event['rule_uuid'] ?? '')));
+                if ($ruleUuid !== '') $latestEventsByRule[$ruleUuid] = $event;
+            }
             foreach ($rows as &$row) {
                 $row['account_id'] = $context['account']['id'];
                 $row['account_name'] = $this->accountDisplayName($context['account']);
                 $row['strategy'] = $row['action']['conf']['response_strategy']['election_strategy'] ?? '-';
                 $row['pool_summary'] = $this->poolSummary($row);
                 $row['geo_isp_name'] = $lineNames[(string)($row['geo_isp'] ?? '')] ?? ($row['geo_isp'] ?? 'default');
+                $ruleUuid = strtolower(trim((string)($row['uuid'] ?? '')));
+                $row = array_merge($row, $this->rulePresentation(
+                    $row,
+                    $tagNames,
+                    $eipsByUuid,
+                    $recordsByRule[$ruleUuid] ?? [],
+                    $latestEventsByRule[$ruleUuid] ?? []
+                ));
             }
             unset($row);
-            return json($this->paginateRows($rows, ['geo_isp', 'name', 'description', 'pool_summary']));
+            return json($this->paginateRows($rows, ['geo_isp', 'name', 'description', 'pool_summary', 'pool_search', 'resolved_search']));
         } catch (Exception $e) {
             return json(['code' => -1, 'msg' => $e->getMessage(), 'total' => 0, 'rows' => []]);
         }
@@ -593,6 +637,182 @@ class Axisnow extends BaseController
         return $parts ? implode(' + ', $parts) : '-';
     }
 
+    private function rulePresentation(array $row, array $tagNames, array $eipsByUuid, array $dnsRecords, array $latestEvent): array
+    {
+        $conf = $row['action']['conf'] ?? [];
+        $pool = $conf['address_pool'] ?? [];
+        $response = $conf['response_strategy'] ?? [];
+        $addressKey = static fn($address) => rtrim(strtolower(trim((string)$address)), '.');
+        $expandedAddresses = [];
+        $addressByUuid = [];
+        $poolMetaByAddress = [];
+        foreach (($row['address_pool_eips'] ?? []) as $entry) {
+            if (!is_array($entry)) continue;
+            $address = trim((string)($entry['address'] ?? ''));
+            if ($address === '') continue;
+            $expandedAddresses[] = $address;
+            $uuid = strtolower(trim((string)($entry['uuid'] ?? '')));
+            if ($uuid !== '') {
+                $addressByUuid[$uuid] = $address;
+                $eip = $eipsByUuid[$uuid] ?? [];
+                $geo = is_array($eip['geo'] ?? null) ? $eip['geo'] : [];
+                $poolMetaByAddress[$addressKey($address)] = [
+                    'country_code' => trim((string)($geo['country_code'] ?? '')),
+                    'isp_name' => trim((string)($geo['isp_name'] ?? '')),
+                    'provider_name' => trim((string)($eip['provider_name'] ?? '')),
+                    'tag_names' => is_array($eip['tag_names'] ?? null) ? array_values($eip['tag_names']) : [],
+                ];
+            }
+        }
+
+        $groups = [];
+        $literalAddresses = [];
+        if (($pool['mode'] ?? '') === 'all_valid_eips') {
+            $groups[] = [
+                'type' => 'all_valid_eips',
+                'type_name' => '全部有效 EIP',
+                'count' => isset($row['eips_count']) ? (int)$row['eips_count'] : count($expandedAddresses),
+                'items' => [],
+            ];
+        } else {
+            foreach (($pool['groups'] ?? []) as $group) {
+                if (!is_array($group)) continue;
+                $type = (string)($group['type'] ?? '');
+                $items = [];
+                if ($type === 'eip') {
+                    foreach (($group['eip_uuids'] ?? []) as $uuid) {
+                        $key = strtolower((string)$uuid);
+                        $items[] = $addressByUuid[$key] ?? (string)$uuid;
+                    }
+                } elseif ($type === 'eip_tag') {
+                    foreach (($group['tag_uuids'] ?? []) as $uuid) {
+                        $items[] = $tagNames[(string)$uuid] ?? (string)$uuid;
+                    }
+                } elseif ($type === 'ip') {
+                    $items = $group['ips'] ?? [];
+                    $literalAddresses = array_merge($literalAddresses, is_array($items) ? $items : []);
+                } elseif ($type === 'domain') {
+                    $items = $group['domains'] ?? [];
+                    $literalAddresses = array_merge($literalAddresses, is_array($items) ? $items : []);
+                }
+                $items = array_values(array_unique(array_filter(array_map(
+                    static fn($item) => trim((string)$item),
+                    is_array($items) ? $items : []
+                ), static fn($item) => $item !== '')));
+                $groups[] = [
+                    'type' => $type ?: 'unknown',
+                    'type_name' => match ($type) {
+                        'eip' => 'EIP',
+                        'eip_tag' => 'EIP 标签',
+                        'ip' => '自定义 IP',
+                        'domain' => 'CNAME',
+                        default => '地址',
+                    },
+                    'count' => count($items),
+                    'items' => $items,
+                ];
+            }
+        }
+
+        $candidates = [];
+        $candidateByAddress = [];
+        foreach (($row['election_info']['list'] ?? []) as $entry) {
+            if (!is_array($entry)) continue;
+            $address = trim((string)($entry['address'] ?? ''));
+            if ($address === '') continue;
+            $stability = is_array($entry['stability_info'] ?? null) ? $entry['stability_info'] : [];
+            $item = [
+                'address' => $address,
+                'status' => (string)($stability['status'] ?? ''),
+                'quality_filtered' => filter_var($stability['quality_filtered'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ];
+            if (isset($stability['score']) && is_numeric($stability['score'])) {
+                $item['score'] = (float)$stability['score'];
+            }
+            $item = array_merge($item, $poolMetaByAddress[$addressKey($address)] ?? []);
+            $candidates[] = $item;
+            $candidateByAddress[$addressKey($address)] = $item;
+        }
+
+        $quantity = $response['ip_quantity'] ?? $response['addr_quantity'] ?? null;
+        $quantity = is_numeric($quantity) ? max(0, (int)$quantity) : null;
+        $resolved = [];
+        foreach ($dnsRecords as $record) {
+            if (!is_array($record)) continue;
+            $address = trim((string)($record['content'] ?? ''));
+            if ($address === '') continue;
+            $key = $addressKey($address);
+            $item = $candidateByAddress[$key] ?? array_merge([
+                'address' => $address,
+                'status' => '',
+                'quality_filtered' => false,
+            ], $poolMetaByAddress[$key] ?? []);
+            $item['address'] = $address;
+            $item['sync_status'] = trim((string)($record['sync_status'] ?? ''));
+            $item['fallback'] = filter_var($record['fallback'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $item['election_order'] = is_numeric($record['election_order'] ?? null) ? (int)$record['election_order'] : null;
+            $item['updated_at'] = trim((string)($record['updated_at'] ?? ''));
+            $resolved[] = $item;
+        }
+        usort($resolved, static function ($left, $right) {
+            $leftScore = isset($left['score']) && is_numeric($left['score']) ? (float)$left['score'] : 0.0;
+            $rightScore = isset($right['score']) && is_numeric($right['score']) ? (float)$right['score'] : 0.0;
+            if ($leftScore !== $rightScore) return $rightScore <=> $leftScore;
+            $leftOrder = $left['election_order'] ?? PHP_INT_MAX;
+            $rightOrder = $right['election_order'] ?? PHP_INT_MAX;
+            return $leftOrder <=> $rightOrder ?: strcmp((string)$left['address'], (string)$right['address']);
+        });
+        $resolvedUpdatedAt = trim((string)($latestEvent['time_iso8601'] ?? ''));
+
+        $poolAddressValues = array_values(array_unique(array_filter(array_map(
+            static fn($item) => trim((string)$item),
+            array_merge($expandedAddresses, $literalAddresses)
+        ), static fn($item) => $item !== '')));
+        $poolAddresses = [];
+        $poolAddressKeys = [];
+        foreach ($poolAddressValues as $address) $poolAddressKeys[$addressKey($address)] = true;
+        $addedPoolAddresses = [];
+        foreach ($candidates as $candidate) {
+            $key = $addressKey($candidate['address']);
+            if (!isset($poolAddressKeys[$key]) || isset($addedPoolAddresses[$key])) continue;
+            $poolAddresses[] = $candidate;
+            $addedPoolAddresses[$key] = true;
+        }
+        foreach ($poolAddressValues as $address) {
+            $key = $addressKey($address);
+            if (isset($addedPoolAddresses[$key])) continue;
+            $poolAddresses[] = array_merge([
+                'address' => $address,
+                'status' => '',
+                'quality_filtered' => false,
+            ], $poolMetaByAddress[$key] ?? []);
+            $addedPoolAddresses[$key] = true;
+        }
+        $poolAddressCount = count($poolAddresses);
+        if ((bool)($row['address_pool_eips_truncated'] ?? false)) {
+            $poolAddressCount += max(0, (int)($row['eips_count'] ?? 0) - count($expandedAddresses));
+        } elseif ($poolAddressCount === 0) {
+            $poolAddressCount = max((int)($row['eips_count'] ?? 0), (int)($row['cnames_count'] ?? 0));
+        }
+
+        return [
+            'pool_groups' => $groups,
+            'pool_addresses' => $poolAddresses,
+            'pool_address_count' => $poolAddressCount,
+            'pool_truncated' => (bool)($row['address_pool_eips_truncated'] ?? false),
+            'strategy_quantity' => $quantity,
+            'strategy_interval' => isset($response['trigger_interval']) && is_numeric($response['trigger_interval']) ? (int)$response['trigger_interval'] : null,
+            'resolved_addresses' => $resolved,
+            'resolved_updated_at' => $resolvedUpdatedAt,
+            'pool_search' => trim(implode(' ', array_merge(
+                array_column($groups, 'type_name'),
+                $poolAddressValues,
+                ...array_map(static fn($group) => $group['items'], $groups)
+            ))),
+            'resolved_search' => implode(' ', array_column($resolved, 'address')),
+        ];
+    }
+
     private function availableEips(array $context): array
     {
         /** @var AxisNowService $service */
@@ -821,14 +1041,20 @@ class Axisnow extends BaseController
 
     private function eipOptions(array $rows): array
     {
-        return array_values(array_map(static function ($row) {
+        $options = [];
+        foreach ($rows as $row) {
+            if (($row['data_origin'] ?? '') === 'subscribed'
+                && !in_array(($row['subscription_status'] ?? ''), ['', 'active'], true)) {
+                continue;
+            }
             $address = $row['address'] ?? '-';
             $provider = trim((string)($row['provider_name'] ?? ''));
-            return [
+            $options[] = [
                 'uuid' => $row['uuid'] ?? '',
                 'name' => $provider !== '' ? $address . ' · ' . $provider : $address,
             ];
-        }, $rows));
+        }
+        return $options;
     }
 
     private function indexNames(array $rows): array

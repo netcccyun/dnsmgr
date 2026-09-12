@@ -1,7 +1,7 @@
 {extend name="common/layout" /}
 {block name="title"}AxisNow 路由规则{/block}
 {block name="main"}
-<link href="/static/css/axisnow.css?v=4" rel="stylesheet">
+<link href="/static/css/axisnow.css?v=6" rel="stylesheet">
 <div class="row axisnow-page">
   <div class="col-xs-12 center-block" style="float:none;">
     <div class="panel panel-default panel-intro">
@@ -102,12 +102,12 @@ $(function(){
     columns:[
       {field:'geo_isp',title:'线路',formatter:function(v,row){return '<strong>'+escapeHtml(row.geo_isp_name||v||'默认线路')+'</strong><div class="axisnow-summary">'+escapeHtml(row.name||'')+'</div>'; }},
       {field:'type',title:'记录类型'},
-      {field:'pool_summary',title:'地址池'},
+      {field:'pool_groups',title:'地址池',formatter:poolFormatter},
       {field:'strategy',title:'选取策略',formatter:strategyFormatter},
+      {field:'resolved_addresses',title:'解析地址 / 最后更新时间',formatter:resolvedFormatter},
       {field:'status',title:'生效状态',formatter:function(v){return v==='active'?'<span class="label label-success">启用</span>':'<span class="label label-default">暂停</span>'; }},
-      {field:'updated_at',title:'更新时间',formatter:timeFormatter},
       {field:'action',title:'操作',formatter:function(v,row){var next=row.status==='active'?'paused':'active',text=next==='active'?'启用':'暂停';return '<button class="btn btn-info btn-xs" onclick="editRule(\''+row.uuid+'\')">编辑</button> <button class="btn btn-default btn-xs" onclick="changeRuleStatus(\''+row.uuid+'\',\''+next+'\')">'+text+'</button> <button class="btn btn-danger btn-xs" onclick="deleteRule(\''+row.uuid+'\')">删除</button>';}}
-    ],onPageChange:function(n,s){setStoredPageSize('axisnow_rules_pagesize',s);}
+    ],onPostBody:function(){initPoolPopovers();},onPageChange:function(n,s){setStoredPageSize('axisnow_rules_pagesize',s);}
   });
   loadRuleOptions();
 });
@@ -156,9 +156,43 @@ function editRule(uuid){
 function saveRule(){var $btn=$('#saveRuleButton').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> 保存中');$.post('/axisnow/rules/save',$('#ruleForm').serialize(),function(res){if(res.code===0){$('#ruleModal').modal('hide');layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg||'保存失败',{icon:2});},'json').fail(function(){layer.msg('服务器错误');}).always(function(){$btn.prop('disabled',false).text('确认');});}
 function changeRuleStatus(uuid,status){var ii=layer.load(2);$.post('/axisnow/rules/status',{account_id:accountId,uuid:uuid,status:status},function(res){layer.close(ii);if(res.code===0){layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg,{icon:2});},'json');}
 function deleteRule(uuid){layer.confirm('确定删除此路由规则吗？',{icon:0},function(index){var ii=layer.load(2);$.post('/axisnow/rules/delete',{account_id:accountId,uuid:uuid},function(res){layer.close(ii);if(res.code===0){layer.close(index);layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg,{icon:2});},'json');});}
-function strategyFormatter(v){return {random:'随机',priority_order:'顺序',quality_optimized:'优选'}[v]||escapeHtml(v||'-');}
+function poolFormatter(v,row){
+  var groups=Array.isArray(v)?v:[],addresses=Array.isArray(row.pool_addresses)?row.pool_addresses:[],count=Number(row.pool_address_count||0),html='<div class="axisnow-cell-title">'+escapeHtml(count?count+' 个地址':(row.pool_summary||'-'))+'</div>';
+  $.each(groups,function(_,group){
+    var items=Array.isArray(group.items)?group.items:[];
+    html+='<div class="axisnow-detail-row"><span class="axisnow-badge">'+escapeHtml(group.type_name||'地址')+'</span>';
+    if(group.type==='eip_tag'&&items.length)html+='<span class="axisnow-detail-items">'+items.map(escapeHtml).join('、')+'</span>';
+    html+='</div>';
+  });
+  if(!addresses.length)return html;
+  var content='<div class="axisnow-pool-list">';
+  $.each(addresses,function(_,item){content+='<div class="axisnow-pool-address-row"><span>'+escapeHtml(item.address||'-')+'</span>'+(item.score!==undefined&&item.score!==null?'<span class="axisnow-detail-score">'+escapeHtml(Number(item.score).toFixed(2).replace(/\.00$/,''))+'</span>':'')+'</div>';});
+  if(row.pool_truncated)content+='<div class="axisnow-cell-meta">地址池数量为 '+count+'，当前接口仅返回其中一部分</div>';
+  content+='</div>';
+  return '<span class="axisnow-pool-trigger" tabindex="0" data-axisnow-pool data-content="'+escapeAttr(content)+'">'+html+'</span>';
+}
+function initPoolPopovers(){$('[data-axisnow-pool]').popover({container:'body',trigger:'hover focus',html:true,placement:'auto right',title:'完整地址池',template:'<div class="popover axisnow-pool-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>'});}
+function strategyFormatter(v,row){
+  var name={random:'随机',priority_order:'顺序',quality_optimized:'优选'}[v]||v||'-',quantity=Number(row.strategy_quantity||0),html='<div>';
+  if(quantity)html+='<span class="axisnow-cell-title">选取 '+quantity+' 个地址</span> ';
+  html+='<span class="axisnow-badge axisnow-badge-dark">'+escapeHtml(name)+'</span></div>';
+  if(row.strategy_interval)html+='<div class="axisnow-cell-meta">每 '+Number(row.strategy_interval)+' 分钟评估</div>';
+  return html;
+}
+function resolvedFormatter(v,row){
+  var items=Array.isArray(v)?v:[],html='<div class="axisnow-detail-list">';
+  if(!items.length)html+='<div class="axisnow-cell-meta">暂无解析结果</div>';
+  $.each(items,function(_,item){
+    html+='<div class="axisnow-address-row"><span>'+escapeHtml(item.address||'-')+'</span>';
+    if(item.score!==undefined&&item.score!==null&&item.score!=='')html+='<span class="axisnow-detail-score">'+escapeHtml(Number(item.score).toFixed(2).replace(/\.00$/,''))+'</span>';
+    html+='</div>';
+  });
+  html+='</div><div class="axisnow-cell-meta">最后更新时间：'+timeFormatter(row.resolved_updated_at)+'</div>';
+  return html;
+}
 function timeFormatter(v){return v?escapeHtml(String(v).replace('T',' ').replace('Z','')):'-';}
 function escapeHtml(v){return $('<div>').text(v==null?'':String(v)).html();}
+function escapeAttr(v){return escapeHtml(v).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 {/literal}
 </script>
 {/block}

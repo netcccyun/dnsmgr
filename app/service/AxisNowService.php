@@ -24,6 +24,13 @@ class AxisNowService
     public function check(): bool
     {
         $this->request('GET', '/dns_routing_domains', ['page' => 1, 'per_page' => 5]);
+        $probeRuleUuid = '00000000-0000-4000-8000-000000000000';
+        $rules = $this->request('GET', '/dns_routing_rules', ['page' => 1, 'per_page' => 1]);
+        if (!empty($rules['result'][0]['uuid'])) {
+            $probeRuleUuid = (string)$rules['result'][0]['uuid'];
+        }
+        $this->listDnsRecordsByRuleUuids([$probeRuleUuid]);
+        $this->listLatestRuleEventsByRuleUuids([$probeRuleUuid]);
         return true;
     }
 
@@ -57,6 +64,54 @@ class AxisNowService
         return $this->listAll('/dns_routing_rules');
     }
 
+    public function listDnsRecordsByRuleUuids(array $ruleUuids): array
+    {
+        $ruleUuids = array_values(array_unique(array_filter(array_map(
+            static fn($uuid) => strtolower(trim((string)$uuid)),
+            $ruleUuids
+        ))));
+        $rows = [];
+        foreach (array_chunk($ruleUuids, 100) as $chunk) {
+            $rows = array_merge($rows, $this->listAllPost('/dns_records/filter', [
+                'scope' => 'all',
+                'filter' => [
+                    'or' => [[
+                        'and' => [[
+                            'field' => 'rule_uuid',
+                            'operator' => 'in',
+                            'value' => $chunk,
+                        ]],
+                    ]],
+                ],
+            ]));
+        }
+        return $rows;
+    }
+
+    public function listLatestRuleEventsByRuleUuids(array $ruleUuids): array
+    {
+        $ruleUuids = array_values(array_unique(array_filter(array_map(
+            static fn($uuid) => strtolower(trim((string)$uuid)),
+            $ruleUuids
+        ))));
+        $rows = [];
+        foreach (array_chunk($ruleUuids, 100) as $chunk) {
+            $rows = array_merge($rows, $this->listAllPost('/dns_routing_rules/events/filter', [
+                'scope' => 'all',
+                'filter' => [
+                    'or' => [[
+                        'and' => [[
+                            'field' => 'latest_events_by_rule_uuids',
+                            'operator' => 'in',
+                            'value' => $chunk,
+                        ]],
+                    ]],
+                ],
+            ]));
+        }
+        return $rows;
+    }
+
     public function getRule(string $uuid): array
     {
         return $this->result($this->request('GET', '/dns_routing_rules/' . rawurlencode($uuid)));
@@ -84,18 +139,7 @@ class AxisNowService
 
     public function listSubscribedEips(): array
     {
-        $rows = $this->listAllPost('/eips/resolve', [
-            'scope' => 'subscriptions',
-            'filter' => [
-                'or' => [[
-                    'and' => [[
-                        'field' => 'status',
-                        'operator' => 'in',
-                        'value' => ['active'],
-                    ]],
-                ]],
-            ],
-        ]);
+        $rows = $this->listAllPost('/eips/resolve', ['scope' => 'subscriptions']);
         foreach ($rows as &$row) {
             $row['subscription_uuid'] = $row['uuid'] ?? '';
             $row['uuid'] = $row['eip_uuid'] ?? ($row['uuid'] ?? '');

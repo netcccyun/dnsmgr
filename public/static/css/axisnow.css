@@ -20,3 +20,17 @@
 .axisnow-page .axisnow-check-list input[type="checkbox"] { margin: 0 6px 0 0; vertical-align: -1px; }
 .axisnow-page .modal .help-block { margin-bottom: 0; }
 .axisnow-page .table td { vertical-align: middle; }
+.axisnow-page .axisnow-cell-title { font-weight: 600; color: #333; }
+.axisnow-page .axisnow-cell-meta { margin-top: 3px; color: #888; font-size: 12px; line-height: 1.45; }
+.axisnow-page .axisnow-detail-row { display: flex; align-items: flex-start; gap: 4px; margin-top: 4px; line-height: 1.45; }
+.axisnow-page .axisnow-detail-items { max-width: 280px; color: #666; font-size: 12px; overflow-wrap: anywhere; }
+.axisnow-page .axisnow-detail-list { min-width: 210px; }
+.axisnow-page .axisnow-address-row { display: flex; justify-content: space-between; gap: 18px; line-height: 1.55; white-space: nowrap; }
+.axisnow-page .axisnow-detail-score { color: #218c55; font-variant-numeric: tabular-nums; }
+.axisnow-page .axisnow-pool-trigger { display: block; cursor: help; }
+.axisnow-pool-popover { width: 520px; max-width: calc(100vw - 30px); }
+.axisnow-pool-popover .popover-content { padding: 8px 14px; }
+.axisnow-pool-list { max-height: 360px; overflow-y: auto; }
+.axisnow-pool-address-row { display: flex; justify-content: space-between; gap: 24px; padding: 6px 0; line-height: 1.4; white-space: nowrap; }
+.axisnow-pool-address-row + .axisnow-pool-address-row { border-top: 1px solid #f0f0f0; }
+.axisnow-pool-address-row .axisnow-detail-score { color: #218c55; font-variant-numeric: tabular-nums; }
