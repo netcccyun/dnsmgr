@@ -90,6 +90,9 @@ Route::group(function () {
     Route::get('/axisnow/domain/:id/:uuid', 'axisnow/domain');
     Route::post('/axisnow/rules/data/:id/:uuid', 'axisnow/rules_data');
     Route::get('/axisnow/rules/get/:id/:uuid', 'axisnow/rule_get');
+    Route::get('/axisnow/rules/automation/:id/:uuid', 'axisnow/automation_get');
+    Route::post('/axisnow/rules/automation/save', 'axisnow/automation_save');
+    Route::post('/axisnow/rules/automation/restore', 'axisnow/automation_restore');
     Route::post('/axisnow/rules/save', 'axisnow/rule_save');
     Route::post('/axisnow/rules/status', 'axisnow/rule_status');
     Route::post('/axisnow/rules/delete', 'axisnow/rule_delete');

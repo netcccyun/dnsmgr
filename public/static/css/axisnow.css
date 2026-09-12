@@ -34,3 +34,8 @@
 .axisnow-pool-address-row { display: flex; justify-content: space-between; gap: 24px; padding: 6px 0; line-height: 1.4; white-space: nowrap; }
 .axisnow-pool-address-row + .axisnow-pool-address-row { border-top: 1px solid #f0f0f0; }
 .axisnow-pool-address-row .axisnow-detail-score { color: #218c55; font-variant-numeric: tabular-nums; }
+.axisnow-page .axisnow-switch-label { margin: 0; cursor: pointer; }
+.axisnow-page .axisnow-switch-label input { margin: 0 5px 0 0; vertical-align: -1px; }
+.axisnow-page .axisnow-automation-status { margin-bottom: 15px; }
+.axisnow-page .axisnow-automation-json { margin-top: 8px; font-family: Consolas, Monaco, monospace; }
+.axisnow-page #automationLogPanel .table { margin-bottom: 0; }

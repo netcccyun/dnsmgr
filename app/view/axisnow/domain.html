@@ -1,7 +1,7 @@
 {extend name="common/layout" /}
 {block name="title"}AxisNow 路由规则{/block}
 {block name="main"}
-<link href="/static/css/axisnow.css?v=6" rel="stylesheet">
+<link href="/static/css/axisnow.css?v=7" rel="stylesheet">
 <div class="row axisnow-page">
   <div class="col-xs-12 center-block" style="float:none;">
     <div class="panel panel-default panel-intro">
@@ -60,12 +60,11 @@
           </div>
           <div class="form-group" id="poolTextGroup" style="display:none;">
             <label id="poolTextLabel">候选地址</label>
-            <textarea class="form-control" id="poolText" name="pool_values" rows="5" placeholder="每行一个"></textarea>
+            <textarea class="form-control" id="poolText" name="pool_values" rows="5" placeholder="每行一个" oninput="$('#advancedPool').val('');"></textarea>
           </div>
           <div class="form-group">
-            <button type="button" class="btn btn-default btn-xs" onclick="toggleAdvancedPool()"><i class="fa fa-code"></i> 高级地址池 JSON</button>
-            <p class="help-block">多地址组或混合地址池可直接按 AxisNow API 的 address_pool 结构编辑。</p>
-            <textarea class="form-control" id="advancedPool" name="advanced_pool" rows="6" style="display:none;font-family:monospace;" placeholder='{"mode":"customize","groups":[...]}'></textarea>
+            <p class="help-block">已有多地址组会按原组合保留；需要重新组合时请选择上方的单组地址池。</p>
+            <textarea id="advancedPool" name="advanced_pool" style="display:none;"></textarea>
           </div>
           <hr>
           <div class="row">
@@ -80,6 +79,75 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
         <button type="button" class="btn btn-primary" id="saveRuleButton" onclick="saveRule()">确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade axisnow-page" id="automationModal" tabindex="-1" role="dialog" data-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">自动调度</h4>
+      </div>
+      <div class="modal-body">
+        <form id="automationForm">
+          <input type="hidden" name="rule_uuid">
+          <div class="alert alert-info axisnow-automation-status" id="automationStatus"></div>
+          <div class="panel panel-default" id="probeStatusPanel">
+            <div class="panel-heading"><strong>地址监控探测</strong></div>
+            <div class="panel-body" id="probeStatusSummary">-</div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading"><strong>主地址池</strong><span class="text-muted"> · 由 dnsmgr 保留，用于潮汐结束或手动恢复</span></div>
+            <div class="panel-body"><code id="primaryPoolSummary">-</code></div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <label class="axisnow-switch-label"><input type="checkbox" name="tide_enabled" value="1"> <strong>启用潮汐调度</strong></label>
+              <span class="text-muted"> 复用系统定时任务执行，每日指定时间段使用另一套地址池，支持跨零点。</span>
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-sm-3 form-group"><label>开始时间</label><input class="form-control" type="time" name="tide_start" value="09:00"></div>
+                <div class="col-sm-3 form-group"><label>结束时间</label><input class="form-control" type="time" name="tide_end" value="18:00"></div>
+                <div class="col-sm-6 form-group"><label>潮汐地址池</label><select class="form-control" id="tidePoolType" onchange="renderAutomationPoolInput('tide',[])"></select></div>
+              </div>
+              <div id="tidePoolSelectGroup" class="form-group" style="display:none;"><div class="axisnow-check-list" id="tidePoolCheckList"></div></div>
+              <div id="tidePoolTextGroup" class="form-group" style="display:none;"><textarea class="form-control" id="tidePoolText" rows="4" placeholder="每行一个地址" oninput="$('#tideAdvancedPool').val('');"></textarea></div>
+              <textarea class="axisnow-automation-json" id="tideAdvancedPool" rows="5" style="display:none;"></textarea>
+            </div>
+          </div>
+          {if $domain.record_type eq 'A'}
+          <div class="panel panel-default" id="failoverPanel">
+            <div class="panel-heading">
+              <label class="axisnow-switch-label"><input type="checkbox" name="failover_enabled" value="1"> <strong>启用备份调度</strong></label>
+              <span class="text-muted"> 仅在所有候选 IP 都明确探测失败时一次性切换，无数据不触发。</span>
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-sm-3 form-group"><label>连续失败次数</label><input class="form-control" type="number" name="failure_threshold" value="3" min="1" max="10"></div>
+                <div class="col-sm-3 form-group"><label>检查间隔（分钟）</label><input class="form-control" type="number" name="check_interval_minutes" value="5" min="1" max="60"></div>
+                <div class="col-sm-6 form-group"><label>故障备份地址池</label><select class="form-control" id="failoverPoolType" onchange="renderAutomationPoolInput('failover',[])"></select></div>
+              </div>
+              <div id="failoverPoolSelectGroup" class="form-group" style="display:none;"><div class="axisnow-check-list" id="failoverPoolCheckList"></div></div>
+              <div id="failoverPoolTextGroup" class="form-group" style="display:none;"><textarea class="form-control" id="failoverPoolText" rows="4" placeholder="每行一个 IP" oninput="$('#failoverAdvancedPool').val('');"></textarea></div>
+              <textarea class="axisnow-automation-json" id="failoverAdvancedPool" rows="5" style="display:none;"></textarea>
+              <p class="help-block">启用前必须先在路由规则中选择地址监控模板。切换后不会自动回切。</p>
+            </div>
+          </div>
+          {/if}
+          <div id="automationLogPanel" style="display:none;">
+            <h5><strong>最近执行记录</strong></h5>
+            <div class="table-responsive"><table class="table table-condensed table-bordered"><thead><tr><th>时间</th><th>动作</th><th>结果</th><th>说明</th></tr></thead><tbody id="automationLogs"></tbody></table></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-warning pull-left" id="restoreAutomationButton" style="display:none;" onclick="restoreAutomation()"><i class="fa fa-undo"></i> 恢复主地址池并重新布防</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="saveAutomationButton" onclick="saveAutomation()"><i class="fa fa-save"></i> 保存</button>
       </div>
     </div>
   </div>
@@ -105,8 +173,10 @@ $(function(){
       {field:'pool_groups',title:'地址池',formatter:poolFormatter},
       {field:'strategy',title:'选取策略',formatter:strategyFormatter},
       {field:'resolved_addresses',title:'解析地址 / 最后更新时间',formatter:resolvedFormatter},
+      {field:'probe_statuses',title:'探测状态',formatter:probeFormatter},
+      {field:'automation',title:'自动调度',formatter:automationFormatter},
       {field:'status',title:'生效状态',formatter:function(v){return v==='active'?'<span class="label label-success">启用</span>':'<span class="label label-default">暂停</span>'; }},
-      {field:'action',title:'操作',formatter:function(v,row){var next=row.status==='active'?'paused':'active',text=next==='active'?'启用':'暂停';return '<button class="btn btn-info btn-xs" onclick="editRule(\''+row.uuid+'\')">编辑</button> <button class="btn btn-default btn-xs" onclick="changeRuleStatus(\''+row.uuid+'\',\''+next+'\')">'+text+'</button> <button class="btn btn-danger btn-xs" onclick="deleteRule(\''+row.uuid+'\')">删除</button>';}}
+      {field:'action',title:'操作',formatter:function(v,row){var next=row.status==='active'?'paused':'active',text=next==='active'?'启用':'暂停';return '<button class="btn btn-info btn-xs" onclick="editRule(\''+row.uuid+'\')"><i class="fa fa-pencil"></i> 编辑</button> <button class="btn btn-primary btn-xs" onclick="openAutomation(\''+row.uuid+'\')"><i class="fa fa-clock-o"></i> 自动调度</button> <button class="btn btn-default btn-xs" onclick="changeRuleStatus(\''+row.uuid+'\',\''+next+'\')">'+text+'</button> <button class="btn btn-danger btn-xs" onclick="deleteRule(\''+row.uuid+'\')"><i class="fa fa-trash"></i> 删除</button>';}}
     ],onPostBody:function(){initPoolPopovers();},onPageChange:function(n,s){setStoredPageSize('axisnow_rules_pagesize',s);}
   });
   loadRuleOptions();
@@ -116,13 +186,13 @@ function reloadRules(){ $('#rulesTable').bootstrapTable('refresh',{pageNumber:1}
 function axisnowResponse(res){if(res.code!==0){layer.msg(res.msg||'加载失败');return {total:0,rows:[]};}return res;}
 function openRuleModal(){document.getElementById('ruleForm').reset();$('[name=uuid]').val('');$('#ruleModalTitle').text('新增路由规则');$('#advancedPool').val('').hide();renderPoolInput([]);renderProbeTemplates('');renderGeoIspOptions('default');renderStrategy();$('#ruleModal').modal('show');}
 function renderPoolInput(selectedValues){
-  if(selectedValues!==undefined)pendingPoolValues=(selectedValues||[]).map(String);
+  if(selectedValues!==undefined){pendingPoolValues=(selectedValues||[]).map(String);$('#advancedPool').val('');}
   var type=$('[name=pool_type]').val(),selected=pendingPoolValues,$list=$('#poolCheckList').empty(),useSelect=type==='eip'||type==='eip_tag',useText=type==='ip'||type==='domain',rows=[];
   $('#poolSelectGroup').toggle(useSelect);$('#poolTextGroup').toggle(useText);$('#poolText').prop('disabled',!useText);
   if(type==='eip'){ $('#poolSelectLabel').text('选择 EIP');rows=ruleOptions.eips||[]; }
   if(type==='eip_tag'){ $('#poolSelectLabel').text('选择 EIP 标签');rows=ruleOptions.tags||[]; }
   if(useSelect&&!rows.length){$list.append($('<span class="text-muted">').text(type==='eip'?'当前账号没有可用 EIP':'当前账号没有可用 EIP 标签'));}
-  $.each(rows,function(index,x){var id='rule-pool-'+type+'-'+index,$label=$('<label>').attr('for',id),$input=$('<input type="checkbox" name="pool_values[]">').attr('id',id).val(x.uuid).prop('checked',selected.indexOf(String(x.uuid))!==-1);$label.append($input).append(document.createTextNode(' '+(x.name||x.uuid)));$list.append($label);});
+  $.each(rows,function(index,x){var id='rule-pool-'+type+'-'+index,$label=$('<label>').attr('for',id),$input=$('<input type="checkbox" name="pool_values[]">').attr('id',id).val(x.uuid).prop('checked',selected.indexOf(String(x.uuid))!==-1).on('change',function(){$('#advancedPool').val('');});$label.append($input).append(document.createTextNode(' '+(x.name||x.uuid)));$list.append($label);});
   $('#poolTextLabel').text(type==='domain'?'CNAME 候选域名':'自定义 IP');
 }
 function renderProbeTemplates(selectedValue){
@@ -144,18 +214,92 @@ function renderGeoIspOptions(selectedValue){
   $select.val(value);
 }
 function renderStrategy(){var strategy=$('[name=election_strategy]').val();$('#intervalGroup').toggle(strategy==='quality_optimized');if(strategy==='priority_order'&&$('[name=pool_type]').val()==='all_valid_eips'){$('[name=pool_type]').val('eip');renderPoolInput([]);}}
-function toggleAdvancedPool(){ $('#advancedPool').toggle(); }
 function editRule(uuid){
   var ii=layer.load(2);$.getJSON('/axisnow/rules/get/'+accountId+'/'+encodeURIComponent(uuid),function(res){layer.close(ii);if(res.code!==0){layer.alert(res.msg,{icon:2});return;}var r=res.data,c=(r.action||{}).conf||{},pool=c.address_pool||{},groups=pool.groups||[],group=groups[0]||{},type=pool.mode==='all_valid_eips'?'all_valid_eips':(group.type||'eip');
     var values=group.eip_uuids||group.tag_uuids||[];document.getElementById('ruleForm').reset();$('[name=uuid]').val(r.uuid);renderGeoIspOptions(r.geo_isp||'default');$('[name=name]').val(r.name||'');$('[name=description]').val(r.description||'');$('[name=status]').val(r.status||'active');$('[name=pool_type]').val(type);renderPoolInput(values);$('#poolText').val((group.ips||group.domains||[]).join('\n'));
     var response=c.response_strategy||{};$('[name=election_strategy]').val(response.election_strategy||'random');$('[name=quantity]').val(response.ip_quantity||response.addr_quantity||1);$('[name=trigger_interval]').val(response.trigger_interval||5);$('[name=ttl]').val((c.ttl_conf||{}).ttl||0);renderProbeTemplates((c.edge_probe_template_uuid||[])[0]||'');renderStrategy();
-    if(groups.length>1){$('#advancedPool').val(JSON.stringify(pool,null,2)).show();}else{$('#advancedPool').val('').hide();}
+    if(groups.length>1){$('#advancedPool').val(JSON.stringify(pool,null,2));}else{$('#advancedPool').val('');}
     $('#ruleModalTitle').text('编辑路由规则');$('#ruleModal').modal('show');
   }).fail(function(){layer.close(ii);layer.msg('服务器错误');});
 }
 function saveRule(){var $btn=$('#saveRuleButton').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> 保存中');$.post('/axisnow/rules/save',$('#ruleForm').serialize(),function(res){if(res.code===0){$('#ruleModal').modal('hide');layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg||'保存失败',{icon:2});},'json').fail(function(){layer.msg('服务器错误');}).always(function(){$btn.prop('disabled',false).text('确认');});}
 function changeRuleStatus(uuid,status){var ii=layer.load(2);$.post('/axisnow/rules/status',{account_id:accountId,uuid:uuid,status:status},function(res){layer.close(ii);if(res.code===0){layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg,{icon:2});},'json');}
 function deleteRule(uuid){layer.confirm('确定删除此路由规则吗？',{icon:0},function(index){var ii=layer.load(2);$.post('/axisnow/rules/delete',{account_id:accountId,uuid:uuid},function(res){layer.close(ii);if(res.code===0){layer.close(index);layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg,{icon:2});},'json');});}
+function automationFormatter(v){
+  var a=v||{};if(!a.configured)return '<span class="text-muted">未配置</span>';
+  var html='';
+  if(a.tide_enabled)html+='<span class="axisnow-badge">潮汐</span>';
+  if(a.failover_enabled)html+='<span class="axisnow-badge axisnow-badge-warning">备份</span>';
+  if(!a.tide_enabled&&!a.failover_enabled)html+='<span class="text-muted">已停用</span>';
+  if(a.failover_state==='switched')html+='<div><span class="label label-danger">已切换备份池，等待手动恢复</span></div>';
+  else if(String(a.active_pool||'').indexOf('pending_')===0)html+='<div><span class="label label-warning">切换确认中</span></div>';
+  else if(a.active_pool==='tide')html+='<div class="axisnow-cell-meta">当前：潮汐地址池</div>';
+  else if(a.failover_enabled&&a.fail_count)html+='<div class="axisnow-cell-meta">连续失败 '+Number(a.fail_count)+' / '+Number(a.failure_threshold)+'</div>';
+  if(a.failover_enabled&&a.last_health_state)html+='<div class="axisnow-cell-meta">探测：'+escapeHtml(healthStateName(a.last_health_state))+'</div>';
+  if(a.last_error)html+='<div class="text-danger axisnow-cell-meta">'+escapeHtml(a.last_error)+'</div>';
+  return html;
+}
+function probeFormatter(v,row){
+  var template=row.probe_template_uuid||'',state=row.probe_state||'not_configured',items=Array.isArray(v)?v:[],available=0,unavailable=0,html='';
+  if(!template)return '<span class="text-muted">未配置</span>';
+  $.each(items,function(_,item){if(item.status==='available')available++;if(item.status==='unavailable')unavailable++;});
+  html+='<div class="axisnow-cell-meta">'+escapeHtml({healthy:'全部正常',partial:'部分可用',all_failed:'全部失败',no_data:'无数据'}[state]||state)+'</div>';
+  html+=items.length?'<div class="axisnow-cell-meta">正常 '+available+' · 不可用 '+unavailable+' · 共 '+items.length+'</div>':'<div class="axisnow-cell-meta">尚无探测结果</div>';
+  return html;
+}
+function automationPoolOptions(){
+  return recordType==='CNAME'?[['domain','CNAME 候选域名']]:[['all_valid_eips','全部有效 EIP'],['eip_tag','EIP 标签'],['eip','指定 EIP'],['ip','自定义 IP']];
+}
+function healthStateName(v){return {healthy:'正常',partial:'部分失败',all_failed:'全部失败',no_data:'无数据',not_configured:'未配置'}[v]||v;}
+function initializeAutomationPoolSelect(prefix){
+  var $select=$('#'+prefix+'PoolType').empty();$.each(automationPoolOptions(),function(_,x){$select.append($('<option>').val(x[0]).text(x[1]));});
+}
+function renderAutomationPoolInput(prefix,selectedValues){
+  if(selectedValues!==undefined)$('#'+prefix+'AdvancedPool').val('');
+  var type=$('#'+prefix+'PoolType').val(),values=(selectedValues||[]).map(String),$list=$('#'+prefix+'PoolCheckList').empty(),rows=[];
+  var useSelect=type==='eip'||type==='eip_tag',useText=type==='ip'||type==='domain';
+  $('#'+prefix+'PoolSelectGroup').toggle(useSelect);$('#'+prefix+'PoolTextGroup').toggle(useText);
+  if(type==='eip')rows=ruleOptions.eips||[];if(type==='eip_tag')rows=ruleOptions.tags||[];
+  if(useSelect&&!rows.length)$list.append($('<span class="text-muted">').text(type==='eip'?'当前账号没有可用 EIP':'当前账号没有可用 EIP 标签'));
+  $.each(rows,function(index,x){var id=prefix+'-auto-pool-'+index,$label=$('<label>').attr('for',id),$input=$('<input type="checkbox">').attr('id',id).val(x.uuid).prop('checked',values.indexOf(String(x.uuid))!==-1).on('change',function(){$('#'+prefix+'AdvancedPool').val('');});$label.append($input).append(document.createTextNode(' '+(x.name||x.uuid)));$list.append($label);});
+}
+function setAutomationPool(prefix,pool){
+  initializeAutomationPoolSelect(prefix);var type=recordType==='CNAME'?'domain':'eip_tag',values=[],text='',advanced='';
+  if(pool&&pool.mode==='all_valid_eips')type='all_valid_eips';
+  else if(pool&&Array.isArray(pool.groups)&&pool.groups.length){var group=pool.groups[0]||{};type=group.type||type;values=group.eip_uuids||group.tag_uuids||[];text=(group.ips||group.domains||[]).join('\n');if(pool.groups.length>1)advanced=JSON.stringify(pool,null,2);}
+  $('#'+prefix+'PoolType').val(type);renderAutomationPoolInput(prefix,values);$('#'+prefix+'PoolText').val(text);$('#'+prefix+'AdvancedPool').val(advanced);
+}
+function buildAutomationPool(prefix,required){
+  var advanced=$.trim($('#'+prefix+'AdvancedPool').val());
+  if(advanced){try{return JSON.parse(advanced);}catch(e){throw new Error((prefix==='tide'?'潮汐':'故障备份')+'地址池数据无效');}}
+  var type=$('#'+prefix+'PoolType').val();if(type==='all_valid_eips')return {mode:'all_valid_eips'};
+  var group={type:type},values=[];
+  if(type==='eip'||type==='eip_tag')$('#'+prefix+'PoolCheckList input:checked').each(function(){values.push(this.value);});
+  else values=$('#'+prefix+'PoolText').val().split(/[\r\n,;\s]+/).map(function(x){return $.trim(x);}).filter(Boolean);
+  if(!values.length){if(required)throw new Error('请配置'+(prefix==='tide'?'潮汐':'故障备份')+'地址池');return null;}
+  if(type==='eip')group.eip_uuids=values;else if(type==='eip_tag')group.tag_uuids=values;else if(type==='ip')group.ips=values;else group.domains=values;
+  return {mode:'customize',groups:[group]};
+}
+function poolBrief(pool){
+  if(!pool)return '-';if(pool.mode==='all_valid_eips')return '全部有效 EIP';var parts=[];$.each(pool.groups||[],function(_,g){var values=g.eip_uuids||g.tag_uuids||g.ips||g.domains||[];parts.push(({eip:'EIP',eip_tag:'EIP 标签',ip:'自定义 IP',domain:'CNAME'}[g.type]||'地址')+' × '+values.length);});return parts.join(' + ')||'-';
+}
+function openAutomation(uuid){
+  var ii=layer.load(2);$.getJSON('/axisnow/rules/automation/'+accountId+'/'+encodeURIComponent(uuid),function(res){layer.close(ii);if(res.code!==0){layer.alert(res.msg||'加载失败',{icon:2});return;}var a=res.data;
+    document.getElementById('automationForm').reset();$('[name=rule_uuid]').val(a.rule_uuid);$('[name=tide_enabled]').prop('checked',!!a.tide_enabled);$('[name=tide_start]').val(a.tide_start||'09:00');$('[name=tide_end]').val(a.tide_end||'18:00');$('[name=failover_enabled]').prop('checked',!!a.failover_enabled);$('[name=failure_threshold]').val(a.failure_threshold||3);$('[name=check_interval_minutes]').val(a.check_interval_minutes||5);
+    $('#primaryPoolSummary').text(poolBrief(a.primary_pool));setAutomationPool('tide',a.tide_pool);if(recordType==='A')setAutomationPool('failover',a.failover_pool);
+    var probeHtml='';if(a.has_probe_template){probeHtml='<div class="axisnow-cell-meta">状态：'+escapeHtml(healthStateName(a.probe_state||'no_data'))+'</div>';$.each(a.probe_statuses||[],function(_,item){probeHtml+='<div class="axisnow-address-row"><span>'+escapeHtml(item.address||'-')+'</span><span>'+escapeHtml(item.status==='available'?'正常':item.status==='unavailable'?'不可用':item.status||'未知')+(item.avg_connect_latency!==undefined?' · '+escapeHtml(item.avg_connect_latency)+' ms':'')+'</span></div>';});}else probeHtml='<span class="text-muted">当前规则未配置地址监控模板。</span>';$('#probeStatusSummary').html(probeHtml);
+    var state=a.failover_state==='switched'?'已切换至故障备份地址池，不会自动回切':(String(a.active_pool||'').indexOf('pending_')===0?'地址池切换正在确认，下次定时任务将自动核对':(a.active_pool==='tide'?'当前正使用潮汐地址池':'当前正使用主地址池'));if(a.last_health_state)state+=' · 最近探测：'+healthStateName(a.last_health_state);if(a.last_check_at)state+='（'+unixTime(a.last_check_at)+'）';if(recordType==='A'&&!a.has_probe_template)state+=' · 当前规则未配置地址监控模板，备份调度无法启用';
+    if(a.last_error)state+=' · 最近错误：'+a.last_error;$('#automationStatus').text(state).toggleClass('alert-danger',a.failover_state==='switched'||!!a.last_error).toggleClass('alert-info',a.failover_state!=='switched'&&!a.last_error);
+    $('#restoreAutomationButton').toggle(a.failover_state==='switched');renderAutomationLogs(a.logs||[]);$('#automationModal').modal('show');
+  }).fail(function(){layer.close(ii);layer.alert('服务器错误',{icon:2});});
+}
+function renderAutomationLogs(logs){var $body=$('#automationLogs').empty();$('#automationLogPanel').toggle(logs.length>0);$.each(logs,function(_,x){$body.append('<tr><td>'+escapeHtml(x.created_at||'-')+'</td><td>'+escapeHtml(x.action||'-')+'</td><td>'+(x.status==='success'?'<span class="text-success">成功</span>':'<span class="text-danger">失败</span>')+'</td><td>'+escapeHtml(x.message||'-')+'</td></tr>');});}
+function saveAutomation(){
+  try{var tideEnabled=$('[name=tide_enabled]').prop('checked'),failoverEnabled=recordType==='A'&&$('[name=failover_enabled]').prop('checked'),tidePool=buildAutomationPool('tide',tideEnabled),failoverPool=recordType==='A'?buildAutomationPool('failover',failoverEnabled):null,data={account_id:accountId,rule_uuid:$('[name=rule_uuid]').val(),tide_enabled:tideEnabled?1:0,tide_start:$('[name=tide_start]').val(),tide_end:$('[name=tide_end]').val(),tide_pool:tidePool?JSON.stringify(tidePool):'',failover_enabled:failoverEnabled?1:0,failure_threshold:$('[name=failure_threshold]').val()||3,check_interval_minutes:$('[name=check_interval_minutes]').val()||5};if(recordType==='A')data.failover_pool=failoverPool?JSON.stringify(failoverPool):'';}
+  catch(e){layer.alert(e.message,{icon:2});return;}
+  var $btn=$('#saveAutomationButton').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> 保存中');$.post('/axisnow/rules/automation/save',data,function(res){if(res.code===0){$('#automationModal').modal('hide');layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg||'保存失败',{icon:2});},'json').fail(function(){layer.alert('服务器错误',{icon:2});}).always(function(){$btn.prop('disabled',false).html('<i class="fa fa-save"></i> 保存');});
+}
+function restoreAutomation(){layer.confirm('将立即使用保留的主地址池覆盖 AxisNow 当前地址池，并重新布防故障切换。是否继续？',{icon:0},function(index){layer.close(index);var ii=layer.load(2);$.post('/axisnow/rules/automation/restore',{account_id:accountId,rule_uuid:$('[name=rule_uuid]').val()},function(res){layer.close(ii);if(res.code===0){$('#automationModal').modal('hide');layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg||'恢复失败',{icon:2});},'json').fail(function(){layer.close(ii);layer.alert('服务器错误',{icon:2});});});}
 function poolFormatter(v,row){
   var groups=Array.isArray(v)?v:[],addresses=Array.isArray(row.pool_addresses)?row.pool_addresses:[],count=Number(row.pool_address_count||0),html='<div class="axisnow-cell-title">'+escapeHtml(count?count+' 个地址':(row.pool_summary||'-'))+'</div>';
   $.each(groups,function(_,group){
@@ -191,6 +335,7 @@ function resolvedFormatter(v,row){
   return html;
 }
 function timeFormatter(v){return v?escapeHtml(String(v).replace('T',' ').replace('Z','')):'-';}
+function unixTime(v){var d=new Date(Number(v)*1000),pad=function(x){return String(x).padStart(2,'0');};return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
 function escapeHtml(v){return $('<div>').text(v==null?'':String(v)).html();}
 function escapeAttr(v){return escapeHtml(v).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 {/literal}

@@ -31,6 +31,7 @@ class AxisNowService
         }
         $this->listDnsRecordsByRuleUuids([$probeRuleUuid]);
         $this->listLatestRuleEventsByRuleUuids([$probeRuleUuid]);
+        $this->listProbeTaskStatusesByRuleUuids([$probeRuleUuid]);
         return true;
     }
 
@@ -108,6 +109,42 @@ class AxisNowService
                     ]],
                 ],
             ]));
+        }
+        return $rows;
+    }
+
+    /**
+     * Read the current edge-probe task status used by the AxisNow console.
+     * The routing-rule payload does not contain election_info for rules that
+     * use edge probes; the live status is returned by this endpoint instead.
+     */
+    public function listProbeTaskStatusesByRuleUuids(array $ruleUuids): array
+    {
+        $ruleUuids = array_values(array_unique(array_filter(array_map(
+            static fn($uuid) => strtolower(trim((string)$uuid)),
+            $ruleUuids
+        ))));
+        if (!$ruleUuids) return [];
+
+        $rows = [];
+        foreach (array_chunk($ruleUuids, 100) as $chunk) {
+            $payload = $this->request('POST', '/edge_probe/tasks/status', [], [
+                'filter_type' => 'dns_routing_rules',
+                'filter' => [
+                    'or' => [[
+                        'and' => [[
+                            'field' => 'dns_rule_uuid',
+                            'operator' => 'in',
+                            'value' => $chunk,
+                        ]],
+                    ]],
+                ],
+            ]);
+            $part = $payload['result'] ?? [];
+            if (!is_array($part)) {
+                throw new Exception('AxisNow 返回的探测状态格式无效');
+            }
+            $rows = array_merge($rows, $part);
         }
         return $rows;
     }

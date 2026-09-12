@@ -3,6 +3,7 @@
 namespace app\controller;
 
 use app\BaseController;
+use app\service\AxisNowAutomationService;
 use app\service\AxisNowService;
 use Exception;
 use think\facade\Db;
@@ -118,22 +119,50 @@ class Axisnow extends BaseController
                 // EIP 元数据加载失败时仍展示地址和评分。
             }
             $rows = array_values(array_filter($context['service']->listRules(), static fn($row) => ($row['dns_domain_uuid'] ?? '') === $domainUuid));
+            $automationByRule = [];
+            foreach (Db::name('axisnow_rule_automation')
+                ->where('account_id', $context['account']['id'])
+                ->where('domain_uuid', $domainUuid)
+                ->select() as $automation) {
+                $automationByRule[strtolower((string)$automation['rule_uuid'])] = $automation;
+            }
             $recordsByRule = [];
             $ruleUuids = array_values(array_filter(array_map(
                 static fn($row) => trim((string)($row['uuid'] ?? '')),
                 $rows
             )));
-            foreach ($context['service']->listDnsRecordsByRuleUuids($ruleUuids) as $record) {
-                if (!is_array($record)) continue;
-                $ruleUuid = strtolower(trim((string)($record['dns_rule_uuid'] ?? $record['rule_uuid'] ?? '')));
-                if ($ruleUuid !== '') $recordsByRule[$ruleUuid][] = $record;
+            try {
+                foreach ($context['service']->listDnsRecordsByRuleUuids($ruleUuids) as $record) {
+                    if (!is_array($record)) continue;
+                    $ruleUuid = strtolower(trim((string)($record['dns_rule_uuid'] ?? $record['rule_uuid'] ?? '')));
+                    if ($ruleUuid !== '') $recordsByRule[$ruleUuid][] = $record;
+                }
+            } catch (Exception $e) {
+                // Keep the rule list available when the optional record index
+                // is not supported by an older AxisNow tenant.
             }
             $latestEventsByRule = [];
-            foreach ($context['service']->listLatestRuleEventsByRuleUuids($ruleUuids) as $event) {
-                if (!is_array($event)) continue;
-                $ruleInfo = is_array($event['dns_rule_info'] ?? null) ? $event['dns_rule_info'] : [];
-                $ruleUuid = strtolower(trim((string)($ruleInfo['dns_rule_uuid'] ?? $event['dns_rule_uuid'] ?? $event['rule_uuid'] ?? '')));
-                if ($ruleUuid !== '') $latestEventsByRule[$ruleUuid] = $event;
+            try {
+                foreach ($context['service']->listLatestRuleEventsByRuleUuids($ruleUuids) as $event) {
+                    if (!is_array($event)) continue;
+                    $ruleInfo = is_array($event['dns_rule_info'] ?? null) ? $event['dns_rule_info'] : [];
+                    $ruleUuid = strtolower(trim((string)($ruleInfo['dns_rule_uuid'] ?? $event['dns_rule_uuid'] ?? $event['rule_uuid'] ?? '')));
+                    if ($ruleUuid !== '') $latestEventsByRule[$ruleUuid] = $event;
+                }
+            } catch (Exception $e) {
+                // The timestamp is supplementary; it must not hide rules.
+            }
+            $probeStatusesByRule = [];
+            try {
+                foreach ($context['service']->listProbeTaskStatusesByRuleUuids($ruleUuids) as $probe) {
+                    if (!is_array($probe)) continue;
+                    $ruleUuid = strtolower(trim((string)($probe['uuid'] ?? $probe['dns_rule_uuid'] ?? '')));
+                    if ($ruleUuid === '') continue;
+                    $probeStatusesByRule[$ruleUuid] = is_array($probe['list'] ?? null) ? $probe['list'] : [];
+                }
+            } catch (Exception $e) {
+                // Probe status is an optional enhancement for older tenants;
+                // keep the route list available and let the UI show no data.
             }
             foreach ($rows as &$row) {
                 $row['account_id'] = $context['account']['id'];
@@ -142,12 +171,26 @@ class Axisnow extends BaseController
                 $row['pool_summary'] = $this->poolSummary($row);
                 $row['geo_isp_name'] = $lineNames[(string)($row['geo_isp'] ?? '')] ?? ($row['geo_isp'] ?? 'default');
                 $ruleUuid = strtolower(trim((string)($row['uuid'] ?? '')));
+                $automation = $automationByRule[$ruleUuid] ?? null;
+                $row['automation'] = $automation ? [
+                    'configured' => true,
+                    'tide_enabled' => (bool)$automation['tide_enabled'],
+                    'failover_enabled' => (bool)$automation['failover_enabled'],
+                    'active_pool' => (string)$automation['active_pool'],
+                    'failover_state' => (string)$automation['failover_state'],
+                    'fail_count' => (int)$automation['fail_count'],
+                    'failure_threshold' => (int)$automation['failure_threshold'],
+                    'last_health_state' => (string)($automation['last_health_state'] ?? ''),
+                    'last_switch_at' => (int)$automation['last_switch_at'],
+                    'last_error' => (string)($automation['last_error'] ?? ''),
+                ] : ['configured' => false];
                 $row = array_merge($row, $this->rulePresentation(
                     $row,
                     $tagNames,
                     $eipsByUuid,
                     $recordsByRule[$ruleUuid] ?? [],
-                    $latestEventsByRule[$ruleUuid] ?? []
+                    $latestEventsByRule[$ruleUuid] ?? [],
+                    array_key_exists($ruleUuid, $probeStatusesByRule) ? $probeStatusesByRule[$ruleUuid] : null
                 ));
             }
             unset($row);
@@ -236,6 +279,7 @@ class Axisnow extends BaseController
             $uuid = $this->uuid(input('post.uuid', '', 'trim'));
             $domain = $context['service']->getDomain($uuid);
             $context['service']->deleteDomain($uuid);
+            AxisNowAutomationService::removeDomain((int)$context['account']['id'], $uuid);
             $this->addLog($context['account']['name'], '删除AxisNow调度域名', ($domain['domain'] ?? $uuid));
             return ['msg' => '调度域名删除成功'];
         });
@@ -312,6 +356,11 @@ class Axisnow extends BaseController
             } else {
                 $uuid = $this->uuid($uuid);
                 $result = $context['service']->updateRule($uuid, $payload);
+                AxisNowAutomationService::syncActivePool(
+                    (int)$context['account']['id'],
+                    $uuid,
+                    $payload['action']['conf']['address_pool']
+                );
                 $verb = '修改';
             }
             $this->addLog($context['account']['name'], $verb . 'AxisNow路由规则', ($domain['domain'] ?? $domainUuid) . ' / ' . $payload['geo_isp']);
@@ -341,8 +390,209 @@ class Axisnow extends BaseController
             $context = $this->accountContext(input('post.account_id/d'));
             $uuid = $this->uuid(input('post.uuid', '', 'trim'));
             $context['service']->deleteRule($uuid);
+            AxisNowAutomationService::removeRule((int)$context['account']['id'], $uuid);
             $this->addLog($context['account']['name'], '删除AxisNow路由规则', $uuid);
             return ['msg' => '路由规则删除成功'];
+        });
+    }
+
+    public function automation_get()
+    {
+        if (!checkPermission(2)) return json(['code' => -1, 'msg' => '无权限']);
+        try {
+            $context = $this->accountContext(input('param.id/d'));
+            $ruleUuid = $this->uuid(input('param.uuid', '', 'trim'));
+            $rule = $context['service']->getRule($ruleUuid);
+            $domainUuid = $this->uuid((string)($rule['dns_domain_uuid'] ?? ''));
+            $row = Db::name('axisnow_rule_automation')
+                ->where('account_id', $context['account']['id'])
+                ->where('rule_uuid', $ruleUuid)
+                ->find();
+            $currentPool = $rule['action']['conf']['address_pool'] ?? [];
+            if (!is_array($currentPool) || empty($currentPool['mode'])) throw new Exception('AxisNow 路由规则缺少地址池');
+
+            $probeStatuses = null;
+            try {
+                $probeRows = $context['service']->listProbeTaskStatusesByRuleUuids([$ruleUuid]);
+                $probeStatuses = AxisNowAutomationService::probeStatusesForRule($probeRows, $ruleUuid);
+            } catch (Exception $e) {
+                // Keep configuration readable if the optional probe endpoint
+                // is temporarily unavailable.
+            }
+            $probeTemplateUuid = '';
+            foreach ((array)($rule['action']['conf']['edge_probe_template_uuid'] ?? []) as $uuid) {
+                $uuid = trim((string)$uuid);
+                if ($uuid !== '') {
+                    $probeTemplateUuid = $uuid;
+                    break;
+                }
+            }
+            $probeState = $probeTemplateUuid !== ''
+                ? AxisNowAutomationService::healthState($rule, $probeStatuses)
+                : 'not_configured';
+            $probeStatusRows = array_values(array_filter(array_map(static function ($probe): array {
+                if (!is_array($probe)) return [];
+                $item = [
+                    'address' => trim((string)($probe['target'] ?? $probe['address'] ?? '')),
+                    'status' => strtolower(trim((string)($probe['status'] ?? ''))),
+                ];
+                if (isset($probe['avg_connect_latency']) && is_numeric($probe['avg_connect_latency'])) {
+                    $item['avg_connect_latency'] = (float)$probe['avg_connect_latency'];
+                }
+                return $item;
+            }, $probeStatuses ?? []), static fn($probe) => ($probe['address'] ?? '') !== ''));
+
+            $data = [
+                'configured' => (bool)$row,
+                'rule_uuid' => $ruleUuid,
+                'domain_uuid' => $domainUuid,
+                'rule_type' => strtoupper((string)($rule['type'] ?? 'A')),
+                'geo_isp' => (string)($rule['geo_isp'] ?? 'default'),
+                'primary_pool' => $this->decodeStoredPool($row['primary_pool'] ?? null, $currentPool),
+                'tide_enabled' => (bool)($row['tide_enabled'] ?? false),
+                'tide_start' => (string)($row['tide_start'] ?? '09:00'),
+                'tide_end' => (string)($row['tide_end'] ?? '18:00'),
+                'tide_pool' => $this->decodeStoredPool($row['tide_pool'] ?? null, null),
+                'failover_enabled' => (bool)($row['failover_enabled'] ?? false),
+                'failover_pool' => $this->decodeStoredPool($row['failover_pool'] ?? null, null),
+                'failure_threshold' => (int)($row['failure_threshold'] ?? 3),
+                'check_interval_minutes' => max(1, (int)ceil(((int)($row['check_interval'] ?? 300)) / 60)),
+                'active_pool' => (string)($row['active_pool'] ?? 'primary'),
+                'failover_state' => (string)($row['failover_state'] ?? 'armed'),
+                'fail_count' => (int)($row['fail_count'] ?? 0),
+                'last_check_at' => (int)($row['last_check_at'] ?? 0),
+                'last_health_state' => (string)($row['last_health_state'] ?? ''),
+                'last_switch_at' => (int)($row['last_switch_at'] ?? 0),
+                'last_error' => (string)($row['last_error'] ?? ''),
+                'has_probe_template' => $probeTemplateUuid !== '',
+                'probe_template_uuid' => $probeTemplateUuid,
+                'probe_state' => $probeState,
+                'probe_statuses' => $probeStatusRows,
+                'logs' => [],
+            ];
+            if ($row) {
+                $data['logs'] = Db::name('axisnow_rule_automation_log')
+                    ->where('automation_id', $row['id'])
+                    ->order('id', 'desc')
+                    ->limit(20)
+                    ->select()
+                    ->toArray();
+            }
+            return json(['code' => 0, 'data' => $data]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function automation_save()
+    {
+        return $this->action(function () {
+            $context = $this->accountContext(input('post.account_id/d'));
+            $ruleUuid = $this->uuid(input('post.rule_uuid', '', 'trim'));
+            $rule = $context['service']->getRule($ruleUuid);
+            $domainUuid = $this->uuid((string)($rule['dns_domain_uuid'] ?? ''));
+            $ruleType = strtoupper((string)($rule['type'] ?? 'A'));
+            if (!in_array($ruleType, ['A', 'CNAME'], true)) throw new Exception('该路由规则类型不支持自动调度');
+            $currentPool = $rule['action']['conf']['address_pool'] ?? null;
+            if (!is_array($currentPool) || empty($currentPool['mode'])) throw new Exception('AxisNow 路由规则缺少地址池');
+
+            $existing = Db::name('axisnow_rule_automation')
+                ->where('account_id', $context['account']['id'])
+                ->where('rule_uuid', $ruleUuid)
+                ->find();
+            if ($existing && (int)($existing['lock_until'] ?? 0) > time()) {
+                throw new Exception('该规则正在执行自动调度，请稍后重试');
+            }
+            $primaryPool = $currentPool;
+            if ($existing && (($existing['active_pool'] ?? 'primary') !== 'primary' || ($existing['failover_state'] ?? 'armed') === 'switched')) {
+                $primaryPool = $this->decodeStoredPool($existing['primary_pool'] ?? null, $currentPool);
+            }
+
+            $tideEnabled = input('post.tide_enabled/d', 0) === 1;
+            $failoverEnabled = input('post.failover_enabled/d', 0) === 1;
+            if ($failoverEnabled && $ruleType !== 'A') throw new Exception('备份调度目前仅支持 A 记录路由规则');
+            $tideStart = trim((string)input('post.tide_start', '09:00', 'trim'));
+            $tideEnd = trim((string)input('post.tide_end', '18:00', 'trim'));
+            if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $tideStart) || !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $tideEnd)) {
+                throw new Exception('潮汐调度时间格式无效');
+            }
+            if ($tideEnabled && $tideStart === $tideEnd) throw new Exception('潮汐调度的开始和结束时间不能相同');
+
+            $tidePool = $this->automationPoolInput('tide_pool', $ruleType, $existing['tide_pool'] ?? null);
+            $failoverPool = $ruleType === 'A'
+                ? $this->automationPoolInput('failover_pool', $ruleType, $existing['failover_pool'] ?? null)
+                : null;
+            if ($tideEnabled && !$tidePool) throw new Exception('请配置潮汐地址池');
+            if ($failoverEnabled && !$failoverPool) throw new Exception('请配置故障备份地址池');
+            if ($tideEnabled && $this->samePool($primaryPool, $tidePool)) throw new Exception('潮汐地址池不能与主地址池相同');
+            if ($failoverEnabled && $this->samePool($primaryPool, $failoverPool)) throw new Exception('故障备份地址池不能与主地址池相同');
+            if ($failoverEnabled) {
+                if (empty(array_filter((array)($rule['action']['conf']['edge_probe_template_uuid'] ?? [])))) {
+                    throw new Exception('开启备份调度前，请先为该路由规则选择地址监控模板');
+                }
+            }
+
+            $threshold = max(1, min(10, input('post.failure_threshold/d', 3)));
+            $intervalMinutes = max(1, min(60, input('post.check_interval_minutes/d', 5)));
+            $now = time();
+            $data = [
+                'account_id' => (int)$context['account']['id'],
+                'domain_uuid' => $domainUuid,
+                'rule_uuid' => $ruleUuid,
+                'rule_type' => $ruleType,
+                'geo_isp' => mb_substr((string)($rule['geo_isp'] ?? 'default'), 0, 255),
+                'primary_pool' => AxisNowAutomationService::encodePool($primaryPool),
+                'tide_enabled' => $tideEnabled ? 1 : 0,
+                'tide_start' => $tideStart,
+                'tide_end' => $tideEnd,
+                'tide_pool' => $tidePool ? AxisNowAutomationService::encodePool($tidePool) : null,
+                'failover_enabled' => $failoverEnabled ? 1 : 0,
+                'failover_pool' => $failoverPool ? AxisNowAutomationService::encodePool($failoverPool) : null,
+                'failure_threshold' => $threshold,
+                'check_interval' => $intervalMinutes * 60,
+                'next_check_at' => $now,
+                'last_error' => null,
+                'updated_at' => date('Y-m-d H:i:s', $now),
+            ];
+            if ($existing) {
+                Db::name('axisnow_rule_automation')->where('id', $existing['id'])->update($data);
+                $automationId = (int)$existing['id'];
+            } else {
+                $data += [
+                    'fail_count' => 0,
+                    'failover_state' => 'armed',
+                    'active_pool' => 'primary',
+                    'last_check_at' => 0,
+                    'last_health_state' => '',
+                    'last_switch_at' => 0,
+                    'lock_until' => 0,
+                    'created_at' => date('Y-m-d H:i:s', $now),
+                ];
+                $automationId = (int)Db::name('axisnow_rule_automation')->insertGetId($data);
+            }
+            Db::name('axisnow_rule_automation_log')->insert([
+                'automation_id' => $automationId,
+                'account_id' => (int)$context['account']['id'],
+                'rule_uuid' => $ruleUuid,
+                'action' => 'save',
+                'status' => 'success',
+                'message' => '自动调度配置已保存',
+                'created_at' => date('Y-m-d H:i:s', $now),
+            ]);
+            $this->addLog($context['account']['name'], '保存AxisNow自动调度', (string)($rule['geo_isp'] ?? $ruleUuid));
+            return ['msg' => '自动调度配置已保存'];
+        });
+    }
+
+    public function automation_restore()
+    {
+        return $this->action(function () {
+            $accountId = input('post.account_id/d');
+            $context = $this->accountContext($accountId);
+            $ruleUuid = $this->uuid(input('post.rule_uuid', '', 'trim'));
+            (new AxisNowAutomationService())->restore($accountId, $ruleUuid);
+            $this->addLog($context['account']['name'], '恢复AxisNow主地址池', $ruleUuid);
+            return ['msg' => '已恢复主地址池并重新布防'];
         });
     }
 
@@ -646,7 +896,7 @@ class Axisnow extends BaseController
         return $parts ? implode(' + ', $parts) : '-';
     }
 
-    private function rulePresentation(array $row, array $tagNames, array $eipsByUuid, array $dnsRecords, array $latestEvent): array
+    private function rulePresentation(array $row, array $tagNames, array $eipsByUuid, array $dnsRecords, array $latestEvent, ?array $probeStatuses = null): array
     {
         $conf = $row['action']['conf'] ?? [];
         $pool = $conf['address_pool'] ?? [];
@@ -672,6 +922,22 @@ class Axisnow extends BaseController
                     'tag_names' => is_array($eip['tag_names'] ?? null) ? array_values($eip['tag_names']) : [],
                 ];
             }
+        }
+
+        $probeByAddress = [];
+        foreach ($probeStatuses ?? [] as $probe) {
+            if (!is_array($probe)) continue;
+            $address = trim((string)($probe['target'] ?? $probe['address'] ?? ''));
+            if ($address === '') continue;
+            $status = strtolower(trim((string)($probe['status'] ?? '')));
+            $item = [
+                'address' => $address,
+                'status' => $status,
+            ];
+            if (isset($probe['avg_connect_latency']) && is_numeric($probe['avg_connect_latency'])) {
+                $item['avg_connect_latency'] = (float)$probe['avg_connect_latency'];
+            }
+            $probeByAddress[$addressKey($address)] = $item;
         }
 
         $groups = [];
@@ -735,12 +1001,21 @@ class Axisnow extends BaseController
                 'status' => (string)($stability['status'] ?? ''),
                 'quality_filtered' => filter_var($stability['quality_filtered'] ?? false, FILTER_VALIDATE_BOOLEAN),
             ];
+            if (isset($probeByAddress[$addressKey($address)])) {
+                $item = array_merge($item, $probeByAddress[$addressKey($address)]);
+            }
             if (isset($stability['score']) && is_numeric($stability['score'])) {
                 $item['score'] = (float)$stability['score'];
             }
             $item = array_merge($item, $poolMetaByAddress[$addressKey($address)] ?? []);
             $candidates[] = $item;
             $candidateByAddress[$addressKey($address)] = $item;
+        }
+        foreach ($probeByAddress as $key => $probe) {
+            if (isset($candidateByAddress[$key])) continue;
+            $item = array_merge($probe, ['quality_filtered' => false], $poolMetaByAddress[$key] ?? []);
+            $candidates[] = $item;
+            $candidateByAddress[$key] = $item;
         }
 
         $quantity = $response['ip_quantity'] ?? $response['addr_quantity'] ?? null;
@@ -804,6 +1079,28 @@ class Axisnow extends BaseController
             $poolAddressCount = max((int)($row['eips_count'] ?? 0), (int)($row['cnames_count'] ?? 0));
         }
 
+        $probeTemplateUuid = '';
+        foreach ((array)($conf['edge_probe_template_uuid'] ?? []) as $uuid) {
+            $uuid = trim((string)$uuid);
+            if ($uuid !== '') {
+                $probeTemplateUuid = $uuid;
+                break;
+            }
+        }
+        $probeState = $probeTemplateUuid !== ''
+            ? AxisNowAutomationService::healthState($row, $probeStatuses)
+            : 'not_configured';
+        $probeStatusRows = array_values(array_map(static function (array $probe): array {
+            $item = [
+                'address' => trim((string)($probe['target'] ?? $probe['address'] ?? '')),
+                'status' => strtolower(trim((string)($probe['status'] ?? ''))),
+            ];
+            if (isset($probe['avg_connect_latency']) && is_numeric($probe['avg_connect_latency'])) {
+                $item['avg_connect_latency'] = (float)$probe['avg_connect_latency'];
+            }
+            return $item;
+        }, array_values(array_filter($probeStatuses ?? [], 'is_array'))));
+
         return [
             'pool_groups' => $groups,
             'pool_addresses' => $poolAddresses,
@@ -813,6 +1110,9 @@ class Axisnow extends BaseController
             'strategy_interval' => isset($response['trigger_interval']) && is_numeric($response['trigger_interval']) ? (int)$response['trigger_interval'] : null,
             'resolved_addresses' => $resolved,
             'resolved_updated_at' => $resolvedUpdatedAt,
+            'probe_template_uuid' => $probeTemplateUuid,
+            'probe_state' => $probeState,
+            'probe_statuses' => $probeStatusRows,
             'pool_search' => trim(implode(' ', array_merge(
                 array_column($groups, 'type_name'),
                 $poolAddressValues,
@@ -1073,6 +1373,86 @@ class Axisnow extends BaseController
             if (!empty($row['uuid'])) $result[$row['uuid']] = $row['name'] ?? ($row['address'] ?? $row['uuid']);
         }
         return $result;
+    }
+
+    private function automationPoolInput(string $field, string $ruleType, $storedValue): ?array
+    {
+        $raw = trim((string)input('post.' . $field, '', 'trim'));
+        if ($raw === '') return $this->decodeStoredPool($storedValue, null);
+        $pool = json_decode($raw, true);
+        if (!is_array($pool)) throw new Exception('地址池 JSON 格式无效');
+        return $this->validateAutomationPool($pool, $ruleType);
+    }
+
+    private function validateAutomationPool(array $pool, string $ruleType): array
+    {
+        $mode = (string)($pool['mode'] ?? '');
+        if ($mode === 'all_valid_eips') {
+            if ($ruleType !== 'A') throw new Exception('CNAME 规则不支持全部有效 EIP 地址池');
+            return ['mode' => 'all_valid_eips'];
+        }
+        if ($mode !== 'customize' || !is_array($pool['groups'] ?? null) || !$pool['groups']) {
+            throw new Exception('地址池至少需要一个有效地址组');
+        }
+        if (count($pool['groups']) > 20) throw new Exception('单个地址池最多支持 20 个地址组');
+
+        $groups = [];
+        foreach ($pool['groups'] as $group) {
+            if (!is_array($group)) throw new Exception('地址组格式无效');
+            $type = (string)($group['type'] ?? '');
+            if ($ruleType === 'CNAME' && $type !== 'domain') throw new Exception('CNAME 规则只能使用候选域名地址池');
+            if ($ruleType === 'A' && !in_array($type, ['eip', 'eip_tag', 'ip'], true)) {
+                throw new Exception('A 记录地址池类型无效');
+            }
+            if ($type === 'eip') {
+                $values = $this->uuidList($group['eip_uuids'] ?? []);
+                if (!$values) throw new Exception('指定 EIP 地址组不能为空');
+                $group['eip_uuids'] = $values;
+            } elseif ($type === 'eip_tag') {
+                $values = $this->uuidList($group['tag_uuids'] ?? []);
+                if (!$values) throw new Exception('EIP 标签地址组不能为空');
+                $group['tag_uuids'] = $values;
+            } elseif ($type === 'ip') {
+                $values = $this->stringList($group['ips'] ?? []);
+                foreach ($values as $value) {
+                    if (!filter_var($value, FILTER_VALIDATE_IP)) throw new Exception('自定义 IP 格式无效：' . $value);
+                }
+                if (!$values) throw new Exception('自定义 IP 地址组不能为空');
+                $group['ips'] = $values;
+            } elseif ($type === 'domain') {
+                $values = array_map([$this, 'hostName'], $this->stringList($group['domains'] ?? []));
+                if (!$values) throw new Exception('CNAME 候选域名不能为空');
+                $group['domains'] = $values;
+            }
+            $groups[] = $group;
+        }
+        $pool['mode'] = 'customize';
+        $pool['groups'] = $groups;
+        return $pool;
+    }
+
+    private function decodeStoredPool($value, ?array $fallback): ?array
+    {
+        if ($value === null || $value === '') return $fallback;
+        $pool = is_array($value) ? $value : json_decode((string)$value, true);
+        if (!is_array($pool) || empty($pool['mode'])) throw new Exception('已保存的地址池配置无效');
+        return $pool;
+    }
+
+    private function samePool(array $left, array $right): bool
+    {
+        return AxisNowAutomationService::encodePool($this->sortPool($left))
+            === AxisNowAutomationService::encodePool($this->sortPool($right));
+    }
+
+    private function sortPool(array $value): array
+    {
+        foreach ($value as &$item) {
+            if (is_array($item)) $item = $this->sortPool($item);
+        }
+        unset($item);
+        if (!array_is_list($value)) ksort($value);
+        return $value;
     }
 
     private function stringList($value): array
