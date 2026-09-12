@@ -436,9 +436,6 @@ class Axisnow extends BaseController
                     'address' => trim((string)($probe['target'] ?? $probe['address'] ?? '')),
                     'status' => strtolower(trim((string)($probe['status'] ?? ''))),
                 ];
-                if (isset($probe['avg_connect_latency']) && is_numeric($probe['avg_connect_latency'])) {
-                    $item['avg_connect_latency'] = (float)$probe['avg_connect_latency'];
-                }
                 return $item;
             }, $probeStatuses ?? []), static fn($probe) => ($probe['address'] ?? '') !== ''));
 
@@ -861,9 +858,9 @@ class Axisnow extends BaseController
             'action' => ['method' => $type === 'CNAME' ? 'addr_election' : 'ip_election', 'conf' => $conf],
             'status' => input('post.status', 'active', 'trim') === 'paused' ? 'paused' : 'active',
         ];
-        $name = trim((string)input('post.name', '', 'trim'));
+        $name = $this->request->post('name', null, 'trim');
         $description = trim((string)input('post.description', '', 'trim'));
-        $payload['name'] = mb_substr($name, 0, 100);
+        if ($name !== null) $payload['name'] = mb_substr(trim((string)$name), 0, 100);
         $payload['description'] = mb_substr($description, 0, 255);
         return $payload;
     }
@@ -917,6 +914,7 @@ class Axisnow extends BaseController
                 $geo = is_array($eip['geo'] ?? null) ? $eip['geo'] : [];
                 $poolMetaByAddress[$addressKey($address)] = [
                     'country_code' => trim((string)($geo['country_code'] ?? '')),
+                    'province_code' => trim((string)($geo['province_code'] ?? '')),
                     'isp_name' => trim((string)($geo['isp_name'] ?? '')),
                     'provider_name' => trim((string)($eip['provider_name'] ?? '')),
                     'tag_names' => is_array($eip['tag_names'] ?? null) ? array_values($eip['tag_names']) : [],
@@ -934,9 +932,6 @@ class Axisnow extends BaseController
                 'address' => $address,
                 'status' => $status,
             ];
-            if (isset($probe['avg_connect_latency']) && is_numeric($probe['avg_connect_latency'])) {
-                $item['avg_connect_latency'] = (float)$probe['avg_connect_latency'];
-            }
             $probeByAddress[$addressKey($address)] = $item;
         }
 
@@ -1095,9 +1090,6 @@ class Axisnow extends BaseController
                 'address' => trim((string)($probe['target'] ?? $probe['address'] ?? '')),
                 'status' => strtolower(trim((string)($probe['status'] ?? ''))),
             ];
-            if (isset($probe['avg_connect_latency']) && is_numeric($probe['avg_connect_latency'])) {
-                $item['avg_connect_latency'] = (float)$probe['avg_connect_latency'];
-            }
             return $item;
         }, array_values(array_filter($probeStatuses ?? [], 'is_array'))));
 
