@@ -247,8 +247,20 @@ class Axisnow extends BaseController
             $context = $this->accountContext(input('post.account_id/d'));
             $uuid = $this->uuid(input('post.uuid', '', 'trim'));
             $current = $context['service']->getDomain($uuid);
-            $domain = $this->domainName(input('post.domain', '', 'trim'));
-            $providerUuid = $this->uuid(input('post.dns_provider_uuid', '', 'trim'));
+            // AxisNow does not allow renaming an existing DNS routing domain.
+            // Always send the provider's current value, even if a client tries
+            // to supply a different domain in the update request.
+            $domain = $this->domainName((string)($current['domain'] ?? ''));
+            $providerSource = (string)($current['provider_source'] ?? '');
+            if (!in_array($providerSource, ['platform', 'self-hosted'], true)) {
+                $providerSource = !empty($current['dns_zone_uuid']) ? 'platform' : 'self-hosted';
+            }
+            // A platform-managed domain is permanently tied to the managed
+            // zone and provider chosen when it was created. Do not let stale
+            // option lists silently switch it to the first provider.
+            $providerUuid = $this->uuid($providerSource === 'platform'
+                ? (string)($current['dns_provider_uuid'] ?? '')
+                : input('post.dns_provider_uuid', '', 'trim'));
             $data = [
                 'domain' => $domain,
                 'dns_provider_uuid' => $providerUuid,
@@ -257,15 +269,12 @@ class Axisnow extends BaseController
                 'share_default' => input('post.share_default/d', 0) === 1,
                 'expose_eips' => input('post.expose_eips/d', 0) === 1,
             ];
-            $zoneUuid = trim((string)input('post.dns_zone_uuid', '', 'trim'));
-            $providerSource = (string)($current['provider_source'] ?? '');
-            if (!in_array($providerSource, ['platform', 'self-hosted'], true)) {
-                $providerSource = !empty($current['dns_zone_uuid']) ? 'platform' : 'self-hosted';
-            }
+            $zoneUuid = $providerSource === 'platform'
+                ? trim((string)($current['dns_zone_uuid'] ?? ''))
+                : trim((string)input('post.dns_zone_uuid', '', 'trim'));
             if ($providerSource === 'platform') {
                 if ($zoneUuid === '') throw new Exception('请选择 AxisNow 托管域名后缀');
                 $zoneUuid = $this->uuid($zoneUuid);
-                $this->assertManagedDomainZone($context['service'], $domain, $providerUuid, $zoneUuid);
                 $data['dns_zone_uuid'] = $zoneUuid;
             } elseif ($zoneUuid !== '') {
                 $data['dns_zone_uuid'] = $this->uuid($zoneUuid);

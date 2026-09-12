@@ -25,7 +25,7 @@ class AxisNowService
     {
         $this->request('GET', '/dns_routing_domains', ['page' => 1, 'per_page' => 5]);
         $probeRuleUuid = '00000000-0000-4000-8000-000000000000';
-        $rules = $this->request('GET', '/dns_routing_rules', ['page' => 1, 'per_page' => 1]);
+        $rules = $this->request('GET', '/dns_routing_rules', ['page' => 1, 'per_page' => 5]);
         if (!empty($rules['result'][0]['uuid'])) {
             $probeRuleUuid = (string)$rules['result'][0]['uuid'];
         }

@@ -141,9 +141,11 @@ function selectSource(source){
   renderProviders();
 }
 function setDomainMode(source){
-  var platform=source==='platform';
-  $('#platformDomainField').toggle(platform);$('#selfHostedDomainField').toggle(!platform);
-  $('[name=domain]').prop('required',!platform);$('[name=dns_zone_uuid]').prop('required',platform).prop('disabled',!platform);
+  var platform=source==='platform',editing=!!editingDomain;
+  $('#platformDomainField').toggle(platform&&!editing);$('#selfHostedDomainField').toggle(!platform||editing);
+  $('[name=domain]').prop('required',!platform&&!editing).prop('disabled',editing);
+  $('#domainPrefix').prop('disabled',editing);
+  $('[name=dns_zone_uuid]').prop('required',platform&&!editing).prop('disabled',!platform||editing);
 }
 function loadDomainOptions(){
   var id=$('[name=account_id]').val(); if(!id)return;
@@ -154,8 +156,10 @@ function renderProviders(){
   if(!currentDomainOptions)return; var source=$('[name=provider_source]').val(); var rows=source==='platform'?currentDomainOptions.system_providers:currentDomainOptions.providers;
   var $select=$('[name=dns_provider_uuid]').empty(); $.each(rows||[],function(_,row){$select.append($('<option>').val(row.uuid).text(row.name+' ('+(row.type||'-')+')'));});
   setDomainMode(source);$select.prop('disabled',source==='platform');
-  if(source==='platform'){renderZones();}else if(editingDomain){$select.val(editingDomain.dns_provider_uuid);}
-  if(source==='platform'&&editingDomain&&!$('#domainPrefix').data('initialized')){$('#domainPrefix').val(managedDomainPrefix(editingDomain.domain)).data('initialized',true);}
+  if(editingDomain&&source==='platform'){
+    if(!$select.find('option[value="'+editingDomain.dns_provider_uuid+'"]').length)$select.append($('<option>').val(editingDomain.dns_provider_uuid).text(editingDomain.provider_type||'当前 DNS 提供商'));
+    $select.val(editingDomain.dns_provider_uuid);
+  }else if(source==='platform'){renderZones();}else if(editingDomain){$select.val(editingDomain.dns_provider_uuid);}
 }
 function renderZones(){
   var providers=(currentDomainOptions&&currentDomainOptions.system_providers)||[],$zone=$('[name=dns_zone_uuid]').empty();
@@ -169,22 +173,15 @@ function syncProviderFromZone(){
   var providerUuid=$('[name=dns_zone_uuid] option:selected').data('providerUuid')||'';
   $('[name=dns_provider_uuid]').val(providerUuid);
 }
-function managedDomainPrefix(domain){
-  var value=String(domain||'').replace(/^\.+|\.+$/g,''),normalizedValue=value.toLowerCase(),zones=[];
-  $.each((currentDomainOptions&&currentDomainOptions.system_providers)||[],function(_,provider){$.each(provider.zones||[],function(_,zone){var suffix=String(zone.zone||zone.name||'').replace(/^\.+|\.+$/g,'');if(suffix)zones.push(suffix);});});
-  zones.sort(function(a,b){return b.length-a.length;});
-  for(var i=0;i<zones.length;i++){var suffix=zones[i].toLowerCase();if(value.length>suffix.length&&normalizedValue.slice(-(suffix.length+1))==='.'+suffix)return value.slice(0,-suffix.length-1);}
-  return value;
-}
 function openEditDomain(accountId,uuid){var row=$('#listTable').bootstrapTable('getRowByUniqueId',accountId+'_'+uuid);if(!row)return;editingDomain=row;document.getElementById('domainForm').reset();$('[name=uuid]').val(uuid);$('[name=account_id]').val(accountId).prop('disabled',true);$('[name=domain]').val(row.domain);$('#domainPrefix').val('').removeData('initialized');$('[name=record_type]').val(row.record_type).prop('disabled',true);$('[name=name]').val(row.name||'');$('[name=description]').val(row.description||'');$('[name=share_default]').prop('checked',!!row.share_default);$('[name=expose_eips]').prop('checked',!!row.expose_eips);$('[name=provider_source]').val(row.provider_source||'self-hosted');$('.axisnow-option-card').removeClass('active');$('.axisnow-option-card[data-source="'+$('[name=provider_source]').val()+'"]').addClass('active');setDomainMode($('[name=provider_source]').val());$('#domainShareOptions').show();$('#domainModal .modal-title').text('编辑 DNS 路由域名');$('#domainModal').modal('show');loadDomainOptions();}
 function saveDomain(){
-  var source=$('[name=provider_source]').val();
-  if(source==='platform'){
+  var source=$('[name=provider_source]').val(),editing=!!$('[name=uuid]').val();
+  if(!editing&&source==='platform'){
     var prefix=$.trim($('#domainPrefix').val()).replace(/^\.+|\.+$/g,''),suffix=$('[name=dns_zone_uuid] option:selected').data('zone');
     if(!prefix){layer.msg('请输入域名前缀');return;}if(!suffix){layer.msg('请选择 AxisNow 托管域名后缀');return;}
     $('[name=domain]').val(prefix+'.'+suffix);
-  }else if(!$.trim($('[name=domain]').val())){layer.msg('请输入具体域名');return;}
-  var editing=!!$('[name=uuid]').val(),url=editing?'/axisnow/domains/update':'/axisnow/domains/create',data=$('#domainForm').serializeArray();if($('[name=dns_provider_uuid]').prop('disabled'))data.push({name:'dns_provider_uuid',value:$('[name=dns_provider_uuid]').val()});if(editing)data.push({name:'account_id',value:$('[name=account_id]').val()});
+  }else if(!editing&&!$.trim($('[name=domain]').val())){layer.msg('请输入具体域名');return;}
+  var url=editing?'/axisnow/domains/update':'/axisnow/domains/create',data=$('#domainForm').serializeArray();if($('[name=dns_provider_uuid]').prop('disabled'))data.push({name:'dns_provider_uuid',value:$('[name=dns_provider_uuid]').val()});if(editing){data.push({name:'account_id',value:$('[name=account_id]').val()});if(source==='platform')data.push({name:'dns_zone_uuid',value:editingDomain.dns_zone_uuid||''});}
   var $btn=$('#saveDomainButton').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> 保存中');
   $.post(url,$.param(data),function(res){if(res.code===0){$('#domainModal').modal('hide');layer.msg(res.msg,{icon:1});reloadTable();}else{layer.alert(res.msg||'保存失败',{icon:2});}},'json').fail(function(){layer.msg('服务器错误');}).always(function(){$btn.prop('disabled',false).text('确认');});
 }
