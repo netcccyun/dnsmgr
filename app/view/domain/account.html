@@ -79,8 +79,13 @@ $(document).ready(function(){
 				field: 'action',
 				title: '操作',
 				formatter: function(value, row, index) {
-					var html = '<a href="/account/edit?id='+row.id+'" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a> <a href="/domain?aid='+row.id+'" class="btn btn-default btn-xs">域名</a>';
 					var rowType = String(row.type || '').toLowerCase();
+					var html = '<a href="/account/edit?id='+row.id+'" class="btn btn-info btn-xs">编辑</a> <a href="javascript:delItem('+row.id+')" class="btn btn-danger btn-xs">删除</a>';
+					if(rowType === 'axisnow'){
+						html += ' <a href="/axisnow/domains?account_id='+row.id+'" class="btn btn-default btn-xs">调度</a>';
+					}else{
+						html += ' <a href="/domain?aid='+row.id+'" class="btn btn-default btn-xs">域名</a>';
+					}
 					if(userLevel == '2' && rowType === 'cloudflare'){
 						html += ' <a href="/cloudflare/tunnels/'+row.id+'" class="btn btn-default btn-xs">Tunnels</a>';
 					}

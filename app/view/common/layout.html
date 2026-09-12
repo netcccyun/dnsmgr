@@ -106,7 +106,7 @@
           {if request()->user['type'] eq 'user'}<li class="{:checkIfActive('index')}">
             <a href="/"><i class="fa fa-home fa-fw"></i> <span>后台首页</span></a>
           </li>{/if}
-          <li class="{:checkIfActive('domain,record,record_log,record_batch_add,record_import,domain_add,weight,record_batch_add2,record_batch_edit2,expire_notice,smartparse')}">
+          <li class="{:checkIfControllerActive('Domain', 'domain,record,record_log,record_batch_add,record_import,domain_add,weight,record_batch_add2,record_batch_edit2,expire_notice,smartparse')}">
             <a href="/domain"><i class="fa fa-list-ul fa-fw"></i> <span>域名管理</span></a>
           </li>
           {if request()->user['level'] eq 2}
@@ -160,6 +160,20 @@
             <ul class="treeview-menu">
               <li class="{:checkIfActive('opipset')}"><a href="/optimizeip/opipset"><i class="fa fa-circle-o"></i> 优选设置</a></li>
               <li class="{:checkIfActive('opiplist,opipform')}"><a href="/optimizeip/opiplist"><i class="fa fa-circle-o"></i> 任务管理</a></li>
+            </ul>
+          </li>
+          <li class="treeview {:checkIfControllerActive('Axisnow', 'domains,domain,eips,tags')}">
+            <a href="javascript:;">
+              <i class="fa fa-random fa-fw"></i>
+              <span>AxisNow调度</span>
+              <span class="pull-right-container">
+                <i class="fa fa-angle-left pull-right"></i>
+              </span>
+            </a>
+            <ul class="treeview-menu">
+              <li class="{:checkIfControllerActive('Axisnow', 'domains,domain')}"><a href="/axisnow/domains"><i class="fa fa-circle-o"></i> DNS路由</a></li>
+              <li class="{:checkIfControllerActive('Axisnow', 'eips')}"><a href="/axisnow/eips"><i class="fa fa-circle-o"></i> EIP管理</a></li>
+              <li class="{:checkIfControllerActive('Axisnow', 'tags')}"><a href="/axisnow/tags"><i class="fa fa-circle-o"></i> 标签管理</a></li>
             </ul>
           </li>
           <li class="treeview {:checkIfActive('cronset,loginset,noticeset,proxyset')}">

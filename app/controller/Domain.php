@@ -162,6 +162,7 @@ class Domain extends BaseController
         $types = [];
         foreach ($list as $row) {
             if (empty($row['type']) || !isset(DnsHelper::$dns_config[$row['type']])) continue;
+            if ($row['type'] === 'axisnow') continue;
             $name = $row['id'] . '_' . DnsHelper::$dns_config[$row['type']]['name'];
             if (!array_key_exists($row['type'], $types)) {
                 $types[$row['type']] = DnsHelper::$dns_config[$row['type']]['name'];
@@ -186,6 +187,7 @@ class Domain extends BaseController
         $types = [];
         foreach ($list as $row) {
             if (empty($row['type']) || !isset(DnsHelper::$dns_config[$row['type']])) continue;
+            if ($row['type'] === 'axisnow') continue;
             $accounts[$row['id']] = $row['id'] . '_' . DnsHelper::$dns_config[$row['type']]['name'];
             if (!array_key_exists($row['type'], $types)) {
                 $types[$row['type']] = DnsHelper::$dns_config[$row['type']]['name'];

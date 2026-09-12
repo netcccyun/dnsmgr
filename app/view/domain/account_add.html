@@ -17,7 +17,7 @@
 <div class="panel-body">
   <form onsubmit="return false" method="post" class="form-horizontal" role="form" id="accountform">
     <div class="form-group">
-        <label class="col-sm-3 control-label no-padding-right" is-required>账户类型</label>
+        <label class="col-sm-3 control-label no-padding-right" is-required>服务商</label>
         <div class="col-sm-6">
             <select name="type" class="form-control" v-model="set.type">
 				<option v-for="(item, key) in typeList" :value="key" :data-icon="item.icon">{{item.name}}</option>

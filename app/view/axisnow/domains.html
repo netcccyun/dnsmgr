@@ -1,0 +1,197 @@
+{extend name="common/layout" /}
+{block name="title"}AxisNow DNS路由{/block}
+{block name="main"}
+<link href="/static/css/axisnow.css?v=4" rel="stylesheet">
+<div class="row axisnow-page">
+  <div class="col-xs-12 center-block" style="float:none;">
+    <div class="panel panel-default panel-intro">
+      <div class="panel-body">
+        <form class="form-inline" id="searchToolbar" onsubmit="return reloadTable()">
+          <div class="form-group">
+            <label>搜索</label>
+            <input class="form-control" id="keyword" placeholder="域名、名称或平台账户">
+          </div>
+          <div class="form-group">
+            <select class="form-control" id="accountFilter">
+              <option value="0">全部平台账户</option>
+              {foreach $accounts as $account}<option value="{$account.id}">{$account.name}</option>{/foreach}
+            </select>
+          </div>
+          <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> 搜索</button>
+          <button class="btn btn-default" type="button" onclick="clearSearch()"><i class="fa fa-refresh"></i> 刷新</button>
+          <button type="button" class="btn btn-success" onclick="openCreateDomain()"><i class="fa fa-plus"></i> 添加</button>
+        </form>
+        <table id="listTable"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade axisnow-page" id="domainModal" tabindex="-1" role="dialog" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">新增 DNS 路由域名</h4>
+      </div>
+      <div class="modal-body">
+        <form id="domainForm">
+          <input type="hidden" name="uuid" value="">
+          <div class="form-group">
+            <label>平台账户</label>
+            <select class="form-control" name="account_id" required onchange="loadDomainOptions()">
+              {foreach $accounts as $account}<option value="{$account.id}">{$account.name}</option>{/foreach}
+            </select>
+          </div>
+          <label>托管类型</label>
+          <input type="hidden" name="provider_source" value="platform">
+          <div class="axisnow-option-cards">
+            <div class="axisnow-option-card active" data-source="platform" onclick="selectSource('platform')"><i class="fa fa-snowflake-o"></i><strong>AxisNow 托管</strong></div>
+            <div class="axisnow-option-card" data-source="self-hosted" onclick="selectSource('self-hosted')"><i class="fa fa-server"></i><strong>自托管</strong></div>
+          </div>
+          <div class="form-group">
+            <label>具体域名</label>
+            <div id="selfHostedDomainField">
+              <input class="form-control" name="domain" required placeholder="例如 edge.example.com">
+              <p class="help-block">请输入需要调度的完整域名，不是根域名。</p>
+            </div>
+            <div id="platformDomainField" style="display:none;">
+              <div class="axisnow-domain-composer">
+                <input class="form-control" id="domainPrefix" placeholder="域名前缀，例如 china-optimized-hcdn.asia">
+                <span class="input-group-addon">.</span>
+                <select class="form-control" name="dns_zone_uuid" onchange="syncProviderFromZone()"></select>
+              </div>
+              <p class="help-block">域名后缀锁定为 AxisNow 提供的托管区域，只能从备选项中选择。</p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>记录类型</label>
+            <select class="form-control" name="record_type">
+              <option value="A">A</option>
+              <option value="CNAME">CNAME</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>DNS 提供商</label>
+            <select class="form-control" name="dns_provider_uuid" required></select>
+          </div>
+          <div class="form-group">
+            <label>名称</label>
+            <input class="form-control" name="name" maxlength="50" placeholder="可选，便于备注">
+          </div>
+          <div class="form-group">
+            <label>说明</label>
+            <textarea class="form-control" name="description" maxlength="255" rows="2" placeholder="可选"></textarea>
+          </div>
+          <div class="checkbox" id="domainShareOptions" style="display:none;"><label><input type="checkbox" name="share_default" value="1"> 新订阅者默认共享此域名</label><br><label><input type="checkbox" name="expose_eips" value="1"> 向订阅者展示此域名使用的 EIP</label></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="saveDomainButton" onclick="saveDomain()">确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
+<script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
+<script src="/static/js/custom.js?v=1006"></script>
+<script>
+var axisnowAccounts = {$accounts|json_encode|raw};
+{literal}
+var domainOptionCache = {};
+var currentDomainOptions = null;
+var editingDomain = null;
+
+$(function(){
+  if(window.$_GET && window.$_GET.account_id) $('#accountFilter').val(window.$_GET.account_id);
+  $('#listTable').bootstrapTable({
+    url: '/axisnow/domains/data', method: 'post', pagination: true, sidePagination: 'server',
+    pageSize: getStoredPageSize('axisnow_domains_pagesize'),
+    classes: 'table table-striped table-hover table-bordered', uniqueId:'row_id',
+    queryParams: function(params){ params.kw=$('#keyword').val(); params.account_id=$('#accountFilter').val(); return params; },
+    responseHandler: axisnowResponse,
+    columns: [
+      {field:'domain', title:'域名', sortable:true, formatter:function(v,row){return '<a class="axisnow-domain" href="/axisnow/domain/'+row.account_id+'/'+encodeURIComponent(row.uuid)+'">'+escapeHtml(v)+'</a><div class="axisnow-summary">'+Number(row.eips_count||0)+' EIP · '+Number(row.dns_rules_count||0)+' 路由规则</div>'; }},
+      {field:'account_name', title:'平台账户', sortable:true, formatter:function(v){return escapeHtml(v||'-');}},
+      {field:'provider_source', title:'托管类型', formatter:function(v){return v==='platform'?'<span class="axisnow-badge">AxisNow 托管</span>':'<span class="axisnow-badge">自托管</span>'; }},
+      {field:'record_type', title:'记录类型'},
+      {field:'provider_type', title:'DNS 提供商', formatter:function(v){return escapeHtml(v||'-');}},
+      {field:'updated_at', title:'上次编辑时间', sortable:true, formatter:timeFormatter},
+      {field:'action', title:'操作', formatter:function(v,row){return '<a class="btn btn-primary btn-xs" href="/axisnow/domain/'+row.account_id+'/'+encodeURIComponent(row.uuid)+'">路由规则</a> <button class="btn btn-info btn-xs" onclick="openEditDomain(\''+row.account_id+'\',\''+row.uuid+'\')">编辑</button> <button class="btn btn-danger btn-xs" onclick="deleteDomain(\''+row.account_id+'\',\''+row.uuid+'\',\''+escapeJs(row.domain)+'\')">删除</button>';}}
+    ],
+    onPageChange:function(n,s){setStoredPageSize('axisnow_domains_pagesize',s);}
+  });
+});
+
+function axisnowResponse(res){ if(res.code!==0){layer.msg(res.msg||'加载失败'); return {total:0,rows:[]};} $.each(res.rows,function(_,row){row.row_id=row.account_id+'_'+row.uuid;});return res; }
+function reloadTable(){ $('#listTable').bootstrapTable('refresh',{pageNumber:1}); return false; }
+function clearSearch(){ $('#keyword').val(''); $('#accountFilter').val('0'); reloadTable(); }
+function openCreateDomain(){
+  if(!axisnowAccounts.length){ layer.alert('请先添加 AxisNow 域名账户',{icon:0}); return; }
+  editingDomain=null;document.getElementById('domainForm').reset();$('[name=uuid]').val('');$('[name=account_id]').prop('disabled',false);$('[name=record_type]').prop('disabled',false);$('#domainPrefix').val('').removeData('initialized');$('#domainShareOptions').hide();$('#domainModal .modal-title').text('新增 DNS 路由域名');selectSource('platform'); $('#domainModal').modal('show'); loadDomainOptions();
+}
+function selectSource(source){
+  if(editingDomain&&source!==editingDomain.provider_source){layer.msg('托管类型不能直接修改，请重新创建域名');return;}
+  $('[name=provider_source]').val(source); $('.axisnow-option-card').removeClass('active'); $('.axisnow-option-card[data-source="'+source+'"]').addClass('active');
+  setDomainMode(source);
+  renderProviders();
+}
+function setDomainMode(source){
+  var platform=source==='platform';
+  $('#platformDomainField').toggle(platform);$('#selfHostedDomainField').toggle(!platform);
+  $('[name=domain]').prop('required',!platform);$('[name=dns_zone_uuid]').prop('required',platform).prop('disabled',!platform);
+}
+function loadDomainOptions(){
+  var id=$('[name=account_id]').val(); if(!id)return;
+  if(domainOptionCache[id]){currentDomainOptions=domainOptionCache[id];renderProviders();return;}
+  var ii=layer.load(2); $.getJSON('/axisnow/options/'+id,{scope:'domain'},function(res){layer.close(ii);if(res.code!==0){layer.alert(res.msg||'加载选项失败',{icon:2});return;}domainOptionCache[id]=res.data;currentDomainOptions=res.data;renderProviders();}).fail(function(){layer.close(ii);layer.msg('加载选项失败');});
+}
+function renderProviders(){
+  if(!currentDomainOptions)return; var source=$('[name=provider_source]').val(); var rows=source==='platform'?currentDomainOptions.system_providers:currentDomainOptions.providers;
+  var $select=$('[name=dns_provider_uuid]').empty(); $.each(rows||[],function(_,row){$select.append($('<option>').val(row.uuid).text(row.name+' ('+(row.type||'-')+')'));});
+  setDomainMode(source);$select.prop('disabled',source==='platform');
+  if(source==='platform'){renderZones();}else if(editingDomain){$select.val(editingDomain.dns_provider_uuid);}
+  if(source==='platform'&&editingDomain&&!$('#domainPrefix').data('initialized')){$('#domainPrefix').val(managedDomainPrefix(editingDomain.domain)).data('initialized',true);}
+}
+function renderZones(){
+  var providers=(currentDomainOptions&&currentDomainOptions.system_providers)||[],$zone=$('[name=dns_zone_uuid]').empty();
+  $.each(providers,function(_,provider){$.each(provider.zones||[],function(_,row){var suffix=String(row.zone||row.name||'').replace(/^\.+|\.+$/g,'');if(suffix)$zone.append($('<option>').val(row.uuid).text(suffix).data('zone',suffix).data('providerUuid',provider.uuid));});});
+  if(!$zone.children().length)$zone.append($('<option>').val('').text('当前没有可用托管域名后缀'));
+  if(editingDomain)$zone.val(editingDomain.dns_zone_uuid||'');
+  syncProviderFromZone();
+}
+function syncProviderFromZone(){
+  if($('[name=provider_source]').val()!=='platform')return;
+  var providerUuid=$('[name=dns_zone_uuid] option:selected').data('providerUuid')||'';
+  $('[name=dns_provider_uuid]').val(providerUuid);
+}
+function managedDomainPrefix(domain){
+  var value=String(domain||'').replace(/^\.+|\.+$/g,''),normalizedValue=value.toLowerCase(),zones=[];
+  $.each((currentDomainOptions&&currentDomainOptions.system_providers)||[],function(_,provider){$.each(provider.zones||[],function(_,zone){var suffix=String(zone.zone||zone.name||'').replace(/^\.+|\.+$/g,'');if(suffix)zones.push(suffix);});});
+  zones.sort(function(a,b){return b.length-a.length;});
+  for(var i=0;i<zones.length;i++){var suffix=zones[i].toLowerCase();if(value.length>suffix.length&&normalizedValue.slice(-(suffix.length+1))==='.'+suffix)return value.slice(0,-suffix.length-1);}
+  return value;
+}
+function openEditDomain(accountId,uuid){var row=$('#listTable').bootstrapTable('getRowByUniqueId',accountId+'_'+uuid);if(!row)return;editingDomain=row;document.getElementById('domainForm').reset();$('[name=uuid]').val(uuid);$('[name=account_id]').val(accountId).prop('disabled',true);$('[name=domain]').val(row.domain);$('#domainPrefix').val('').removeData('initialized');$('[name=record_type]').val(row.record_type).prop('disabled',true);$('[name=name]').val(row.name||'');$('[name=description]').val(row.description||'');$('[name=share_default]').prop('checked',!!row.share_default);$('[name=expose_eips]').prop('checked',!!row.expose_eips);$('[name=provider_source]').val(row.provider_source||'self-hosted');$('.axisnow-option-card').removeClass('active');$('.axisnow-option-card[data-source="'+$('[name=provider_source]').val()+'"]').addClass('active');setDomainMode($('[name=provider_source]').val());$('#domainShareOptions').show();$('#domainModal .modal-title').text('编辑 DNS 路由域名');$('#domainModal').modal('show');loadDomainOptions();}
+function saveDomain(){
+  var source=$('[name=provider_source]').val();
+  if(source==='platform'){
+    var prefix=$.trim($('#domainPrefix').val()).replace(/^\.+|\.+$/g,''),suffix=$('[name=dns_zone_uuid] option:selected').data('zone');
+    if(!prefix){layer.msg('请输入域名前缀');return;}if(!suffix){layer.msg('请选择 AxisNow 托管域名后缀');return;}
+    $('[name=domain]').val(prefix+'.'+suffix);
+  }else if(!$.trim($('[name=domain]').val())){layer.msg('请输入具体域名');return;}
+  var editing=!!$('[name=uuid]').val(),url=editing?'/axisnow/domains/update':'/axisnow/domains/create',data=$('#domainForm').serializeArray();if($('[name=dns_provider_uuid]').prop('disabled'))data.push({name:'dns_provider_uuid',value:$('[name=dns_provider_uuid]').val()});if(editing)data.push({name:'account_id',value:$('[name=account_id]').val()});
+  var $btn=$('#saveDomainButton').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> 保存中');
+  $.post(url,$.param(data),function(res){if(res.code===0){$('#domainModal').modal('hide');layer.msg(res.msg,{icon:1});reloadTable();}else{layer.alert(res.msg||'保存失败',{icon:2});}},'json').fail(function(){layer.msg('服务器错误');}).always(function(){$btn.prop('disabled',false).text('确认');});
+}
+function deleteDomain(accountId,uuid,domain){layer.confirm('确定删除调度域名“'+domain+'”吗？其路由规则也可能受影响。',{icon:0},function(index){var ii=layer.load(2);$.post('/axisnow/domains/delete',{account_id:accountId,uuid:uuid},function(res){layer.close(ii);if(res.code===0){layer.close(index);layer.msg(res.msg,{icon:1});reloadTable();}else layer.alert(res.msg,{icon:2});},'json');});}
+function timeFormatter(v){return v?escapeHtml(String(v).replace('T',' ').replace('Z','')):'-';}
+function escapeHtml(v){return $('<div>').text(v==null?'':String(v)).html();}
+function escapeJs(v){return String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+{/literal}
+</script>
+{/block}

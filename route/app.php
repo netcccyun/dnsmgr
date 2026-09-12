@@ -16,6 +16,7 @@ use think\middleware\SessionInit;
 
 Route::pattern([
     'id'   => '\d+',
+    'uuid' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}',
 ]);
 
 Route::any('/install', 'install/index')
@@ -80,6 +81,29 @@ Route::group(function () {
     Route::post('/cloudflare/tunnels/hostnameroutes/data/:id', 'cloudflare/tunnels_hostname_routes_data');
     Route::post('/cloudflare/tunnels/hostnameroutes/add/:id', 'cloudflare/tunnels_hostname_routes_add');
     Route::post('/cloudflare/tunnels/hostnameroutes/delete/:id', 'cloudflare/tunnels_hostname_routes_delete');
+
+    Route::get('/axisnow/domains', 'axisnow/domains')->completeMatch();
+    Route::post('/axisnow/domains/data', 'axisnow/domains_data');
+    Route::post('/axisnow/domains/create', 'axisnow/domain_create');
+    Route::post('/axisnow/domains/update', 'axisnow/domain_update');
+    Route::post('/axisnow/domains/delete', 'axisnow/domain_delete');
+    Route::get('/axisnow/domain/:id/:uuid', 'axisnow/domain');
+    Route::post('/axisnow/rules/data/:id/:uuid', 'axisnow/rules_data');
+    Route::get('/axisnow/rules/get/:id/:uuid', 'axisnow/rule_get');
+    Route::post('/axisnow/rules/save', 'axisnow/rule_save');
+    Route::post('/axisnow/rules/status', 'axisnow/rule_status');
+    Route::post('/axisnow/rules/delete', 'axisnow/rule_delete');
+    Route::get('/axisnow/options/:id', 'axisnow/options');
+    Route::get('/axisnow/eips', 'axisnow/eips')->completeMatch();
+    Route::post('/axisnow/eips/data', 'axisnow/eips_data');
+    Route::post('/axisnow/eips/create', 'axisnow/eip_create');
+    Route::post('/axisnow/eips/update', 'axisnow/eip_update');
+    Route::post('/axisnow/eips/delete', 'axisnow/eip_delete');
+    Route::get('/axisnow/tags', 'axisnow/tags')->completeMatch();
+    Route::get('/axisnow/tags/edit', 'axisnow/tag_edit')->completeMatch();
+    Route::post('/axisnow/tags/data', 'axisnow/tags_data');
+    Route::post('/axisnow/tags/save', 'axisnow/tag_save');
+    Route::post('/axisnow/tags/delete', 'axisnow/tag_delete');
 
     Route::any('/domain/expirenotice', 'domain/expire_notice');
     Route::post('/domain/updatedate', 'domain/update_date');

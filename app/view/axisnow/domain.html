@@ -1,0 +1,164 @@
+{extend name="common/layout" /}
+{block name="title"}AxisNow 路由规则{/block}
+{block name="main"}
+<link href="/static/css/axisnow.css?v=4" rel="stylesheet">
+<div class="row axisnow-page">
+  <div class="col-xs-12 center-block" style="float:none;">
+    <div class="panel panel-default panel-intro">
+      <div class="panel-body">
+        <form class="form-inline" id="searchToolbar" onsubmit="return reloadRules()">
+          <div class="form-group"><label>搜索</label> <input class="form-control" id="keyword" placeholder="线路、名称或地址池"></div>
+          <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> 搜索</button>
+          <button class="btn btn-default" type="button" onclick="$('#keyword').val('');reloadRules()"><i class="fa fa-refresh"></i> 刷新</button>
+          <button class="btn btn-success" type="button" onclick="openRuleModal()"><i class="fa fa-plus"></i> 添加规则</button>
+          <a class="btn btn-default" href="/axisnow/domains"><i class="fa fa-reply"></i> 返回 DNS 路由</a>
+        </form>
+        <table id="rulesTable"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade axisnow-page" id="ruleModal" tabindex="-1" role="dialog" data-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title" id="ruleModalTitle">新增路由规则</h4>
+      </div>
+      <div class="modal-body">
+        <form id="ruleForm">
+          <input type="hidden" name="account_id" value="{$accountId}">
+          <input type="hidden" name="domain_uuid" value="{$domain.uuid}">
+          <input type="hidden" name="uuid" value="">
+          <div class="row">
+            <div class="col-sm-6 form-group"><label>记录类型</label><input class="form-control" value="{$domain.record_type}" disabled></div>
+            <div class="col-sm-6 form-group"><label>线路</label><select class="form-control" name="geo_isp" required><option value="default">默认线路</option></select></div>
+          </div>
+          <div class="row">
+            <div class="col-sm-6 form-group"><label>规则名称</label><input class="form-control" name="name" maxlength="100" placeholder="可选"></div>
+            <div class="col-sm-6 form-group"><label>生效状态</label><select class="form-control" name="status"><option value="active">启用</option><option value="paused">暂停</option></select></div>
+          </div>
+          <div class="form-group"><label>说明</label><input class="form-control" name="description" maxlength="255" placeholder="可选"></div>
+          <hr>
+          <div class="form-group">
+            <label>地址池</label>
+            <select class="form-control" name="pool_type" onchange="renderPoolInput([])">
+              {if $domain.record_type eq 'CNAME'}
+              <option value="domain">CNAME 候选域名</option>
+              {else}
+              <option value="all_valid_eips">全部有效 EIP</option>
+              <option value="eip_tag">EIP 标签</option>
+              <option value="eip">指定 EIP</option>
+              <option value="ip">自定义 IP</option>
+              {/if}
+            </select>
+          </div>
+          <div class="form-group" id="poolSelectGroup" style="display:none;">
+            <label id="poolSelectLabel">选择项目</label>
+            <div class="axisnow-check-list" id="poolCheckList"><span class="text-muted">请先选择地址池类型</span></div>
+          </div>
+          <div class="form-group" id="poolTextGroup" style="display:none;">
+            <label id="poolTextLabel">候选地址</label>
+            <textarea class="form-control" id="poolText" name="pool_values" rows="5" placeholder="每行一个"></textarea>
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-default btn-xs" onclick="toggleAdvancedPool()"><i class="fa fa-code"></i> 高级地址池 JSON</button>
+            <p class="help-block">多地址组或混合地址池可直接按 AxisNow API 的 address_pool 结构编辑。</p>
+            <textarea class="form-control" id="advancedPool" name="advanced_pool" rows="6" style="display:none;font-family:monospace;" placeholder='{"mode":"customize","groups":[...]}'></textarea>
+          </div>
+          <hr>
+          <div class="row">
+            <div class="col-sm-4 form-group"><label>选取策略</label><select class="form-control" name="election_strategy" onchange="renderStrategy()"><option value="random">随机</option><option value="priority_order">顺序</option><option value="quality_optimized">优选</option></select></div>
+            <div class="col-sm-4 form-group"><label>返回地址数量</label><input class="form-control" type="number" name="quantity" value="1" min="1" max="10"></div>
+            <div class="col-sm-4 form-group" id="intervalGroup" style="display:none;"><label>评估周期</label><select class="form-control" name="trigger_interval"><option value="5">5 分钟</option><option value="10">10 分钟</option></select></div>
+          </div>
+          <div class="form-group"><label>TTL（秒）</label><input class="form-control" type="number" name="ttl" value="0" min="0" max="2592000"><p class="help-block">填写 0 表示由 AxisNow/当前 DNS 套餐使用默认值；其他值须满足提供商套餐限制。</p></div>
+          <div class="form-group"><label>地址监控模板</label><select class="form-control" name="edge_probe_template_uuid"><option value="">不使用地址监控模板</option></select></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="saveRuleButton" onclick="saveRule()">确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
+<script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
+<script src="/static/js/custom.js?v=1006"></script>
+<script>
+var accountId='{$accountId}', domainUuid='{$domain.uuid}', recordType='{$domain.record_type}', providerType='{$domain.provider_type|default=''}';
+{literal}
+var ruleOptions={eips:[],tags:[],probe_templates:[],geo_isp_options:[]},pendingPoolValues=[];
+$(function(){
+  if(recordType==='CNAME'&&['cloudflare','aws-route53','cloudns'].indexOf(providerType)>=0) $('[name=quantity]').val(1).prop('disabled',true);
+  $('#rulesTable').bootstrapTable({
+    url:'/axisnow/rules/data/'+accountId+'/'+encodeURIComponent(domainUuid),method:'post',pagination:true,sidePagination:'server',pageSize:getStoredPageSize('axisnow_rules_pagesize'),classes:'table table-striped table-hover table-bordered',
+    queryParams:function(p){p.kw=$('#keyword').val();return p;},responseHandler:axisnowResponse,
+    columns:[
+      {field:'geo_isp',title:'线路',formatter:function(v,row){return '<strong>'+escapeHtml(row.geo_isp_name||v||'默认线路')+'</strong><div class="axisnow-summary">'+escapeHtml(row.name||'')+'</div>'; }},
+      {field:'type',title:'记录类型'},
+      {field:'pool_summary',title:'地址池'},
+      {field:'strategy',title:'选取策略',formatter:strategyFormatter},
+      {field:'status',title:'生效状态',formatter:function(v){return v==='active'?'<span class="label label-success">启用</span>':'<span class="label label-default">暂停</span>'; }},
+      {field:'updated_at',title:'更新时间',formatter:timeFormatter},
+      {field:'action',title:'操作',formatter:function(v,row){var next=row.status==='active'?'paused':'active',text=next==='active'?'启用':'暂停';return '<button class="btn btn-info btn-xs" onclick="editRule(\''+row.uuid+'\')">编辑</button> <button class="btn btn-default btn-xs" onclick="changeRuleStatus(\''+row.uuid+'\',\''+next+'\')">'+text+'</button> <button class="btn btn-danger btn-xs" onclick="deleteRule(\''+row.uuid+'\')">删除</button>';}}
+    ],onPageChange:function(n,s){setStoredPageSize('axisnow_rules_pagesize',s);}
+  });
+  loadRuleOptions();
+});
+function loadRuleOptions(){ $.getJSON('/axisnow/options/'+accountId,{scope:'rule',domain_uuid:domainUuid},function(res){if(res.code===0){ruleOptions=res.data;renderPoolInput();renderProbeTemplates();renderGeoIspOptions();}else layer.msg(res.msg||'选项加载失败');}); }
+function reloadRules(){ $('#rulesTable').bootstrapTable('refresh',{pageNumber:1});return false; }
+function axisnowResponse(res){if(res.code!==0){layer.msg(res.msg||'加载失败');return {total:0,rows:[]};}return res;}
+function openRuleModal(){document.getElementById('ruleForm').reset();$('[name=uuid]').val('');$('#ruleModalTitle').text('新增路由规则');$('#advancedPool').val('').hide();renderPoolInput([]);renderProbeTemplates('');renderGeoIspOptions('default');renderStrategy();$('#ruleModal').modal('show');}
+function renderPoolInput(selectedValues){
+  if(selectedValues!==undefined)pendingPoolValues=(selectedValues||[]).map(String);
+  var type=$('[name=pool_type]').val(),selected=pendingPoolValues,$list=$('#poolCheckList').empty(),useSelect=type==='eip'||type==='eip_tag',useText=type==='ip'||type==='domain',rows=[];
+  $('#poolSelectGroup').toggle(useSelect);$('#poolTextGroup').toggle(useText);$('#poolText').prop('disabled',!useText);
+  if(type==='eip'){ $('#poolSelectLabel').text('选择 EIP');rows=ruleOptions.eips||[]; }
+  if(type==='eip_tag'){ $('#poolSelectLabel').text('选择 EIP 标签');rows=ruleOptions.tags||[]; }
+  if(useSelect&&!rows.length){$list.append($('<span class="text-muted">').text(type==='eip'?'当前账号没有可用 EIP':'当前账号没有可用 EIP 标签'));}
+  $.each(rows,function(index,x){var id='rule-pool-'+type+'-'+index,$label=$('<label>').attr('for',id),$input=$('<input type="checkbox" name="pool_values[]">').attr('id',id).val(x.uuid).prop('checked',selected.indexOf(String(x.uuid))!==-1);$label.append($input).append(document.createTextNode(' '+(x.name||x.uuid)));$list.append($label);});
+  $('#poolTextLabel').text(type==='domain'?'CNAME 候选域名':'自定义 IP');
+}
+function renderProbeTemplates(selectedValue){
+  var $select=$('[name=edge_probe_template_uuid]'),value=selectedValue===undefined?$select.val():selectedValue,found=!value;
+  $select.empty().append($('<option>').val('').text('不使用地址监控模板'));
+  $.each(ruleOptions.probe_templates||[],function(_,x){$select.append($('<option>').val(x.uuid).text(x.name||x.uuid));if(String(x.uuid)===String(value))found=true;});
+  if(value&&!found)$select.append($('<option>').val(value).text(value+'（当前模板）'));
+  $select.val(value||'');
+}
+function renderGeoIspOptions(selectedValue){
+  var $select=$('[name=geo_isp]'),value=selectedValue===undefined?($select.val()||'default'):selectedValue,found=false;
+  $select.empty();
+  $.each(ruleOptions.geo_isp_options||[],function(_,x){
+    var prefix=new Array(Number(x.depth||0)+1).join('\u3000'),$option=$('<option>').val(x.value).text(prefix+(x.name||x.value)).prop('disabled',!!x.disabled);
+    if(String(x.value)===String(value))found=true;
+    $select.append($option);
+  });
+  if(!found)$select.prepend($('<option>').val(value).text(value==='default'?'默认线路':value+'（当前线路）'));
+  $select.val(value);
+}
+function renderStrategy(){var strategy=$('[name=election_strategy]').val();$('#intervalGroup').toggle(strategy==='quality_optimized');if(strategy==='priority_order'&&$('[name=pool_type]').val()==='all_valid_eips'){$('[name=pool_type]').val('eip');renderPoolInput([]);}}
+function toggleAdvancedPool(){ $('#advancedPool').toggle(); }
+function editRule(uuid){
+  var ii=layer.load(2);$.getJSON('/axisnow/rules/get/'+accountId+'/'+encodeURIComponent(uuid),function(res){layer.close(ii);if(res.code!==0){layer.alert(res.msg,{icon:2});return;}var r=res.data,c=(r.action||{}).conf||{},pool=c.address_pool||{},groups=pool.groups||[],group=groups[0]||{},type=pool.mode==='all_valid_eips'?'all_valid_eips':(group.type||'eip');
+    var values=group.eip_uuids||group.tag_uuids||[];document.getElementById('ruleForm').reset();$('[name=uuid]').val(r.uuid);renderGeoIspOptions(r.geo_isp||'default');$('[name=name]').val(r.name||'');$('[name=description]').val(r.description||'');$('[name=status]').val(r.status||'active');$('[name=pool_type]').val(type);renderPoolInput(values);$('#poolText').val((group.ips||group.domains||[]).join('\n'));
+    var response=c.response_strategy||{};$('[name=election_strategy]').val(response.election_strategy||'random');$('[name=quantity]').val(response.ip_quantity||response.addr_quantity||1);$('[name=trigger_interval]').val(response.trigger_interval||5);$('[name=ttl]').val((c.ttl_conf||{}).ttl||0);renderProbeTemplates((c.edge_probe_template_uuid||[])[0]||'');renderStrategy();
+    if(groups.length>1){$('#advancedPool').val(JSON.stringify(pool,null,2)).show();}else{$('#advancedPool').val('').hide();}
+    $('#ruleModalTitle').text('编辑路由规则');$('#ruleModal').modal('show');
+  }).fail(function(){layer.close(ii);layer.msg('服务器错误');});
+}
+function saveRule(){var $btn=$('#saveRuleButton').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> 保存中');$.post('/axisnow/rules/save',$('#ruleForm').serialize(),function(res){if(res.code===0){$('#ruleModal').modal('hide');layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg||'保存失败',{icon:2});},'json').fail(function(){layer.msg('服务器错误');}).always(function(){$btn.prop('disabled',false).text('确认');});}
+function changeRuleStatus(uuid,status){var ii=layer.load(2);$.post('/axisnow/rules/status',{account_id:accountId,uuid:uuid,status:status},function(res){layer.close(ii);if(res.code===0){layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg,{icon:2});},'json');}
+function deleteRule(uuid){layer.confirm('确定删除此路由规则吗？',{icon:0},function(index){var ii=layer.load(2);$.post('/axisnow/rules/delete',{account_id:accountId,uuid:uuid},function(res){layer.close(ii);if(res.code===0){layer.close(index);layer.msg(res.msg,{icon:1});reloadRules();}else layer.alert(res.msg,{icon:2});},'json');});}
+function strategyFormatter(v){return {random:'随机',priority_order:'顺序',quality_optimized:'优选'}[v]||escapeHtml(v||'-');}
+function timeFormatter(v){return v?escapeHtml(String(v).replace('T',' ').replace('Z','')):'-';}
+function escapeHtml(v){return $('<div>').text(v==null?'':String(v)).html();}
+{/literal}
+</script>
+{/block}

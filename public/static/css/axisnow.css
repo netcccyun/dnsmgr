@@ -1,0 +1,22 @@
+.axisnow-page .axisnow-summary { color: #777; font-size: 12px; margin-top: 3px; }
+.axisnow-page .axisnow-domain { font-weight: 600; color: #222; }
+.axisnow-page .axisnow-badge { display: inline-block; border-radius: 10px; padding: 2px 8px; margin: 1px 3px 1px 0; background: #edf3ff; color: #337ab7; font-size: 12px; }
+.axisnow-page .axisnow-badge-dark { background: #30343b; color: #fff; }
+.axisnow-page .axisnow-badge-success { background: #e8f6ef; color: #218c55; }
+.axisnow-page .axisnow-badge-warning { background: #fff3dc; color: #b56b00; }
+.axisnow-page .axisnow-option-cards { display: flex; gap: 12px; margin-bottom: 15px; }
+.axisnow-page .axisnow-option-card { flex: 1; padding: 17px 12px; border: 1px solid #d2d6de; border-radius: 5px; text-align: center; cursor: pointer; background: #fff; }
+.axisnow-page .axisnow-option-card.active { border-color: #3c8dbc; color: #2874a6; background: #f4f9fd; box-shadow: inset 0 0 0 1px #3c8dbc; }
+.axisnow-page .axisnow-option-card i { display: block; font-size: 24px; margin-bottom: 8px; }
+.axisnow-page .axisnow-empty { padding: 35px 15px; text-align: center; color: #999; }
+.axisnow-page .axisnow-domain-composer { display: flex; align-items: stretch; width: 100%; }
+.axisnow-page .axisnow-domain-composer > .form-control { flex: 1 1 50%; width: 50%; min-width: 0; border-radius: 0; }
+.axisnow-page .axisnow-domain-composer > .form-control:first-child { border-radius: 4px 0 0 4px; }
+.axisnow-page .axisnow-domain-composer > .form-control:last-child { border-radius: 0 4px 4px 0; }
+.axisnow-page .axisnow-domain-composer > .input-group-addon { display: flex; width: auto; align-items: center; border-right: 0; border-left: 0; border-radius: 0; }
+.axisnow-page .axisnow-check-list { min-height: 42px; max-height: 220px; overflow-y: auto; padding: 9px 12px; border: 1px solid #d2d6de; border-radius: 3px; background: #fff; }
+.axisnow-page .axisnow-check-list label { display: block; margin: 0; padding: 5px 2px; font-weight: 400; cursor: pointer; }
+.axisnow-page .axisnow-check-list label + label { border-top: 1px solid #f0f0f0; }
+.axisnow-page .axisnow-check-list input[type="checkbox"] { margin: 0 6px 0 0; vertical-align: -1px; }
+.axisnow-page .modal .help-block { margin-bottom: 0; }
+.axisnow-page .table td { vertical-align: middle; }
