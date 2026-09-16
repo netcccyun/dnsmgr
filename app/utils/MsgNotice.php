@@ -441,6 +441,9 @@ class MsgNotice
             $options['body'] = $body;
         }
 
+        // 规范化头部
+        $options['headers'] = normalize_http_headers($options['headers']);
+
         try {
             $client = new \GuzzleHttp\Client();
             $response = $client->request($method, $url, $options);
