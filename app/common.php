@@ -36,6 +36,8 @@ function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $ua = 0, $nobody =
             $options['body'] = $post;
         }
     }
+    // 规范化头部
+    $options['headers'] = normalize_http_headers($options['headers']);
 
     try {
         $client = new Client();
@@ -383,6 +385,39 @@ function clearDirectory($dir): bool
 }
 
 /**
+ * 规范化请求头，将标量值转为字符串，剔除 null 等非法值，避免 GuzzleHttp 类型校验异常
+ *
+ * @param array $headers 原始请求头
+ * @return array 规范化后的请求头
+ */
+function normalize_http_headers($headers)
+{
+    $result = [];
+    foreach ((array)$headers as $name => $value) {
+        if (is_array($value)) {
+            $items = [];
+            foreach ($value as $item) {
+                if (is_string($item)) {
+                    $items[] = $item;
+                } elseif (is_scalar($item)) {
+                    $items[] = (string)$item;
+                }
+            }
+            if ($items) {
+                $result[$name] = $items;
+            }
+        } elseif (is_string($value)) {
+            $result[$name] = $value;
+        } elseif (is_scalar($value)) {
+            // 转为字符串
+            $result[$name] = (string)$value;
+        }
+        // 忽略 null 等非法值
+    }
+    return $result;
+}
+
+/**
  * 发送 HTTP 请求
  *
  * @param string $url 请求URL
@@ -494,6 +529,8 @@ function http_request($url, $data = null, $referer = null, $cookie = null, $head
         $proxy_string .= $proxy_server . ':' . $proxy_port;
         $options['proxy'] = $proxy_string;
     }
+    // 规范化头部
+    $options['headers'] = normalize_http_headers($options['headers']);
 
     try {
         $client = new Client();
