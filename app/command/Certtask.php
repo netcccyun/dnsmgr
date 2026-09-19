@@ -23,7 +23,7 @@ class Certtask extends Command
     {
         // 指令配置
         $this->setName('certtask')
-            ->setDescription('SSL证书续签与部署、域名到期提醒、定时切换解析、CF优选IP更新');
+            ->setDescription('SSL证书续签与部署、域名到期提醒、定时切换解析、AxisNow自动调度、CF优选IP更新');
     }
 
     protected function execute(Input $input, Output $output)

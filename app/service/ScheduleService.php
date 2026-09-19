@@ -15,20 +15,30 @@ class ScheduleService
     public function execute()
     {
         $list = Db::name('sctask')->where('nexttime', '>', 0)->where('nexttime', '<=', time())->where('active', 1)->select();
-        if (count($list) == 0) {
-            return false;
-        }
-        echo '开始执行定时切换解析任务，共获取到' . count($list) . '个待执行任务' . "\n";
-        foreach ($list as $row) {
-            try {
-                $this->execute_one($row);
-                echo '定时切换任务' . $row['id'] . '执行成功' . "\n";
-            } catch (Exception $e) {
-                echo '定时切换任务' . $row['id'] . '执行失败,' . $e->getMessage() . "\n";
+        $legacyHandled = count($list) > 0;
+        if ($legacyHandled) {
+            echo '开始执行定时切换解析任务，共获取到' . count($list) . '个待执行任务' . "\n";
+            foreach ($list as $row) {
+                try {
+                    $this->execute_one($row);
+                    echo '定时切换任务' . $row['id'] . '执行成功' . "\n";
+                } catch (Exception $e) {
+                    echo '定时切换任务' . $row['id'] . '执行失败,' . $e->getMessage() . "\n";
+                }
             }
         }
-        config_set('schedule_time', date("Y-m-d H:i:s"));
-        return true;
+
+        $axisNowHandled = false;
+        try {
+            $axisNowHandled = (new AxisNowAutomationService())->execute();
+            if ($axisNowHandled) echo "AxisNow自动调度任务执行完成\n";
+        } catch (\Throwable $e) {
+            echo 'AxisNow自动调度任务执行失败,' . $e->getMessage() . "\n";
+        }
+        if ($legacyHandled || $axisNowHandled) config_set('schedule_time', date("Y-m-d H:i:s"));
+
+        // 保持原有返回语义，避免影响其他调用方。
+        return $legacyHandled;
     }
 
     public function execute_one($row)

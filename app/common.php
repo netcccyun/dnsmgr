@@ -189,6 +189,14 @@ function checkIfActive($string)
     }
 }
 
+function checkIfControllerActive($controller, $string)
+{
+    if (strcasecmp(Request::controller(), $controller) !== 0) {
+        return null;
+    }
+    return checkIfActive($string);
+}
+
 function getSid()
 {
     return md5(uniqid(mt_rand(), true) . microtime());

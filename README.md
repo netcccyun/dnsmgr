@@ -19,6 +19,7 @@
 - 容灾切换功能，支持ping、tcp、http(s)检测协议并自动暂停/修改域名解析，并支持发送通知；
 - 定时切换功能，设置在指定时间/周期，自动修改/开启/暂停/删除域名解析；
 - CF优选IP功能，支持获取最新的Cloudflare优选IP，并自动更新到解析记录；
+- AxisNow调度管理，支持按多个 AxisNow 账号管理 DNS 路由域名、路由规则、EIP 与 EIP 标签；
 - SSL证书申请与自动部署功能，支持从Let's Encrypt等渠道申请SSL证书，并自动部署到各种面板、云服务商、服务器等；
 - 支持邮件、微信公众号、Telegram、钉钉、飞书、企业微信等多种通知渠道。
 
@@ -206,4 +207,3 @@ SSL证书自动部署功能
 
 - [彩虹云主机 - 免备案CDN/虚拟主机](https://www.cccyun.net/)
 - [小白云高防云服务器](https://www.xiaobaiyun.cn/aff/GMLPMFOV)
-

@@ -5,7 +5,7 @@ CREATE TABLE `dnsmgr_config` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `dnsmgr_config` VALUES ('version', '1049');
+INSERT INTO `dnsmgr_config` VALUES ('version', '1050');
 INSERT INTO `dnsmgr_config` VALUES ('notice_mail', '0');
 INSERT INTO `dnsmgr_config` VALUES ('notice_wxtpl', '0');
 INSERT INTO `dnsmgr_config` VALUES ('mail_smtp', 'smtp.qq.com');
@@ -253,6 +253,55 @@ CREATE TABLE `dnsmgr_sctask` (
   `remark` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `did` (`did`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_axisnow_rule_automation`;
+CREATE TABLE `dnsmgr_axisnow_rule_automation` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) unsigned NOT NULL,
+  `domain_uuid` char(36) NOT NULL,
+  `rule_uuid` char(36) NOT NULL,
+  `rule_type` varchar(10) NOT NULL DEFAULT 'A',
+  `geo_isp` varchar(255) DEFAULT NULL,
+  `primary_pool` mediumtext NOT NULL,
+  `tide_enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `tide_start` char(5) DEFAULT NULL,
+  `tide_end` char(5) DEFAULT NULL,
+  `tide_pool` mediumtext DEFAULT NULL,
+  `failover_enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `failover_pool` mediumtext DEFAULT NULL,
+  `failure_threshold` tinyint(3) unsigned NOT NULL DEFAULT 3,
+  `check_interval` int(11) unsigned NOT NULL DEFAULT 300,
+  `fail_count` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `failover_state` varchar(20) NOT NULL DEFAULT 'armed',
+  `active_pool` varchar(20) NOT NULL DEFAULT 'primary',
+  `next_check_at` int(11) unsigned NOT NULL DEFAULT 0,
+  `last_check_at` int(11) unsigned NOT NULL DEFAULT 0,
+  `last_health_state` varchar(20) NOT NULL DEFAULT '',
+  `last_switch_at` int(11) unsigned NOT NULL DEFAULT 0,
+  `lock_until` int(11) unsigned NOT NULL DEFAULT 0,
+  `last_error` varchar(500) DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `account_rule` (`account_id`,`rule_uuid`),
+  KEY `domain_rule` (`account_id`,`domain_uuid`),
+  KEY `schedule` (`tide_enabled`,`failover_enabled`,`next_check_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `dnsmgr_axisnow_rule_automation_log`;
+CREATE TABLE `dnsmgr_axisnow_rule_automation_log` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `automation_id` int(11) unsigned NOT NULL,
+  `account_id` int(11) unsigned NOT NULL,
+  `rule_uuid` char(36) NOT NULL,
+  `action` varchar(40) NOT NULL,
+  `status` varchar(20) NOT NULL,
+  `message` varchar(500) NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `automation_time` (`automation_id`,`id`),
+  KEY `account_rule` (`account_id`,`rule_uuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `dnsmgr_domain_alias`;

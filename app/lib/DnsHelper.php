@@ -837,6 +837,42 @@ class DnsHelper
             'add' => true,
             'sort' => false,
         ],
+        'axisnow' => [
+            'name' => 'AxisNow',
+            'icon' => 'axisnow.png',
+            'note' => '用于 AxisNow 调度功能。租户名同时作为 dnsmgr 内部账户名称；调度管理列表优先展示备注，备注为空时展示租户名。',
+            'config' => [
+                'tenant' => [
+                    'name' => '租户名',
+                    'type' => 'input',
+                    'placeholder' => 'AxisNow 租户名称',
+                    'required' => true,
+                ],
+                'token' => [
+                    'name' => 'API 令牌',
+                    'type' => 'input',
+                    'placeholder' => 'AxisNow Client API Token',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'remark' => 0,
+            'status' => false,
+            'redirect' => false,
+            'log' => false,
+            'weight' => false,
+            'page' => true,
+            'add' => false,
+            'sort' => false,
+        ],
         'dynv6' => [
             'name' => 'dynv6',
             'icon' => 'dynv6.ico',
@@ -890,6 +926,7 @@ class DnsHelper
         'tencenteo' => ['DEF' => 'Default'],
         'dnsmgr' => ['DEF' => 'default'],
         'goedge' => ['DEF' => 'default'],
+        'axisnow' => ['DEF' => 'default'],
     ];
 
     public static function getList()

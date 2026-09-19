@@ -8,6 +8,7 @@ use think\facade\View;
 use think\facade\Cache;
 use app\lib\DnsHelper;
 use app\service\ExpireNoticeService;
+use app\service\AxisNowAutomationService;
 use app\utils\DnsQueryUtils;
 use Exception;
 
@@ -131,6 +132,9 @@ class Domain extends BaseController
             $dns = DnsHelper::getModel($id);
             if ($dns) {
                 if ($dns->check()) {
+                    if ($row['type'] === 'axisnow' && $type !== 'axisnow') {
+                        AxisNowAutomationService::removeAccount($id);
+                    }
                     Db::commit();
                     return json(['code' => 0, 'msg' => '修改域名账户成功！']);
                 } else {
@@ -143,8 +147,10 @@ class Domain extends BaseController
             }
         } elseif ($action == 'del') {
             $id = input('post.id/d');
+            $row = Db::name('account')->where('id', $id)->find();
             $dcount = DB::name('domain')->where('aid', $id)->count();
             if ($dcount > 0) return json(['code' => -1, 'msg' => '该域名账户下存在域名，无法删除']);
+            if ($row && $row['type'] === 'axisnow') AxisNowAutomationService::removeAccount($id);
             Db::name('account')->where('id', $id)->delete();
             return json(['code' => 0]);
         }
@@ -162,6 +168,7 @@ class Domain extends BaseController
         $types = [];
         foreach ($list as $row) {
             if (empty($row['type']) || !isset(DnsHelper::$dns_config[$row['type']])) continue;
+            if ($row['type'] === 'axisnow') continue;
             $name = $row['id'] . '_' . DnsHelper::$dns_config[$row['type']]['name'];
             if (!array_key_exists($row['type'], $types)) {
                 $types[$row['type']] = DnsHelper::$dns_config[$row['type']]['name'];
@@ -186,6 +193,7 @@ class Domain extends BaseController
         $types = [];
         foreach ($list as $row) {
             if (empty($row['type']) || !isset(DnsHelper::$dns_config[$row['type']])) continue;
+            if ($row['type'] === 'axisnow') continue;
             $accounts[$row['id']] = $row['id'] . '_' . DnsHelper::$dns_config[$row['type']]['name'];
             if (!array_key_exists($row['type'], $types)) {
                 $types[$row['type']] = DnsHelper::$dns_config[$row['type']]['name'];
