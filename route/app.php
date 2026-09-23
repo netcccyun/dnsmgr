@@ -30,6 +30,7 @@ Route::any('/quicklogin', 'auth/quicklogin');
 Route::any('/dmtask/status', 'dmonitor/status');
 Route::any('/optimizeip/status', 'optimizeip/status');
 Route::get('/cron', 'system/cron');
+Route::any('/qqbot/webhook', 'qqbot/webhook');
 
 Route::group(function () {
     Route::any('/', 'index/index');

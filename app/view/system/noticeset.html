@@ -118,6 +118,66 @@
 </div>
 </div>
 <div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">QQ机器人通知设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">AppID</label>
+	  <div class="col-sm-9"><input type="text" name="qqbot_appid" value="{:config_get('qqbot_appid')}" class="form-control" placeholder="QQ机器人开放平台的AppID"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">AppSecret</label>
+	  <div class="col-sm-9"><input type="text" name="qqbot_appsecret" value="{:config_get('qqbot_appsecret')}" class="form-control" placeholder="QQ机器人开放平台的AppSecret"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">Webhook回调地址</label>
+	  <div class="col-sm-9">
+		<div class="input-group">
+		  <input type="text" id="qqbot_webhook" class="form-control" value="{$qqbot_webhook}" readonly/>
+		  <span class="input-group-btn"><button type="button" class="btn btn-default" onclick="copyQqbotWebhook()">复制</button></span>
+		</div>
+	  </div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-3 control-label">绑定状态</label>
+	  <div class="col-sm-9"><p class="form-control-static">{if $qqbot_bind}<font color="green">已绑定</font>{else}<font color="red">未绑定</font>{/if}</p></div>
+	</div>
+	<div class="form-group">
+	  <div class="col-sm-offset-3 col-sm-9">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+		<button type="button" class="btn btn-default btn-block" data-toggle="modal" data-target="#modal-qqbot-help">使用说明</button>
+	  </div>
+	</div>
+  </form>
+</div>
+</div>
+<div class="modal" id="modal-qqbot-help" role="dialog" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">QQ机器人使用说明</h4>
+			</div>
+			<div class="modal-body">
+				<p><b>一、创建并配置机器人</b></p>
+				<p>1. 打开 <a href="https://q.qq.com/" target="_blank" rel="noreferrer">QQ 开放平台</a> ->「我的机器人」，创建机器人。</p>
+				<p>2. 创建的机器人不需要认证，也不需要上线。在机器人「开发设置」中，获取 AppID 和 AppSecret，填入本页并保存。</p>
+				<p>3. 在「开发设置」-「事件订阅与回调」中，选择 Webhook 接入方式。复制本页的 Webhook 回调地址并填写。</p>
+				<p>4. 接收事件配置，选择「C2C消息事件」并保存。</p>
+				<p><b>二、完成绑定</b></p>
+				<p>1. 在 QQ 中找到并添加你的机器人。</p>
+				<p>2. 向机器人发送任意一条私聊消息。</p>
+				<p>3. 收到绑定成功回复，且本页绑定状态变为「已绑定」后即可。</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="panel panel-info">
 <div class="panel-heading"><h3 class="panel-title">群机器人Webhook</h3></div>
 <div class="panel-body">
   <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
@@ -295,6 +355,33 @@ function webhooktest(){
 			layer.msg('服务器错误');
 		}
 	});
+}
+function copyQqbotWebhook(){
+	var input = document.getElementById('qqbot_webhook');
+	var value = input ? input.value : '';
+	if(!value){
+		layer.msg('没有可复制的内容');
+		return;
+	}
+	if(navigator.clipboard && window.isSecureContext){
+		navigator.clipboard.writeText(value).then(function(){
+			layer.msg('已复制', {icon: 1, time: 1000});
+		}, function(){
+			copyQqbotWebhookFallback(input);
+		});
+		return;
+	}
+	copyQqbotWebhookFallback(input);
+}
+function copyQqbotWebhookFallback(input){
+	input.focus();
+	input.select();
+	try {
+		document.execCommand('copy');
+		layer.msg('已复制', {icon: 1, time: 1000});
+	} catch (e) {
+		layer.msg('复制失败，请手动复制', {icon: 2});
+	}
 }
 function customwebhooktest(){
 	var ii = layer.load(2, {shade:[0.1,'#fff']});

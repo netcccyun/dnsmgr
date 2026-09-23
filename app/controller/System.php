@@ -22,6 +22,15 @@ class System extends BaseController
             $params['mail_name'] = $params['mail_name2'];
             unset($params['mail_name2']);
         }
+        if (array_key_exists('qqbot_appid', $params) || array_key_exists('qqbot_appsecret', $params)) {
+            $oldId = config_get('qqbot_appid', '');
+            $oldSecret = config_get('qqbot_appsecret', '');
+            $newId = array_key_exists('qqbot_appid', $params) ? (string) $params['qqbot_appid'] : $oldId;
+            $newSecret = array_key_exists('qqbot_appsecret', $params) ? (string) $params['qqbot_appsecret'] : $oldSecret;
+            if ($newId !== $oldId || $newSecret !== $oldSecret) {
+                $params['qqbot_openid'] = '';
+            }
+        }
         foreach ($params as $key => $value) {
             if (empty($key)) {
                 continue;
@@ -41,6 +50,8 @@ class System extends BaseController
     public function noticeset()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');
+        View::assign('qqbot_webhook', rtrim($this->request->root(true), '/') . '/qqbot/webhook');
+        View::assign('qqbot_bind', config_get('qqbot_openid') ? 1 : 0);
         return View::fetch();
     }
 

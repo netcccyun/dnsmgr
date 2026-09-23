@@ -57,6 +57,9 @@ class MsgNotice
             $content = "<strong>".$mail_title."</strong>\n".strip_tags($content);
             self::send_telegram_bot($content);
         }
+        if (config_get('notice_qqbot') == 1) {
+            self::send_qqbot($mail_title, $mail_content);
+        }
         if (config_get('notice_webhook') == 1) {
             $content = str_replace(['<br/>', '<b>', '</b>'], ["\n", '**', '**'], $mail_content);
             self::send_webhook($mail_title, $content);
@@ -143,6 +146,9 @@ class MsgNotice
             $content = "<strong>".$mail_title."</strong>\n".strip_tags($content);
             self::send_telegram_bot($content);
         }
+        if (config_get('cert_notice_qqbot') == 1 || config_get('cert_notice_qqbot') == 2 && !$result) {
+            self::send_qqbot($mail_title, $mail_content);
+        }
         if (config_get('cert_notice_webhook') == 1) {
             $content = str_replace(['*', '<br/>', '<b>', '</b>'], ['\*', "\n", '**', '**'], $mail_content);
             self::send_webhook($mail_title, $content);
@@ -173,6 +179,9 @@ class MsgNotice
             $content = str_replace('<br/>', "\n", $mail_content);
             $content = "<strong>".$mail_title."</strong>\n".strip_tags($content);
             self::send_telegram_bot($content);
+        }
+        if (config_get('expire_notice_qqbot') == 1 || config_get('expire_notice_qqbot') == 2) {
+            self::send_qqbot($mail_title, $mail_content);
         }
         if (config_get('expire_notice_webhook') == 1) {
             $content = str_replace(['*', '<br/>', '<b>', '</b>'], ['\*', "\n", '**', '**'], $mail_content);
@@ -269,6 +278,20 @@ class MsgNotice
             return true;
         } else {
             return $arr['description'] ?? '请求失败';
+        }
+    }
+
+    public static function send_qqbot($title, $content)
+    {
+        $appId = config_get('qqbot_appid');
+        $appSecret = config_get('qqbot_appsecret');
+        $openid = config_get('qqbot_openid');
+        if (!$appId || !$appSecret || !$openid) return false;
+        try {
+            $bot = new \app\lib\QqBot($appId, $appSecret);
+            return $bot->sendMarkdown($openid, \app\lib\QqBot::toMarkdown($title, $content));
+        } catch (\Exception $e) {
+            return $e->getMessage();
         }
     }
 
@@ -440,9 +463,6 @@ class MsgNotice
             }
             $options['body'] = $body;
         }
-
-        // 规范化头部
-        $options['headers'] = normalize_http_headers($options['headers']);
 
         try {
             $client = new \GuzzleHttp\Client();
