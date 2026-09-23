@@ -174,10 +174,17 @@ class aliyun implements DeployInterface
 
     private function deploy_esa_saas($cas_id, $config)
     {
-        $sitename = $config['esa_sitename'];
-        $saas_sitename = $config['esa_saas_sitename'];
+        $sitename = trim($config['esa_sitename'] ?? '');
         if (empty($sitename)) throw new Exception('ESA站点名称不能为空');
-        if (empty($saas_sitename)) throw new Exception('ESA SAAS域名不能为空');
+        $saas_input = $config['esa_saas_sitename'] ?? '';
+        if (!is_string($saas_input)) throw new Exception('ESA SAAS域名格式错误，请每行填写一个域名');
+        $saas_sitenames = [];
+        foreach (preg_split('/\r\n|\r|\n/', $saas_input) as $line) {
+            $domain = strtolower(trim($line));
+            if ($domain !== '') $saas_sitenames[] = $domain;
+        }
+        $saas_sitenames = array_unique($saas_sitenames);
+        if (empty($saas_sitenames)) throw new Exception('ESA SAAS域名不能为空');
 
         if ($config['region'] == 'ap-southeast-1') {
             $endpoint = 'esa.ap-southeast-1.aliyuncs.com';
@@ -196,40 +203,67 @@ class aliyun implements DeployInterface
         } catch (Exception $e) {
             throw new Exception('查询ESA站点列表失败：' . $e->getMessage());
         }
-        if ($data['TotalCount'] == 0) throw new Exception('ESA站点 ' . $sitename . ' 不存在');
+        if (empty($data['TotalCount']) || empty($data['Sites'])) throw new Exception('ESA站点 ' . $sitename . ' 不存在');
+        $site_id = filter_var($data['Sites'][0]['SiteId'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($site_id === false) throw new Exception('ESA站点 ' . $sitename . ' 返回的站点ID无效');
         $this->log('成功查询到' . $data['TotalCount'] . '个ESA站点');
-        $site_id = $data['Sites'][0]['SiteId'];
-        // 查询对应的saas域名
-        $param = [
-            'Action' => 'ListCustomHostnames',
-            'SiteName' => $saas_sitename,
-            'SiteId' => $site_id,
-            'SiteSearchType' => 'exact',
-        ];
-        try {
-            $saas_data = $client->request($param, 'GET');
-        } catch (Exception $e) {
-            throw new Exception('查询ESA saas域名失败：' . $e->getMessage());
-        }
-        if ($saas_data['TotalCount'] == 0) throw new Exception('ESA saas站点 ' . $saas_sitename . ' 不存在');
-        $saas_hostname_id = $saas_data['Hostnames'][0]['HostnameId'];
 
-        $param = [
-            'Action' => 'UpdateCustomHostname',
-            'HostnameId' => $saas_hostname_id,
-            'SslFlag' => 'on',
-            'CertType' => 'cas',
-            'CasId' => $cas_id,
-            'CasRegion' => $config['region'],
-        ];
-        $this->log('ESA SAAS站点部署参数 ' . json_encode($param));
-        try {
-            $saas_deploy_result = $client->request($param);
-            $this->log('ESA SAAS站点部署结果 ' . json_encode($saas_deploy_result));
-        } catch (Exception $e) {
-            throw new Exception('部署失败：' . $e->getMessage());
+        $success = 0;
+        $failed = 0;
+        $first_error = null;
+        foreach ($saas_sitenames as $saas_sitename) {
+            $stage = '查询';
+            try {
+                $param = [
+                    'Action' => 'ListCustomHostnames',
+                    'Hostname' => $saas_sitename,
+                    'SiteId' => $site_id,
+                    'NameMatchType' => 'exact',
+                ];
+                $saas_data = $client->request($param, 'GET');
+                if (!isset($saas_data['TotalCount']) || !isset($saas_data['Hostnames']) || !is_array($saas_data['Hostnames'])) {
+                    throw new Exception('返回的域名列表无效');
+                }
+                if ($saas_data['TotalCount'] == 0 || empty($saas_data['Hostnames'])) throw new Exception('域名不存在');
+
+                $matches = [];
+                foreach ($saas_data['Hostnames'] as $hostname) {
+                    if (strcasecmp($hostname['Hostname'] ?? '', $saas_sitename) === 0 && (string)($hostname['SiteId'] ?? '') === (string)$site_id) {
+                        $matches[] = $hostname;
+                    }
+                }
+                if (empty($matches)) throw new Exception('返回的域名或站点不匹配');
+                if (count($matches) > 1) throw new Exception('返回多个匹配域名，无法确定部署目标');
+                $saas_hostname_id = filter_var($matches[0]['HostnameId'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($saas_hostname_id === false) throw new Exception('返回的HostnameId无效');
+
+                $stage = '部署';
+                $param = [
+                    'Action' => 'UpdateCustomHostname',
+                    'HostnameId' => $saas_hostname_id,
+                    'SslFlag' => 'on',
+                    'CertType' => 'cas',
+                    'CasId' => $cas_id,
+                    'CasRegion' => $config['region'],
+                ];
+                $this->log('ESA SAAS站点 ' . $saas_sitename . ' 部署参数 ' . json_encode($param));
+                $saas_deploy_result = $client->request($param);
+                $this->log('ESA SAAS站点 ' . $saas_sitename . ' 部署结果 ' . json_encode($saas_deploy_result));
+                $this->log('ESA SAAS站点 ' . $saas_sitename . ' 证书添加成功！');
+                $success++;
+            } catch (Exception $e) {
+                $error = 'ESA SAAS站点 ' . $saas_sitename . ' ' . $stage . '失败：' . $e->getMessage();
+                $this->log('[Error] ' . $error);
+                if ($first_error === null) $first_error = $error;
+                $failed++;
+            }
         }
-        $this->log('ESA SAAS站点 ' . $saas_sitename . ' 证书添加成功！');
+        $summary = 'ESA SAAS证书部署完成：成功 ' . $success . ' 个，失败 ' . $failed . ' 个';
+        $this->log($summary);
+        if ($failed > 0) {
+            $summary .= '；详见部署日志；首个错误：';
+            throw new Exception($summary . mb_strcut($first_error, 0, max(0, 300 - strlen($summary)), 'UTF-8'));
+        }
     }
 
     private function deploy_esa($cas_id, $cert_name, $config)
