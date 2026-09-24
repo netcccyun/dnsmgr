@@ -296,106 +296,6 @@ class DeployHelper
             ],
             'taskinputs' => [],
         ],
-        'nginxproxymanager' => [
-            'name' => 'Nginx Proxy Manager',
-            'class' => 1,
-            'icon' => 'npm.svg',
-            'desc' => '更新 Nginx Proxy Manager 的自定义证书并自动绑定 Proxy Host',
-            'note' => '填写 Nginx Proxy Manager 面板地址与登录账号密码，系统将通过官方 API 登录并执行证书更新。',
-            'tasknote' => '如填写证书ID则优先更新该自定义证书；留空时系统会根据当前证书订单的域名在 NPM 中匹配 Proxy Host，并在首次成功后自动保存证书ID，后续续期优先走该ID，不再依赖域名匹配。',
-            'inputs' => [
-                'url' => [
-                    'name' => '面板地址',
-                    'type' => 'input',
-                    'placeholder' => 'Nginx Proxy Manager 面板地址',
-                    'note' => '填写规则如：http://192.168.1.100:81 ，不要带 /api 等后缀',
-                    'required' => true,
-                ],
-                'email' => [
-                    'name' => '登录邮箱',
-                    'type' => 'input',
-                    'placeholder' => 'NPM 登录邮箱',
-                    'validator' => 'email',
-                    'required' => true,
-                ],
-                'password' => [
-                    'name' => '登录密码',
-                    'type' => 'input',
-                    'placeholder' => 'NPM 登录密码',
-                    'required' => true,
-                ],
-                'proxy' => [
-                    'name' => '使用代理服务器',
-                    'type' => 'radio',
-                    'options' => [
-                        '0' => '否',
-                        '1' => '是',
-                    ],
-                    'value' => '0'
-                ],
-            ],
-            'taskinputs' => [
-                'id' => [
-                    'name' => '证书ID',
-                    'type' => 'input',
-                    'placeholder' => '留空则按域名匹配 Proxy Host 并自动回填',
-                    'note' => '优先级最高。填写后将直接更新该自定义证书ID；仅支持 NPM 中 provider 为 other 的自定义证书。',
-                ],
-                'host_id' => [
-                    'name' => 'Proxy Host ID',
-                    'type' => 'input',
-                    'placeholder' => '可留空，留空则按域名自动匹配',
-                    'note' => '可选。未填写证书ID时，若填写此项则仅处理指定 Proxy Host；若留空则按当前证书订单域名自动查找匹配的 Proxy Host。',
-                ],
-            ],
-        ],
-        'directadmin' => [
-            'name' => 'DirectAdmin',
-            'class' => 1,
-            'icon' => 'directadmin.png',
-            'desc' => '通过 DirectAdmin 官方 API 自动部署域名 SSL 证书',
-            'note' => '使用 HTTPS 和 HTTP Basic Authentication。认证密码可填写 DirectAdmin 账户密码；如服务商开放 Login Key，也可填写 Login Key。',
-            'tasknote' => '填写 DirectAdmin 中已存在的目标域名。多个域名可用换行或逗号分隔；系统会分别调用 CMD_API_SSL 更新证书。',
-            'inputs' => [
-                'url' => [
-                    'name' => '面板地址',
-                    'type' => 'input',
-                    'placeholder' => 'https://server.example.com:2222',
-                    'note' => '必须使用 HTTPS，不要带 CMD_API_SSL 等路径',
-                    'required' => true,
-                ],
-                'username' => [
-                    'name' => '用户名',
-                    'type' => 'input',
-                    'placeholder' => 'DirectAdmin 登录用户名',
-                    'required' => true,
-                ],
-                'password' => [
-                    'name' => '认证密码',
-                    'type' => 'input',
-                    'placeholder' => 'DirectAdmin 账户密码或 Login Key',
-                    'required' => true,
-                ],
-                'proxy' => [
-                    'name' => '使用代理服务器',
-                    'type' => 'radio',
-                    'options' => [
-                        '0' => '否',
-                        '1' => '是',
-                    ],
-                    'value' => '0',
-                ],
-            ],
-            'taskinputs' => [
-                'domain' => [
-                    'name' => 'DirectAdmin 域名',
-                    'type' => 'textarea',
-                    'placeholder' => "example.com\nsecond.example",
-                    'note' => '必须是该 DirectAdmin 账户中已存在的域名；多个域名可换行或用逗号分隔。',
-                    'required' => true,
-                ],
-            ],
-        ],
         'btwaf' => [
             'name' => '堡塔云WAF',
             'class' => 1,
@@ -1026,6 +926,100 @@ class DeployHelper
                 ],
             ],
         ],
+        'cloudpanel' => [
+            'name' => 'CloudPanel',
+            'class' => 1,
+            'icon' => 'cloudpanel.svg',
+            'desc' => '',
+            'note' => '使用管理员账号密码登录面板。暂不支持已开启双因素认证的账户。',
+            'tasknote' => '',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'CloudPanel 面板地址',
+                    'note' => '填写规则如：https://192.168.1.100:8443 ，不要带其他后缀',
+                    'required' => true,
+                ],
+                'username' => [
+                    'name' => '登录用户名',
+                    'type' => 'input',
+                    'placeholder' => '管理员用户名',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '登录密码',
+                    'type' => 'input',
+                    'placeholder' => '管理员密码',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'sites' => [
+                    'name' => '网站域名列表',
+                    'type' => 'textarea',
+                    'placeholder' => '填写要部署证书的网站主域名，每行一个',
+                    'note' => '必须与 CloudPanel 站点列表中的主域名一致',
+                    'required' => true,
+                ],
+            ],
+        ],
+        'directadmin' => [
+            'name' => 'DirectAdmin',
+            'class' => 1,
+            'icon' => 'directadmin.png',
+            'desc' => '通过 DirectAdmin 官方 API 自动部署域名 SSL 证书',
+            'note' => '使用 HTTPS 和 HTTP Basic Authentication。认证密码可填写 DirectAdmin 账户密码；如服务商开放 Login Key，也可填写 Login Key。',
+            'tasknote' => '填写 DirectAdmin 中已存在的目标域名。多个域名可用换行或逗号分隔；系统会分别调用 CMD_API_SSL 更新证书。',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'https://server.example.com:2222',
+                    'note' => '必须使用 HTTPS，不要带 CMD_API_SSL 等路径',
+                    'required' => true,
+                ],
+                'username' => [
+                    'name' => '用户名',
+                    'type' => 'input',
+                    'placeholder' => 'DirectAdmin 登录用户名',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '认证密码',
+                    'type' => 'input',
+                    'placeholder' => 'DirectAdmin 账户密码或 Login Key',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0',
+                ],
+            ],
+            'taskinputs' => [
+                'domain' => [
+                    'name' => 'DirectAdmin 域名',
+                    'type' => 'textarea',
+                    'placeholder' => "example.com\nsecond.example",
+                    'note' => '必须是该 DirectAdmin 账户中已存在的域名；多个域名可换行或用逗号分隔。',
+                    'required' => true,
+                ],
+            ],
+        ],
         'synology' => [
             'name' => '群晖面板',
             'class' => 1,
@@ -1160,6 +1154,59 @@ ctrl+x 保存退出<br/>',
                 ],
             ],
             'taskinputs' => [],
+        ],
+        'nginxproxymanager' => [
+            'name' => 'Nginx Proxy Manager',
+            'class' => 1,
+            'icon' => 'npm.svg',
+            'desc' => '更新 Nginx Proxy Manager 的自定义证书并自动绑定 Proxy Host',
+            'note' => '填写 Nginx Proxy Manager 面板地址与登录账号密码，系统将通过官方 API 登录并执行证书更新。',
+            'tasknote' => '如填写证书ID则优先更新该自定义证书；留空时系统会根据当前证书订单的域名在 NPM 中匹配 Proxy Host，并在首次成功后自动保存证书ID，后续续期优先走该ID，不再依赖域名匹配。',
+            'inputs' => [
+                'url' => [
+                    'name' => '面板地址',
+                    'type' => 'input',
+                    'placeholder' => 'Nginx Proxy Manager 面板地址',
+                    'note' => '填写规则如：http://192.168.1.100:81 ，不要带 /api 等后缀',
+                    'required' => true,
+                ],
+                'email' => [
+                    'name' => '登录邮箱',
+                    'type' => 'input',
+                    'placeholder' => 'NPM 登录邮箱',
+                    'validator' => 'email',
+                    'required' => true,
+                ],
+                'password' => [
+                    'name' => '登录密码',
+                    'type' => 'input',
+                    'placeholder' => 'NPM 登录密码',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'id' => [
+                    'name' => '证书ID',
+                    'type' => 'input',
+                    'placeholder' => '留空则按域名匹配 Proxy Host 并自动回填',
+                    'note' => '优先级最高。填写后将直接更新该自定义证书ID；仅支持 NPM 中 provider 为 other 的自定义证书。',
+                ],
+                'host_id' => [
+                    'name' => 'Proxy Host ID',
+                    'type' => 'input',
+                    'placeholder' => '可留空，留空则按域名自动匹配',
+                    'note' => '可选。未填写证书ID时，若填写此项则仅处理指定 Proxy Host；若留空则按当前证书订单域名自动查找匹配的 Proxy Host。',
+                ],
+            ],
         ],
         'proxmox' => [
             'name' => 'Proxmox VE',
