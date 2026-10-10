@@ -33,5 +33,8 @@ return [
 
     'version' => '1052',
 
+    // 当前发布版本（GitHub Release tag），随官方发版同步更新
+    'release' => '2.21',
+
     'dbversion' => '1049'
 ];

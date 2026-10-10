@@ -1,0 +1,137 @@
+{extend name="common/layout" /}
+{block name="title"}在线更新{/block}
+{block name="main"}
+<div class="row">
+<div class="col-xs-12 col-sm-8 col-lg-6 center-block" style="float: none;">
+
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">在线更新说明</h3></div>
+<div class="panel-body">
+  <p><li>当前版本：<b>{$current_text}</b></li></p>
+  <p><li>更新方式：从 GitHub Release 下载最新安装包，覆盖替换程序文件。</li></p>
+  <p><li>更新前会自动备份当前版本到历史版本目录，备份路径：<code>runtime/backup/</code></li></p>
+  <p><li>更新时会自动保留以下文件/目录：<code>{$keep_paths}</code></li></p>
+  <p><li>在首页版本信息中点击更新按钮即可执行在线更新。</li></p>
+</div>
+</div>
+
+<div class="panel panel-warning">
+<div class="panel-heading"><h3 class="panel-title">环境检测</h3></div>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr><th>检测项</th><th>状态</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>ZIP 扩展</td>
+            <td>{if $zip_ext}<font color="green">已安装</font>{else}<font color="red">未安装（无法更新）</font>{/if}</td>
+        </tr>
+        <tr>
+            <td>目录写入权限</td>
+            <td>{if $writable_ok}<font color="green">正常</font>{else}<font color="red">无权限：{$writable_bad}</font>{/if}</td>
+        </tr>
+    </tbody>
+</table>
+<div class="panel-footer">
+  <p>若为 Docker 或只读环境，请挂载可写目录后再执行更新，否则更新会失败。</p>
+</div>
+</div>
+
+<div class="panel panel-intro">
+<div class="panel-heading"><h3 class="panel-title">更新设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">GitHub 仓库</label>
+	  <div class="col-sm-8"><input type="text" name="update_repo" value="{:config_get('update_repo', 'netcccyun/dnsmgr')}" class="form-control" placeholder="netcccyun/dnsmgr"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">加速镜像地址</label>
+	  <div class="col-sm-8"><input type="text" name="update_mirror" value="{:config_get('update_mirror')}" class="form-control" placeholder="留空表示直连，例如：https://ghproxy.com"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">校验安装包</label>
+	  <div class="col-sm-8"><select class="form-control" name="update_check_sha" default="{:config_get('update_check_sha', '1')}"><option value="1">开启（推荐）</option><option value="0">关闭</option></select></div>
+	</div>
+	<div class="form-group">
+	  <div class="col-sm-offset-4 col-sm-8">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+	  </div>
+	</div>
+  </form>
+</div>
+<div class="panel-footer">
+  <p>加速镜像地址会作为前缀拼接在 GitHub 地址之前，用于加速下载，留空表示直连。若服务器已配置代理，可留空。</p>
+</div>
+</div>
+
+<div class="panel panel-success">
+<div class="panel-heading"><h3 class="panel-title">历史版本</h3></div>
+<div class="table-responsive">
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>备份文件</th>
+            <th style="width:80px;">大小</th>
+            <th style="width:145px;">备份时间</th>
+        </tr>
+    </thead>
+    <tbody>
+        {if empty($backup_list)}
+        <tr><td colspan="3" class="text-center text-muted">暂无历史版本备份</td></tr>
+        {else /}
+        {volist name="backup_list" id="vo"}
+        <tr>
+            <td style="word-break:break-all;">{$vo.name}</td>
+            <td>{:number_format($vo['size']/1048576, 2)} MB</td>
+            <td>{$vo.time}</td>
+        </tr>
+        {/volist}
+        {/if}
+    </tbody>
+</table>
+</div>
+<div class="panel-footer">
+  <p>历史版本备份文件存放在 <code>runtime/backup/</code> 目录，如需回滚可手动解压覆盖。</p>
+</div>
+</div>
+
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script>
+var items = $("select[default]");
+for (i = 0; i < items.length; i++) {
+	$(items[i]).val($(items[i]).attr("default")||0);
+}
+function saveSetting(obj){
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'POST',
+		url : '/system/set',
+		data : $(obj).serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert('设置保存成功！', {
+					icon: 1,
+					closeBtn: false
+				}, function(){
+				  window.location.reload()
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+	return false;
+}
+</script>
+{/block}

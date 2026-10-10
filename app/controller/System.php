@@ -61,6 +61,21 @@ class System extends BaseController
         return View::fetch();
     }
 
+    public function updateset()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        $service = new \app\service\UpdateService();
+        $bad = $service->checkWritable();
+        View::assign('current_release', \app\service\UpdateService::getCurrentRelease());
+        View::assign('current_text', \app\service\UpdateService::getVersionText());
+        View::assign('keep_paths', implode('、', \app\service\UpdateService::keepPaths()));
+        View::assign('writable_bad', implode('、', $bad));
+        View::assign('writable_ok', empty($bad));
+        View::assign('zip_ext', class_exists('ZipArchive'));
+        View::assign('backup_list', $service->listBackups());
+        return View::fetch();
+    }
+
     public function mailtest()
     {
         if (!checkPermission(2)) return $this->alert('error', '无权限');

@@ -68,6 +68,13 @@ class Index extends BaseController
         ];
         View::assign('info', $info);
         View::assign('checkupdate', '//auth.cccyun.cc/app/dnsmgr.php?ver=' . config('app.version'));
+
+        // 在线更新：当前发布版本 + 是否管理员
+        $release = \app\service\UpdateService::getCurrentRelease();
+        View::assign('current_release', $release);
+        View::assign('current_text', \app\service\UpdateService::getVersionText());
+        View::assign('version_url', \app\service\UpdateService::releaseUrl($release));
+        View::assign('is_admin', $this->request->user['level'] == 2);
         return view();
     }
 
