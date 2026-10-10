@@ -161,16 +161,6 @@
                 <h3 class="box-title">版本信息</h3>
             </div>
             <ul class="list-group text-dark" id="checkupdate"></ul>
-            <div class="box-body" style="padding:10px 15px;">
-                <p style="margin-bottom:8px;">当前版本：<b id="current_release">{$current_text}</b>
-                    <a href="{$version_url}" target="_blank" class="pull-right text-muted" style="font-size:12px;">查看详情</a>
-                </p>
-                {if $is_admin}
-                <button type="button" class="btn btn-primary btn-block" id="btn_update">
-                    <i class="fa fa-cloud-download"></i> <span id="btn_update_text">检测更新</span>
-                </button>
-                {/if}
-            </div>
         </div>
 		<button class="btn btn-default btn-block" onclick="cleancache()"><i class="fa fa-trash"></i>清理缓存</button><br/>
     </div>
@@ -216,6 +206,8 @@ $(document).ready(function(){
 				jsonpCallback: 'callback'
 			}).done(function(data){
 				$("#checkupdate").html(data.msg);
+				// 仅在原版「发现新版本！」一行右侧注入「立即更新」按钮，其余显示逻辑保持原样
+				injectUpdateButton();
 			})
         }
     })
@@ -241,7 +233,28 @@ function cleancache(){
 var updateInfo = null;
 var updateTimer = null;
 
-$(document).on('click', '#btn_update', function(){
+// 注入用的按钮 HTML：仅管理员且服务器支持 zip 时才输出
+var updBtnHtml = '{if $is_admin && $zip_ext}<button type="button" class="btn btn-danger btn-xs pull-right js-upd"><i class="fa fa-cloud-download"></i> 立即更新</button>{/if}';
+
+/**
+ * 在原版「发现新版本！」一行的右侧插入「立即更新」按钮，
+ * 原有列表内容与显示逻辑不做任何修改
+ */
+function injectUpdateButton(){
+    if(updBtnHtml === '') return;
+    if($('#checkupdate').find('.js-upd').length > 0) return;
+    var $hit = null;
+    $('#checkupdate font').each(function(){
+        if($(this).text().indexOf('\u53d1\u73b0\u65b0\u7248\u672c') !== -1){
+            $hit = $(this).closest('li');
+            return false;
+        }
+    });
+    if(!$hit || $hit.length === 0) return;
+    $hit.first().append(updBtnHtml);
+}
+
+$(document).on('click', '.js-upd', function(){
     var btn = $(this);
     if(updateInfo === null){
         doCheckUpdate(btn);
@@ -251,7 +264,8 @@ $(document).on('click', '#btn_update', function(){
 });
 
 function doCheckUpdate(btn){
-    btn.prop('disabled', true);
+    var label = btn.html();
+    btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> 检测中…');
     var ii = layer.load(2);
     $.ajax({
         type: 'POST',
@@ -259,25 +273,17 @@ function doCheckUpdate(btn){
         dataType: 'json',
         success: function(res){
             layer.close(ii);
-            btn.prop('disabled', false);
+            btn.prop('disabled', false).html(label);
             if(res.code !== 0){
                 layer.msg(res.msg || '检测失败', {icon: 2});
                 return;
             }
             updateInfo = res.data;
-            var text;
-            if(updateInfo.has_update){
-                text = '更新到 ' + updateInfo.latest_text;
-            }else{
-                text = '重新安装 ' + updateInfo.latest_text;
-            }
-            $('#btn_update_text').text(text);
-            $('#btn_update').removeClass('btn-primary').addClass(updateInfo.has_update ? 'btn-danger' : 'btn-success');
             confirmUpdate();
         },
         error: function(){
             layer.close(ii);
-            btn.prop('disabled', false);
+            btn.prop('disabled', false).html(label);
             layer.msg('服务器错误', {icon: 2});
         }
     });
@@ -311,7 +317,7 @@ function startUpdate(){
             layer.close(ii);
             if(res.code !== 0){
                 layer.alert(res.msg || '更新失败', {icon: 2, title: '更新失败'});
-                $('#btn_update').prop('disabled', false);
+                $('.js-upd').prop('disabled', false);
                 return;
             }
             if(res.data.mode === 'sync'){
@@ -326,7 +332,7 @@ function startUpdate(){
         error: function(){
             layer.close(ii);
             layer.alert('请求失败，请检查服务器状态', {icon: 2, title: '更新失败'});
-            $('#btn_update').prop('disabled', false);
+            $('.js-upd').prop('disabled', false);
         }
     });
 }
@@ -379,7 +385,7 @@ function pollProgress(token, layerIndex){
                 $('#upd_bar').removeClass('active progress-bar-striped').addClass('progress-bar-danger');
                 layer.close(layerIndex);
                 layer.alert(d.error || d.message || '更新失败', {icon: 2, title: '更新失败'});
-                $('#btn_update').prop('disabled', false);
+                $('.js-upd').prop('disabled', false);
             }else{
                 // 卡住检测：进度长时间未变化
                 if(updateLastKey === (d.step + '_' + d.percent)){
