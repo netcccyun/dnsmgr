@@ -64,45 +64,41 @@ class axisnow implements DeployInterface
         $uuid = isset($info['uuid']) ? $info['uuid'] : null;
 
         if ($uuid) {
-            // 尝试获取已存在的证书，存在则更新证书内容
+            // AxisNow 的 PUT 接口只能修改名称，证书内容变化时必须重新上传。
             try {
-                $this->request('GET', '/client/v1/certificates/' . $uuid, null);
-                $this->log('证书' . $cert_name . '已存在，UUID:' . $uuid);
-                $param = [
-                    'name' => $cert_name,
-                    'certificate' => $fullchain,
-                    'private_key' => $privatekey,
-                ];
-                $this->request('PUT', '/client/v1/certificates/' . $uuid, $param);
-                $this->log('证书更新成功，UUID:' . $uuid);
+                $existing = $this->request('GET', '/client/v1/certificates/' . $uuid, null);
+                if (is_array($existing) && isset($existing['certificate']) && is_string($existing['certificate'])
+                    && @openssl_x509_fingerprint($existing['certificate'], 'sha256') === openssl_x509_fingerprint($fullchain, 'sha256')) {
+                    $this->log('相同证书' . $cert_name . '已存在，UUID:' . $uuid);
+                    return;
+                }
+                $this->log('原证书内容不同或无法核对，将上传新证书，原UUID:' . $uuid);
             } catch (Exception $e) {
-                $this->log('原证书获取或更新失败(' . $e->getMessage() . ')，将重新上传证书');
-                $uuid = null;
+                $this->log('原证书获取失败(' . $e->getMessage() . ')，将重新上传证书');
             }
         }
 
-        if (!$uuid) {
-            // 创建新证书
-            $param = [
-                'type' => 'upload',
-                'name' => $cert_name,
-                'certificate' => $fullchain,
-                'private_key' => $privatekey,
-            ];
-            try {
-                $result = $this->request('POST', '/client/v1/certificates', $param);
-            } catch (Exception $e) {
-                throw new Exception('上传证书失败:' . $e->getMessage());
+        $param = [
+            'type' => 'upload',
+            'name' => $cert_name,
+            'certificate' => $fullchain,
+            'private_key' => $privatekey,
+        ];
+        try {
+            $result = $this->request('POST', '/client/v1/certificates', $param);
+            if (!is_array($result) || !isset($result['uuid']) || !is_string($result['uuid']) || trim($result['uuid']) === '') {
+                throw new Exception('响应未返回证书UUID');
             }
-            $uuid = $result['uuid'];
-            $this->log('上传证书成功，UUID:' . $uuid);
+        } catch (Exception $e) {
+            throw new Exception('上传证书失败:' . $e->getMessage());
         }
 
-        // 保存UUID，供下一次更新证书使用
-        $info['uuid'] = $uuid;
+        // 仅在上传成功后保存新UUID，供下一次部署核对证书内容。
+        $info['uuid'] = $result['uuid'];
+        $this->log('上传证书成功，UUID:' . $info['uuid']);
     }
 
-    private function request($method, $path, $data = null)
+    protected function request($method, $path, $data = null)
     {
         $url = 'https://api.axisnow.io' . $path;
         $headers = [
