@@ -193,10 +193,6 @@ function getSid()
 {
     return md5(uniqid(mt_rand(), true) . microtime());
 }
-function getMd5Pwd($pwd, $salt = null)
-{
-    return md5(md5($pwd) . md5('1277180438'.$salt));
-}
 
 function isNullOrEmpty($str)
 {
