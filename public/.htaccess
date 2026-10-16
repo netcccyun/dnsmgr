@@ -2,10 +2,8 @@
   Options +FollowSymlinks -Multiviews
   RewriteEngine On
   RewriteBase /
-
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteRule ^(.*)$ index.php [L,QSA,E=PATH_INFO:/$1]
-
+  RewriteRule ^(.*)$ index.php?s=$1 [L,QSA]
   SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 </IfModule>
