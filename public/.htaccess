@@ -2,7 +2,6 @@
   Options +FollowSymlinks -Multiviews
   RewriteEngine On
   RewriteBase /
-  # 不是文件、不是目录才转发到index.php
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteRule ^(.*)$ index.php?s=$1 [L,QSA]
