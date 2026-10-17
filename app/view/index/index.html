@@ -10,6 +10,9 @@
 .query-result{
     word-break: break-all;
 }
+/* 更新进度弹窗：为步骤文字预留高度，避免 layer 尺寸变化产生滚动条 */
+#upd_step{line-height:16px;min-height:32px;}
+.updwrap .layui-layer-content{overflow:hidden;}
 </style>
 <div class="row">
 	<div class="col-md-3 col-xs-6">
@@ -203,6 +206,8 @@ $(document).ready(function(){
 				jsonpCallback: 'callback'
 			}).done(function(data){
 				$("#checkupdate").html(data.msg);
+				// 仅在原版「发现新版本！」一行右侧注入「立即更新」按钮，其余显示逻辑保持原样
+				injectUpdateButton();
 			})
         }
     })
@@ -222,6 +227,197 @@ function cleancache(){
 			layer.msg('服务器错误');
 		}
 	});
+}
+
+// ============ 在线更新 ============
+var updateInfo = null;
+var updateTimer = null;
+
+// 注入用的按钮 HTML：仅管理员且服务器支持 zip 时才输出
+var updBtnHtml = '{if $is_admin && $zip_ext}<button type="button" class="btn btn-danger btn-xs pull-right js-upd"><i class="fa fa-cloud-download"></i> 立即更新</button>{/if}';
+
+/**
+ * 在原版「发现新版本！」一行的右侧插入「立即更新」按钮，
+ * 原有列表内容与显示逻辑不做任何修改
+ */
+function injectUpdateButton(){
+    if(updBtnHtml === '') return;
+    if($('#checkupdate').find('.js-upd').length > 0) return;
+    var $hit = null;
+    $('#checkupdate font').each(function(){
+        if($(this).text().indexOf('\u53d1\u73b0\u65b0\u7248\u672c') !== -1){
+            $hit = $(this).closest('li');
+            return false;
+        }
+    });
+    if(!$hit || $hit.length === 0) return;
+    $hit.first().append(updBtnHtml);
+}
+
+$(document).on('click', '.js-upd', function(){
+    var btn = $(this);
+    if(updateInfo === null){
+        doCheckUpdate(btn);
+    }else{
+        confirmUpdate();
+    }
+});
+
+function doCheckUpdate(btn){
+    var label = btn.html();
+    btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> 检测中…');
+    var ii = layer.load(2);
+    $.ajax({
+        type: 'POST',
+        url: '/update/check',
+        dataType: 'json',
+        success: function(res){
+            layer.close(ii);
+            btn.prop('disabled', false).html(label);
+            if(res.code !== 0){
+                layer.msg(res.msg || '检测失败', {icon: 2});
+                return;
+            }
+            updateInfo = res.data;
+            confirmUpdate();
+        },
+        error: function(){
+            layer.close(ii);
+            btn.prop('disabled', false).html(label);
+            layer.msg('服务器错误', {icon: 2});
+        }
+    });
+}
+
+function confirmUpdate(){
+    if(updateInfo === null) return;
+    var isUpdate = updateInfo.has_update;
+    var title = isUpdate ? '确认更新' : '确认重新安装';
+    var content = isUpdate
+        ? '即将从 <b>' + updateInfo.current_text + '</b> 更新到 <b>' + updateInfo.latest_text + '</b>，<br>更新前会自动备份当前版本到历史版本目录。<br><br>更新过程中请勿关闭页面，确定继续吗？'
+        : '当前已是最新版本 <b>' + updateInfo.latest_text + '</b>，<br>将重新下载并覆盖安装，确定继续吗？';
+    layer.confirm(content, {
+        title: title,
+        btn: ['确定','取消'],
+        icon: 3
+    }, function(index){
+        layer.close(index);
+        startUpdate();
+    });
+}
+
+function startUpdate(){
+    var ii = layer.load(2);
+    $.ajax({
+        type: 'POST',
+        url: '/update/start',
+        dataType: 'json',
+        timeout: 600000,
+        success: function(res){
+            layer.close(ii);
+            if(res.code !== 0){
+                layer.alert(res.msg || '更新失败', {icon: 2, title: '更新失败'});
+                $('.js-upd').prop('disabled', false);
+                return;
+            }
+            if(res.data.mode === 'sync'){
+                layer.alert('更新完成，页面将在 3 秒后刷新。', {icon: 1, title: '更新成功'}, function(i){
+                    layer.close(i);
+                    location.reload();
+                });
+            }else{
+                showProgressLayer(res.data.token);
+            }
+        },
+        error: function(){
+            layer.close(ii);
+            layer.alert('请求失败，请检查服务器状态', {icon: 2, title: '更新失败'});
+            $('.js-upd').prop('disabled', false);
+        }
+    });
+}
+
+function showProgressLayer(token){
+    var html = '<div style="padding:20px 25px;text-align:center;">'
+        + '<div id="upd_msg" style="margin-bottom:15px;font-size:14px;">正在准备…</div>'
+        + '<div class="progress" style="margin-bottom:10px;"><div id="upd_bar" class="progress-bar progress-bar-striped active" role="progressbar" style="width:0%;">0%</div></div>'
+        + '<div id="upd_step" style="font-size:12px;color:#999;"></div>'
+        + '</div>';
+    var layerIndex = layer.open({
+        type: 1,
+        title: '正在更新',
+        content: html,
+        area: ['460px', 'auto'],
+        skin: 'updwrap',
+        closeBtn: 0,
+        shadeClose: false
+    });
+
+    pollProgress(token, layerIndex);
+    updateTimer = setInterval(function(){
+        pollProgress(token, layerIndex);
+    }, 1000);
+}
+
+function pollProgress(token, layerIndex){
+    $.ajax({
+        type: 'GET',
+        url: '/update/progress',
+        data: {token: token},
+        dataType: 'json',
+        success: function(res){
+            if(res.code !== 0) return;
+            var d = res.data;
+            var percent = parseInt(d.percent) || 0;
+            $('#upd_bar').css('width', percent + '%').text(percent + '%');
+            $('#upd_msg').html(d.message || '');
+            $('#upd_step').text(stepText(d.step));
+            if(d.status === 'success'){
+                clearInterval(updateTimer);
+                $('#upd_bar').removeClass('active progress-bar-striped').addClass('progress-bar-success');
+                layer.close(layerIndex);
+                layer.alert('更新完成，页面将在 3 秒后刷新。', {icon: 1, title: '更新成功'}, function(i){
+                    layer.close(i);
+                    location.reload();
+                });
+            }else if(d.status === 'failed'){
+                clearInterval(updateTimer);
+                $('#upd_bar').removeClass('active progress-bar-striped').addClass('progress-bar-danger');
+                layer.close(layerIndex);
+                layer.alert(d.error || d.message || '更新失败', {icon: 2, title: '更新失败'});
+                $('.js-upd').prop('disabled', false);
+            }else{
+                // 卡住检测：进度长时间未变化
+                if(updateLastKey === (d.step + '_' + d.percent)){
+                    updateStallCount++;
+                }else{
+                    updateStallCount = 0;
+                    updateLastKey = d.step + '_' + d.percent;
+                }
+                if(updateStallCount === 60){
+                    $('#upd_step').append('<br><font color="red">更新进度长时间未变化，后台进程可能已中断。请稍后刷新页面查看当前版本，必要时手动执行：php think update:run ' + token + '</font>');
+                }
+            }
+        }
+    });
+}
+
+var updateLastKey = '';
+var updateStallCount = 0;
+
+function stepText(step){
+    var map = {
+        'init': '',
+        'check': '步骤 1/6 · 检查版本',
+        'download': '步骤 2/6 · 下载安装包',
+        'verify': '步骤 3/6 · 校验安装包',
+        'backup': '步骤 4/6 · 备份当前版本',
+        'extract': '步骤 5/6 · 解压安装包',
+        'copy': '步骤 6/6 · 替换程序文件',
+        'restore': '正在自动恢复备份',
+        'finish': '完成'
+    };
+    return map[step] || '';
 }
 </script>
 <script>

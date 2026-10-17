@@ -174,6 +174,12 @@ Route::group(function () {
     Route::get('/system/customwebhooktest', 'system/customwebhooktest');
     Route::post('/system/proxytest', 'system/proxytest');
     Route::get('/system/cronset', 'system/cronset');
+    Route::get('/system/updateset', 'system/updateset');
+
+    Route::post('/update/check', 'update/check');
+    Route::post('/update/start', 'update/start');
+    Route::get('/update/progress', 'update/progress');
+    Route::get('/update/history', 'update/history');
 
 })->middleware(CheckLogin::class)
 ->middleware(ViewOutput::class);

@@ -6,6 +6,7 @@ CREATE TABLE `dnsmgr_config` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `dnsmgr_config` VALUES ('version', '1049');
+INSERT INTO `dnsmgr_config` VALUES ('release_version', '2.21');
 INSERT INTO `dnsmgr_config` VALUES ('notice_mail', '0');
 INSERT INTO `dnsmgr_config` VALUES ('notice_wxtpl', '0');
 INSERT INTO `dnsmgr_config` VALUES ('mail_smtp', 'smtp.qq.com');

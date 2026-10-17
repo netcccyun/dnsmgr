@@ -8,5 +8,6 @@ return [
         'dmtask' => 'app\command\Dmtask',
         'certtask' => 'app\command\Certtask',
         'reset' => 'app\command\Reset',
+        'update:run' => 'app\command\Update',
     ],
 ];
