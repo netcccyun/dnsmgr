@@ -182,13 +182,13 @@ class DeployHelper
                     'type' => 'radio',
                     'options' => [
                         '0' => '网站SSL证书',
-                        '1' => '单域名SSL证书（仅CDN支持）',
+                        '1' => '单域名SSL证书',
                     ],
                     'value' => '0',
                     'required' => true,
                 ],
                 'domains' => [
-                    'name' => 'CDN域名列表',
+                    'name' => '域名列表',
                     'type' => 'textarea',
                     'placeholder' => '填写要部署证书的域名，每行一个',
                     'show' => 'type==1',
@@ -249,13 +249,13 @@ class DeployHelper
                     'type' => 'radio',
                     'options' => [
                         '0' => '网站SSL证书',
-                        '1' => '单域名SSL证书（仅CDN支持）',
+                        '1' => '单域名SSL证书',
                     ],
                     'value' => '0',
                     'required' => true,
                 ],
                 'domains' => [
-                    'name' => 'CDN域名列表',
+                    'name' => '域名列表',
                     'type' => 'textarea',
                     'placeholder' => '填写要部署证书的域名，每行一个',
                     'show' => 'type==1',

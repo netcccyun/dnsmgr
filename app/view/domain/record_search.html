@@ -83,6 +83,7 @@ td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px;}
 
 				<div id="result-toolbar">
 					<button type="button" class="btn btn-primary" id="batch-edit-button" onclick="openBatchEdit()" disabled><i class="fa fa-edit"></i> 批量修改选中记录</button>
+					<button type="button" class="btn btn-danger" id="batch-delete-button" onclick="openBatchDelete()" disabled><i class="fa fa-trash"></i> 批量删除选中记录</button>
 					<span id="result-summary" class="text-muted" style="margin-left:10px;">尚未搜索</span>
 				</div>
 				<table id="result-table"></table>
@@ -99,7 +100,12 @@ td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px;}
 var domainList = JSON.parse(document.getElementById('domain-list-data').textContent || '[]');
 var searchResults = [];
 var searching = false;
+var operating = false;
 var stopRequested = false;
+
+function setBatchButtonsDisabled(disabled){
+	$('#batch-edit-button, #batch-delete-button').prop('disabled', disabled);
+}
 
 $(document).ready(function(){
 	$('#result-table').bootstrapTable({
@@ -222,7 +228,7 @@ async function searchQingCloudDomain(domain, keyword){
 }
 
 async function startSearch(){
-	if(searching) return;
+	if(searching || operating) return;
 	var keyword = $.trim($('#record-value').val());
 	if(!keyword){
 		layer.msg('请输入要搜索的记录值');
@@ -237,7 +243,7 @@ async function startSearch(){
 	stopRequested = false;
 	searchResults = [];
 	$('#result-table').bootstrapTable('load', []);
-	$('#batch-edit-button').prop('disabled', true);
+	setBatchButtonsDisabled(true);
 	$('#search-button').prop('disabled', true);
 	$('#stop-button').show();
 	$('#search-progress-panel').show();
@@ -272,7 +278,7 @@ async function startSearch(){
 	updateSearchProgress(doneCount, domainList.length, completed + '，找到 ' + searchResults.length + ' 条记录' + (failed ? '，' + failed + ' 个域名搜索失败' : ''));
 	$('#search-progress').removeClass('active');
 	$('#result-summary').text('共找到 ' + searchResults.length + ' 条记录' + (failed ? '，' + failed + ' 个域名搜索失败' : ''));
-	$('#batch-edit-button').prop('disabled', searchResults.length === 0);
+	setBatchButtonsDisabled(searchResults.length === 0);
 	$('#search-button').prop('disabled', false);
 	$('#stop-button').hide();
 	searching = false;
@@ -296,6 +302,7 @@ function updateSelectedCount(){
 }
 
 function openBatchEdit(){
+	if(searching || operating) return;
 	var rows = getSelectedRows();
 	if(rows.length === 0){
 		layer.msg('请选择要修改的记录');
@@ -314,6 +321,7 @@ function updateEditProgress(done, total, success, fail, current){
 }
 
 async function startBatchEdit(){
+	if(searching || operating) return;
 	var rows = getSelectedRows();
 	var type = $('#batch-edit-form select[name=type]').val();
 	var value = $.trim($('#batch-edit-form input[name=value]').val());
@@ -327,6 +335,9 @@ async function startBatchEdit(){
 	}
 
 	$('#modal-batch-edit').modal('hide');
+	operating = true;
+	setBatchButtonsDisabled(true);
+	$('#search-button').prop('disabled', true);
 	var progressLayer = layer.open({
 		type: 1,
 		title: '批量修改进度',
@@ -339,43 +350,148 @@ async function startBatchEdit(){
 	var success = 0;
 	var fail = 0;
 	var errors = [];
-	for(var i = 0; i < rows.length; i++){
-		var row = rows[i];
-		updateEditProgress(i, rows.length, success, fail, row.Name + '.' + row.domainName);
-		try{
-			var response = await $.ajax({
-				type: 'POST',
-				url: '/record/batchedit/' + row.domainId,
-				dataType: 'json',
-				data: {
-					action: 'value',
-					type: type,
-					value: value,
-					mode: row.Mode || 1,
-					recordinfo: JSON.stringify([row])
+	try{
+		for(var i = 0; i < rows.length; i++){
+			var row = rows[i];
+			updateEditProgress(i, rows.length, success, fail, row.Name + '.' + row.domainName);
+			try{
+				var response = await $.ajax({
+					type: 'POST',
+					url: '/record/batchedit/' + row.domainId,
+					dataType: 'json',
+					data: {
+						action: 'value',
+						type: type,
+						value: value,
+						mode: row.Mode || 1,
+						recordinfo: JSON.stringify([row])
+					}
+				});
+				if(response && response.code == 0 && response.msg && response.msg.indexOf('成功1条') !== -1){
+					success++;
+					row.Type = type;
+					row.Value = value;
+					row.ValueText = value;
+				}else{
+					fail++;
+					errors.push(row.Name + '.' + row.domainName + '：' + (response && response.msg ? response.msg : '修改失败'));
 				}
-			});
-			if(response && response.code == 0 && response.msg && response.msg.indexOf('成功1条') !== -1){
-				success++;
-				row.Type = type;
-				row.Value = value;
-				row.ValueText = value;
-			}else{
+			}catch(e){
 				fail++;
-				errors.push(row.Name + '.' + row.domainName + '：' + (response && response.msg ? response.msg : '修改失败'));
+				errors.push(row.Name + '.' + row.domainName + '：请求失败');
 			}
-		}catch(e){
-			fail++;
-			errors.push(row.Name + '.' + row.domainName + '：请求失败');
+			updateEditProgress(i + 1, rows.length, success, fail, row.Name + '.' + row.domainName);
 		}
-		updateEditProgress(i + 1, rows.length, success, fail, row.Name + '.' + row.domainName);
+	}finally{
+		$('#edit-progress').removeClass('active');
+		$('#result-table').bootstrapTable('load', searchResults);
+		operating = false;
+		setBatchButtonsDisabled(searchResults.length === 0);
+		$('#search-button').prop('disabled', false);
 	}
-
-	$('#edit-progress').removeClass('active');
-	$('#result-table').bootstrapTable('load', searchResults);
 	setTimeout(function(){
 		layer.close(progressLayer);
 		var message = '批量修改完成，成功 ' + success + ' 条，失败 ' + fail + ' 条';
+		if(errors.length){
+			message += '<br><br>' + errors.slice(0, 10).map(function(item){ return $('<div>').text(item).html(); }).join('<br>');
+			if(errors.length > 10) message += '<br>其余 ' + (errors.length - 10) + ' 条失败信息已省略';
+		}
+		layer.alert(message, {icon: fail ? 0 : 1, area: ['520px']});
+	}, 300);
+}
+
+function openBatchDelete(){
+	if(searching || operating) return;
+	var rows = getSelectedRows();
+	if(rows.length === 0){
+		layer.msg('请选择要删除的记录');
+		return;
+	}
+	layer.confirm('确定要删除所选的 ' + rows.length + ' 条解析记录吗？删除后不可恢复。', {
+		title: '批量删除',
+		icon: 0,
+		btn: ['确定删除', '取消']
+	}, function(index){
+		layer.close(index);
+		startBatchDelete();
+	});
+}
+
+function updateDeleteProgress(done, total, success, fail, current){
+	var percent = total > 0 ? Math.round(done / total * 100) : 100;
+	$('#delete-progress').css('width', percent + '%').text(percent + '%');
+	$('#delete-status').text('正在删除：' + current + '（' + done + ' / ' + total + '），成功 ' + success + '，失败 ' + fail);
+}
+
+function recordLabel(row){
+	return (row.Name || '') + '.' + (row.domainName || '');
+}
+
+async function startBatchDelete(){
+	if(searching || operating) return;
+	var rows = getSelectedRows();
+	if(rows.length === 0){
+		layer.msg('请选择要删除的记录');
+		return;
+	}
+
+	operating = true;
+	setBatchButtonsDisabled(true);
+	$('#search-button').prop('disabled', true);
+	var progressLayer = layer.open({
+		type: 1,
+		title: '批量删除进度',
+		closeBtn: 0,
+		area: ['520px'],
+		content: '<div style="padding:20px;"><div id="delete-status" style="margin-bottom:10px;">准备删除...</div>'
+			+ '<div class="progress" style="margin-bottom:0;"><div id="delete-progress" class="progress-bar progress-bar-danger progress-bar-striped active" role="progressbar" style="width:0%;">0%</div></div></div>'
+	});
+
+	var success = 0;
+	var fail = 0;
+	var errors = [];
+	var deletedKeys = {};
+	try{
+		for(var i = 0; i < rows.length; i++){
+			var row = rows[i];
+			updateDeleteProgress(i, rows.length, success, fail, recordLabel(row));
+			try{
+				var response = await $.ajax({
+					type: 'POST',
+					url: '/record/delete/' + row.domainId,
+					dataType: 'json',
+					data: {
+						recordid: row.RecordId,
+						recordinfo: JSON.stringify(row)
+					}
+				});
+				if(response && response.code == 0){
+					success++;
+					deletedKeys[row._key] = true;
+				}else{
+					fail++;
+					errors.push(recordLabel(row) + '：' + (response && response.msg ? response.msg : '删除失败'));
+				}
+			}catch(e){
+				fail++;
+				errors.push(recordLabel(row) + '：请求失败');
+			}
+			updateDeleteProgress(i + 1, rows.length, success, fail, recordLabel(row));
+		}
+		if(success > 0){
+			searchResults = searchResults.filter(function(item){ return !deletedKeys[item._key]; });
+			$('#result-table').bootstrapTable('load', searchResults);
+			$('#result-summary').text('共找到 ' + searchResults.length + ' 条记录');
+		}
+	}finally{
+		$('#delete-progress').removeClass('active');
+		operating = false;
+		setBatchButtonsDisabled(searchResults.length === 0);
+		$('#search-button').prop('disabled', false);
+	}
+	setTimeout(function(){
+		layer.close(progressLayer);
+		var message = '批量删除完成，成功 ' + success + ' 条，失败 ' + fail + ' 条';
 		if(errors.length){
 			message += '<br><br>' + errors.slice(0, 10).map(function(item){ return $('<div>').text(item).html(); }).join('<br>');
 			if(errors.length > 10) message += '<br>其余 ' + (errors.length - 10) + ' 条失败信息已省略';
