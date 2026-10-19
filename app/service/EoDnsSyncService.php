@@ -64,7 +64,8 @@ class EoDnsSyncService
             }
             // 先记「尝试时间」，避免执行失败时整分钟反复重试打爆 EO 接口
             config_set('eo_sync_attempt', date('Y-m-d H:i:s'));
-            $result = $this->run();
+            $result = $this->runLocked();
+            // 成功时间在锁内写入，避免并发 cron 用旧节流时间再次进入
             config_set('eo_sync_run_time', date('Y-m-d H:i:s'));
             return $result;
         } finally {
@@ -105,7 +106,8 @@ class EoDnsSyncService
                 if (!$dns) throw new Exception('DNS模块不存在');
 
                 // 写前重查该主机记录，避免与后台手动操作或其他进程互相覆盖
-                $fresh = $this->loadSubRecords($dns, $item['host']);
+                // 用完整区域快照过滤，兼容子域查询不精确/不分页的驱动
+                $fresh = $this->loadFreshRecords($dns, $item['host']);
                 $recheck = $this->decide($fresh, $item['cname']);
                 if (!in_array($recheck['action'], ['add', 'update', 'replace'], true)) {
                     $stat[$recheck['action']] = isset($stat[$recheck['action']]) ? $stat[$recheck['action']] + 1 : 1;
@@ -186,14 +188,28 @@ class EoDnsSyncService
             if (!$dns->addDomainRecord($item['host'], 'CNAME', $value, $line, $ttl)) {
                 throw new Exception('添加 CNAME 失败：' . $dns->getError());
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            $failed = [];
             foreach ($deleted as $old) {
                 try {
                     // 华为云等驱动的 Value 是数组，恢复时要拼成逗号串再交给驱动
-                    $oldValue = is_array($old['Value']) ? implode(',', $old['Value']) : $old['Value'];
-                    $dns->addDomainRecord($old['Name'], $old['Type'], $oldValue, $old['Line'], $old['TTL'], isset($old['MX']) ? $old['MX'] : 1, null, isset($old['Remark']) ? $old['Remark'] : null);
+                    $oldValue = is_array($old['Value']) ? implode(',', $old['Value']) : (string)$old['Value'];
+                    $ok = $dns->addDomainRecord(
+                        $old['Name'], $old['Type'], $oldValue,
+                        isset($old['Line']) && $old['Line'] !== null ? $old['Line'] : '0',
+                        isset($old['TTL']) && $old['TTL'] ? $old['TTL'] : 600,
+                        isset($old['MX']) && $old['MX'] ? $old['MX'] : 1,
+                        isset($old['Weight']) ? $old['Weight'] : null,
+                        isset($old['Remark']) ? $old['Remark'] : null
+                    );
+                    if (!$ok) $failed[] = $old['Type'] . ' ' . $oldValue;
                 } catch (Throwable $ignore) {
+                    $failed[] = $old['Type'] . ' ' . $oldValue;
                 }
+            }
+            if ($failed) {
+                $this->addLog($item['domain'], 'EO同步回滚失败',
+                    $item['host'] . ' 需人工恢复：' . implode('；', $failed));
             }
             throw $e;
         }
@@ -445,21 +461,46 @@ class EoDnsSyncService
         return $rows ? $rows[0] : null;
     }
 
-    private function loadRecords($domain)
+    private function loadRecords($domain, $dns = null)
     {
-        $dns = DnsHelper::getModel($domain['aid'], $domain['name'], $domain['thirdid']);
+        if ($dns === null) {
+            $dns = DnsHelper::getModel($domain['aid'], $domain['name'], $domain['thirdid']);
+        }
         if (!$dns) throw new Exception('DNS模块不存在');
         $map = [];
+        $seen = [];
         $page = 1;
         while (true) {
             $res = $dns->getDomainRecords($page, 100);
             if ($res === false) throw new Exception($dns->getError());
             $list = isset($res['list']) ? $res['list'] : [];
+            $added = 0;
             foreach ($list as $row) {
+                $id = isset($row['RecordId']) ? (string)$row['RecordId'] : '';
+                // 部分驱动（aws/powerdns/dynv6 等）忽略分页参数返回全量，按 RecordId 去重
+                if ($id !== '') {
+                    if (isset($seen[$id])) continue;
+                    $seen[$id] = true;
+                }
+                // 部分驱动（青云等）列表接口只返回主机摘要，Type/Value 为空，需要再展开成真实记录
+                if (empty($row['Type'])) {
+                    foreach ($this->expandSummary($dns, $row) as $real) {
+                        $rid = isset($real['RecordId']) ? (string)$real['RecordId'] : '';
+                        if ($rid !== '') {
+                            if (isset($seen[$rid])) continue;
+                            $seen[$rid] = true;
+                        }
+                        $map[$this->normalizeName($real['Name'])][] = $real;
+                        $added++;
+                    }
+                    continue;
+                }
                 $map[$this->normalizeName($row['Name'])][] = $row;
+                $added++;
             }
             $total = intval(isset($res['total']) ? $res['total'] : 0);
-            if (count($list) < 100 || $page * 100 >= $total) break;
+            // 整页都是重复数据，说明该驱动不支持分页，已经拿全了
+            if (count($list) < 100 || $page * 100 >= $total || ($added === 0 && $page > 1)) break;
             if ($page >= self::MAX_PAGES) {
                 throw new Exception('解析记录超过 ' . (self::MAX_PAGES * 100) . ' 条，已中止以避免漏读记录');
             }
@@ -469,11 +510,40 @@ class EoDnsSyncService
     }
 
     /**
-     * 写前重查单个主机记录
-     *
-     * 暂停记录在各个驱动里都以「名字带 _pause」的形式存在（Cloudflare 根记录是
-     * __root___pause），精确查询只查原名字会漏掉暂停态，所以把别名一起查。
+     * 主机摘要展开：列表接口只给了主机名和数量，记录明细要按主机再查一次
      */
+    private function expandSummary($dns, $row)
+    {
+        $count = isset($row['Count']) ? intval($row['Count']) : 0;
+        if ($count <= 0) return [];
+        try {
+            $res = $dns->getSubDomainRecords($row['Name'], 1, max(100, $count));
+        } catch (Throwable $e) {
+            return [];
+        }
+        if ($res === false || empty($res['list'])) return [];
+        $out = [];
+        foreach ($res['list'] as $item) {
+            if (empty($item['Type'])) continue;
+            $out[] = $item;
+        }
+        return $out;
+    }
+
+    /**
+     * 写前重查：直接取一次完整区域快照再按主机过滤
+     *
+     * 各驱动的子域查询精度不一（有的按 FQDN 精确匹配、有的只读全区前 100 条、
+     * 有的忽略分页返回全量），暂停记录还以 _pause 后缀存放，逐个主机名去查容易漏。
+     * 这里统一按区域快照过滤，结果和 buildPlan 完全同源。
+     */
+    private function loadFreshRecords($dns, $host)
+    {
+        $map = $this->loadRecords(['aid' => 0, 'name' => '', 'thirdid' => ''], $dns);
+        $key = $this->normalizeName($host);
+        return isset($map[$key]) ? $map[$key] : [];
+    }
+
     private function loadSubRecords($dns, $host)
     {
         $names = [$host, $host . '_pause'];
