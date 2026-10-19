@@ -1,0 +1,113 @@
+{extend name="common/layout" /}
+{block name="title"}EO加速域名同步预览{/block}
+{block name="main"}
+<style>
+.action-tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:12px;color:#fff;}
+.a-add{background:#00a65a;}
+.a-update{background:#3c8dbc;}
+.a-replace{background:#f39c12;}
+.a-exists{background:#999;}
+.a-paused{background:#8e44ad;}
+.a-conflict{background:#dd4b39;}
+.a-skip{background:#777;}
+.a-error{background:#605ca8;}
+</style>
+<div class="row">
+	<div class="col-xs-12 center-block" style="float: none;">
+	<div class="panel panel-default panel-intro">
+	<div class="panel-body">
+<form onsubmit="return eoSearch()" method="GET" class="form-inline" id="searchToolbar">
+  <div class="form-group">
+	<label>动作</label>
+	<div class="form-group">
+		<select name="action" class="form-control">
+			<option value="">全部</option>
+			<option value="add">待添加</option>
+			<option value="update">待更新</option>
+			<option value="replace">待替换A/AAAA</option>
+			<option value="exists">已存在</option>
+			<option value="paused">已存在(暂停)</option>
+			<option value="conflict">冲突</option>
+			<option value="skip">跳过</option>
+			<option value="error">错误</option>
+		</select>
+	</div>
+  </div>
+  <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 过滤</button>
+  <a href="javascript:window.location.reload()" class="btn btn-default"><i class="fa fa-refresh"></i> 刷新（只读）</a>
+  <a href="javascript:runSync()" class="btn btn-success"><i class="fa fa-play"></i> 立即执行同步</a>
+  <a href="/eosync/eoset" class="btn btn-default"><i class="fa fa-cog"></i> 同步设置</a>
+</form>
+      <table id="listTable"></table>
+      <div class="alert alert-info" style="margin-top:12px">
+        <b>说明：</b>本页为只读预览——只会调用 EO 接口拉取加速域名并读取当前解析记录做比对，<b>不会写入任何记录</b>。点击「立即执行同步」才会真正添加/更新 CNAME。
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script src="/static/js/bootstrap-table-1.21.4.min.js"></script>
+<script src="/static/js/bootstrap-table-page-jump-to-1.21.4.min.js"></script>
+<script src="/static/js/custom.js?v=1006"></script>
+<script>
+function eoSearch(){
+	$('#listTable').bootstrapTable('refresh', {pageNumber: 1});
+	return false;
+}
+var ACTION_TEXT = {add:'待添加',update:'待更新',replace:'待替换',exists:'已存在',paused:'已暂停',conflict:'冲突',skip:'跳过',error:'错误'};
+function esc(v){
+	return $('<div>').text(v == null ? '' : String(v)).html();
+}
+function fmtAction(v){
+	var t = ACTION_TEXT[v] || v || '';
+	return '<span class="action-tag a-'+esc(v)+'">'+esc(t)+'</span>';
+}
+$(document).ready(function(){
+	updateToolbar();
+	const pageNumber = typeof window.$_GET['pageNumber'] != 'undefined' ? parseInt(window.$_GET['pageNumber']) : 1;
+	const pageSize = getStoredPageSize('eolist_pagesize');
+	$("#listTable").bootstrapTable({
+		url: '/eosync/eolist/data',
+		pageNumber: pageNumber,
+		pageSize: pageSize,
+		sidePagination: 'client',
+		escape: true,
+		classes: 'table table-striped table-hover table-bordered',
+		columns: [
+			{field: 'index', title: '#', width: 60},
+			{field: 'zone', title: 'EO站点'},
+			{field: 'fqdn', title: '加速域名'},
+			{field: 'host', title: '主机记录'},
+			{field: 'cname', title: 'EO CNAME'},
+			{field: 'action', title: '动作', formatter: fmtAction},
+			{field: 'message', title: '说明'},
+		]
+	});
+	$('[data-toggle="tooltip"]').tooltip();
+});
+function runSync(){
+	layer.confirm('将重新拉取 EO 加速域名并全量比对后执行：新增/更新 CNAME，若已开启「覆盖A/AAAA」还可能删除同名的 A/AAAA 记录。排除名单内的主机不会处理。确认执行？', {icon:3, title:'执行同步'}, function(idx){
+		layer.close(idx);
+		var ii = layer.load(2, {shade:[0.1,'#fff']});
+		$.ajax({
+			type: "POST",
+			url: "/eosync/eorun",
+			dataType: 'json',
+			success: function(data){
+				layer.close(ii);
+				if(data.code == 0 || data.code == 1){
+					var s = data.data || {};
+					layer.alert('新增 '+(s.add||0)+' 条，更新 '+(s.update||0)+' 条，替换 '+(s.replace||0)+' 条，暂停 '+(s.paused||0)+' 条，冲突 '+(s.conflict||0)+' 条，失败 '+(s.error||0)+' 条。', {icon: data.code == 0 ? 1 : 2}, function(){ window.location.reload(); });
+				}else{
+					layer.alert(esc(data.msg), {icon:2});
+				}
+			},
+			error: function(){ layer.close(ii); layer.msg('服务器错误'); }
+		});
+	});
+}
+</script>
+{/block}

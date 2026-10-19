@@ -106,8 +106,9 @@ class cloudflare implements DnsInterface
             foreach ($data['result'] as $row) {
                 $name = $this->extractName($row['name']);
                 $status = str_ends_with($name, '_pause') ? '0' : '1';
-                $name = $name == '__root__' ? '@' : $name;
-                $name = $status == '0' ? substr($name, 0, -6) : $name;
+                if ($status == '0') $name = substr($name, 0, -6);
+                // 根记录暂停时名字是 __root___pause，剥掉 _pause 后要还原成 @
+                $name = ($name == '__root__' || $name == '') ? '@' : $name;
                 if ($row['type'] == 'SRV' && isset($row['priority'])) {
                     $row['content'] = $row['priority'] . ' ' . $row['content'];
                 }

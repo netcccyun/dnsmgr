@@ -175,6 +175,13 @@ Route::group(function () {
     Route::post('/system/proxytest', 'system/proxytest');
     Route::get('/system/cronset', 'system/cronset');
 
+    // EO(CNAME接入)加速域名同步
+    Route::get('/eosync/eoset', 'eosync/eoset');
+    Route::post('/eosync/eoset', 'eosync/eoset');
+    Route::get('/eosync/eolist', 'eosync/eolist');
+    Route::post('/eosync/eolist/data', 'eosync/eolist_data');
+    Route::post('/eosync/eorun', 'eosync/eorun');
+
 })->middleware(CheckLogin::class)
 ->middleware(ViewOutput::class);
 

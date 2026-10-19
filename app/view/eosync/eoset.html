@@ -1,0 +1,124 @@
+{extend name="common/layout" /}
+{block name="title"}EO加速域名同步设置{/block}
+{block name="main"}
+<div class="row">
+<div class="col-xs-12 col-md-7">
+<div class="panel panel-success">
+<div class="panel-heading"><h3 class="panel-title">功能简介</h3></div>
+<div class="panel-body">
+  <p>腾讯云 EdgeOne 若使用 <b>CNAME 接入</b>（站点类型 partial），EO 侧不提供 DNS 解析管理，加速域名建好后需要手动到 DNS 服务商添加 CNAME 记录指向 <code>xxx.eo.dnse5.com</code>。</p>
+  <p>本功能会定时只读拉取 EO 的加速域名列表，与所选 DNS 账户下的解析记录比对，<b>只补缺失的 CNAME 记录</b>，使新增的加速域名自动完成解析配置。</p>
+</div>
+</div>
+<div class="panel panel-warning">
+<div class="panel-heading"><h3 class="panel-title">使用说明</h3></div>
+<div class="panel-body">
+  <p><li>EO 侧完全只读：仅调用 DescribeZones(zone-type=partial) 与 DescribeAccelerationDomains，不修改任何 EO 配置。</li></p>
+  <p><li>只对 CNAME(partial) 接入站点生效；NS(full) 接入站点请使用「腾讯云EO」域名账户管理解析。</li></p>
+  <p><li>目标域名默认取与 EO 站点同名的域名账户记录，也可在此手动指定。</li></p>
+  <p><li>已有 CNAME 但指向旧 EO 地址时，按「自动更新旧EO CNAME」开关决定是否改写；指向其他服务的 CNAME 一律不动。</li></p>
+  <p><li>已存在 A/AAAA 记录时默认不覆盖（记为冲突），需要覆盖请打开「覆盖A/AAAA记录」。</li></p>
+</div>
+</div>
+</div>
+<div class="col-xs-12 col-md-5">
+<div class="panel panel-info">
+<div class="panel-heading"><h3 class="panel-title">同步设置</h3></div>
+<div class="panel-body">
+  <form onsubmit="return saveSetting(this)" method="post" class="form-horizontal" role="form">
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">启用自动同步</label>
+	  <div class="col-sm-8"><select class="form-control" name="eo_sync_enable" default="{:config_get('eo_sync_enable', '0')}"><option value="0">关闭</option><option value="1">开启</option></select></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">目标域名</label>
+	  <div class="col-sm-8">
+		<select class="form-control" name="eo_sync_did" default="{:config_get('eo_sync_did', '0')}">
+			<option value="0">按EO站点名自动匹配</option>
+			{foreach $domains as $k=>$v}
+			<option value="{$k}">{$v}</option>
+			{/foreach}
+		</select>
+	  </div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">CNAME TTL</label>
+	  <div class="col-sm-8"><input type="text" name="eo_sync_ttl" value="{:htmlspecialchars((string)config_get('eo_sync_ttl', '600'), ENT_QUOTES)}" class="form-control" placeholder="单位：秒"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">解析线路</label>
+	  <div class="col-sm-8"><input type="text" name="eo_sync_line" value="{:htmlspecialchars((string)config_get('eo_sync_line', '0'), ENT_QUOTES)}" class="form-control" placeholder="Cloudflare填0(不代理)/1(代理)"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">排除主机记录</label>
+	  <div class="col-sm-8"><input type="text" name="eo_sync_exclude" value="{:htmlspecialchars((string)config_get('eo_sync_exclude', ''), ENT_QUOTES)}" class="form-control" placeholder="逗号分隔，如 www,api"/></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">自动更新旧EO CNAME</label>
+	  <div class="col-sm-8"><select class="form-control" name="eo_sync_update" default="{:config_get('eo_sync_update', '1')}"><option value="0">否</option><option value="1">是</option></select></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">覆盖A/AAAA记录</label>
+	  <div class="col-sm-8"><select class="form-control" name="eo_sync_overwrite" default="{:config_get('eo_sync_overwrite', '0')}"><option value="0">否</option><option value="1">是</option></select></div>
+	</div>
+	<div class="form-group">
+	  <label class="col-sm-4 control-label">同步间隔（分钟）</label>
+	  <div class="col-sm-8"><input type="text" name="eo_sync_min" value="{:htmlspecialchars((string)config_get('eo_sync_min', '10'), ENT_QUOTES)}" class="form-control" placeholder="单位：分钟"/></div>
+	</div>
+	<div class="form-group">
+	  <div class="col-sm-offset-4 col-sm-8">
+		<input type="submit" name="submit" value="保存" class="btn btn-primary btn-block"/>
+	  </div>
+	</div>
+  </form>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading"><h3 class="panel-title">EO 站点（只读）</h3></div>
+<div class="panel-body" style="padding:0">
+<table class="table table-striped table-bordered" style="margin:0">
+<thead><tr><th>账户</th><th>站点</th><th>ZoneId</th><th>加速域名数</th></tr></thead>
+<tbody>
+{volist name="eoSites" id="site"}
+<tr><td>{$site.account}</td><td>{$site.zone}{if $site.error}<br/><span class="text-danger">{$site.error}</span>{/if}</td><td style="font-size:12px">{$site.zone_id}</td><td>{$site.count}</td></tr>
+{/volist}
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script>
+var items = $("select[default]");
+for (i = 0; i < items.length; i++) {
+	$(items[i]).val($(items[i]).attr("default")||0);
+}
+function saveSetting(obj){
+	var ii = layer.load(2, {shade:[0.1,'#fff']});
+	$.ajax({
+		type : 'POST',
+		url : '',
+		data : $(obj).serialize(),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(data.code == 0){
+				layer.alert('设置保存成功！', {icon: 1, closeBtn: false}, function(){
+				  window.location.reload()
+				});
+			}else{
+				layer.alert(data.msg, {icon: 2})
+			}
+		},
+		error:function(data){
+            layer.close(ii);
+			layer.msg('服务器错误');
+		}
+	});
+	return false;
+}
+</script>
+{/block}

@@ -149,6 +149,19 @@
               <li class="{:checkIfActive('certset')}"><a href="/cert/certset"><i class="fa fa-circle-o"></i> 自动续签设置</a></li>
             </ul>
           </li>
+          <li class="treeview {:checkIfActive('eoset,eolist')}">
+            <a href="javascript:;">
+              <i class="fa fa-cloud fa-fw"></i>
+              <span>EO域名同步</span>
+              <span class="pull-right-container">
+                <i class="fa fa-angle-left pull-right"></i>
+              </span>
+            </a>
+            <ul class="treeview-menu">
+              <li class="{:checkIfActive('eolist')}"><a href="/eosync/eolist"><i class="fa fa-circle-o"></i> 同步预览</a></li>
+              <li class="{:checkIfActive('eoset')}"><a href="/eosync/eoset"><i class="fa fa-circle-o"></i> 同步设置</a></li>
+            </ul>
+          </li>
           <li class="treeview {:checkIfActive('opipset,opiplist,opipform')}">
             <a href="javascript:;">
               <i class="fa fa-globe fa-fw"></i>

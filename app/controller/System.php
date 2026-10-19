@@ -10,6 +10,7 @@ use think\facade\Cache;
 use app\service\OptimizeService;
 use app\service\CertTaskService;
 use app\service\ExpireNoticeService;
+use app\service\EoDnsSyncService;
 use app\service\ScheduleService;
 
 class System extends BaseController
@@ -169,6 +170,11 @@ class System extends BaseController
         if (!$res) {
             (new CertTaskService())->execute();
             (new ExpireNoticeService())->task();
+        }
+        try {
+            (new EoDnsSyncService())->autoRun();
+        } catch (\Throwable $e) {
+            \think\facade\Log::error('EO同步异常：' . $e->getMessage());
         }
         echo 'success!';
     }

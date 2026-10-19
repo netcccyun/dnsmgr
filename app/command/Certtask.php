@@ -15,6 +15,7 @@ use think\facade\Config;
 use app\service\OptimizeService;
 use app\service\CertTaskService;
 use app\service\ExpireNoticeService;
+use app\service\EoDnsSyncService;
 use app\service\ScheduleService;
 
 class Certtask extends Command
@@ -36,6 +37,11 @@ class Certtask extends Command
         if (!$res) {
             (new CertTaskService())->execute();
             (new ExpireNoticeService())->task();
+        }
+        try {
+            (new EoDnsSyncService())->autoRun();
+        } catch (\Throwable $e) {
+            \think\facade\Log::error('EO同步异常：' . $e->getMessage());
         }
         echo 'done'.PHP_EOL;
     }
