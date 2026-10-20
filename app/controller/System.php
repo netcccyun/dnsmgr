@@ -11,6 +11,7 @@ use app\service\OptimizeService;
 use app\service\CertTaskService;
 use app\service\ExpireNoticeService;
 use app\service\ScheduleService;
+use app\service\UpdateService;
 
 class System extends BaseController
 {
@@ -137,6 +138,7 @@ class System extends BaseController
         }
         return json(['code' => 0]);
     }
+    
 
     public function cronset()
     {
@@ -148,6 +150,47 @@ class System extends BaseController
         View::assign('is_user_www', isset($_SERVER['USER']) && $_SERVER['USER'] == 'www');
         View::assign('siteurl', request()->root(true));
         return View::fetch();
+    }
+
+    public function checkupdate()
+    {
+        if (!checkPermission(2)) return json(['code' => -1, 'msg' => '无权限']);
+        try {
+            $data = (new UpdateService())->checkUpdate();
+            return json(['code' => 0, 'data' => $data]);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
+    public function update()
+    {
+        if (!checkPermission(2)) return $this->alert('error', '无权限');
+        $service = new UpdateService();
+        View::assign('current_version', $service->currentVersion());
+        View::assign('env', $service->checkEnv());
+        View::assign('use_mirror', config_get('update_use_mirror', '1'));
+        return View::fetch();
+    }
+
+    public function doupdate()
+    {
+        if (!checkPermission(2)) return json(['code' => -1, 'msg' => '无权限']);
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+        if (function_exists('ignore_user_abort')) {
+            @ignore_user_abort(true);
+        }
+        $useMirror = input('post.mirror', '1') == '1';
+        config_set('update_use_mirror', $useMirror ? '1' : '0');
+        Cache::delete('configs');
+        try {
+            $versionText = (new UpdateService())->update($useMirror);
+            return json(['code' => 0, 'msg' => '更新成功，当前最新版本：' . $versionText . '。请刷新页面，如有数据库结构变更将自动升级。']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
     }
 
     public function cron()

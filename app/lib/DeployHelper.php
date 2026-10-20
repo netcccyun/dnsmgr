@@ -594,6 +594,46 @@ class DeployHelper
                 ],
             ],
         ],
+        'samwaf' => [
+            'name' => 'SamWaf',
+            'class' => 1,
+            'icon' => 'waf.png',
+            'desc' => '支持部署到SamWaf证书夹',
+            'note' => '登录SamWaf控制台->开放平台->密钥管理，创建后获取API Key。需先在系统配置中开启开放平台。',
+            'inputs' => [
+                'url' => [
+                    'name' => '控制台地址',
+                    'type' => 'input',
+                    'placeholder' => 'SamWaf控制台地址',
+                    'note' => '填写示例：http://192.168.1.100:26666 ，不要带其他后缀。若启用了安全访问路径，则填写 http://IP:端口/安全码',
+                    'required' => true,
+                ],
+                'api_key' => [
+                    'name' => 'API Key',
+                    'type' => 'input',
+                    'placeholder' => '',
+                    'note' => '开放平台密钥，请求头 X-API-Key',
+                    'required' => true,
+                ],
+                'proxy' => [
+                    'name' => '使用代理服务器',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '否',
+                        '1' => '是',
+                    ],
+                    'value' => '0'
+                ],
+            ],
+            'taskinputs' => [
+                'id' => [
+                    'name' => '证书ID',
+                    'type' => 'input',
+                    'placeholder' => '留空则为添加证书',
+                    'note' => '在证书夹查看证书的ID，注意域名是否与证书匹配',
+                ],
+            ],
+        ],
         'opanel' => [
             'name' => '1Panel',
             'class' => 1,

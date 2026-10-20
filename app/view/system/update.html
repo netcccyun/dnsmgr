@@ -1,0 +1,340 @@
+{extend name="common/layout" /}
+{block name="title"}在线更新{/block}
+{block name="main"}
+<style>
+.panel.update-panel .panel-heading{
+    padding:15px 20px;
+}
+.panel.update-panel .panel-title{
+    font-size:16px;
+    font-weight:600;
+}
+.panel.update-panel .panel-body{
+    min-height:440px;
+    padding:56px 24px 48px;
+    text-align:center;
+}
+.update-icon{
+    width:72px;
+    height:72px;
+    margin:0 auto 22px;
+}
+.update-icon svg{
+    display:block;
+    width:72px;
+    height:72px;
+}
+.update-icon.is-spinning svg{
+    animation:update-spin 1s linear infinite;
+}
+@keyframes update-spin{
+    from{transform:rotate(0deg)}
+    to{transform:rotate(360deg)}
+}
+.update-title{
+    margin:0 0 8px;
+    font-size:22px;
+    font-weight:600;
+    color:#333;
+    line-height:1.4;
+}
+.update-desc{
+    margin:0 0 22px;
+    font-size:14px;
+    color:#999;
+}
+.update-badge{
+    display:inline-block;
+    margin:0 0 18px;
+    padding:7px 16px;
+    border:1px solid #c8e6c9;
+    border-radius:8px;
+    background:#fff;
+    color:#666;
+    font-size:13px;
+    line-height:1.4;
+}
+.update-badge.is-new{
+    border-color:#fdba74;
+    color:#c2410c;
+}
+.update-node{
+    max-width:240px;
+    margin:0 auto 18px;
+    text-align:left;
+}
+.update-node label{
+    display:block;
+    margin-bottom:6px;
+    font-size:13px;
+    font-weight:500;
+    color:#777;
+}
+.update-node .form-control{
+    height:36px;
+}
+.update-actions{
+    margin-top:6px;
+}
+.update-btn{
+    display:inline-block;
+    min-width:120px;
+    margin:0 4px 8px;
+    padding:9px 22px;
+    border:none;
+    border-radius:8px;
+    background:#3c8dbc;
+    color:#fff !important;
+    font-size:14px;
+    line-height:1.4;
+    text-decoration:none !important;
+}
+.update-btn:hover,
+.update-btn:focus{
+    background:#367fa9;
+    color:#fff !important;
+}
+.update-btn .fa{
+    margin-right:6px;
+}
+.update-btn-update{
+    background:#00a65a;
+}
+.update-btn-update:hover,
+.update-btn-update:focus{
+    background:#008d4c;
+}
+.update-btn-light{
+    background:#fff;
+    border:1px solid #d2d6de;
+    color:#444 !important;
+}
+.update-btn-light:hover,
+.update-btn-light:focus{
+    background:#f4f4f4;
+    color:#333 !important;
+}
+.update-progress{
+    max-width:320px;
+    margin:4px auto 0;
+}
+.update-progress-track{
+    height:8px;
+    border-radius:4px;
+    background:#eef1f5;
+    overflow:hidden;
+}
+.update-progress-bar{
+    width:0;
+    height:100%;
+    border-radius:4px;
+    background:#3c8dbc;
+    transition:width .3s linear;
+}
+.update-progress-text{
+    margin-top:8px;
+    font-size:13px;
+    color:#999;
+}
+</style>
+<div class="row">
+<div class="col-xs-12 col-sm-10 col-md-8 col-lg-7 center-block" style="float:none;">
+<div class="panel panel-info update-panel">
+    <div class="panel-heading"><h3 class="panel-title">在线更新</h3></div>
+    <div class="panel-body">
+        <div class="update-icon" id="update-icon"></div>
+        <h3 class="update-title" id="update-title">正在检测更新</h3>
+        <p class="update-desc" id="update-desc">请稍候</p>
+        <div id="update-badges"></div>
+        <div class="update-node" id="node-group" style="display:none;">
+            <label for="download_node">下载节点</label>
+            <select class="form-control" id="download_node">
+                <option value="0" {if $use_mirror!='1'}selected{/if}>Github</option>
+                <option value="1" {if $use_mirror=='1'}selected{/if}>Github镜像</option>
+            </select>
+        </div>
+        <div class="update-progress" id="update-progress" style="display:none;">
+            <div class="update-progress-track"><div class="update-progress-bar" id="update-progress-bar"></div></div>
+            <div class="update-progress-text" id="update-progress-text">0%</div>
+        </div>
+        <div class="update-actions">
+            <a href="javascript:doUpdate()" id="btn-update" class="update-btn update-btn-update" style="display:none;"><i class="fa fa-cloud-download"></i>立即更新</a>
+            <a href="javascript:checkUpdate()" id="btn-check" class="update-btn" style="display:none;"><i class="fa fa-refresh"></i>检测更新</a>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script>
+var hasNewVersion = false;
+var latestVersion = '';
+var latestBuild = '';
+var currentVersion = '{$current_version}';
+var icons = {
+    loading: '<svg viewBox="0 0 72 72" fill="none"><circle cx="36" cy="36" r="36" fill="#E8EEFF"/><path d="M36 18a18 18 0 1 1-12.73 5.27" stroke="#3c8dbc" stroke-width="5" stroke-linecap="round"/><path d="M15 23.3h8.3v8.3" stroke="#3c8dbc" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    latest: '<svg viewBox="0 0 72 72" fill="none"><circle cx="36" cy="36" r="36" fill="#8BC34A"/><path d="M22 37.5l10.5 10.5L51 27" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    newer: '<svg viewBox="0 0 72 72" fill="none"><circle cx="36" cy="36" r="36" fill="#FF9800"/><path d="M36 48V26" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/><path d="M25 35l11-11 11 11" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    error: '<svg viewBox="0 0 72 72" fill="none"><circle cx="36" cy="36" r="36" fill="#EF5350"/><path d="M26 26l20 20M46 26L26 46" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/></svg>'
+};
+function setIcon(name, spinning){
+    $("#update-icon").toggleClass('is-spinning', !!spinning).html(icons[name] || icons.loading);
+}
+function formatVersion(text, build){
+    if(text && build){
+        return 'V' + text + ' (' + build + ')';
+    }
+    if(text){
+        return 'V' + text;
+    }
+    return build || '';
+}
+function renderState(state){
+    var showUpdate = state === 'newer';
+    var updating = state === 'updating';
+    $("#node-group").toggle(showUpdate);
+    $("#btn-update").toggle(showUpdate);
+    $("#btn-check").toggle(state !== 'loading' && !updating);
+    $("#btn-check").toggleClass('update-btn-light', showUpdate);
+    $("#btn-check").html(showUpdate ? '<i class="fa fa-refresh"></i>重新检测' : '<i class="fa fa-refresh"></i>检测更新');
+    $("#update-progress").toggle(updating);
+    if(updating){
+        setIcon('loading', true);
+        $("#update-title").text('正在更新');
+        $("#update-desc").text('更新过程请勿关闭页面');
+        $("#update-badges").empty();
+        return;
+    }
+    if(state === 'loading'){
+        setIcon('loading', true);
+        $("#update-title").text('正在检测更新');
+        $("#update-desc").text('请稍候');
+        $("#update-badges").empty();
+        return;
+    }
+    if(state === 'error'){
+        setIcon('error');
+        return;
+    }
+    var versionLabel = formatVersion(latestVersion, latestBuild);
+    if(showUpdate){
+        setIcon('newer');
+        $("#update-title").text('发现新版本');
+        $("#update-desc").text('');
+        $("#update-badges").html(versionLabel ? '<span class="update-badge is-new">最新版本：' + versionLabel + '</span>' : '');
+        return;
+    }
+    setIcon('latest');
+    $("#update-title").text('当前已是最新版本');
+    $("#update-desc").text('未检测到新版本');
+    var currentLabel = formatVersion(latestVersion, currentVersion) || currentVersion;
+    $("#update-badges").html('<span class="update-badge">当前版本：' + currentLabel + '</span>');
+}
+function checkUpdate(){
+    hasNewVersion = false;
+    latestVersion = '';
+    latestBuild = '';
+    renderState('loading');
+    $.ajax({
+        type: 'POST',
+        url: '/system/checkupdate',
+        dataType: 'json',
+        timeout: 20000,
+        success: function(res){
+            if(res.code != 0){
+                renderState('error');
+                $("#update-title").text('检测更新失败');
+                $("#update-desc").text(res.msg || '检测更新失败');
+                return;
+            }
+            var data = res.data || {};
+            hasNewVersion = !!data.new_version;
+            latestVersion = data.version_text || '';
+            latestBuild = data.latest_version || '';
+            renderState(hasNewVersion ? 'newer' : 'latest');
+        },
+        error: function(){
+            renderState('error');
+            $("#update-title").text('检测更新失败');
+            $("#update-desc").text('服务器错误');
+        }
+    });
+}
+function doUpdate(){
+    if(!hasNewVersion){
+        layer.alert('当前没有可更新的版本', {icon: 0});
+        return;
+    }
+    var versionLabel = formatVersion(latestVersion, latestBuild) || ('V' + latestVersion);
+    layer.confirm('确定立即更新到 ' + versionLabel + ' ？更新过程请勿关闭页面。', {
+        icon: 3,
+        title: '更新确认'
+    }, function(index){
+        layer.close(index);
+        var mirror = $("#download_node").val() == '1' ? 1 : 0;
+        renderState('updating');
+        startProgress();
+        $.ajax({
+            type: 'POST',
+            url: '/system/doupdate',
+            data: {mirror: mirror},
+            dataType: 'json',
+            timeout: 300000,
+            success: function(res){
+                if(res.code == 0){
+                    finishProgress(function(){
+                        layer.alert(res.msg, {
+                            icon: 1,
+                            closeBtn: false
+                        }, function(){
+                            window.location.reload();
+                        });
+                    });
+                }else{
+                    stopProgress();
+                    renderState('newer');
+                    layer.alert(res.msg || '更新失败', {icon: 2});
+                }
+            },
+            error: function(){
+                stopProgress();
+                renderState('newer');
+                layer.msg('服务器错误');
+            }
+        });
+    });
+}
+var progressTimer = null;
+var progressValue = 0;
+function setProgress(value){
+    progressValue = value;
+    $("#update-progress-bar").css('width', value + '%');
+    $("#update-progress-text").text(Math.floor(value) + '%');
+}
+function startProgress(){
+    stopProgress();
+    setProgress(0);
+    progressTimer = setInterval(function(){
+        if(progressValue < 95){
+            setProgress(progressValue + 1);
+        }
+    }, 300);
+}
+function stopProgress(){
+    if(progressTimer){
+        clearInterval(progressTimer);
+        progressTimer = null;
+    }
+}
+function finishProgress(callback){
+    stopProgress();
+    setProgress(100);
+    setTimeout(callback, 350);
+}
+$(function(){
+    checkUpdate();
+});
+</script>
+{/block}
