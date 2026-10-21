@@ -149,7 +149,7 @@
 							<select name="defaultLine" id="defaultLineSelect" class="form-control" onchange="changeBatchLine(this)">
 								<option value="">自动选择</option>
 							</select>
-							<p class="help-block">留空则使用默认线路</p>
+							<p class="help-block">选择默认域名后会加载线路；未选择时，预览单域名批次会自动加载该域名的线路</p>
 						</div>
 					</div>
 
@@ -233,6 +233,8 @@ domainList.push({
 
 var parsedBatchData = [];
 var domainMapping = {};
+var lineSourceDomainId = null;
+var batchLineRequestSeq = 0;
 
 $(document).ready(function(){
 	$('#defaultDomainSelect').select2({
@@ -246,41 +248,78 @@ $(document).ready(function(){
 	});
 	
 	$('#defaultDomainSelect').on('change', function(){ 
-		var domainId = $(this).val();
-		if(domainId){
-			var ii = layer.load(2);
-			$.ajax({
-				type : 'POST',
-				url : '/record/quickinfo/' + domainId,
-				dataType : 'json',
-				success : function(data) {
-					layer.close(ii);
-					if(data.code == 0){
-						var lineOptions = '<option value="">自动选择</option>';
-						var firstOption = null;
-						$.each(data.data.recordLine, function(index, item){
-							if(item.parent == null){
-								if(!firstOption) firstOption = item.id;
-								lineOptions += '<option value="'+item.id+'">'+item.name+'</option>';
-							}
-						});
-						$('#batch_line_list').html('<select name="defaultLine" id="defaultLineSelect" class="form-control" onchange="changeBatchLine(this)">'+lineOptions+'</select>');
-						window.currentRecordLine = data.data.recordLine;
-						if(firstOption){
-							$('#defaultLineSelect').val(firstOption).trigger('change');
-						}
-					}else{
-						layer.alert(data.msg, {icon: 2});
-					}
-				},
-				error : function() {
-					layer.close(ii);
-					layer.alert('获取域名信息失败', {icon: 2});
-				}
-			});
-		}
+		loadBatchLines($(this).val());
 	});
 });
+
+function isRootRecordLine(item){
+	return item.parent == null || item.parent === '';
+}
+
+function renderBatchLines(recordLine, domainId){
+	recordLine = Array.isArray(recordLine) ? recordLine : [];
+	window.currentRecordLine = recordLine;
+	lineSourceDomainId = domainId == null || domainId === '' ? null : String(domainId);
+
+	var lineOptions = '<option value="">自动选择</option>';
+	var firstOption = null;
+	$.each(recordLine, function(index, item){
+		if(isRootRecordLine(item)){
+			if(firstOption === null) firstOption = item.id;
+			lineOptions += '<option value="' + htmlEscape(item.id) + '">' + htmlEscape(item.name) + '</option>';
+		}
+	});
+
+	$('#batch_line_list').html('<select name="defaultLine" id="defaultLineSelect" class="form-control" onchange="changeBatchLine(this)">' + lineOptions + '</select>');
+	if(firstOption !== null){
+		$('#defaultLineSelect').val(firstOption).trigger('change');
+	}
+}
+
+function loadBatchLines(domainId, callback){
+	if(!domainId){
+		batchLineRequestSeq++;
+		renderBatchLines([], null);
+		if(callback) callback(false);
+		return;
+	}
+
+	if(lineSourceDomainId !== null && String(domainId) === lineSourceDomainId){
+		if(callback) callback(true);
+		return;
+	}
+
+	var requestSeq = ++batchLineRequestSeq;
+	var ii = layer.load(2);
+	$.ajax({
+		type : 'POST',
+		url : '/record/quickinfo/' + encodeURIComponent(domainId),
+		dataType : 'json',
+		success : function(data) {
+			layer.close(ii);
+			if(requestSeq !== batchLineRequestSeq) return;
+			if(data.code == 0){
+				renderBatchLines(data.data.recordLine, domainId);
+				if(callback) callback(true);
+			}else{
+				renderBatchLines([], null);
+				layer.alert(data.msg, {icon: 2});
+				if(callback) callback(false);
+			}
+		},
+		error : function() {
+			layer.close(ii);
+			if(requestSeq !== batchLineRequestSeq) return;
+			renderBatchLines([], null);
+			layer.alert('获取域名信息失败', {icon: 2});
+			if(callback) callback(false);
+		}
+	});
+}
+
+function getSelectedBatchLine(){
+	return $('#batch_line_list select[name=defaultLine]').last().val() || '';
+}
 
 function changeBatchLine(obj){
 	var line = $(obj).val();
@@ -289,9 +328,10 @@ function changeBatchLine(obj){
 		if(flag) $(elem).remove()
 		if(obj == elem){ flag = true; }
 	})
-	if($(obj).find("option:selected").text() == '子集线路（非必填）') return;
-	if(window.currentRecordLine){
-		var tempLine = window.currentRecordLine.filter((x) => x.parent == line)
+	if($(obj).find("option:selected").text() != '子集线路（非必填）' && window.currentRecordLine){
+		var tempLine = window.currentRecordLine.filter(function(x){
+			return !isRootRecordLine(x) && String(x.parent) === String(line);
+		});
 		if(tempLine.length > 0){
 			var option = line.substr(0,2) == 'N.' ? '' : '<option value="'+line+'">子集线路（非必填）</option>';
 			$.each(tempLine, function(index, item){
@@ -299,6 +339,18 @@ function changeBatchLine(obj){
 			})
 			$("#batch_line_list").append('<select name="defaultLine" class="form-control" onchange="changeBatchLine(this)">'+option+'</select>');
 		}
+	}
+	syncBatchLineSelection();
+}
+
+function syncBatchLineSelection(){
+	if(parsedBatchData.length === 0) return;
+	var selectedLine = getSelectedBatchLine();
+	$.each(parsedBatchData, function(index, row){
+		row.line = selectedLine;
+	});
+	if($('#previewSection').is(':visible')){
+		renderPreview();
 	}
 }
 
@@ -308,10 +360,7 @@ function resetBatchForm(){
 	$('#defaultDomainSelect').val(null).trigger('change');
 	$('#defaultTypeSelect').val('');
 	$('#defaultTtlInput').val(600);
-	$('#defaultLineSelect').val('').trigger('change');
-	
-	$('#batch_line_list').empty();
-	$('#batch_line_list').append('<select name="defaultLine" id="defaultLineSelect" class="form-control" onchange="changeBatchLine(this)"><option value="">自动选择</option></select>');
+	renderBatchLines([], null);
 	
 	$('#previewSection').hide();
 	parsedBatchData = [];
@@ -329,7 +378,7 @@ function previewBatchData(){
 	var lines = inputText.split('\n');
 	var defaultDomainId = $('#defaultDomainSelect').val();
 	var defaultType = $('#defaultTypeSelect').val();
-	var defaultLine = $('#batch_line_list select[name=defaultLine]').last().val() || $('#defaultLineSelect').val();
+	var defaultLine = getSelectedBatchLine();
 	var defaultTtl = $('#defaultTtlInput').val();
 	var batchValue = $('#batchValueInput').val();
 	
@@ -507,9 +556,23 @@ function previewBatchData(){
 	});
 	
 	var uniqueDomainIds = new Set(parsedBatchData.map(r => r.domainId));
+	var uniqueDomainIdList = Array.from(uniqueDomainIds);
 	
-	if(uniqueDomainIds.size > 1){
-		showDomainSelectionModal(Array.from(uniqueDomainIds));
+	if(uniqueDomainIdList.length > 1){
+		showDomainSelectionModal(uniqueDomainIdList);
+		return;
+	}
+
+	if(uniqueDomainIdList.length === 1 && String(uniqueDomainIdList[0]) !== lineSourceDomainId){
+		loadBatchLines(uniqueDomainIdList[0], function(loaded){
+			if(loaded){
+				var selectedLine = getSelectedBatchLine();
+				$.each(parsedBatchData, function(index, row){
+					row.line = selectedLine;
+				});
+			}
+			renderPreview();
+		});
 		return;
 	}
 	
