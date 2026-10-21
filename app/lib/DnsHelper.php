@@ -893,6 +893,8 @@ class DnsHelper
     ];
 
     private static $record_type_support = [
+        'aliyun' => ['ALIAS'],
+        'henet' => ['ALIAS'],
         'powerdns' => ['ALIAS'],
         'spaceship' => ['ALIAS'],
     ];
