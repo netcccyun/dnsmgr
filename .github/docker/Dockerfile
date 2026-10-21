@@ -5,18 +5,21 @@ WORKDIR /app/www
 
 # Install packages and remove default server definition
 ARG SWOOLE_VERSION=6.2.2
+# 每次 CI 构建都刷新 PHP 安装层，避免复用安全更新前的包缓存。
+ARG CACHE_BUST=local
 RUN set -eux; \
+    echo "$CACHE_BUST" >/dev/null; \
     apk add --no-cache \
       bash \
       curl \
       nginx \
       ca-certificates \
-      php83 \
+      'php83>=8.3.36' \
       php83-ctype \
       php83-curl \
       php83-dom \
       php83-fileinfo \
-      php83-fpm \
+      'php83-fpm>=8.3.36' \
       php83-ftp \
       php83-gd \
       php83-gettext \
@@ -98,7 +101,6 @@ COPY config/php.ini ${PHP_INI_DIR}/conf.d/custom.ini
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # CACHE_BUST 须写进每条相关 RUN，否则 GHA/BuildKit 可能单独命中 composer 相关层缓存，vendor 仍来自旧构建
-ARG CACHE_BUST=local
 
 # Add application
 RUN mkdir -p /usr/src && echo "$CACHE_BUST" >/dev/null && wget --no-cache https://github.com/netcccyun/dnsmgr/archive/refs/heads/main.zip -O /usr/src/www.zip && unzip /usr/src/www.zip -d /usr/src/ && mv /usr/src/dnsmgr-main /usr/src/www && rm -f /usr/src/www.zip
