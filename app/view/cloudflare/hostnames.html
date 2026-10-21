@@ -773,6 +773,67 @@ function handleBatchLineLevelChange($select){
   }
 }
 
+var batchDnsLineCache = {};
+var batchDnsLineWaiters = {};
+var BATCH_DNS_LINE_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function batchDnsLineCacheKey(domainId){
+  return 'dnsmgr_batch_dns_lines_v1_' + String(domainId);
+}
+
+function getCachedBatchDnsLineData(domainId){
+  var key = batchDnsLineCacheKey(domainId);
+  if(batchDnsLineCache[key]){
+    if(Date.now() - batchDnsLineCache[key].cached_at < BATCH_DNS_LINE_CACHE_TTL){
+      return batchDnsLineCache[key];
+    }
+    delete batchDnsLineCache[key];
+  }
+  try{
+    var raw = window.localStorage.getItem(key);
+    if(!raw) return null;
+    var data = JSON.parse(raw);
+    if(!data || !data.cached_at || Date.now() - data.cached_at >= BATCH_DNS_LINE_CACHE_TTL) return null;
+    if(!$.isArray(data.lines) || data.lines.length === 0) return null;
+    batchDnsLineCache[key] = data;
+    return data;
+  }catch(e){
+    return null;
+  }
+}
+
+function cacheBatchDnsLineData(domainId, data){
+  data.cached_at = Date.now();
+  var key = batchDnsLineCacheKey(domainId);
+  batchDnsLineCache[key] = data;
+  try{
+    window.localStorage.setItem(key, JSON.stringify(data));
+  }catch(e){}
+}
+
+function applyBatchDnsLineData(task, groupIndex, data){
+  var cascadeId = batchDnsControlId(task, 'lineCascade', groupIndex);
+  var $cascade = $('#' + cascadeId);
+  if($cascade.length === 0) return;
+  if(!data || !$.isArray(data.lines) || data.lines.length === 0){
+    $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">获取线路失败</option></select>');
+    $cascade.data('loaded', false);
+    return;
+  }
+  var lines = data.lines;
+  var tree = buildBatchLineTree(lines);
+  var defaultLine = data.default_line != null ? String(data.default_line) : String(lines[0].value || '');
+  $cascade.data('allLines', lines).data('lineTree', tree).data('defaultLine', defaultLine).data('loaded', true);
+  renderBatchLineCascade(task, groupIndex, defaultLine);
+}
+
+function setBatchDnsLineError(task, groupIndex){
+  var $cascade = $('#' + batchDnsControlId(task, 'lineCascade', groupIndex));
+  if($cascade.length === 0) return;
+  $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">获取线路失败</option></select>');
+  $cascade.data('loaded', false);
+}
+
 function loadBatchDnsLines(task, groupIndex, domainId){
   var lineAreaId = batchDnsControlId(task, 'lineArea', groupIndex);
   var cascadeId = batchDnsControlId(task, 'lineCascade', groupIndex);
@@ -786,8 +847,23 @@ function loadBatchDnsLines(task, groupIndex, domainId){
     return;
   }
 
+  var cached = getCachedBatchDnsLineData(domainId);
+  if(cached){
+    $lineArea.show();
+    applyBatchDnsLineData(task, groupIndex, cached);
+    refreshBatchQuickLines(task);
+    return;
+  }
+
   $lineArea.show();
   $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">加载中...</option></select>');
+
+  var cacheKey = String(domainId);
+  if(batchDnsLineWaiters[cacheKey]){
+    batchDnsLineWaiters[cacheKey].push({task: task, groupIndex: groupIndex});
+    return;
+  }
+  batchDnsLineWaiters[cacheKey] = [{task: task, groupIndex: groupIndex}];
 
   $.ajax({
     type: 'POST',
@@ -795,22 +871,34 @@ function loadBatchDnsLines(task, groupIndex, domainId){
     data: {domain_id: domainId},
     dataType: 'json',
     success: function(res){
-      if(res.code === 0 && res.data && $.isArray(res.data.lines) && res.data.lines.length > 0){
-        var lines = res.data.lines;
-        var tree = buildBatchLineTree(lines);
-        var defaultLine = res.data.default_line != null ? String(res.data.default_line) : String(lines[0].value || '');
-        $cascade.data('allLines', lines).data('lineTree', tree).data('defaultLine', defaultLine).data('loaded', true);
-        renderBatchLineCascade(task, groupIndex, defaultLine);
-      }else{
-        $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">获取线路失败</option></select>');
-        $cascade.data('loaded', false);
-      }
-      refreshBatchQuickLines(task);
+      var waiters = batchDnsLineWaiters[cacheKey] || [];
+      delete batchDnsLineWaiters[cacheKey];
+      var data = (res.code === 0 && res.data && $.isArray(res.data.lines) && res.data.lines.length > 0) ? res.data : null;
+      if(data) cacheBatchDnsLineData(domainId, {lines: data.lines, default_line: data.default_line});
+      var tasks = {};
+      waiters.forEach(function(item){
+        if(data){
+          applyBatchDnsLineData(item.task, item.groupIndex, data);
+        }else{
+          setBatchDnsLineError(item.task, item.groupIndex);
+        }
+        tasks[item.task] = true;
+      });
+      Object.keys(tasks).forEach(function(taskName){
+        refreshBatchQuickLines(taskName);
+      });
     },
     error: function(){
-      $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">获取线路失败</option></select>');
-      $cascade.data('loaded', false);
-      refreshBatchQuickLines(task);
+      var waiters = batchDnsLineWaiters[cacheKey] || [];
+      delete batchDnsLineWaiters[cacheKey];
+      var tasks = {};
+      waiters.forEach(function(item){
+        setBatchDnsLineError(item.task, item.groupIndex);
+        tasks[item.task] = true;
+      });
+      Object.keys(tasks).forEach(function(taskName){
+        refreshBatchQuickLines(taskName);
+      });
     }
   });
 }
@@ -849,7 +937,7 @@ function initBatchDnsQuickControls(task){
   html += '</div>';
   html += '</div></div>';
   html += '</div>';
-  html += '<p class="help-block" style="margin-bottom:0;">选择服务商会匹配各分组中同类型的第一个解析服务商；线路会按一级、子级逐级显示，没有对应线路的分组会保持原选择。</p>';
+  html += '<p class="help-block" style="margin-bottom:0;">选择服务商会匹配各分组中同类型的第一个解析服务商；一键线路只显示该服务商对应分组的线路，并逐级展开。</p>';
   html += '</div>';
   $(container).prepend(html);
   refreshBatchQuickLines(task);
@@ -867,19 +955,35 @@ function applyBatchQuickProvider(task, providerType){
       return String($(this).attr('data-provider-type') || '') === providerType;
     }).first();
     if($option.length){
-      $select.val($option.val()).trigger('change');
+      var groupIndex = $select.data('group-index');
+      var $cascade = $('#' + batchDnsControlId(task, 'lineCascade', groupIndex));
+      var alreadySelected = String($select.val()) === String($option.val());
+      $select.val($option.val());
+      if(!alreadySelected || $cascade.data('loaded') !== true){
+        $select.trigger('change');
+      }
       matched++;
     }else{
       missing++;
     }
   });
 
+  refreshBatchQuickLines(task);
   if(missing > 0){
     layer.msg('已应用 ' + matched + ' 个分组，另有 ' + missing + ' 个分组没有该服务商，请单独选择', {time: 2600});
   }
 }
 
-function buildBatchQuickLineTree(task){
+function getBatchQuickProviderType(task){
+  return String($('#batchDnsQuickProvider_' + task).val() || '');
+}
+
+function getBatchGroupProviderType(task, groupIndex){
+  var $provider = $('#' + batchDnsControlId(task, 'provider', groupIndex));
+  return String($provider.find('option:selected').attr('data-provider-type') || '');
+}
+
+function buildBatchQuickLineTree(task, providerType){
   var root = {label: '', value: '', children: [], childMap: {}};
   var hasLines = false;
 
@@ -897,6 +1001,8 @@ function buildBatchQuickLineTree(task){
   }
 
   $('.batch-dns-line-cascade[data-task="' + task + '"]').each(function(){
+    var groupIndex = $(this).data('group-index');
+    if(providerType && getBatchGroupProviderType(task, groupIndex) !== providerType) return;
     if($(this).data('loaded') !== true) return;
     var tree = $(this).data('lineTree');
     if(tree) mergeNodes(root, tree.roots);
@@ -918,18 +1024,25 @@ function refreshBatchQuickLines(task){
   var $quick = $('#batchDnsQuickLine_' + task);
   if($quick.length === 0) return;
 
+  var providerType = getBatchQuickProviderType(task);
+  if(!providerType){
+    $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">请先选择解析服务商</option></select>');
+    return;
+  }
+
   var groupCount = 0;
   var readyCount = 0;
   $('.batch-dns-provider[data-task="' + task + '"]').each(function(){
+    var groupIndex = $(this).data('groupIndex');
+    if(getBatchGroupProviderType(task, groupIndex) !== providerType) return;
     groupCount++;
     if(!$(this).val()) return;
-    var groupIndex = $(this).data('groupIndex');
     var $cascade = $('#' + batchDnsControlId(task, 'lineCascade', groupIndex));
     if($cascade.data('loaded') === true) readyCount++;
   });
 
   if(groupCount === 0){
-    $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">没有可用的解析分组</option></select>');
+    $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">没有分组匹配当前服务商</option></select>');
     return;
   }
   if(readyCount < groupCount){
@@ -937,7 +1050,7 @@ function refreshBatchQuickLines(task){
     return;
   }
 
-  var quickTree = buildBatchQuickLineTree(task);
+  var quickTree = buildBatchQuickLineTree(task, providerType);
   $quick.data('quickTree', quickTree);
   $quick.empty();
   if(!quickTree || quickTree.children.length === 0){
@@ -983,11 +1096,19 @@ function findBatchLineNodeByLabels(tree, labels){
 
 function applyBatchQuickLinePath(task, labels){
   if(!labels || labels.length === 0) return;
+  var providerType = getBatchQuickProviderType(task);
+  if(!providerType) return;
   var applied = 0;
   var missing = 0;
+  var skipped = 0;
 
   $('.batch-dns-line-cascade[data-task="' + task + '"]').each(function(){
     var $cascade = $(this);
+    var groupIndex = $cascade.data('group-index');
+    if(getBatchGroupProviderType(task, groupIndex) !== providerType){
+      skipped++;
+      return;
+    }
     var tree = $cascade.data('lineTree');
     if($cascade.data('loaded') !== true || !tree){
       missing++;
@@ -998,12 +1119,15 @@ function applyBatchQuickLinePath(task, labels){
       missing++;
       return;
     }
-    renderBatchLineCascade(task, $cascade.data('group-index'), node.value);
+    renderBatchLineCascade(task, groupIndex, node.value);
     applied++;
   });
 
-  if(missing > 0){
-    layer.msg('已应用 ' + applied + ' 个分组，' + missing + ' 个分组没有该线路，已保持原选择', {time: 2600});
+  if(missing > 0 || skipped > 0){
+    var msg = '已应用 ' + applied + ' 个分组';
+    if(missing > 0) msg += '，' + missing + ' 个分组没有该线路';
+    if(skipped > 0) msg += '，' + skipped + ' 个其他服务商分组保持不变';
+    layer.msg(msg, {time: 2600});
   }
 }
 
