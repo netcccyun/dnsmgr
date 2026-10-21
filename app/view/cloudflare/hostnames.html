@@ -668,7 +668,7 @@ function initBatchDnsQuickControls(task){
   html += '</select>';
   html += '</div></div>';
   html += '</div>';
-  html += '<p class="help-block" style="margin-bottom:0;">选择服务商会匹配各分组中同类型的第一个解析服务商；线路列表加载完成后，可统一选择所有分组共有的线路。</p>';
+  html += '<p class="help-block" style="margin-bottom:0;">选择服务商会匹配各分组中同类型的第一个解析服务商；线路列表加载完成后，可选择任一线路，没有该线路的分组会保持原选择。</p>';
   html += '</div>';
   $(container).prepend(html);
   refreshBatchQuickLines(task);
@@ -1993,10 +1993,9 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
             var opts = '';
             for(var li = 0; li < res.data.lines.length; li++){
               var l = res.data.lines[li];
-              if(!l.parent){
-                var lineLabel = l.label != null ? String(l.label) : String(l.value || '');
-                opts += '<option value="' + htmlEscape(String(l.value || '')) + '" data-label="' + htmlEscape(lineLabel) + '"' + (String(l.value || '') === defaultLine || l.is_default ? ' selected' : '') + '>' + htmlEscape(lineLabel) + '</option>';
-              }
+              var lineLabel = l.label != null ? String(l.label) : String(l.value || '');
+              var indent = l.parent ? '└ ' : '';
+              opts += '<option value="' + htmlEscape(String(l.value || '')) + '" data-label="' + htmlEscape(lineLabel) + '"' + (String(l.value || '') === defaultLine || l.is_default ? ' selected' : '') + '>' + htmlEscape(indent + lineLabel) + '</option>';
             }
             lineSelect.html(opts || '<option value="" selected>请选择</option>');
             lineSelect.trigger('change.cfsub');
@@ -2167,7 +2166,7 @@ function refreshCfOptimizedQuickLines(){
 
   var groupCount = 0;
   var readyCount = 0;
-  var commonLabels = null;
+  var availableLabels = {};
   $('#cfOptimizedDnsGroupArea .cf-dns-provider').each(function(){
     groupCount++;
     if(!$(this).val()) return;
@@ -2178,20 +2177,10 @@ function refreshCfOptimizedQuickLines(){
     if($line.data('loaded') !== true || allLines.length === 0) return;
 
     readyCount++;
-    var labels = {};
     allLines.forEach(function(line){
-      if(line.parent) return;
       var label = line.label != null ? String(line.label) : String(line.value || '');
-      if(label) labels[label] = true;
+      if(label) availableLabels[label] = true;
     });
-
-    if(commonLabels === null){
-      commonLabels = labels;
-    }else{
-      Object.keys(commonLabels).forEach(function(label){
-        if(!labels[label]) delete commonLabels[label];
-      });
-    }
   });
 
   if(groupCount === 0){
@@ -2204,7 +2193,7 @@ function refreshCfOptimizedQuickLines(){
   }
 
   var optionsHtml = '<option value="__default__">各组默认线路</option>';
-  Object.keys(commonLabels || {}).sort(function(a, b){
+  Object.keys(availableLabels).sort(function(a, b){
     return String(a).localeCompare(String(b), 'zh-CN');
   }).forEach(function(label){
     optionsHtml += '<option value="' + htmlEscape(label) + '">' + htmlEscape(label) + '</option>';
