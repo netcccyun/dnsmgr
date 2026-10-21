@@ -1006,8 +1006,13 @@ function checkRecord(recordid) {
 	});
 }
 function copyToClipboard(text, selector) {
+    var el = null;
     if (!text && selector) {
-        var el = document.querySelector(selector);
+        if (selector.charAt(0) === '#') {
+            el = document.getElementById(selector.substring(1));
+        } else {
+            el = document.querySelector(selector);
+        }
         if (el) {
             text = el.getAttribute('data-value');
         }
@@ -1020,8 +1025,8 @@ function copyToClipboard(text, selector) {
     tempInput.select();
     document.execCommand('copy');
     document.body.removeChild(tempInput);
-    if(selector){
-        var icon = document.querySelector(selector + ' + a i');
+    if(el && el.nextElementSibling){
+        var icon = el.nextElementSibling.querySelector('i');
         if(icon){
             var oldClass = icon.className;
             icon.className = 'fa fa-check';
