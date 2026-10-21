@@ -43,21 +43,30 @@ class Optimizeip extends BaseController
         $type = input('post.type/d', 1);
         $kw = input('post.kw', null, 'trim');
         $status = input('post.status', null);
-        $offset = input('post.offset/d');
-        $limit = input('post.limit/d');
+        $offset = max(0, input('post.offset/d'));
+        $limit = input('post.limit/d', 15);
+        if ($limit < 1) $limit = 15;
+        if ($limit > 500) $limit = 500;
         $sort = input('post.sortName', null, 'trim');
         $orderDir = strtolower(input('post.sortOrder', 'desc')) === 'asc' ? 'asc' : 'desc';
 
-        $select = Db::name('optimizeip')->alias('A')->join('domain B', 'A.did = B.id');
+        $select = Db::name('optimizeip')->alias('A');
         if (!empty($kw)) {
             if ($type == 1) {
-                $select->whereLike('rr|B.name', '%' . $kw . '%');
+                $domainIds = Db::name('domain')->whereLike('name', '%' . $kw . '%')->column('id');
+                if (!empty($domainIds)) {
+                    $select->where(function ($query) use ($kw, $domainIds) {
+                        $query->whereLike('A.rr', '%' . $kw . '%')->whereOr('A.did', 'in', $domainIds);
+                    });
+                } else {
+                    $select->whereLike('A.rr', '%' . $kw . '%');
+                }
             } elseif ($type == 2) {
-                $select->whereLike('remark', '%' . $kw . '%');
+                $select->whereLike('A.remark', '%' . $kw . '%');
             }
         }
         if (!isNullOrEmpty($status)) {
-            $select->where('status', intval($status));
+            $select->where('A.status', intval($status));
         }
         $total = $select->count();
         $allowedSort = ['id' => 'A.id', 'rr' => 'A.rr', 'cdn_type' => 'A.cdn_type', 'recordnum' => 'A.recordnum', 'ip_type' => 'A.ip_type', 'active' => 'A.active', 'updatetime' => 'A.updatetime', 'status' => 'A.status'];
@@ -66,7 +75,19 @@ class Optimizeip extends BaseController
         } else {
             $select->order('A.id', 'desc');
         }
-        $list = $select->limit($offset, $limit)->field('A.*,B.name domain')->select();
+        $list = $select->limit($offset, $limit)
+            ->field('A.id,A.did,A.rr,A.type,A.ip_type,A.cdn_type,A.recordnum,A.ttl,A.remark,A.addtime,A.updatetime,A.status,A.active,A.errmsg')
+            ->select()
+            ->toArray();
+
+        if (!empty($list)) {
+            $domainIds = array_values(array_unique(array_column($list, 'did')));
+            $domainMap = Db::name('domain')->whereIn('id', $domainIds)->column('name', 'id');
+            foreach ($list as &$row) {
+                $row['domain'] = $domainMap[$row['did']] ?? '';
+            }
+            unset($row);
+        }
 
         return json(['total' => $total, 'rows' => $list]);
     }

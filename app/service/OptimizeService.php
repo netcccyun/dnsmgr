@@ -12,6 +12,8 @@ use app\lib\DnsHelper;
 class OptimizeService
 {
     private $ip_address = [];
+    private $domain_rows = [];
+    private $dns_models = [];
     private $add_num = 0;
     private $change_num = 0;
     private $del_num = 0;
@@ -189,7 +191,7 @@ class OptimizeService
                 continue;
             }
 
-            $drow = Db::name('domain')->alias('A')->join('account B', 'A.aid = B.id')->where('A.id', $row['did'])->field('A.*,B.type')->find();
+            $drow = $this->getTaskDomain($row['did']);
             if (!$drow) {
                 throw new Exception('域名不存在（ID：'.$row['did'].'）');
             }
@@ -199,7 +201,7 @@ class OptimizeService
 
             $info = $this->get_ip_address2($row['cdn_type'], $ip_type);
 
-            $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+            $dns = $this->getDnsModel($drow);
             if (!$dns) {
                 throw new Exception('DNS模块不存在');
             }
@@ -236,6 +238,32 @@ class OptimizeService
         }
 
         return '成功添加'.$this->add_num.'条记录，修改'.$this->change_num.'条记录，删除'.$this->del_num.'条记录';
+    }
+
+    private function getTaskDomain($did)
+    {
+        $did = intval($did);
+        if (array_key_exists($did, $this->domain_rows)) {
+            return $this->domain_rows[$did];
+        }
+        $drow = Db::name('domain')->alias('A')
+            ->join('account B', 'A.aid = B.id')
+            ->where('A.id', $did)
+            ->field('A.*,B.type')
+            ->find();
+        $this->domain_rows[$did] = $drow ?: null;
+        return $this->domain_rows[$did];
+    }
+
+    private function getDnsModel($drow)
+    {
+        $did = intval($drow['id']);
+        if (array_key_exists($did, $this->dns_models)) {
+            return $this->dns_models[$did];
+        }
+        $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+        $this->dns_models[$did] = $dns ?: null;
+        return $this->dns_models[$did];
     }
 
     //处理单个线路的解析记录
