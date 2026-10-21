@@ -556,7 +556,7 @@ function filterHostnameList(searchText){
   
   if(searchTextLower === ''){
     // 搜索为空时，显示所有原始数据
-    filteredData = allHostnameData;
+    filteredData = allHostnameData.slice();
   } else {
     // 基于原始数据进行过滤
     for(var i = 0; i < allHostnameData.length; i++){
@@ -566,7 +566,10 @@ function filterHostnameList(searchText){
       }
     }
   }
-  
+
+  var sortOptions = $('#listTable').bootstrapTable('getOptions');
+  filteredData = sortHostnameRows(filteredData, sortOptions.sortName, sortOptions.sortOrder);
+
   // 使用 load 方法重新加载过滤后的数据（客户端分页）
   $('#listTable').bootstrapTable('load', filteredData);
 }
@@ -3151,6 +3154,43 @@ function compareHostnameCreatedOn(a, b){
   return timeA - timeB;
 }
 
+function sortHostnameRows(rows, field, order){
+  if(!field || !order) return rows.slice();
+  var sorted = rows.slice();
+  var sorter = null;
+  if(field === 'created_on'){
+    sorter = compareHostnameCreatedOn;
+  }else if(field === 'hostname' || field === 'custom_origin_server'){
+    sorter = compareHostnameText;
+  }
+  if(!sorter) return sorted;
+  var direction = order === 'desc' ? -1 : 1;
+  sorted.sort(function(a, b){
+    return sorter(a[field], b[field]) * direction;
+  });
+  return sorted;
+}
+
+function setHostnameTableSort(field, order){
+  var $header = $('#listTable').find('th[data-field="' + field + '"] .th-inner').first();
+  if($header.length === 0){
+    var sorted = sortHostnameRows(allHostnameData, field, order);
+    $('#listTable').bootstrapTable('load', sorted);
+    syncHostnameSortSelect(field, order);
+    return;
+  }
+
+  // Bootstrap Table 1.21.4 的排序事件绑定在 .th-inner 上。
+  for(var i = 0; i < 3; i++){
+    var options = $('#listTable').bootstrapTable('getOptions');
+    if(options.sortName === field && options.sortOrder === order){
+      break;
+    }
+    $header.trigger('click');
+  }
+  syncHostnameSortSelect(field, order);
+}
+
 function applyHostnameSort(value){
   var sortMap = {
     created_desc: {field: 'created_on', order: 'desc'},
@@ -3162,7 +3202,7 @@ function applyHostnameSort(value){
   };
   var sort = sortMap[value];
   if(!sort) return;
-  $('#listTable').bootstrapTable('sortBy', {field: sort.field, sortOrder: sort.order});
+  setHostnameTableSort(sort.field, sort.order);
 }
 
 function syncHostnameSortSelect(field, order){
