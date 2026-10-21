@@ -398,7 +398,7 @@ class Cloudflare extends BaseController
             }
 
             // 获取该域名的默认线路
-            $recordLine = cache('record_line_' . $domainId);
+            $recordLine = cache('record_line_v2_' . $domainId);
             
             if (empty($recordLine)) {
                 // 缓存中没有，需要从 DNS 提供商获取
@@ -418,7 +418,7 @@ class Cloudflare extends BaseController
                 if ($dnsModel && method_exists($dnsModel, 'getRecordLine')) {
                     $recordLine = $dnsModel->getRecordLine();
                     if ($recordLine && is_array($recordLine)) {
-                        cache('record_line_' . $domainId, $recordLine, 604800); // 缓存7天
+                        cache('record_line_v2_' . $domainId, $recordLine, 604800); // 缓存7天
                     }
                 }
             }

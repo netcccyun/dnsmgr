@@ -232,13 +232,40 @@ class aliyun implements DnsInterface
     {
         $data = $this->getDomainInfo();
         if ($data) {
+            $parentMap = [];
+            if (!empty($data['RecordLineTreeJson'])) {
+                $tree = json_decode($data['RecordLineTreeJson'], true);
+                $this->collectLineParents($tree, null, $parentMap);
+            }
+
             $list = [];
             foreach ($data['RecordLines']['RecordLine'] as $row) {
-                $list[$row['LineCode']] = ['name' => $row['LineDisplayName'], 'parent' => isset($row['FatherCode']) ? $row['FatherCode'] : null];
+                $lineCode = (string)$row['LineCode'];
+                $parent = array_key_exists($lineCode, $parentMap)
+                    ? $parentMap[$lineCode]
+                    : (isset($row['FatherCode']) ? $row['FatherCode'] : null);
+                if ($parent === '') $parent = null;
+                $lineName = trim((string)($row['LineName'] ?? ''));
+                if ($lineName === '') $lineName = trim((string)($row['LineDisplayName'] ?? $lineCode));
+                $list[$lineCode] = ['name' => $lineName, 'parent' => $parent];
             }
             return $list;
         }
         return false;
+    }
+
+    private function collectLineParents($tree, $parent, &$parentMap)
+    {
+        if (!is_array($tree)) return;
+        foreach ($tree as $lineCode => $children) {
+            $lineCode = (string)$lineCode;
+            if (!array_key_exists($lineCode, $parentMap)) {
+                $parentMap[$lineCode] = $parent;
+            }
+            if (is_array($children)) {
+                $this->collectLineParents($children, $lineCode, $parentMap);
+            }
+        }
     }
 
     //获取域名信息

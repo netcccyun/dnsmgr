@@ -413,14 +413,14 @@ class Domain extends BaseController
     //获取解析线路和最小TTL
     private function get_line_and_ttl($drow)
     {
-        $recordLine = cache('record_line_' . $drow['id']);
+        $recordLine = cache('record_line_v2_' . $drow['id']);
         $minTTL = cache('min_ttl_' . $drow['id']);
         if (empty($recordLine)) {
             $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
             if (!$dns) throw new Exception('DNS模块不存在');
             $recordLine = $dns->getRecordLine();
             if (!$recordLine) throw new Exception('获取解析线路列表失败，' . $dns->getError());
-            cache('record_line_' . $drow['id'], $recordLine, 604800);
+            cache('record_line_v2_' . $drow['id'], $recordLine, 604800);
             $minTTL = $dns->getMinTTL();
             if ($minTTL) {
                 cache('min_ttl_' . $drow['id'], $minTTL, 604800);
@@ -545,7 +545,7 @@ class Domain extends BaseController
             Db::name('domain')->where('id', $id)->update(['recordcount' => $domainRecords['total']]);
         }
 
-        $recordLine = cache('record_line_' . $id);
+        $recordLine = cache('record_line_v2_' . $id);
 
         foreach ($domainRecords['list'] as &$row) {
             $row['LineName'] = isset($recordLine[$row['Line']]) ? $recordLine[$row['Line']]['name'] : $row['Line'];
