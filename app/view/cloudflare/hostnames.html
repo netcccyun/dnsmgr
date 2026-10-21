@@ -2070,7 +2070,7 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
     });
   }
   bindLineEvents();
-  if($('#cfOptimizedDnsGroupArea').is(':visible')){
+  if($('#cfOptimizedDnsGroupArea').css('display') !== 'none'){
     initCfOptimizedQuickControls();
   }
 }
@@ -2099,7 +2099,7 @@ function fillCfOptimizedSubLines(subLineArea, subLineSelect, allLines, selectedV
 
 function initCfOptimizedQuickControls(){
   var $groupArea = $('#cfOptimizedDnsGroupArea');
-  if($groupArea.length === 0 || !$groupArea.is(':visible')) return;
+  if($groupArea.length === 0 || $groupArea.css('display') === 'none') return;
   $groupArea.find('.cf-quick-settings').remove();
 
   var providers = {};
