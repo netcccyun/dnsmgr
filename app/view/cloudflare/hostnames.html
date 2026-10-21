@@ -52,6 +52,14 @@
               <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
                 <input type="text" id="hostnameSearchInput" class="form-control input-sm" placeholder="搜索主机名..." oninput="filterHostnameList(this.value)" style="max-width: 300px;">
               </div>
+              <select id="hostnameSortSelect" class="form-control input-sm" style="width:auto;" onchange="applyHostnameSort(this.value)" title="列表排序">
+                <option value="created_desc">创建时间（新→旧）</option>
+                <option value="created_asc">创建时间（旧→新）</option>
+                <option value="hostname_asc">主机名（A→Z）</option>
+                <option value="hostname_desc">主机名（Z→A）</option>
+                <option value="origin_asc">源站（A→Z）</option>
+                <option value="origin_desc">源站（Z→A）</option>
+              </select>
               <a href="javascript:refreshHostnameList()" class="btn btn-default btn-sm" title="刷新自定义主机名列表"><i class="fa fa-refresh"></i> 刷新</a>
               <a href="javascript:openAddDialog()" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> 添加自定义主机名</a>
               <a href="javascript:batchAddHostnames()" class="btn btn-primary btn-sm"><i class="fa fa-plus-circle"></i> 批量添加</a>
@@ -480,16 +488,20 @@ $(document).ready(function(){
     pageSize: getStoredPageSize(pageSizeKey),
     queryParams: function(params){ return {}; },
     responseHandler: hostnameResponseHandler,
+    sortName: 'created_on',
+    sortOrder: 'desc',
+    sortStable: true,
+    sortReset: false,
     columns: [
       {field: 'checkbox', checkbox: true, width: '50px'},
-      {field: 'hostname', title: '主机名'},
-      {field: 'custom_origin_server', title: '自定义源站', formatter: function(v){ return v || '-'; }},
+      {field: 'hostname', title: '主机名', sortable: true, sorter: compareHostnameText},
+      {field: 'custom_origin_server', title: '自定义源站', sortable: true, sorter: compareHostnameText, formatter: function(v){ return v || '-'; }},
       {field: 'ssl_method', title: '验证方法', formatter: function(v){ return v || '-'; }},
       {field: 'ssl_min_tls_version', title: '最低 TLS 版本', formatter: function(v){ return v || '-'; }},
       {field: 'ssl_status', title: '证书状态', formatter: formatStatus},
       {field: 'ssl_validation_status', title: '证书验证', formatter: formatStatus},
       {field: 'verification_status', title: '主机名验证', formatter: formatStatus},
-      {field: 'created_on', title: '创建时间', formatter: function(v){ return v || '-'; }},
+      {field: 'created_on', title: '创建时间', sortable: true, sorter: compareHostnameCreatedOn, formatter: function(v){ return v || '-'; }},
       {field: 'validation_errors', title: '错误信息', formatter: function(v){ return v || '-'; }},
       {
         field: 'action',
@@ -506,6 +518,9 @@ $(document).ready(function(){
     ],
     onPageChange: function(number, size){
       setStoredPageSize(pageSizeKey, size);
+    },
+    onSort: function(name, order){
+      syncHostnameSortSelect(name, order);
     },
   });
   
@@ -3116,6 +3131,53 @@ function submitQuickAddDcvCnameRecord(cnameValue, target){
       layer.alert('获取默认线路失败', {icon: 2});
     }
   });
+}
+
+function compareHostnameText(a, b){
+  return String(a || '').localeCompare(String(b || ''), 'zh-CN', {
+    numeric: true,
+    sensitivity: 'base'
+  });
+}
+
+function compareHostnameCreatedOn(a, b){
+  var timeA = Date.parse(a);
+  var timeB = Date.parse(b);
+  var validA = !isNaN(timeA);
+  var validB = !isNaN(timeB);
+  if(!validA && !validB) return 0;
+  if(!validA) return 1;
+  if(!validB) return -1;
+  return timeA - timeB;
+}
+
+function applyHostnameSort(value){
+  var sortMap = {
+    created_desc: {field: 'created_on', order: 'desc'},
+    created_asc: {field: 'created_on', order: 'asc'},
+    hostname_asc: {field: 'hostname', order: 'asc'},
+    hostname_desc: {field: 'hostname', order: 'desc'},
+    origin_asc: {field: 'custom_origin_server', order: 'asc'},
+    origin_desc: {field: 'custom_origin_server', order: 'desc'}
+  };
+  var sort = sortMap[value];
+  if(!sort) return;
+  $('#listTable').bootstrapTable('sortBy', {field: sort.field, sortOrder: sort.order});
+}
+
+function syncHostnameSortSelect(field, order){
+  var sortMap = {
+    created_on_asc: 'created_asc',
+    created_on_desc: 'created_desc',
+    hostname_asc: 'hostname_asc',
+    hostname_desc: 'hostname_desc',
+    custom_origin_server_asc: 'origin_asc',
+    custom_origin_server_desc: 'origin_desc'
+  };
+  var value = sortMap[field + '_' + order];
+  if(value){
+    $('#hostnameSortSelect').val(value);
+  }
 }
 
 function hostnameResponseHandler(res){
