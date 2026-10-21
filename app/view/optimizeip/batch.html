@@ -1,0 +1,313 @@
+{extend name="common/layout" /}
+{block name="title"}CF优选IP批量任务{/block}
+{block name="main"}
+<style>
+.batch-step-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.batch-preview{max-height:460px;overflow:auto;margin-top:12px;border:1px solid #e5e5e5;border-radius:4px;}
+.batch-preview table{margin-bottom:0;}
+.batch-preview thead th{position:sticky;top:0;z-index:2;background:#f7f7f7;}
+.batch-preview td,.batch-preview th{vertical-align:middle!important;}
+.batch-hostname{word-break:break-all;}
+.batch-muted{color:#888;font-size:12px;}
+.batch-empty{padding:28px;text-align:center;color:#999;}
+.batch-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+</style>
+<div class="row">
+  <div class="col-xs-12 center-block" style="float:none;">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          <a href="/optimizeip/opiplist" class="btn btn-sm btn-default pull-right" style="margin-top:-6px"><i class="fa fa-reply fa-fw"></i> 返回</a>
+          CF优选IP批量任务
+        </h3>
+      </div>
+      <div class="panel-body">
+        <div class="alert alert-info">
+          从 Cloudflare 自定义主机名批量生成现有 CF优选IP任务。任务创建后会出现在“任务管理”中，并使用原有定时更新逻辑执行。
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h4 class="panel-title batch-step-title">
+              <span>1. 拉取 Cloudflare 自定义主机名</span>
+            </h4>
+          </div>
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-sm-8">
+                <div class="form-group">
+                  <label>Cloudflare 自定义主机名所属域名</label>
+                  <select id="cfDomainSelect" class="form-control">
+                    <option value="">请选择 Cloudflare 域名</option>
+                    {foreach $cfDomains as $domain}
+                    <option value="{$domain.id}">{$domain.name}</option>
+                    {/foreach}
+                  </select>
+                  <p class="help-block">这里选择启用 Cloudflare for SaaS 的 Zone，系统会拉取该 Zone 下的自定义主机名。</p>
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <div class="form-group">
+                  <label>&nbsp;</label>
+                  <button type="button" class="btn btn-primary btn-block" id="pullBtn" onclick="pullHostnames()">
+                    <i class="fa fa-cloud-download"></i> 拉取主机名
+                  </button>
+                </div>
+              </div>
+            </div>
+            {if empty($cfDomains)}
+            <div class="alert alert-warning" style="margin-bottom:0;">未找到已配置 Zone ID 的 Cloudflare 域名，请先在域名账户中确认。</div>
+            {/if}
+          </div>
+        </div>
+
+        <div class="panel panel-default" id="previewPanel" style="display:none;">
+          <div class="panel-heading">
+            <h4 class="panel-title batch-step-title">
+              <span>2. 选择主机名</span>
+              <span class="batch-muted" id="previewSummary"></span>
+            </h4>
+          </div>
+          <div class="panel-body">
+            <div class="batch-actions">
+              <input type="text" class="form-control input-sm" id="hostnameSearch" placeholder="搜索主机名..." style="width:260px;" oninput="filterPreviewRows()">
+              <button type="button" class="btn btn-default btn-sm" onclick="toggleAllMatched(true)">全选可创建</button>
+              <button type="button" class="btn btn-default btn-sm" onclick="toggleAllMatched(false)">取消全选</button>
+              <span class="batch-muted" id="selectedCount">已选择 0 个</span>
+            </div>
+            <div class="batch-preview">
+              <table class="table table-striped table-hover table-bordered">
+                <thead>
+                  <tr>
+                    <th style="width:42px;"><input type="checkbox" id="checkAll" onclick="toggleAllMatched(this.checked)"></th>
+                    <th>自定义主机名</th>
+                    <th>匹配解析域名</th>
+                    <th>主机记录</th>
+                    <th>解析服务商</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody id="previewBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-default" id="taskPanel" style="display:none;">
+          <div class="panel-heading">
+            <h4 class="panel-title">3. 任务设置</h4>
+          </div>
+          <div class="panel-body">
+            <form class="form-horizontal" id="batchTaskForm" onsubmit="return false;">
+              <div class="form-group">
+                <label class="col-sm-2 control-label">解析线路类型</label>
+                <div class="col-sm-8">
+                  <label class="radio-inline">
+                    <input type="radio" name="type" value="0" checked> 电信/联通/移动线路
+                  </label>
+                  <label class="radio-inline">
+                    <input type="radio" name="type" value="1"> 默认/联通/移动线路
+                  </label>
+                  <p class="help-block">用于 Cloudflare 自定义主机名时通常选择“电信/联通/移动线路”。</p>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label">解析 IP 类型</label>
+                <div class="col-sm-8">
+                  <label class="checkbox-inline"><input type="checkbox" name="ip_type[]" value="v4" checked> IPv4（A）</label>
+                  <label class="checkbox-inline"><input type="checkbox" name="ip_type[]" value="v6" {if $optimizeIpApi eq 2}disabled{/if}> IPv6（AAAA）</label>
+                  {if $optimizeIpApi eq 2}<span class="text-muted">当前优选接口不支持 IPv6</span>{/if}
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label">每线路解析数量</label>
+                <div class="col-sm-3">
+                  <input type="number" class="form-control" id="recordnum" value="2" min="1" max="50">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label">TTL</label>
+                <div class="col-sm-3">
+                  <input type="number" class="form-control" id="ttl" value="600" min="1" max="3600">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label">备注</label>
+                <div class="col-sm-8">
+                  <input type="text" class="form-control" id="remark" value="CF自定义主机名批量任务" maxlength="100">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label">创建后启用</label>
+                <div class="col-sm-8">
+                  <label class="checkbox-inline"><input type="checkbox" id="taskActive" checked> 立即加入定时更新</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-8">
+                  <button type="button" class="btn btn-success" id="createBtn" onclick="createBatchTasks()">
+                    <i class="fa fa-plus-circle"></i> 批量创建任务
+                  </button>
+                  <span class="batch-muted" style="margin-left:8px;">已存在相同域名和主机记录的任务会被更新。</span>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/js/layer/layer.js"></script>
+<script>
+var previewRows = [];
+
+function escapeHtml(value){
+  return $('<div>').text(value == null ? '' : String(value)).html();
+}
+
+function pullHostnames(){
+  var cfDomainId = $('#cfDomainSelect').val();
+  if(!cfDomainId){
+    layer.msg('请先选择 Cloudflare 域名', {icon: 0});
+    return;
+  }
+  var ii = layer.load(2);
+  $('#pullBtn').prop('disabled', true);
+  $.post('/optimizeip/batch/pull', {cf_domain_id: cfDomainId}, function(res){
+    layer.close(ii);
+    $('#pullBtn').prop('disabled', false);
+    if(res.code !== 0){
+      layer.alert(res.msg || '拉取自定义主机名失败', {icon: 2});
+      return;
+    }
+    previewRows = res.data.rows || [];
+    renderPreviewRows();
+    $('#previewPanel').show();
+    $('#taskPanel').show();
+    $('#previewSummary').text('共 ' + previewRows.length + ' 个，可创建 ' + res.data.matched + ' 个');
+    if(previewRows.length === 0){
+      layer.msg('该 Cloudflare Zone 下没有自定义主机名');
+    }
+  }, 'json').fail(function(){
+    layer.close(ii);
+    $('#pullBtn').prop('disabled', false);
+    layer.alert('拉取自定义主机名失败', {icon: 2});
+  });
+}
+
+function renderPreviewRows(){
+  var keyword = $.trim($('#hostnameSearch').val()).toLowerCase();
+  var html = '';
+  previewRows.forEach(function(row, index){
+    if(keyword && row.hostname.toLowerCase().indexOf(keyword) === -1) return;
+    var canCreate = row.matched;
+    var status = canCreate ? (row.exists ? '<span class="label label-warning">已存在，将更新</span>' : '<span class="label label-success">可创建</span>') : '<span class="label label-danger">未匹配解析域名</span>';
+    html += '<tr data-hostname="' + escapeHtml(row.hostname) + '">';
+    html += '<td class="text-center"><input type="checkbox" class="hostname-check" value="' + escapeHtml(row.hostname) + '" ' + (canCreate ? '' : 'disabled') + ' onchange="updateSelectedCount()"></td>';
+    html += '<td class="batch-hostname"><strong>' + escapeHtml(row.hostname) + '</strong></td>';
+    html += '<td>' + (row.domain_name ? escapeHtml(row.domain_name) : '-') + '</td>';
+    html += '<td>' + (row.rr ? '<code>' + escapeHtml(row.rr) + '</code>' : '-') + '</td>';
+    html += '<td>' + (row.dns_type_name ? escapeHtml(row.dns_type_name) : '-') + '</td>';
+    html += '<td>' + status + '</td>';
+    html += '</tr>';
+  });
+  if(html === ''){
+    html = '<tr><td colspan="6" class="batch-empty">没有匹配的主机名</td></tr>';
+  }
+  $('#previewBody').html(html);
+  updateSelectedCount();
+}
+
+function filterPreviewRows(){
+  renderPreviewRows();
+}
+
+function toggleAllMatched(checked){
+  $('.hostname-check:not(:disabled)').prop('checked', checked);
+  $('#checkAll').prop('checked', checked);
+  updateSelectedCount();
+}
+
+function updateSelectedCount(){
+  var count = $('.hostname-check:checked').length;
+  $('#selectedCount').text('已选择 ' + count + ' 个');
+  var total = $('.hostname-check:not(:disabled)').length;
+  $('#checkAll').prop('checked', total > 0 && count === total);
+}
+
+function getSelectedHostnames(){
+  return $('.hostname-check:checked').map(function(){ return this.value; }).get();
+}
+
+function createBatchTasks(){
+  var hostnames = getSelectedHostnames();
+  if(hostnames.length === 0){
+    layer.msg('请至少选择一个可创建的主机名', {icon: 0});
+    return;
+  }
+  var ipTypes = $('input[name="ip_type[]"]:checked').map(function(){ return this.value; }).get();
+  if(ipTypes.length === 0){
+    layer.msg('请至少选择一种解析 IP 类型', {icon: 0});
+    return;
+  }
+  var recordnum = parseInt($('#recordnum').val(), 10);
+  var ttl = parseInt($('#ttl').val(), 10);
+  if(!recordnum || recordnum < 1 || recordnum > 50){
+    layer.msg('每线路解析数量必须在 1-50 之间', {icon: 0});
+    return;
+  }
+  if(!ttl || ttl < 1 || ttl > 3600){
+    layer.msg('TTL 必须在 1-3600 之间', {icon: 0});
+    return;
+  }
+
+  layer.confirm('确定为选中的 <strong>' + hostnames.length + '</strong> 个主机名创建或更新优选任务吗？', {
+    title: '批量创建任务',
+    icon: 0,
+    btn: ['确定创建', '取消']
+  }, function(confirmIndex){
+    layer.close(confirmIndex);
+    var ii = layer.load(2);
+    $('#createBtn').prop('disabled', true);
+    $.ajax({
+      type: 'POST',
+      url: '/optimizeip/batch/create',
+      data: {
+        cf_domain_id: $('#cfDomainSelect').val(),
+        hostnames: hostnames,
+        type: $('input[name=type]:checked').val() || 0,
+        ip_type: ipTypes,
+        recordnum: recordnum,
+        ttl: ttl,
+        remark: $('#remark').val(),
+        active: $('#taskActive').is(':checked') ? 1 : 0
+      },
+      dataType: 'json',
+      success: function(res){
+        layer.close(ii);
+        $('#createBtn').prop('disabled', false);
+        if(res.code !== 0){
+          layer.alert(res.msg || '批量创建任务失败', {icon: 2});
+          return;
+        }
+        var detail = res.msg;
+        if(res.data && res.data.errors && res.data.errors.length > 0){
+          detail += '<br><br><strong>跳过详情：</strong><br>' + res.data.errors.map(escapeHtml).join('<br>');
+        }
+        layer.alert(detail, {icon: res.data && res.data.skipped > 0 ? 0 : 1, title: '批量任务结果'}, function(){
+          window.location.href = '/optimizeip/opiplist';
+        });
+      },
+      error: function(){
+        layer.close(ii);
+        $('#createBtn').prop('disabled', false);
+        layer.alert('批量创建任务失败', {icon: 2});
+      }
+    });
+  });
+}
+</script>
+{/block}
