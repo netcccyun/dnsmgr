@@ -517,6 +517,10 @@ $(document).ready(function(){
   $(document).on('change.batchDnsProvider', '.batch-dns-provider', function(){
     loadBatchDnsLines($(this).data('task'), $(this).data('group-index'), $(this).val());
   });
+
+  $(document).on('change.batchDnsLine', '.batch-dns-line-level', function(){
+    handleBatchLineLevelChange($(this));
+  });
 });
 
 function updateBatchButtons(){
@@ -598,21 +602,23 @@ function confirmBatchDelete(){
 var batchDnsTaskContainers = {
   dcv: '#batchDcvHostnameList',
   hostname: '#batchHostnameTxtList',
-  cert: '#batchCertTxtList'
+  cert: '#batchCertTxtList',
+  cf: '#cfOptimizedDnsGroupArea'
 };
 
 function batchDnsControlId(task, type, groupIndex){
   return 'batchDns_' + task + '_' + type + '_' + groupIndex;
 }
 
-function buildBatchDnsGroupControls(task, groupIndex, targets){
+function buildBatchDnsGroupControls(task, groupIndex, targets, dnsDomain){
   targets = $.isArray(targets) ? targets : [];
   var providerId = batchDnsControlId(task, 'provider', groupIndex);
   var lineAreaId = batchDnsControlId(task, 'lineArea', groupIndex);
-  var lineId = batchDnsControlId(task, 'line', groupIndex);
+  var cascadeId = batchDnsControlId(task, 'lineCascade', groupIndex);
+  var inputClass = task === 'cf' ? 'form-control input-sm batch-dns-provider' : 'form-control batch-dns-provider';
   var html = '<div class="form-group" style="margin-bottom:0;">';
   html += '<label class="control-label" style="font-size:12px;">选择解析服务商</label>';
-  html += '<select id="' + providerId + '" class="form-control batch-dns-provider" data-task="' + task + '" data-group-index="' + groupIndex + '" required>';
+  html += '<select id="' + providerId + '" class="' + inputClass + '" data-task="' + task + '" data-group-index="' + groupIndex + '" data-dns-domain="' + htmlEscape(dnsDomain || '') + '" required>';
   html += '<option value="">请选择</option>';
   if(targets.length > 0){
     targets.forEach(function(target){
@@ -626,12 +632,159 @@ function buildBatchDnsGroupControls(task, groupIndex, targets){
   html += '</select>';
   html += '<div id="' + lineAreaId + '" style="display:none;margin-top:8px;">';
   html += '<label class="control-label" style="font-size:12px;">解析线路</label>';
-  html += '<select id="' + lineId + '" class="form-control batch-dns-line" data-task="' + task + '" data-group-index="' + groupIndex + '">';
-  html += '<option value="">请先选择解析服务商</option>';
-  html += '</select>';
+  html += '<div id="' + cascadeId + '" class="batch-dns-line-cascade" data-task="' + task + '" data-group-index="' + groupIndex + '">';
+  html += '<select class="form-control batch-dns-line-level" disabled><option value="">请先选择解析服务商</option></select>';
+  html += '</div>';
   html += '</div>';
   html += '</div>';
   return html;
+}
+
+function buildBatchLineTree(lines){
+  var tree = {nodes: {}, roots: []};
+  lines = $.isArray(lines) ? lines : [];
+  lines.forEach(function(line){
+    var value = line.value != null ? String(line.value) : '';
+    var label = line.label != null ? String(line.label) : value;
+    var parent = line.parent != null ? String(line.parent) : '';
+    tree.nodes[value] = {value: value, label: label, parent: parent, children: [], is_default: !!line.is_default};
+  });
+  lines.forEach(function(line){
+    var value = line.value != null ? String(line.value) : '';
+    var node = tree.nodes[value];
+    if(!node) return;
+    if(node.parent && tree.nodes[node.parent]){
+      tree.nodes[node.parent].children.push(node);
+    }else{
+      tree.roots.push(node);
+    }
+  });
+  return tree;
+}
+
+function findBatchLinePath(tree, value){
+  var path = [];
+  var node = tree.nodes[String(value)];
+  var guard = 0;
+  while(node && guard < 100){
+    path.unshift(node);
+    node = node.parent ? tree.nodes[node.parent] : null;
+    guard++;
+  }
+  return path;
+}
+
+function appendBatchLineSelect($cascade, nodes, selectedValue, level, parentValue){
+  var html = '<select class="form-control batch-dns-line-level" style="margin-top:4px;" data-level="' + level + '"';
+  if(parentValue !== null && parentValue !== undefined){
+    html += ' data-parent-value="' + htmlEscape(String(parentValue)) + '"';
+  }
+  html += '>';
+  if(parentValue !== null && parentValue !== undefined){
+    html += '<option value="' + htmlEscape(String(parentValue)) + '">当前线路（不细分）</option>';
+  }
+  nodes.forEach(function(node){
+    html += '<option value="' + htmlEscape(node.value) + '">' + htmlEscape(node.label) + '</option>';
+  });
+  html += '</select>';
+  $cascade.append(html);
+  var $select = $cascade.find('.batch-dns-line-level').last();
+  var hasSelected = $select.find('option').filter(function(){
+    return String($(this).val()) === String(selectedValue);
+  }).length > 0;
+  if(hasSelected){
+    $select.val(String(selectedValue));
+  }
+  return $select;
+}
+
+function renderBatchLineCascade(task, groupIndex, selectedValue){
+  var $cascade = $('#' + batchDnsControlId(task, 'lineCascade', groupIndex));
+  var tree = $cascade.data('lineTree');
+  if(!tree || tree.roots.length === 0){
+    $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">没有可用线路</option></select>');
+    return;
+  }
+
+  var path = findBatchLinePath(tree, selectedValue);
+  var rootNode = path.length > 0 ? path[0] : tree.roots[0];
+  $cascade.empty();
+  appendBatchLineSelect($cascade, tree.roots, rootNode.value, 0, null);
+
+  var current = rootNode;
+  var pathIndex = 1;
+  while(current && current.children.length > 0){
+    var nextNode = pathIndex < path.length ? path[pathIndex] : null;
+    var nextValue = nextNode ? nextNode.value : current.value;
+    appendBatchLineSelect($cascade, current.children, nextValue, pathIndex, current.value);
+    if(!nextNode) break;
+    current = nextNode;
+    pathIndex++;
+  }
+}
+
+function handleBatchLineLevelChange($select){
+  var $cascade = $select.closest('.batch-dns-line-cascade');
+  var tree = $cascade.data('lineTree');
+  if(!tree) return;
+
+  var level = parseInt($select.data('level'), 10) || 0;
+  $cascade.find('.batch-dns-line-level').each(function(){
+    if((parseInt($(this).data('level'), 10) || 0) > level){
+      $(this).remove();
+    }
+  });
+
+  var value = $select.val() != null ? String($select.val()) : '';
+  var parentValue = $select.attr('data-parent-value');
+  if(parentValue !== undefined && value === String(parentValue)) return;
+
+  var node = tree.nodes[value];
+  if(node && node.children.length > 0){
+    appendBatchLineSelect($cascade, node.children, node.value, level + 1, node.value);
+  }
+}
+
+function loadBatchDnsLines(task, groupIndex, domainId){
+  var lineAreaId = batchDnsControlId(task, 'lineArea', groupIndex);
+  var cascadeId = batchDnsControlId(task, 'lineCascade', groupIndex);
+  var $lineArea = $('#' + lineAreaId);
+  var $cascade = $('#' + cascadeId);
+
+  $cascade.data('loaded', false).data('allLines', []).data('lineTree', null).data('defaultLine', '');
+  if(!domainId){
+    $lineArea.hide();
+    refreshBatchQuickLines(task);
+    return;
+  }
+
+  $lineArea.show();
+  $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">加载中...</option></select>');
+
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/get_domain_default_line',
+    data: {domain_id: domainId},
+    dataType: 'json',
+    success: function(res){
+      if(res.code === 0 && res.data && $.isArray(res.data.lines) && res.data.lines.length > 0){
+        var lines = res.data.lines;
+        var tree = buildBatchLineTree(lines);
+        var defaultLine = res.data.default_line != null ? String(res.data.default_line) : String(lines[0].value || '');
+        $cascade.data('allLines', lines).data('lineTree', tree).data('defaultLine', defaultLine).data('loaded', true);
+        renderBatchLineCascade(task, groupIndex, defaultLine);
+      }else{
+        $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">获取线路失败</option></select>');
+        $cascade.data('loaded', false);
+      }
+      refreshBatchQuickLines(task);
+    },
+    error: function(){
+      $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">获取线路失败</option></select>');
+      $cascade.data('loaded', false);
+      refreshBatchQuickLines(task);
+    }
+  });
 }
 
 function initBatchDnsQuickControls(task){
@@ -655,7 +808,7 @@ function initBatchDnsQuickControls(task){
     providerOptions += '<option value="' + htmlEscape(type) + '">' + htmlEscape(providers[type]) + '</option>';
   });
 
-  var html = '<div class="well well-sm" style="margin-bottom:12px;">';
+  var html = '<div class="well well-sm batch-dns-quick-settings" style="margin-bottom:12px;">';
   html += '<div class="row">';
   html += '<div class="col-sm-6"><div class="form-group" style="margin-bottom:8px;">';
   html += '<label>一键选择解析服务商</label>';
@@ -663,12 +816,12 @@ function initBatchDnsQuickControls(task){
   html += '</div></div>';
   html += '<div class="col-sm-6"><div class="form-group" style="margin-bottom:8px;">';
   html += '<label>一键选择线路</label>';
-  html += '<select id="batchDnsQuickLine_' + task + '" class="form-control" onchange="applyBatchQuickLine(\'' + task + '\', this.value)" disabled>';
-  html += '<option value="__default__">请先完成服务商选择</option>';
-  html += '</select>';
+  html += '<div id="batchDnsQuickLine_' + task + '" class="batch-dns-quick-line-cascade">';
+  html += '<select class="form-control batch-dns-quick-line-level" disabled><option value="">请先完成服务商选择</option></select>';
+  html += '</div>';
   html += '</div></div>';
   html += '</div>';
-  html += '<p class="help-block" style="margin-bottom:0;">选择服务商会匹配各分组中同类型的第一个解析服务商；线路列表加载完成后，可选择任一线路，没有该线路的分组会保持原选择。</p>';
+  html += '<p class="help-block" style="margin-bottom:0;">选择服务商会匹配各分组中同类型的第一个解析服务商；线路会按一级、子级逐级显示，没有对应线路的分组会保持原选择。</p>';
   html += '</div>';
   $(container).prepend(html);
   refreshBatchQuickLines(task);
@@ -698,129 +851,127 @@ function applyBatchQuickProvider(task, providerType){
   }
 }
 
-function loadBatchDnsLines(task, groupIndex, domainId){
-  var lineAreaId = batchDnsControlId(task, 'lineArea', groupIndex);
-  var lineId = batchDnsControlId(task, 'line', groupIndex);
-  var $lineArea = $('#' + lineAreaId);
-  var $line = $('#' + lineId);
+function buildBatchQuickLineTree(task){
+  var root = {label: '', value: '', children: [], childMap: {}};
+  var hasLines = false;
 
-  $line.data('loaded', false).data('allLines', []).data('defaultLine', '');
-  if(!domainId){
-    $lineArea.hide();
-    refreshBatchQuickLines(task);
-    return;
+  function mergeNodes(parent, nodes){
+    nodes.forEach(function(node){
+      var label = String(node.label || node.value || '');
+      if(!label) return;
+      if(!parent.childMap[label]){
+        parent.childMap[label] = {label: label, value: label, children: [], childMap: {}};
+        parent.children.push(parent.childMap[label]);
+      }
+      mergeNodes(parent.childMap[label], node.children);
+      hasLines = true;
+    });
   }
 
-  $lineArea.show();
-  $line.html('<option value="">加载中...</option>').prop('disabled', true);
-
-  $.ajax({
-    type: 'POST',
-    url: '/cloudflare/get_domain_default_line',
-    data: {domain_id: domainId},
-    dataType: 'json',
-    success: function(res){
-      if(res.code === 0 && res.data && $.isArray(res.data.lines) && res.data.lines.length > 0){
-        var lines = res.data.lines;
-        var defaultLine = res.data.default_line != null ? String(res.data.default_line) : String(lines[0].value || '');
-        var optionsHtml = '';
-        lines.forEach(function(line){
-          var label = line.label != null ? String(line.label) : String(line.value || '');
-          var indent = line.parent ? '└ ' : '';
-          optionsHtml += '<option value="' + htmlEscape(String(line.value || '')) + '" data-label="' + htmlEscape(label) + '">' + htmlEscape(indent + label) + '</option>';
-        });
-        $line.html(optionsHtml).prop('disabled', false).val(defaultLine);
-        $line.data('allLines', lines).data('defaultLine', defaultLine).data('loaded', true);
-      }else{
-        $line.html('<option value="">获取线路失败</option>').prop('disabled', true);
-        $line.data('loaded', false);
-      }
-      refreshBatchQuickLines(task);
-    },
-    error: function(){
-      $line.html('<option value="">获取线路失败</option>').prop('disabled', true);
-      $line.data('loaded', false);
-      refreshBatchQuickLines(task);
-    }
+  $('.batch-dns-line-cascade[data-task="' + task + '"]').each(function(){
+    if($(this).data('loaded') !== true) return;
+    var tree = $(this).data('lineTree');
+    if(tree) mergeNodes(root, tree.roots);
   });
+  return hasLines ? root : null;
+}
+
+function appendQuickLineSelect($container, nodes, level){
+  var html = '<select class="form-control batch-dns-quick-line-level" style="margin-top:4px;" data-level="' + level + '" onchange="handleBatchQuickLineChange(this)">';
+  html += '<option value="">' + (level === 0 ? '请选择线路' : '继续选择子线路（可选）') + '</option>';
+  nodes.forEach(function(node){
+    html += '<option value="' + htmlEscape(node.label) + '">' + htmlEscape(node.label) + '</option>';
+  });
+  html += '</select>';
+  $container.append(html);
 }
 
 function refreshBatchQuickLines(task){
-  var $quickLine = $('#batchDnsQuickLine_' + task);
-  if($quickLine.length === 0) return;
+  var $quick = $('#batchDnsQuickLine_' + task);
+  if($quick.length === 0) return;
 
   var groupCount = 0;
   var readyCount = 0;
-  var commonLabels = null;
   $('.batch-dns-provider[data-task="' + task + '"]').each(function(){
     groupCount++;
     if(!$(this).val()) return;
-
     var groupIndex = $(this).data('groupIndex');
-    var $line = $('#' + batchDnsControlId(task, 'line', groupIndex));
-    var allLines = $line.data('allLines') || [];
-    if($line.data('loaded') !== true || allLines.length === 0) return;
-
-    readyCount++;
-    var labels = {};
-    allLines.forEach(function(line){
-      var label = line.label != null ? String(line.label) : String(line.value || '');
-      if(label) labels[label] = true;
-    });
-
-    if(commonLabels === null){
-      commonLabels = labels;
-    }else{
-      Object.keys(commonLabels).forEach(function(label){
-        if(!labels[label]) delete commonLabels[label];
-      });
-    }
+    var $cascade = $('#' + batchDnsControlId(task, 'lineCascade', groupIndex));
+    if($cascade.data('loaded') === true) readyCount++;
   });
 
   if(groupCount === 0){
-    $quickLine.html('<option value="__default__">没有可用的解析分组</option>').prop('disabled', true);
+    $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">没有可用的解析分组</option></select>');
     return;
   }
   if(readyCount < groupCount){
-    $quickLine.html('<option value="__default__">请先完成服务商选择</option>').prop('disabled', true);
+    $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">请先完成服务商选择</option></select>');
     return;
   }
 
-  var optionsHtml = '<option value="__default__">各组默认线路</option>';
-  Object.keys(commonLabels || {}).sort(function(a, b){
-    return String(a).localeCompare(String(b), 'zh-CN');
-  }).forEach(function(label){
-    optionsHtml += '<option value="' + htmlEscape(label) + '">' + htmlEscape(label) + '</option>';
-  });
-  $quickLine.html(optionsHtml).prop('disabled', false);
+  var quickTree = buildBatchQuickLineTree(task);
+  $quick.data('quickTree', quickTree);
+  $quick.empty();
+  if(!quickTree || quickTree.children.length === 0){
+    $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">没有可用线路</option></select>');
+    return;
+  }
+  appendQuickLineSelect($quick, quickTree.children, 0);
 }
 
-function applyBatchQuickLine(task, label){
-  if(!label) return;
+function findQuickLineNode(quickTree, labels){
+  var nodes = quickTree.children;
+  var node = null;
+  for(var i = 0; i < labels.length; i++){
+    node = null;
+    for(var j = 0; j < nodes.length; j++){
+      if(nodes[j].label === labels[i]){
+        node = nodes[j];
+        break;
+      }
+    }
+    if(!node) return null;
+    nodes = node.children;
+  }
+  return node;
+}
+
+function findBatchLineNodeByLabels(tree, labels){
+  var nodes = tree.roots;
+  var node = null;
+  for(var i = 0; i < labels.length; i++){
+    node = null;
+    for(var j = 0; j < nodes.length; j++){
+      if(nodes[j].label === labels[i]){
+        node = nodes[j];
+        break;
+      }
+    }
+    if(!node) return null;
+    nodes = node.children;
+  }
+  return node;
+}
+
+function applyBatchQuickLinePath(task, labels){
+  if(!labels || labels.length === 0) return;
   var applied = 0;
   var missing = 0;
 
-  $('.batch-dns-line[data-task="' + task + '"]').each(function(){
-    var $line = $(this);
-    if(label === '__default__'){
-      if($line.data('loaded') === true){
-        $line.val($line.data('defaultLine'));
-        applied++;
-      }else{
-        missing++;
-      }
+  $('.batch-dns-line-cascade[data-task="' + task + '"]').each(function(){
+    var $cascade = $(this);
+    var tree = $cascade.data('lineTree');
+    if($cascade.data('loaded') !== true || !tree){
+      missing++;
       return;
     }
-
-    var $option = $line.find('option').filter(function(){
-      return String($(this).attr('data-label') || '') === String(label);
-    }).first();
-    if($option.length){
-      $line.val($option.val());
-      applied++;
-    }else{
+    var node = findBatchLineNodeByLabels(tree, labels);
+    if(!node){
       missing++;
+      return;
     }
+    renderBatchLineCascade(task, $cascade.data('group-index'), node.value);
+    applied++;
   });
 
   if(missing > 0){
@@ -828,11 +979,45 @@ function applyBatchQuickLine(task, label){
   }
 }
 
+function handleBatchQuickLineChange(select){
+  var $select = $(select);
+  var $container = $select.closest('.batch-dns-quick-line-cascade');
+  var task = String($container.attr('id') || '').replace('batchDnsQuickLine_', '');
+  var level = parseInt($select.data('level'), 10) || 0;
+
+  $container.find('.batch-dns-quick-line-level').each(function(){
+    if((parseInt($(this).data('level'), 10) || 0) > level){
+      $(this).remove();
+    }
+  });
+
+  var labels = [];
+  $container.find('.batch-dns-quick-line-level').each(function(){
+    var value = $.trim($(this).val() || '');
+    if(value) labels.push(value);
+  });
+  if(labels.length === 0) return;
+
+  applyBatchQuickLinePath(task, labels);
+
+  var quickTree = $container.data('quickTree');
+  var node = quickTree ? findQuickLineNode(quickTree, labels) : null;
+  if(node && node.children.length > 0){
+    appendQuickLineSelect($container, node.children, level + 1);
+  }
+}
+
 function getBatchDnsLineSelection(task, groupIndex){
-  var $line = $('#' + batchDnsControlId(task, 'line', groupIndex));
+  var $cascade = $('#' + batchDnsControlId(task, 'lineCascade', groupIndex));
+  var $levels = $cascade.find('.batch-dns-line-level');
+  var rawValue = $levels.length > 0 ? $levels.last().val() : '';
+  var value = rawValue != null ? String(rawValue) : '';
+  var tree = $cascade.data('lineTree');
+  var node = tree ? tree.nodes[value] : null;
   return {
-    value: $line.val() != null ? String($line.val()) : String($line.data('defaultLine') || ''),
-    loaded: $line.data('loaded') === true
+    value: value,
+    label: node ? node.label : '',
+    loaded: $cascade.data('loaded') === true
   };
 }
 
@@ -1785,8 +1970,7 @@ function resetCfOptimizedState(){
   var confirmBtn = $("#cfOptimizedConfirmBtn");
   confirmBtn.prop('disabled', false).text('开始处理').data('cfmode', '').removeData('savedDnsDomains cfExistingId preDetectResults cfExistingRec');
   $('#cfOptimizedExistingRecord').hide();
-  $('#cfOptimizedDnsGroupArea [id^=lineArea_]').hide();
-  $('#cfOptimizedDnsGroupArea [id^=subLineArea_]').hide();
+  $('#cfOptimizedDnsGroupArea [id^=batchDns_cf_lineArea_]').hide();
   $('#singleLineArea').hide();
   $('#singleSubLineArea').hide();
   $('#batchCfOptimizedList').html('').hide();
@@ -1915,24 +2099,7 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
     groupHtml += '<div class="panel-heading" style="padding:8px 12px;"><strong>DNS 域名：' + htmlEscape(dnsDomain) + '</strong></div>';
     groupHtml += '<div class="panel-body" style="padding:8px 12px;">';
     groupHtml += '<div style="margin-bottom:6px;font-size:13px;color:#555;">主机名：<strong>' + htmlEscape(hostnamesStr) + '</strong></div>';
-    groupHtml += '<select id="dnsProvider_' + groupIndex + '" data-dns-domain="' + htmlEscape(dnsDomain) + '" data-group-index="' + groupIndex + '" class="form-control input-sm cf-dns-provider">';
-    groupHtml += '<option value="">请选择</option>';
-
-    if(allTargets.length > 0){
-      allTargets.forEach(function(target){
-        var providerName = target.account_type_name || target.account_type || '-';
-        var displayName = target.domain_name + ' (' + providerName + ')';
-        groupHtml += '<option value="' + htmlEscape(String(target.domain_id || '')) + '" data-provider-type="' + htmlEscape(target.account_type || '') + '" data-provider-name="' + htmlEscape(providerName) + '">' + htmlEscape(displayName) + '</option>';
-      });
-    } else {
-      groupHtml += '<option value="" disabled>未找到解析域名</option>';
-    }
-    groupHtml += '</select>';
-
-    groupHtml += '<div id="lineArea_' + groupIndex + '" style="margin-top:6px;display:none;"><label style="font-size:13px;color:#555;">解析线路</label>';
-    groupHtml += '<select id="lineSelect_' + groupIndex + '" class="form-control input-sm cf-line-main"><option value="">加载中...</option></select>';
-    groupHtml += '<div id="subLineArea_' + groupIndex + '" style="margin-top:4px;display:none;"><label style="font-size:12px;color:#999;">子集线路（非必填）</label>';
-    groupHtml += '<select id="subLineSelect_' + groupIndex + '" class="form-control input-sm"><option value="">请选择</option></select></div></div>';
+    groupHtml += buildBatchDnsGroupControls('cf', groupIndex, allTargets, dnsDomain);
 
     groupHtml += '</div></div>';
     groupIndex++;
@@ -1969,59 +2136,6 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
 
   // 绑定 DNS 服务商选择事件：选择后加载该域名的线路列表（DOM 已渲染完毕）
   function bindLineEvents(){
-    // 批量模式：DNS 服务商选择 → 加载线路（事件委托）
-    $('#cfOptimizedDnsGroupArea').off('change.cfline', '.cf-dns-provider').on('change.cfline', '.cf-dns-provider', function(){
-      var domainId = $(this).val();
-      var groupIndex = $(this).data('groupIndex');
-      var lineArea = $('#lineArea_' + groupIndex);
-      var lineSelect = $('#lineSelect_' + groupIndex);
-      var subLineArea = $('#subLineArea_' + groupIndex);
-
-      lineSelect.data('loaded', false).data('allLines', []).data('defaultLine', '');
-      if(!domainId){ lineArea.hide(); subLineArea.hide(); refreshCfOptimizedQuickLines(); return; }
-      lineArea.show();
-      subLineArea.hide();
-      lineSelect.html('<option value="">加载中...</option>');
-
-      $.ajax({
-        type: 'POST', url: '/cloudflare/get_domain_default_line', data: {domain_id: domainId}, dataType: 'json',
-        success: function(res){
-          if(res.code === 0 && res.data && res.data.lines && res.data.lines.length > 0){
-            lineSelect.data('allLines', res.data.lines);
-            var defaultLine = res.data.default_line != null ? String(res.data.default_line) : '';
-            lineSelect.data('defaultLine', defaultLine).data('loaded', true);
-            var opts = '';
-            for(var li = 0; li < res.data.lines.length; li++){
-              var l = res.data.lines[li];
-              var lineLabel = l.label != null ? String(l.label) : String(l.value || '');
-              var indent = l.parent ? '└ ' : '';
-              opts += '<option value="' + htmlEscape(String(l.value || '')) + '" data-label="' + htmlEscape(lineLabel) + '"' + (String(l.value || '') === defaultLine || l.is_default ? ' selected' : '') + '>' + htmlEscape(indent + lineLabel) + '</option>';
-            }
-            lineSelect.html(opts || '<option value="" selected>请选择</option>');
-            lineSelect.trigger('change.cfsub');
-            refreshCfOptimizedQuickLines();
-          } else {
-            var defLine = (res.code === 0 && res.data && res.data.default_line) ? String(res.data.default_line) : '0';
-            lineSelect.html('<option value="' + htmlEscape(defLine) + '" data-label="默认" selected>默认</option>');
-            lineSelect.data('allLines', [{value: defLine, label: '默认', parent: '', is_default: true}]).data('defaultLine', defLine).data('loaded', true);
-            subLineArea.hide();
-            refreshCfOptimizedQuickLines();
-          }
-        },
-        error: function(){ lineSelect.html('<option value="">获取线路失败</option>'); lineSelect.data('allLines', []).data('loaded', false); subLineArea.hide(); refreshCfOptimizedQuickLines(); }
-      });
-    });
-
-    // 批量模式：主线路选择 → 显示子线路（事件委托，更可靠）
-    $('#cfOptimizedDnsGroupArea').off('change.cfsub', '.cf-line-main').on('change.cfsub', '.cf-line-main', function(){
-      var groupIndex = $(this).attr('id').replace('lineSelect_', '');
-      var subLineArea = $('#subLineArea_' + groupIndex);
-      var subLineSelect = $('#subLineSelect_' + groupIndex);
-      var allLines = $(this).data('allLines') || [];
-      var selectedVal = $(this).val();
-      fillCfOptimizedSubLines(subLineArea, subLineSelect, allLines, selectedVal);
-    });
-
     // 单域名模式：DNS 服务商选择 → 加载线路
     $('#cfOptimizedSingleDnsArea #cfOptimizedDnsProvider').off('change.cfline').on('change.cfline', function(){
       var domainId = $(this).val();
@@ -2070,7 +2184,7 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
   }
   bindLineEvents();
   if($('#cfOptimizedDnsGroupArea').css('display') !== 'none'){
-    initCfOptimizedQuickControls();
+    initBatchDnsQuickControls('cf');
   }
 }
 
@@ -2096,146 +2210,6 @@ function fillCfOptimizedSubLines(subLineArea, subLineSelect, allLines, selectedV
   }
 }
 
-function initCfOptimizedQuickControls(){
-  var $groupArea = $('#cfOptimizedDnsGroupArea');
-  if($groupArea.length === 0 || $groupArea.css('display') === 'none') return;
-  $groupArea.find('.cf-quick-settings').remove();
-
-  var providers = {};
-  $groupArea.find('.cf-dns-provider').each(function(){
-    $(this).find('option[data-provider-type]').each(function(){
-      var type = String($(this).attr('data-provider-type') || '');
-      if(!type) return;
-      if(!providers[type]) providers[type] = $(this).attr('data-provider-name') || type;
-    });
-  });
-
-  var providerOptions = '<option value="">请选择服务商</option>';
-  Object.keys(providers).sort(function(a, b){
-    return String(providers[a]).localeCompare(String(providers[b]), 'zh-CN');
-  }).forEach(function(type){
-    providerOptions += '<option value="' + htmlEscape(type) + '">' + htmlEscape(providers[type]) + '</option>';
-  });
-
-  var html = '<div class="well well-sm cf-quick-settings" style="margin-bottom:10px;">';
-  html += '<div class="row">';
-  html += '<div class="col-sm-6"><div class="form-group" style="margin-bottom:8px;">';
-  html += '<label>一键选择解析服务商</label>';
-  html += '<select id="cfOptimizedQuickProvider" class="form-control" onchange="applyCfOptimizedQuickProvider(this.value)">' + providerOptions + '</select>';
-  html += '</div></div>';
-  html += '<div class="col-sm-6"><div class="form-group" style="margin-bottom:8px;">';
-  html += '<label>一键选择线路</label>';
-  html += '<select id="cfOptimizedQuickLine" class="form-control" onchange="applyCfOptimizedQuickLine(this.value)" disabled>';
-  html += '<option value="__default__">请先完成服务商选择</option>';
-  html += '</select>';
-  html += '</div></div>';
-  html += '</div>';
-  html += '<p class="help-block" style="margin-bottom:0;">选择服务商会匹配各分组中同类型的第一个解析服务商；线路列表加载完成后，可统一选择所有分组共有的线路。</p>';
-  html += '</div>';
-  $groupArea.prepend(html);
-  refreshCfOptimizedQuickLines();
-}
-
-function applyCfOptimizedQuickProvider(providerType){
-  providerType = String(providerType || '');
-  if(!providerType) return;
-
-  var matched = 0;
-  var missing = 0;
-  $('#cfOptimizedDnsGroupArea .cf-dns-provider').each(function(){
-    var $select = $(this);
-    var $option = $select.find('option').filter(function(){
-      return String($(this).attr('data-provider-type') || '') === providerType;
-    }).first();
-    if($option.length){
-      $select.val($option.val()).trigger('change.cfline');
-      matched++;
-    }else{
-      missing++;
-    }
-  });
-
-  if(missing > 0){
-    layer.msg('已应用 ' + matched + ' 个分组，另有 ' + missing + ' 个分组没有该服务商，请单独选择', {time: 2600});
-  }
-}
-
-function refreshCfOptimizedQuickLines(){
-  var $quickLine = $('#cfOptimizedQuickLine');
-  if($quickLine.length === 0) return;
-
-  var groupCount = 0;
-  var readyCount = 0;
-  var availableLabels = {};
-  $('#cfOptimizedDnsGroupArea .cf-dns-provider').each(function(){
-    groupCount++;
-    if(!$(this).val()) return;
-
-    var groupIndex = $(this).data('groupIndex');
-    var $line = $('#lineSelect_' + groupIndex);
-    var allLines = $line.data('allLines') || [];
-    if($line.data('loaded') !== true || allLines.length === 0) return;
-
-    readyCount++;
-    allLines.forEach(function(line){
-      var label = line.label != null ? String(line.label) : String(line.value || '');
-      if(label) availableLabels[label] = true;
-    });
-  });
-
-  if(groupCount === 0){
-    $quickLine.html('<option value="__default__">没有可用的解析分组</option>').prop('disabled', true);
-    return;
-  }
-  if(readyCount < groupCount){
-    $quickLine.html('<option value="__default__">请先完成服务商选择</option>').prop('disabled', true);
-    return;
-  }
-
-  var optionsHtml = '<option value="__default__">各组默认线路</option>';
-  Object.keys(availableLabels).sort(function(a, b){
-    return String(a).localeCompare(String(b), 'zh-CN');
-  }).forEach(function(label){
-    optionsHtml += '<option value="' + htmlEscape(label) + '">' + htmlEscape(label) + '</option>';
-  });
-  $quickLine.html(optionsHtml).prop('disabled', false);
-}
-
-function applyCfOptimizedQuickLine(label){
-  if(!label) return;
-  var applied = 0;
-  var missing = 0;
-
-  $('#cfOptimizedDnsGroupArea .cf-dns-provider').each(function(){
-    var groupIndex = $(this).data('groupIndex');
-    var $line = $('#lineSelect_' + groupIndex);
-    if($line.data('loaded') !== true){
-      missing++;
-      return;
-    }
-
-    if(label === '__default__'){
-      $line.val($line.data('defaultLine')).trigger('change.cfsub');
-      applied++;
-      return;
-    }
-
-    var $option = $line.find('option').filter(function(){
-      return String($(this).attr('data-label') || '') === String(label);
-    }).first();
-    if($option.length){
-      $line.val($option.val()).trigger('change.cfsub');
-      applied++;
-    }else{
-      missing++;
-    }
-  });
-
-  if(missing > 0){
-    layer.msg('已应用 ' + applied + ' 个分组，' + missing + ' 个分组没有该线路，已保持原选择', {time: 2600});
-  }
-}
-
 // 确认处理
 function confirmBatchCfOptimized(){
   var confirmBtn = $("#cfOptimizedConfirmBtn");
@@ -2247,32 +2221,22 @@ function confirmBatchCfOptimized(){
   // 收集所有组的选择（或使用上次已保存的选择）
   var dnsDomains = {};
   var allSelected = true;
-  var lineMissing = false;
   var savedDomains = confirmBtn.data('savedDnsDomains');
 
   if(savedDomains){
     // 批量二次确认：使用预检测时保存的选择
     dnsDomains = savedDomains;
-  } else if($('#cfOptimizedDnsGroupArea').is(':visible')){
-    // 多域名分组模式：首次收集（按域名匹配，不依赖 select 顺序）
-    $('#cfOptimizedDnsGroupArea select[id^=dnsProvider_]').each(function(){
+  } else if($('#cfOptimizedDnsGroupArea').css('display') !== 'none'){
+    // 多域名分组模式：使用统一的分级线路选择
+    var cfSelectionState = validateBatchDnsSelections('cf');
+    if(cfSelectionState.providerMissing){ layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0}); return; }
+    if(cfSelectionState.lineMissing){ layer.msg('请等待所有解析线路加载完成', {icon: 0}); return; }
+    $('.batch-dns-provider[data-task="cf"]').each(function(){
       var dnsDomain = $(this).data('dnsDomain') || '';
       var val = $(this).val();
-      var domainId = val;
       var groupIndex = $(this).data('groupIndex');
-      var lineVal = $('#lineSelect_' + groupIndex).val() || '0';
-      var subLineVal = $('#subLineSelect_' + groupIndex).val();
-      if(subLineVal) lineVal = subLineVal;
-      // 获取线路的显示名称（用于预检测结果显示）
-      var lineLabel = '';
-      if(subLineVal){
-        lineLabel = $('#subLineSelect_' + groupIndex).find('option:selected').text() || '';
-      } else {
-        lineLabel = $('#lineSelect_' + groupIndex).find('option:selected').text() || '';
-      }
-      dnsDomains[dnsDomain] = {domainId: domainId, dnsDomain: dnsDomain, line: lineVal, lineLabel: lineLabel};
-      if(!val) allSelected = false;
-      if(!$('#lineSelect_' + groupIndex).data('loaded')) lineMissing = true;
+      var lineSel = getBatchDnsLineSelection('cf', groupIndex);
+      dnsDomains[dnsDomain] = {domainId: val, dnsDomain: dnsDomain, line: lineSel.value, lineLabel: lineSel.label || '默认'};
     });
   } else {
     // 单域名模式
@@ -2293,7 +2257,6 @@ function confirmBatchCfOptimized(){
   }
 
   if(!allSelected){ layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0}); return; }
-  if(lineMissing){ layer.msg('请等待所有解析线路加载完成', {icon: 0}); return; }
 
   // 保存选择供批量二次确认时复用（此时 DOM 可能已被隐藏）
   confirmBtn.data('savedDnsDomains', dnsDomains);
