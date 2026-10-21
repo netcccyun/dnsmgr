@@ -513,6 +513,10 @@ $(document).ready(function(){
   $("#listTable").on('check.bs.table uncheck.bs.table check-all.bs.table uncheck-all.bs.table', function(){
     updateBatchButtons();
   });
+
+  $(document).on('change.batchDnsProvider', '.batch-dns-provider', function(){
+    loadBatchDnsLines($(this).data('task'), $(this).data('group-index'), $(this).val());
+  });
 });
 
 function updateBatchButtons(){
@@ -591,7 +595,264 @@ function confirmBatchDelete(){
   });
 }
 
+var batchDnsTaskContainers = {
+  dcv: '#batchDcvHostnameList',
+  hostname: '#batchHostnameTxtList',
+  cert: '#batchCertTxtList'
+};
+
+function batchDnsControlId(task, type, groupIndex){
+  return 'batchDns_' + task + '_' + type + '_' + groupIndex;
+}
+
+function buildBatchDnsGroupControls(task, groupIndex, targets){
+  targets = $.isArray(targets) ? targets : [];
+  var providerId = batchDnsControlId(task, 'provider', groupIndex);
+  var lineAreaId = batchDnsControlId(task, 'lineArea', groupIndex);
+  var lineId = batchDnsControlId(task, 'line', groupIndex);
+  var html = '<div class="form-group" style="margin-bottom:0;">';
+  html += '<label class="control-label" style="font-size:12px;">选择解析服务商</label>';
+  html += '<select id="' + providerId + '" class="form-control batch-dns-provider" data-task="' + task + '" data-group-index="' + groupIndex + '" required>';
+  html += '<option value="">请选择</option>';
+  if(targets.length > 0){
+    targets.forEach(function(target){
+      var providerName = target.account_type_name || target.account_type || '-';
+      var displayName = target.domain_name + ' (' + providerName + ')';
+      html += '<option value="' + htmlEscape(String(target.domain_id || '')) + '" data-provider-type="' + htmlEscape(target.account_type || '') + '" data-provider-name="' + htmlEscape(providerName) + '">' + htmlEscape(displayName) + '</option>';
+    });
+  }else{
+    html += '<option value="" disabled>未找到解析域名</option>';
+  }
+  html += '</select>';
+  html += '<div id="' + lineAreaId + '" style="display:none;margin-top:8px;">';
+  html += '<label class="control-label" style="font-size:12px;">解析线路</label>';
+  html += '<select id="' + lineId + '" class="form-control batch-dns-line" data-task="' + task + '" data-group-index="' + groupIndex + '">';
+  html += '<option value="">请先选择解析服务商</option>';
+  html += '</select>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function initBatchDnsQuickControls(task){
+  var container = batchDnsTaskContainers[task];
+  if(!container) return;
+  var providers = {};
+  $('.batch-dns-provider[data-task="' + task + '"]').each(function(){
+    $(this).find('option[data-provider-type]').each(function(){
+      var type = String($(this).attr('data-provider-type') || '');
+      if(!type) return;
+      if(!providers[type]){
+        providers[type] = $(this).attr('data-provider-name') || type;
+      }
+    });
+  });
+
+  var providerOptions = '<option value="">请选择服务商</option>';
+  Object.keys(providers).sort(function(a, b){
+    return String(providers[a]).localeCompare(String(providers[b]), 'zh-CN');
+  }).forEach(function(type){
+    providerOptions += '<option value="' + htmlEscape(type) + '">' + htmlEscape(providers[type]) + '</option>';
+  });
+
+  var html = '<div class="well well-sm" style="margin-bottom:12px;">';
+  html += '<div class="row">';
+  html += '<div class="col-sm-6"><div class="form-group" style="margin-bottom:8px;">';
+  html += '<label>一键选择解析服务商</label>';
+  html += '<select id="batchDnsQuickProvider_' + task + '" class="form-control" onchange="applyBatchQuickProvider(\'' + task + '\', this.value)">' + providerOptions + '</select>';
+  html += '</div></div>';
+  html += '<div class="col-sm-6"><div class="form-group" style="margin-bottom:8px;">';
+  html += '<label>一键选择线路</label>';
+  html += '<select id="batchDnsQuickLine_' + task + '" class="form-control" onchange="applyBatchQuickLine(\'' + task + '\', this.value)" disabled>';
+  html += '<option value="__default__">请先完成服务商选择</option>';
+  html += '</select>';
+  html += '</div></div>';
+  html += '</div>';
+  html += '<p class="help-block" style="margin-bottom:0;">选择服务商会匹配各分组中同类型的第一个解析服务商；线路列表加载完成后，可统一选择所有分组共有的线路。</p>';
+  html += '</div>';
+  $(container).prepend(html);
+  refreshBatchQuickLines(task);
+}
+
+function applyBatchQuickProvider(task, providerType){
+  providerType = String(providerType || '');
+  if(!providerType) return;
+
+  var matched = 0;
+  var missing = 0;
+  $('.batch-dns-provider[data-task="' + task + '"]').each(function(){
+    var $select = $(this);
+    var $option = $select.find('option').filter(function(){
+      return String($(this).attr('data-provider-type') || '') === providerType;
+    }).first();
+    if($option.length){
+      $select.val($option.val()).trigger('change');
+      matched++;
+    }else{
+      missing++;
+    }
+  });
+
+  if(missing > 0){
+    layer.msg('已应用 ' + matched + ' 个分组，另有 ' + missing + ' 个分组没有该服务商，请单独选择', {time: 2600});
+  }
+}
+
+function loadBatchDnsLines(task, groupIndex, domainId){
+  var lineAreaId = batchDnsControlId(task, 'lineArea', groupIndex);
+  var lineId = batchDnsControlId(task, 'line', groupIndex);
+  var $lineArea = $('#' + lineAreaId);
+  var $line = $('#' + lineId);
+
+  $line.data('loaded', false).data('allLines', []).data('defaultLine', '');
+  if(!domainId){
+    $lineArea.hide();
+    refreshBatchQuickLines(task);
+    return;
+  }
+
+  $lineArea.show();
+  $line.html('<option value="">加载中...</option>').prop('disabled', true);
+
+  $.ajax({
+    type: 'POST',
+    url: '/cloudflare/get_domain_default_line',
+    data: {domain_id: domainId},
+    dataType: 'json',
+    success: function(res){
+      if(res.code === 0 && res.data && $.isArray(res.data.lines) && res.data.lines.length > 0){
+        var lines = res.data.lines;
+        var defaultLine = res.data.default_line != null ? String(res.data.default_line) : String(lines[0].value || '');
+        var optionsHtml = '';
+        lines.forEach(function(line){
+          var label = line.label != null ? String(line.label) : String(line.value || '');
+          var indent = line.parent ? '└ ' : '';
+          optionsHtml += '<option value="' + htmlEscape(String(line.value || '')) + '" data-label="' + htmlEscape(label) + '">' + htmlEscape(indent + label) + '</option>';
+        });
+        $line.html(optionsHtml).prop('disabled', false).val(defaultLine);
+        $line.data('allLines', lines).data('defaultLine', defaultLine).data('loaded', true);
+      }else{
+        $line.html('<option value="">获取线路失败</option>').prop('disabled', true);
+        $line.data('loaded', false);
+      }
+      refreshBatchQuickLines(task);
+    },
+    error: function(){
+      $line.html('<option value="">获取线路失败</option>').prop('disabled', true);
+      $line.data('loaded', false);
+      refreshBatchQuickLines(task);
+    }
+  });
+}
+
+function refreshBatchQuickLines(task){
+  var $quickLine = $('#batchDnsQuickLine_' + task);
+  if($quickLine.length === 0) return;
+
+  var groupCount = 0;
+  var readyCount = 0;
+  var commonLabels = null;
+  $('.batch-dns-provider[data-task="' + task + '"]').each(function(){
+    groupCount++;
+    if(!$(this).val()) return;
+
+    var groupIndex = $(this).data('groupIndex');
+    var $line = $('#' + batchDnsControlId(task, 'line', groupIndex));
+    var allLines = $line.data('allLines') || [];
+    if($line.data('loaded') !== true || allLines.length === 0) return;
+
+    readyCount++;
+    var labels = {};
+    allLines.forEach(function(line){
+      var label = line.label != null ? String(line.label) : String(line.value || '');
+      if(label) labels[label] = true;
+    });
+
+    if(commonLabels === null){
+      commonLabels = labels;
+    }else{
+      Object.keys(commonLabels).forEach(function(label){
+        if(!labels[label]) delete commonLabels[label];
+      });
+    }
+  });
+
+  if(groupCount === 0){
+    $quickLine.html('<option value="__default__">没有可用的解析分组</option>').prop('disabled', true);
+    return;
+  }
+  if(readyCount < groupCount){
+    $quickLine.html('<option value="__default__">请先完成服务商选择</option>').prop('disabled', true);
+    return;
+  }
+
+  var optionsHtml = '<option value="__default__">各组默认线路</option>';
+  Object.keys(commonLabels || {}).sort(function(a, b){
+    return String(a).localeCompare(String(b), 'zh-CN');
+  }).forEach(function(label){
+    optionsHtml += '<option value="' + htmlEscape(label) + '">' + htmlEscape(label) + '</option>';
+  });
+  $quickLine.html(optionsHtml).prop('disabled', false);
+}
+
+function applyBatchQuickLine(task, label){
+  if(!label) return;
+  var applied = 0;
+  var missing = 0;
+
+  $('.batch-dns-line[data-task="' + task + '"]').each(function(){
+    var $line = $(this);
+    if(label === '__default__'){
+      if($line.data('loaded') === true){
+        $line.val($line.data('defaultLine'));
+        applied++;
+      }else{
+        missing++;
+      }
+      return;
+    }
+
+    var $option = $line.find('option').filter(function(){
+      return String($(this).attr('data-label') || '') === String(label);
+    }).first();
+    if($option.length){
+      $line.val($option.val());
+      applied++;
+    }else{
+      missing++;
+    }
+  });
+
+  if(missing > 0){
+    layer.msg('已应用 ' + applied + ' 个分组，' + missing + ' 个分组没有该线路，已保持原选择', {time: 2600});
+  }
+}
+
+function getBatchDnsLineSelection(task, groupIndex){
+  var $line = $('#' + batchDnsControlId(task, 'line', groupIndex));
+  return {
+    value: $line.val() != null ? String($line.val()) : String($line.data('defaultLine') || ''),
+    loaded: $line.data('loaded') === true
+  };
+}
+
+function validateBatchDnsSelections(task){
+  var providerMissing = false;
+  var lineMissing = false;
+  $('.batch-dns-provider[data-task="' + task + '"]').each(function(){
+    if(!$(this).val()){
+      providerMissing = true;
+      return;
+    }
+    var groupIndex = $(this).data('groupIndex');
+    var selection = getBatchDnsLineSelection(task, groupIndex);
+    if(!selection.loaded) lineMissing = true;
+  });
+  return {providerMissing: providerMissing, lineMissing: lineMissing};
+}
+
 var batchDcvHostnamesData = [];
+var batchDcvHostnamesWithDns = [];
 
 function batchDcvDelegation(){
   var selectedRows = $("#listTable").bootstrapTable('getSelections');
@@ -648,6 +909,7 @@ function batchDcvDelegation(){
 }
 
 function showBatchDcvModal(hostnamesWithDns, uuid){
+  batchDcvHostnamesWithDns = hostnamesWithDns;
   // 按 DNS 域名分组
   var dnsDomains = {};
   hostnamesWithDns.forEach(function(item){
@@ -696,22 +958,7 @@ function showBatchDcvModal(hostnamesWithDns, uuid){
       hostnamesHtml += 'CNAME 目标: <code style="word-wrap:break-word;word-break:break-all;">' + htmlEscape(displayCnameTarget) + '</code>';
       hostnamesHtml += '</div>';
       
-      hostnamesHtml += '<div class="form-group" style="margin-bottom:0;">';
-      hostnamesHtml += '<label class="control-label" style="font-size:12px;">选择解析服务商</label>';
-      hostnamesHtml += '<select id="dnsProvider_' + domainIndex + '" class="form-control" required>';
-      hostnamesHtml += '<option value="">请选择</option>';
-      
-      // 填充 DNS 服务商选项
-      if(firstItem.targets.length > 0){
-        firstItem.targets.forEach(function(target){
-          var providerName = target.account_type_name || target.account_type || '-';
-          var displayName = target.domain_name + ' (' + providerName + ')';
-          hostnamesHtml += '<option value="' + target.domain_id + '">' + htmlEscape(displayName) + '</option>';
-        });
-      }
-      
-      hostnamesHtml += '</select>';
-      hostnamesHtml += '</div>';
+      hostnamesHtml += buildBatchDnsGroupControls('dcv', domainIndex, firstItem.targets);
       hostnamesHtml += '</div>';
       
       domainIndex++;
@@ -720,6 +967,7 @@ function showBatchDcvModal(hostnamesWithDns, uuid){
 
   $('#batchDcvAlert').text('确定要为选中的 ' + hostnamesWithDns.length + ' 个自定义主机名添加 DCV 委派 CNAME 记录吗？');
   $('#batchDcvHostnameList').html(hostnamesHtml);
+  initBatchDnsQuickControls('dcv');
   $("#modal-batch-dcv").modal('show');
 }
 
@@ -735,43 +983,13 @@ function confirmBatchDcv(){
     return;
   }
 
-  // 先获取所有主机名的 DNS 信息，按实际 DNS 域名分组
-  var hostnamesWithDns = [];
-  var processedCount = 0;
-  var totalCount = batchDcvHostnamesData.length;
-  
-  // 收集所有主机名的 DNS 信息
-  batchDcvHostnamesData.forEach(function(row, index){
-    var hostname = row.hostname;
-    var cnameFullName = '_acme-challenge.' + hostname;
-    
-    resolveDcvCnameTargets(cnameFullName, function(targets){
-      processedCount++;
-      
-      if(targets.length > 0){
-        // 使用第一个目标域名作为该主机名的 DNS 域名
-        var dnsDomain = targets[0].domain_name;
-        hostnamesWithDns.push({
-          row: row,
-          hostname: hostname,
-          dnsDomain: dnsDomain,
-          targets: targets
-        });
-      } else {
-        // 无法解析 DNS 域名的主机名
-        hostnamesWithDns.push({
-          row: row,
-          hostname: hostname,
-          dnsDomain: '未知域名',
-          targets: []
-        });
-      }
-      
-      if(processedCount === totalCount){
-        processBatchDcv(hostnamesWithDns, uuid, confirmBtn);
-      }
-    });
-  });
+  if(batchDcvHostnamesWithDns.length === 0){
+    confirmBtn.prop('disabled', false).text('开始批量添加');
+    layer.msg('未获取到可用的解析信息，请关闭弹窗后重试', {icon: 0});
+    return;
+  }
+
+  processBatchDcv(batchDcvHostnamesWithDns, uuid, confirmBtn);
 }
 
 function processBatchDcv(hostnamesWithDns, uuid, confirmBtn){
@@ -785,23 +1003,15 @@ function processBatchDcv(hostnamesWithDns, uuid, confirmBtn){
     dnsDomains[dnsDomain].push(item);
   });
 
-  // 检查是否所有 DNS 域名都选择了 DNS 服务商
-  var allSelected = true;
-  var domainIndex = 0;
-  for(var dnsDomain in dnsDomains){
-    if(dnsDomains.hasOwnProperty(dnsDomain)){
-      var selectedDomainId = $('#dnsProvider_' + domainIndex).val();
-      if(!selectedDomainId){
-        allSelected = false;
-        break;
-      }
-      domainIndex++;
-    }
-  }
-  
-  if(!allSelected){
+  var selectionState = validateBatchDnsSelections('dcv');
+  if(selectionState.providerMissing){
     confirmBtn.prop('disabled', false).text('开始批量添加');
     layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0});
+    return;
+  }
+  if(selectionState.lineMissing){
+    confirmBtn.prop('disabled', false).text('开始批量添加');
+    layer.msg('请等待所有解析线路加载完成', {icon: 0});
     return;
   }
 
@@ -819,7 +1029,8 @@ function processBatchDcv(hostnamesWithDns, uuid, confirmBtn){
   for(var dnsDomain in dnsDomains){
     if(dnsDomains.hasOwnProperty(dnsDomain)){
       var domainItems = dnsDomains[dnsDomain];
-      var selectedDomainId = $('#dnsProvider_' + currentDomainIndex).val();
+      var selectedDomainId = $('#batchDns_dcv_provider_' + currentDomainIndex).val();
+      var selectedLine = getBatchDnsLineSelection('dcv', currentDomainIndex).value;
       
       // 为该 DNS 域名下的所有主机名使用同一个 DNS 服务商（直接用已解析的 targets）
       domainItems.forEach(function(item){
@@ -852,7 +1063,7 @@ function processBatchDcv(hostnamesWithDns, uuid, confirmBtn){
           return;
         }
 
-        submitBatchDcvCnameRecord(cnameFullName, cnameTarget, selectedTarget, function(success, error){
+        submitBatchDcvCnameRecord(cnameFullName, cnameTarget, selectedTarget, selectedLine, function(success, error){
           if(success){
             batchResults.success++;
           } else {
@@ -886,44 +1097,30 @@ function processBatchDcv(hostnamesWithDns, uuid, confirmBtn){
   }
 }
 
-function submitBatchDcvCnameRecord(cnameFullName, cnameValue, target, callback){
-  // 先获取目标域名的默认线路
+function submitBatchDcvCnameRecord(cnameFullName, cnameValue, target, line, callback){
   $.ajax({
     type: 'POST',
-    url: '/cloudflare/get_domain_default_line',
-    data: {domain_id: target.domain_id},
+    url: '/record/add/' + target.domain_id,
+    data: {
+      name: target.record_name,
+      type: 'CNAME',
+      value: cnameValue,
+      line: line,
+      ttl: 600,
+      mx: 1,
+      weight: 0,
+      remark: 'Cloudflare DCV 委派'
+    },
     dataType: 'json',
-    success: function(lineRes){
-      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line) ? lineRes.data.default_line : '0';
-      // 使用获取到的线路添加记录
-      $.ajax({
-        type: 'POST',
-        url: '/record/add/' + target.domain_id,
-        data: {
-          name: target.record_name,
-          type: 'CNAME',
-          value: cnameValue,
-          line: line,
-          ttl: 600,
-          mx: 1,
-          weight: 0,
-          remark: 'Cloudflare DCV 委派'
-        },
-        dataType: 'json',
-        success: function(res){
-          if(res.code === 0){
-            callback(true);
-          }else{
-            callback(false, res.msg);
-          }
-        },
-        error: function(){
-          callback(false, '服务器错误');
-        }
-      });
+    success: function(res){
+      if(res.code === 0){
+        callback(true);
+      }else{
+        callback(false, res.msg);
+      }
     },
     error: function(){
-      callback(false, '获取默认线路失败');
+      callback(false, '服务器错误');
     }
   });
 }
@@ -1021,19 +1218,8 @@ function showBatchHostnameTxtModal(dnsDomains, totalCount, invalidHostnames, war
         hostnamesHtml += '</div>';
       });
       
-      hostnamesHtml += '<div class="form-group" style="margin-bottom:0;margin-top:12px;">';
-      hostnamesHtml += '<label class="control-label" style="font-size:12px;">选择解析服务商</label>';
-      hostnamesHtml += '<select id="txtDnsProvider_' + domainIndex + '" class="form-control" required>';
-      hostnamesHtml += '<option value="">请选择</option>';
-      
-      // 填充 DNS 服务商选项
-      targets.forEach(function(target){
-        var providerName = target.account_type_name || target.account_type || '-';
-        var displayName = target.domain_name + ' (' + providerName + ')';
-        hostnamesHtml += '<option value="' + target.domain_id + '">' + htmlEscape(displayName) + '</option>';
-      });
-      
-      hostnamesHtml += '</select>';
+      hostnamesHtml += '<div style="margin-top:12px;">';
+      hostnamesHtml += buildBatchDnsGroupControls('hostname', domainIndex, targets);
       hostnamesHtml += '</div>';
       hostnamesHtml += '</div>';
       
@@ -1047,28 +1233,20 @@ function showBatchHostnameTxtModal(dnsDomains, totalCount, invalidHostnames, war
   }
   $('#batchHostnameTxtAlert').html(alertMsg);
   $('#batchHostnameTxtList').html(hostnamesHtml);
+  initBatchDnsQuickControls('hostname');
   $("#modal-batch-hostname-txt").modal('show');
 }
 
 var batchHostnameTxtData = [];
 
 function confirmBatchHostnameTxt(){
-  // 检查是否所有 DNS 域名都选择了 DNS 服务商
-  var allSelected = true;
-  var domainIndex = 0;
-  for(var dnsDomain in batchHostnameTxtData){
-    if(batchHostnameTxtData.hasOwnProperty(dnsDomain)){
-      var selectedDomainId = $('#txtDnsProvider_' + domainIndex).val();
-      if(!selectedDomainId){
-        allSelected = false;
-        break;
-      }
-      domainIndex++;
-    }
-  }
-  
-  if(!allSelected){
+  var selectionState = validateBatchDnsSelections('hostname');
+  if(selectionState.providerMissing){
     layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0});
+    return;
+  }
+  if(selectionState.lineMissing){
+    layer.msg('请等待所有解析线路加载完成', {icon: 0});
     return;
   }
 
@@ -1099,7 +1277,8 @@ function confirmBatchHostnameTxt(){
       var domainData = batchHostnameTxtData[dnsDomain];
       var domainItems = domainData.items;
       var targets = domainData.targets;
-      var selectedDomainId = $('#txtDnsProvider_' + currentDomainIndex).val();
+      var selectedDomainId = $('#batchDns_hostname_provider_' + currentDomainIndex).val();
+      var selectedLine = getBatchDnsLineSelection('hostname', currentDomainIndex).value;
       
       // 查找用户选择的目标
       var selectedTarget = null;
@@ -1151,7 +1330,7 @@ function confirmBatchHostnameTxt(){
             return;
           }
           
-          submitBatchTxtRecord(txtName, txtValue, targetForThisHostname, 'Cloudflare 主机名验证', function(success, error){
+          submitBatchTxtRecord(txtName, txtValue, targetForThisHostname, selectedLine, 'Cloudflare 主机名验证', function(success, error){
             processedCount++;
             if(success){
               batchResults.success++;
@@ -1280,19 +1459,8 @@ function showBatchCertTxtModal(dnsDomains, totalCount, invalidHostnames, warning
         hostnamesHtml += '</div>';
       });
       
-      hostnamesHtml += '<div class="form-group" style="margin-bottom:0;margin-top:12px;">';
-      hostnamesHtml += '<label class="control-label" style="font-size:12px;">选择解析服务商</label>';
-      hostnamesHtml += '<select id="certDnsProvider_' + domainIndex + '" class="form-control" required>';
-      hostnamesHtml += '<option value="">请选择</option>';
-      
-      // 填充 DNS 服务商选项
-      targets.forEach(function(target){
-        var providerName = target.account_type_name || target.account_type || '-';
-        var displayName = target.domain_name + ' (' + providerName + ')';
-        hostnamesHtml += '<option value="' + target.domain_id + '">' + htmlEscape(displayName) + '</option>';
-      });
-      
-      hostnamesHtml += '</select>';
+      hostnamesHtml += '<div style="margin-top:12px;">';
+      hostnamesHtml += buildBatchDnsGroupControls('cert', domainIndex, targets);
       hostnamesHtml += '</div>';
       hostnamesHtml += '</div>';
       
@@ -1306,28 +1474,20 @@ function showBatchCertTxtModal(dnsDomains, totalCount, invalidHostnames, warning
   }
   $('#batchCertTxtAlert').html(alertMsg);
   $('#batchCertTxtList').html(hostnamesHtml);
+  initBatchDnsQuickControls('cert');
   $("#modal-batch-cert-txt").modal('show');
 }
 
 var batchCertTxtData = [];
 
 function confirmBatchCertTxt(){
-  // 检查是否所有 DNS 域名都选择了 DNS 服务商
-  var allSelected = true;
-  var domainIndex = 0;
-  for(var dnsDomain in batchCertTxtData){
-    if(batchCertTxtData.hasOwnProperty(dnsDomain)){
-      var selectedDomainId = $('#certDnsProvider_' + domainIndex).val();
-      if(!selectedDomainId){
-        allSelected = false;
-        break;
-      }
-      domainIndex++;
-    }
-  }
-  
-  if(!allSelected){
+  var selectionState = validateBatchDnsSelections('cert');
+  if(selectionState.providerMissing){
     layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0});
+    return;
+  }
+  if(selectionState.lineMissing){
+    layer.msg('请等待所有解析线路加载完成', {icon: 0});
     return;
   }
 
@@ -1358,7 +1518,8 @@ function confirmBatchCertTxt(){
       var domainData = batchCertTxtData[dnsDomain];
       var domainItems = domainData.items;
       var targets = domainData.targets;
-      var selectedDomainId = $('#certDnsProvider_' + currentDomainIndex).val();
+      var selectedDomainId = $('#batchDns_cert_provider_' + currentDomainIndex).val();
+      var selectedLine = getBatchDnsLineSelection('cert', currentDomainIndex).value;
       
       // 查找用户选择的目标
       var selectedTarget = null;
@@ -1410,7 +1571,7 @@ function confirmBatchCertTxt(){
             return;
           }
           
-          submitBatchTxtRecord(txtName, txtValue, targetForThisHostname, 'Cloudflare 证书验证', function(success, error){
+          submitBatchTxtRecord(txtName, txtValue, targetForThisHostname, selectedLine, 'Cloudflare 证书验证', function(success, error){
             processedCount++;
             if(success){
               batchResults.success++;
@@ -1761,7 +1922,7 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
       allTargets.forEach(function(target){
         var providerName = target.account_type_name || target.account_type || '-';
         var displayName = target.domain_name + ' (' + providerName + ')';
-        groupHtml += '<option value="' + target.domain_id + '">' + htmlEscape(displayName) + '</option>';
+        groupHtml += '<option value="' + htmlEscape(String(target.domain_id || '')) + '" data-provider-type="' + htmlEscape(target.account_type || '') + '" data-provider-name="' + htmlEscape(providerName) + '">' + htmlEscape(displayName) + '</option>';
       });
     } else {
       groupHtml += '<option value="" disabled>未找到解析域名</option>';
@@ -1816,7 +1977,8 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
       var lineSelect = $('#lineSelect_' + groupIndex);
       var subLineArea = $('#subLineArea_' + groupIndex);
 
-      if(!domainId){ lineArea.hide(); subLineArea.hide(); return; }
+      lineSelect.data('loaded', false).data('allLines', []).data('defaultLine', '');
+      if(!domainId){ lineArea.hide(); subLineArea.hide(); refreshCfOptimizedQuickLines(); return; }
       lineArea.show();
       subLineArea.hide();
       lineSelect.html('<option value="">加载中...</option>');
@@ -1826,23 +1988,28 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
         success: function(res){
           if(res.code === 0 && res.data && res.data.lines && res.data.lines.length > 0){
             lineSelect.data('allLines', res.data.lines);
+            var defaultLine = res.data.default_line != null ? String(res.data.default_line) : '';
+            lineSelect.data('defaultLine', defaultLine).data('loaded', true);
             var opts = '';
             for(var li = 0; li < res.data.lines.length; li++){
               var l = res.data.lines[li];
               if(!l.parent){
-                opts += '<option value="' + htmlEscape(l.value) + '"' + (l.is_default ? ' selected' : '') + '>' + htmlEscape(l.label) + '</option>';
+                var lineLabel = l.label != null ? String(l.label) : String(l.value || '');
+                opts += '<option value="' + htmlEscape(String(l.value || '')) + '" data-label="' + htmlEscape(lineLabel) + '"' + (String(l.value || '') === defaultLine || l.is_default ? ' selected' : '') + '>' + htmlEscape(lineLabel) + '</option>';
               }
             }
             lineSelect.html(opts || '<option value="" selected>请选择</option>');
             lineSelect.trigger('change.cfsub');
+            refreshCfOptimizedQuickLines();
           } else {
-            var defLine = (res.code === 0 && res.data && res.data.default_line) ? res.data.default_line : '0';
-            lineSelect.html('<option value="' + htmlEscape(defLine) + '" selected>默认</option>');
-            lineSelect.data('allLines', []);
+            var defLine = (res.code === 0 && res.data && res.data.default_line) ? String(res.data.default_line) : '0';
+            lineSelect.html('<option value="' + htmlEscape(defLine) + '" data-label="默认" selected>默认</option>');
+            lineSelect.data('allLines', [{value: defLine, label: '默认', parent: '', is_default: true}]).data('defaultLine', defLine).data('loaded', true);
             subLineArea.hide();
+            refreshCfOptimizedQuickLines();
           }
         },
-        error: function(){ lineSelect.html('<option value="0" selected>默认</option>'); lineSelect.data('allLines', []); subLineArea.hide(); }
+        error: function(){ lineSelect.html('<option value="">获取线路失败</option>'); lineSelect.data('allLines', []).data('loaded', false); subLineArea.hide(); refreshCfOptimizedQuickLines(); }
       });
     });
 
@@ -1903,6 +2070,9 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
     });
   }
   bindLineEvents();
+  if($('#cfOptimizedDnsGroupArea').is(':visible')){
+    initCfOptimizedQuickControls();
+  }
 }
 
 // 与域名解析页一致：有子线路时首项为「子集线路（非必填）」，值为父线路，不强制选子线路
@@ -1927,6 +2097,156 @@ function fillCfOptimizedSubLines(subLineArea, subLineSelect, allLines, selectedV
   }
 }
 
+function initCfOptimizedQuickControls(){
+  var $groupArea = $('#cfOptimizedDnsGroupArea');
+  if($groupArea.length === 0 || !$groupArea.is(':visible')) return;
+  $groupArea.find('.cf-quick-settings').remove();
+
+  var providers = {};
+  $groupArea.find('.cf-dns-provider').each(function(){
+    $(this).find('option[data-provider-type]').each(function(){
+      var type = String($(this).attr('data-provider-type') || '');
+      if(!type) return;
+      if(!providers[type]) providers[type] = $(this).attr('data-provider-name') || type;
+    });
+  });
+
+  var providerOptions = '<option value="">请选择服务商</option>';
+  Object.keys(providers).sort(function(a, b){
+    return String(providers[a]).localeCompare(String(providers[b]), 'zh-CN');
+  }).forEach(function(type){
+    providerOptions += '<option value="' + htmlEscape(type) + '">' + htmlEscape(providers[type]) + '</option>';
+  });
+
+  var html = '<div class="well well-sm cf-quick-settings" style="margin-bottom:10px;">';
+  html += '<div class="row">';
+  html += '<div class="col-sm-6"><div class="form-group" style="margin-bottom:8px;">';
+  html += '<label>一键选择解析服务商</label>';
+  html += '<select id="cfOptimizedQuickProvider" class="form-control" onchange="applyCfOptimizedQuickProvider(this.value)">' + providerOptions + '</select>';
+  html += '</div></div>';
+  html += '<div class="col-sm-6"><div class="form-group" style="margin-bottom:8px;">';
+  html += '<label>一键选择线路</label>';
+  html += '<select id="cfOptimizedQuickLine" class="form-control" onchange="applyCfOptimizedQuickLine(this.value)" disabled>';
+  html += '<option value="__default__">请先完成服务商选择</option>';
+  html += '</select>';
+  html += '</div></div>';
+  html += '</div>';
+  html += '<p class="help-block" style="margin-bottom:0;">选择服务商会匹配各分组中同类型的第一个解析服务商；线路列表加载完成后，可统一选择所有分组共有的线路。</p>';
+  html += '</div>';
+  $groupArea.prepend(html);
+  refreshCfOptimizedQuickLines();
+}
+
+function applyCfOptimizedQuickProvider(providerType){
+  providerType = String(providerType || '');
+  if(!providerType) return;
+
+  var matched = 0;
+  var missing = 0;
+  $('#cfOptimizedDnsGroupArea .cf-dns-provider').each(function(){
+    var $select = $(this);
+    var $option = $select.find('option').filter(function(){
+      return String($(this).attr('data-provider-type') || '') === providerType;
+    }).first();
+    if($option.length){
+      $select.val($option.val()).trigger('change.cfline');
+      matched++;
+    }else{
+      missing++;
+    }
+  });
+
+  if(missing > 0){
+    layer.msg('已应用 ' + matched + ' 个分组，另有 ' + missing + ' 个分组没有该服务商，请单独选择', {time: 2600});
+  }
+}
+
+function refreshCfOptimizedQuickLines(){
+  var $quickLine = $('#cfOptimizedQuickLine');
+  if($quickLine.length === 0) return;
+
+  var groupCount = 0;
+  var readyCount = 0;
+  var commonLabels = null;
+  $('#cfOptimizedDnsGroupArea .cf-dns-provider').each(function(){
+    groupCount++;
+    if(!$(this).val()) return;
+
+    var groupIndex = $(this).data('groupIndex');
+    var $line = $('#lineSelect_' + groupIndex);
+    var allLines = $line.data('allLines') || [];
+    if($line.data('loaded') !== true || allLines.length === 0) return;
+
+    readyCount++;
+    var labels = {};
+    allLines.forEach(function(line){
+      if(line.parent) return;
+      var label = line.label != null ? String(line.label) : String(line.value || '');
+      if(label) labels[label] = true;
+    });
+
+    if(commonLabels === null){
+      commonLabels = labels;
+    }else{
+      Object.keys(commonLabels).forEach(function(label){
+        if(!labels[label]) delete commonLabels[label];
+      });
+    }
+  });
+
+  if(groupCount === 0){
+    $quickLine.html('<option value="__default__">没有可用的解析分组</option>').prop('disabled', true);
+    return;
+  }
+  if(readyCount < groupCount){
+    $quickLine.html('<option value="__default__">请先完成服务商选择</option>').prop('disabled', true);
+    return;
+  }
+
+  var optionsHtml = '<option value="__default__">各组默认线路</option>';
+  Object.keys(commonLabels || {}).sort(function(a, b){
+    return String(a).localeCompare(String(b), 'zh-CN');
+  }).forEach(function(label){
+    optionsHtml += '<option value="' + htmlEscape(label) + '">' + htmlEscape(label) + '</option>';
+  });
+  $quickLine.html(optionsHtml).prop('disabled', false);
+}
+
+function applyCfOptimizedQuickLine(label){
+  if(!label) return;
+  var applied = 0;
+  var missing = 0;
+
+  $('#cfOptimizedDnsGroupArea .cf-dns-provider').each(function(){
+    var groupIndex = $(this).data('groupIndex');
+    var $line = $('#lineSelect_' + groupIndex);
+    if($line.data('loaded') !== true){
+      missing++;
+      return;
+    }
+
+    if(label === '__default__'){
+      $line.val($line.data('defaultLine')).trigger('change.cfsub');
+      applied++;
+      return;
+    }
+
+    var $option = $line.find('option').filter(function(){
+      return String($(this).attr('data-label') || '') === String(label);
+    }).first();
+    if($option.length){
+      $line.val($option.val()).trigger('change.cfsub');
+      applied++;
+    }else{
+      missing++;
+    }
+  });
+
+  if(missing > 0){
+    layer.msg('已应用 ' + applied + ' 个分组，' + missing + ' 个分组没有该线路，已保持原选择', {time: 2600});
+  }
+}
+
 // 确认处理
 function confirmBatchCfOptimized(){
   var confirmBtn = $("#cfOptimizedConfirmBtn");
@@ -1938,6 +2258,7 @@ function confirmBatchCfOptimized(){
   // 收集所有组的选择（或使用上次已保存的选择）
   var dnsDomains = {};
   var allSelected = true;
+  var lineMissing = false;
   var savedDomains = confirmBtn.data('savedDnsDomains');
 
   if(savedDomains){
@@ -1962,6 +2283,7 @@ function confirmBatchCfOptimized(){
       }
       dnsDomains[dnsDomain] = {domainId: domainId, dnsDomain: dnsDomain, line: lineVal, lineLabel: lineLabel};
       if(!val) allSelected = false;
+      if(!$('#lineSelect_' + groupIndex).data('loaded')) lineMissing = true;
     });
   } else {
     // 单域名模式
@@ -1982,6 +2304,7 @@ function confirmBatchCfOptimized(){
   }
 
   if(!allSelected){ layer.msg('请为所有 DNS 域名选择解析服务商', {icon: 0}); return; }
+  if(lineMissing){ layer.msg('请等待所有解析线路加载完成', {icon: 0}); return; }
 
   // 保存选择供批量二次确认时复用（此时 DOM 可能已被隐藏）
   confirmBtn.data('savedDnsDomains', dnsDomains);
@@ -2370,44 +2693,30 @@ function executeCfOptimized(cnameTarget, dnsDomains, recordType){
   });
 }
 
-function submitBatchTxtRecord(txtName, txtValue, target, remark, callback){
-  // 先获取目标域名的默认线路
+function submitBatchTxtRecord(txtName, txtValue, target, line, remark, callback){
   $.ajax({
     type: 'POST',
-    url: '/cloudflare/get_domain_default_line',
-    data: {domain_id: target.domain_id},
+    url: '/record/add/' + target.domain_id,
+    data: {
+      name: target.record_name,
+      type: 'TXT',
+      value: txtValue,
+      line: line,
+      ttl: 600,
+      mx: 1,
+      weight: 0,
+      remark: remark
+    },
     dataType: 'json',
-    success: function(lineRes){
-      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line) ? lineRes.data.default_line : '0';
-      // 使用获取到的线路添加记录
-      $.ajax({
-        type: 'POST',
-        url: '/record/add/' + target.domain_id,
-        data: {
-          name: target.record_name,
-          type: 'TXT',
-          value: txtValue,
-          line: line,
-          ttl: 600,
-          mx: 1,
-          weight: 0,
-          remark: remark
-        },
-        dataType: 'json',
-        success: function(res){
-          if(res.code === 0){
-            callback(true);
-          }else{
-            callback(false, res.msg);
-          }
-        },
-        error: function(){
-          callback(false, '服务器错误');
-        }
-      });
+    success: function(res){
+      if(res.code === 0){
+        callback(true);
+      }else{
+        callback(false, res.msg);
+      }
     },
     error: function(){
-      callback(false, '获取默认线路失败');
+      callback(false, '服务器错误');
     }
   });
 }
