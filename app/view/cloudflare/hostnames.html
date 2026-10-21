@@ -268,7 +268,17 @@
         <div class="alert alert-info" id="batchCfOptimizedAlert"></div>
         <div id="batchCfOptimizedList" style="max-height:400px;overflow-y:auto;"></div>
         <div class="form-group" style="margin-top:12px;">
-          <label>CNAME 目标 <span style="color:#d9534f;">*</span></label>
+          <label>记录类型 <span style="color:#d9534f;">*</span></label>
+          <select id="cfOptimizedRecordType" class="form-control" onchange="onCfOptimizedRecordTypeChange(this.value)">
+            <option value="CNAME" selected>CNAME（域名目标）</option>
+            <option value="ALIAS">ALIAS（域名目标，需服务商支持）</option>
+            <option value="A">A（IPv4 地址）</option>
+            <option value="AAAA">AAAA（IPv6 地址）</option>
+          </select>
+          <p class="help-block" style="margin-bottom:8px;">优选任务和内置目标通常使用 CNAME；A/AAAA 适合自定义 IP 目标。</p>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>目标值 <span style="color:#d9534f;">*</span></label>
           <div id="cfOptimizedTargetList"></div>
         </div>
         <div id="cfOptimizedDnsGroupArea" style="display:none;">
@@ -295,7 +305,7 @@
         <div id="cfOptimizedExistingRecord" style="display:none;" class="alert alert-warning">
           <strong>检测到已存在记录：</strong><br>
           <span id="cfOptimizedExistingInfo"></span><br>
-          <span style="font-size:12px;color:#666;">点击确认将修改为新的 CNAME 目标</span>
+          <span style="font-size:12px;color:#666;">点击确认将修改为新的目标值</span>
         </div>
       </div>
       <div class="modal-footer">
@@ -1963,20 +1973,16 @@ function renderCfOptimizedTargetOptions(){
   html += '<label><input type="radio" name="cfOptimizedTarget" value="_custom"> ';
   html += '<strong>自定义</strong></label>';
   html += '<div id="cfOptimizedCustomInput" style="display:none;margin-top:6px;margin-left:20px;">';
-  html += '<div class="row"><div class="col-xs-4">';
-  html += '<select id="cfOptimizedCustomType" class="form-control input-sm">';
-  html += '<option value="CNAME" selected>CNAME</option>';
-  html += '<option value="A">A</option>';
-  html += '<option value="AAAA">AAAA</option>';
-  html += '</select></div><div class="col-xs-8">';
-  html += '<input type="text" id="cfOptimizedCustomValue" class="form-control input-sm" placeholder="输入目标值（域名或IP）"></div></div>';
+  html += '<input type="text" id="cfOptimizedCustomValue" class="form-control input-sm" placeholder="输入目标值（域名或IP）">';
   html += '</div></div>';
   $('#cfOptimizedTargetList').html(html);
   $('#cfOptimizedTargetList input[name=cfOptimizedTarget]').on('change', function(){
     if($(this).val() === '_custom'){
       $('#cfOptimizedCustomInput').show();
+      $('#cfOptimizedRecordType').val(detectCfOptimizedTargetType($.trim($('#cfOptimizedCustomValue').val())));
     } else {
       $('#cfOptimizedCustomInput').hide();
+      $('#cfOptimizedRecordType').val('CNAME');
     }
   });
 }
@@ -2000,18 +2006,63 @@ $(document).ready(function(){
   $('#modal-cf-optimized').on('hidden.bs.modal', function(){
     resetCfOptimizedState();
   });
+  $(document).on('input.cfOptimizedTarget', '#cfOptimizedCustomValue', function(){
+    if($('input[name=cfOptimizedTarget]:checked').val() !== '_custom') return;
+    var detectedType = detectCfOptimizedTargetType($.trim($(this).val()));
+    $('#cfOptimizedRecordType').val(detectedType);
+  });
 });
+
+function isCfOptimizedIpv4(value){
+  return /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/.test(value);
+}
+
+function isCfOptimizedIpv6(value){
+  if(value.indexOf(':') === -1) return false;
+  try{
+    var normalized = value;
+    if(normalized.indexOf('::') === -1){
+      var parts = normalized.split(':');
+      if(parts.length !== 8) return false;
+    }
+    return /^[0-9a-f:]+$/i.test(normalized) && normalized.indexOf(':::') === -1;
+  }catch(e){
+    return false;
+  }
+}
+
+function detectCfOptimizedTargetType(value){
+  if(isCfOptimizedIpv4(value)) return 'A';
+  if(isCfOptimizedIpv6(value)) return 'AAAA';
+  return 'CNAME';
+}
+
+function onCfOptimizedRecordTypeChange(value){
+  var selectedTarget = $('input[name=cfOptimizedTarget]:checked').val();
+  if(selectedTarget !== '_custom'){
+    var valueEl = $('input[name=cfOptimizedTarget]:checked');
+    if(valueEl.length && valueEl.val() !== '_custom' && value !== 'CNAME' && value !== 'ALIAS'){
+      layer.msg('内置目标和优选任务目标是域名，请使用 CNAME 或 ALIAS 类型', {time: 2200});
+    }
+  }
+}
 
 function getCfOptimizedTargetValue(){
   var selectedTarget = $('input[name=cfOptimizedTarget]:checked').val();
   if(!selectedTarget) return null;
-  if(selectedTarget === '_custom'){
-    var customValue = $.trim($('#cfOptimizedCustomValue').val());
-    var customType = $('#cfOptimizedCustomType').val() || 'CNAME';
-    if(!customValue) return null;
-    return {value: customValue, type: customType};
+  var recordType = $('#cfOptimizedRecordType').val() || 'CNAME';
+  var value = selectedTarget === '_custom' ? $.trim($('#cfOptimizedCustomValue').val()) : selectedTarget;
+  if(!value) return null;
+  if(recordType === 'A' && !isCfOptimizedIpv4(value)){
+    return {error: 'A 记录目标必须是 IPv4 地址'};
   }
-  return {value: selectedTarget, type: 'CNAME'};
+  if(recordType === 'AAAA' && !isCfOptimizedIpv6(value)){
+    return {error: 'AAAA 记录目标必须是 IPv6 地址'};
+  }
+  if((recordType === 'CNAME' || recordType === 'ALIAS') && (isCfOptimizedIpv4(value) || isCfOptimizedIpv6(value))){
+    return {error: recordType + ' 记录目标必须是域名，不能是 IP 地址'};
+  }
+  return {value: value, type: recordType};
 }
 
 // 批量入口
@@ -2128,7 +2179,7 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
     $('#cfOptimizedDnsGroupArea').html(groupHtml).show();
     $('#cfOptimizedSingleDnsArea').hide();
     $('#batchCfOptimizedList').hide();
-    $('#batchCfOptimizedAlert').html('确定要为选中的 <strong>' + batchCfOptimizedData.length + '</strong> 个主机名设置 CF 优选 CNAME 解析吗？');
+    $('#batchCfOptimizedAlert').html('确定要为选中的 <strong>' + batchCfOptimizedData.length + '</strong> 个主机名设置 CF 优选解析吗？');
   } else {
     // 单域名单个模式：显示简化界面
     $('#cfOptimizedDnsGroupArea').hide();
@@ -2140,7 +2191,7 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
       hostnamesHtml += '<div style="padding:12px;background:#f9f9f9;border-radius:4px;"><strong>' + htmlEscape(dnsGroups[d][0].hostname) + '</strong></div>';
     }
     $('#batchCfOptimizedList').html(hostnamesHtml).show();
-    $('#batchCfOptimizedAlert').html('<strong>说明：</strong>将主机名 CNAME 解析到 Cloudflare 优选 IP 域名，实现加速访问。');
+    $('#batchCfOptimizedAlert').html('<strong>说明：</strong>将主机名按所选记录类型解析到 Cloudflare 优选目标，实现加速访问。');
 
     // 把第一个组的选项复制到单选框
     if(groupHtml){
@@ -2232,7 +2283,10 @@ function fillCfOptimizedSubLines(subLineArea, subLineSelect, allLines, selectedV
 function confirmBatchCfOptimized(){
   var confirmBtn = $("#cfOptimizedConfirmBtn");
   var targetInfo = getCfOptimizedTargetValue();
-  if(!targetInfo || !targetInfo.value){ layer.msg('请选择 CNAME 目标', {icon: 0}); return; }
+  if(!targetInfo || !targetInfo.value){
+    layer.msg(targetInfo && targetInfo.error ? targetInfo.error : '请选择目标值', {icon: 0});
+    return;
+  }
   var cnameTarget = targetInfo.value;
   var recordType = targetInfo.type || 'CNAME';
 
@@ -2328,8 +2382,8 @@ function confirmBatchCfOptimized(){
       dataType: 'json',
       success: function(res){
         confirmBtn.prop('disabled', false);
-        // A/CNAME/AAAA 在同一线路互斥，预检测也匹配全部三种
-        var allowedTypes = ['A', 'AAAA', 'CNAME'];
+        // A/CNAME/ALIAS/AAAA 在同一线路互斥，预检测也匹配全部类型
+        var allowedTypes = ['A', 'AAAA', 'CNAME', 'ALIAS'];
         var existingRecord = null;
         var existingInfo = '';
         // 获取用户选择的线路 value 和 label
@@ -2450,8 +2504,8 @@ function confirmBatchCfOptimized(){
 
 // 预检测所有主机名是否有已存在记录
 function preDetectAllHostnames(cnameTarget, dnsDomains, recordType, callback){
-  // A/CNAME/AAAA 在同一线路互斥，预检测也匹配全部三种
-  var allowedTypes = ['A', 'AAAA', 'CNAME'];
+  // A/CNAME/ALIAS/AAAA 在同一线路互斥，预检测也匹配全部类型
+  var allowedTypes = ['A', 'AAAA', 'CNAME', 'ALIAS'];
   var detectedCount = 0;
   var totalCount = batchCfOptimizedData.length;
   var modifyList = [], addList = [], failList = [];
@@ -2541,8 +2595,8 @@ function executeCfOptimized(cnameTarget, dnsDomains, recordType){
   var processedCount = 0;
   var totalCount = batchCfOptimizedData.length;
   var execRecordType = recordType || 'CNAME';
-  // 执行阶段：A/CNAME/AAAA 在同一线路互斥，找到任一种都走修改路径（用用户选择的类型覆盖）
-  var allowedTypes = ['A', 'AAAA', 'CNAME'];
+  // 执行阶段：A/CNAME/ALIAS/AAAA 在同一线路互斥，找到任一种都走修改路径（用用户选择的类型覆盖）
+  var allowedTypes = ['A', 'AAAA', 'CNAME', 'ALIAS'];
 
   function checkCompletion(){
     if(processedCount === totalCount){
