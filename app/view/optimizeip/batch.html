@@ -69,6 +69,13 @@
             </h4>
           </div>
           <div class="panel-body">
+            <div class="form-group" style="margin-bottom:12px;">
+              <label>一键选择解析服务商</label>
+              <select id="quickProviderSelect" class="form-control" style="max-width:420px;" onchange="applyQuickProvider(this.value)">
+                <option value="">请选择服务商</option>
+              </select>
+              <p class="help-block" style="margin-bottom:0;">仅替换存在该服务商候选的主机名，其他主机名保持当前选择。</p>
+            </div>
             <div class="batch-actions">
               <input type="text" class="form-control input-sm" id="hostnameSearch" placeholder="搜索主机名..." style="width:260px;" oninput="filterPreviewRows()">
               <button type="button" class="btn btn-default btn-sm" onclick="toggleAllMatched(true)">全选可创建</button>
@@ -83,7 +90,7 @@
                     <th>自定义主机名</th>
                     <th>匹配解析域名</th>
                     <th>主机记录</th>
-                    <th>解析服务商</th>
+                    <th style="min-width:260px;">解析服务商</th>
                     <th>状态</th>
                   </tr>
                 </thead>
@@ -163,6 +170,7 @@
 <script src="/static/js/layer/layer.js"></script>
 <script>
 var previewRows = [];
+var selectedProviderByHostname = {};
 
 function escapeHtml(value){
   return $('<div>').text(value == null ? '' : String(value)).html();
@@ -184,6 +192,8 @@ function pullHostnames(){
       return;
     }
     previewRows = res.data.rows || [];
+    selectedProviderByHostname = {};
+    renderProviderQuickOptions();
     renderPreviewRows();
     $('#previewPanel').show();
     $('#taskPanel').show();
@@ -198,21 +208,84 @@ function pullHostnames(){
   });
 }
 
+function renderProviderQuickOptions(){
+  var providers = {};
+  previewRows.forEach(function(row){
+    (row.candidates || []).forEach(function(candidate){
+      if(candidate.dns_type && !providers[candidate.dns_type]){
+        providers[candidate.dns_type] = candidate.dns_type_name || candidate.dns_type;
+      }
+    });
+  });
+  var html = '<option value="">请选择服务商</option>';
+  Object.keys(providers).sort(function(a, b){
+    return String(providers[a]).localeCompare(String(providers[b]), 'zh-CN');
+  }).forEach(function(type){
+    html += '<option value="' + escapeHtml(type) + '">' + escapeHtml(providers[type]) + '</option>';
+  });
+  $('#quickProviderSelect').html(html);
+}
+
+function renderProviderSelect(row){
+  var candidates = row.candidates || [];
+  var selectedKey = selectedProviderByHostname[row.hostname] || '';
+  if(selectedKey === '' && candidates.length > 0){
+    selectedKey = String(candidates[0].did) + '|' + candidates[0].rr;
+  }
+  var html = '<select class="form-control input-sm provider-select" data-hostname="' + escapeHtml(row.hostname) + '" onchange="updateRowStatus(this)">';
+  candidates.forEach(function(candidate){
+    var key = String(candidate.did) + '|' + candidate.rr;
+    var account = candidate.account_name ? (' / ' + candidate.account_name) : '';
+    var label = candidate.domain_name + ' (' + (candidate.dns_type_name || candidate.dns_type) + account + ')';
+    html += '<option value="' + escapeHtml(key) + '" data-provider-type="' + escapeHtml(candidate.dns_type || '') + '"' + (key === selectedKey ? ' selected' : '') + '>' + escapeHtml(label) + '</option>';
+  });
+  html += '</select>';
+  return html;
+}
+
+function getCandidateBySelect(row, select){
+  var value = String($(select).val() || '');
+  var candidates = row.candidates || [];
+  for(var i = 0; i < candidates.length; i++){
+    if(String(candidates[i].did) + '|' + candidates[i].rr === value) return candidates[i];
+  }
+  return null;
+}
+
+function renderRowStatus(candidate){
+  if(!candidate) return '<span class="label label-danger">未选择解析服务商</span>';
+  return candidate.exists ? '<span class="label label-warning">已存在，将更新</span>' : '<span class="label label-success">可创建</span>';
+}
+
+function updateRowStatus(select){
+  var $select = $(select);
+  var hostname = String($select.attr('data-hostname') || '');
+  var row = findPreviewRow(hostname);
+  if(!row) return;
+  selectedProviderByHostname[hostname] = String($select.val() || '');
+  var candidate = getCandidateBySelect(row, select);
+  var $tr = $select.closest('tr');
+  $tr.find('td').eq(2).text(candidate ? candidate.domain_name : '-');
+  $tr.find('td').eq(3).html(candidate ? '<code>' + escapeHtml(candidate.rr) + '</code>' : '-');
+  $tr.find('.row-status').html(renderRowStatus(candidate));
+}
+
 function renderPreviewRows(){
   var keyword = $.trim($('#hostnameSearch').val()).toLowerCase();
   var html = '';
   previewRows.forEach(function(row, index){
     if(keyword && row.hostname.toLowerCase().indexOf(keyword) === -1) return;
-    var canCreate = row.matched;
-    var status = canCreate ? (row.exists ? '<span class="label label-warning">已存在，将更新</span>' : '<span class="label label-success">可创建</span>') : '<span class="label label-danger">未匹配解析域名</span>';
-    html += '<tr data-hostname="' + escapeHtml(row.hostname) + '">';
-    html += '<td class="text-center"><input type="checkbox" class="hostname-check" value="' + escapeHtml(row.hostname) + '" ' + (canCreate ? '' : 'disabled') + ' onchange="updateSelectedCount()"></td>';
-    html += '<td class="batch-hostname"><strong>' + escapeHtml(row.hostname) + '</strong></td>';
-    html += '<td>' + (row.domain_name ? escapeHtml(row.domain_name) : '-') + '</td>';
-    html += '<td>' + (row.rr ? '<code>' + escapeHtml(row.rr) + '</code>' : '-') + '</td>';
-    html += '<td>' + (row.dns_type_name ? escapeHtml(row.dns_type_name) : '-') + '</td>';
-    html += '<td>' + status + '</td>';
-    html += '</tr>';
+    var canCreate = row.matched && (row.candidates || []).length > 0;
+    var selectedCandidate = (row.candidates || [])[0] || null;
+    var htmlRow = '<tr data-hostname="' + escapeHtml(row.hostname) + '">';
+    htmlRow += '<td class="text-center"><input type="checkbox" class="hostname-check" value="' + escapeHtml(row.hostname) + '" ' + (canCreate ? '' : 'disabled') + ' onchange="updateSelectedCount()"></td>';
+    htmlRow += '<td class="batch-hostname"><strong>' + escapeHtml(row.hostname) + '</strong></td>';
+    htmlRow += '<td>' + (selectedCandidate ? escapeHtml(selectedCandidate.domain_name) : '-') + '</td>';
+    htmlRow += '<td>' + (selectedCandidate ? '<code>' + escapeHtml(selectedCandidate.rr) + '</code>' : '-') + '</td>';
+    htmlRow += '<td>' + (canCreate ? renderProviderSelect(row) : '-') + '</td>';
+    htmlRow += '<td class="row-status">' + (canCreate ? renderRowStatus(selectedCandidate) : '<span class="label label-danger">未匹配解析域名</span>') + '</td>';
+    htmlRow += '</tr>';
+    html += htmlRow;
   });
   if(html === ''){
     html = '<tr><td colspan="6" class="batch-empty">没有匹配的主机名</td></tr>';
@@ -222,7 +295,51 @@ function renderPreviewRows(){
 }
 
 function filterPreviewRows(){
+  previewRows.forEach(function(row){
+    var select = $('.provider-select[data-hostname="' + row.hostname.replace(/"/g, '\\"') + '"]');
+    if(select.length){
+      selectedProviderByHostname[row.hostname] = String(select.val() || '');
+    }
+  });
   renderPreviewRows();
+}
+
+function findPreviewRow(hostname){
+  for(var i = 0; i < previewRows.length; i++){
+    if(previewRows[i].hostname === hostname) return previewRows[i];
+  }
+  return null;
+}
+
+function applyQuickProvider(providerType){
+  providerType = String(providerType || '');
+  if(!providerType) return;
+  var changed = 0;
+  var missing = 0;
+  $('.provider-select').each(function(){
+    var $select = $(this);
+    var hostname = String($select.attr('data-hostname') || '');
+    var row = findPreviewRow(hostname);
+    if(!row) return;
+    var matchedOption = null;
+    $select.find('option').each(function(){
+      if(String($(this).attr('data-provider-type') || '') === providerType){
+        matchedOption = $(this);
+        return false;
+      }
+    });
+    if(matchedOption){
+      $select.val(matchedOption.val());
+      selectedProviderByHostname[hostname] = String(matchedOption.val());
+      updateRowStatus(this);
+      changed++;
+    }else{
+      missing++;
+    }
+  });
+  if(missing > 0){
+    layer.msg('已应用 ' + changed + ' 个主机名，另有 ' + missing + ' 个没有该服务商', {time: 2600});
+  }
 }
 
 function toggleAllMatched(checked){
@@ -264,6 +381,25 @@ function createBatchTasks(){
     return;
   }
 
+  var targets = {};
+  var targetError = false;
+  $('.hostname-check:checked').each(function(){
+    var $checkbox = $(this);
+    var hostname = String($checkbox.val() || '');
+    var row = findPreviewRow(hostname);
+    var select = $checkbox.closest('tr').find('.provider-select');
+    var candidate = row ? getCandidateBySelect(row, select) : null;
+    if(!candidate){
+      targetError = true;
+      return false;
+    }
+    targets[hostname] = {did: candidate.did, rr: candidate.rr};
+  });
+  if(targetError){
+    layer.msg('请为所有选中的主机名选择解析服务商', {icon: 0});
+    return;
+  }
+
   layer.confirm('确定为选中的 <strong>' + hostnames.length + '</strong> 个主机名创建或更新优选任务吗？', {
     title: '批量创建任务',
     icon: 0,
@@ -278,6 +414,7 @@ function createBatchTasks(){
       data: {
         cf_domain_id: $('#cfDomainSelect').val(),
         hostnames: hostnames,
+        targets: JSON.stringify(targets),
         type: $('input[name=type]:checked').val() || 0,
         ip_type: ipTypes,
         recordnum: recordnum,

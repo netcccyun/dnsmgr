@@ -51,17 +51,24 @@ class Optimizeipbatch extends BaseController
             foreach ($context['service']->listCustomHostnames($context['domain']['thirdid']) as $item) {
                 $hostname = $this->normalizeHostname($item['hostname'] ?? '');
                 if ($hostname === '') continue;
-                $match = $this->matchManagedDomain($managedDomains, $hostname);
-                $taskKey = $match ? ($match['did'] . '|' . $match['rr']) : '';
+                $candidates = $this->findManagedDomainCandidates($managedDomains, $hostname);
+                foreach ($candidates as &$candidate) {
+                    $taskKey = $candidate['did'] . '|' . $candidate['rr'];
+                    $candidate['exists'] = isset($existing[$taskKey]);
+                }
+                unset($candidate);
+                $first = $candidates[0] ?? null;
                 $rows[] = [
                     'hostname' => $hostname,
                     'hostname_id' => trim((string)($item['id'] ?? '')),
-                    'matched' => $match !== null,
-                    'did' => $match['did'] ?? 0,
-                    'rr' => $match['rr'] ?? '',
-                    'domain_name' => $match['domain_name'] ?? '',
-                    'dns_type_name' => $match['dns_type_name'] ?? '',
-                    'exists' => $taskKey !== '' && isset($existing[$taskKey]),
+                    'matched' => !empty($candidates),
+                    'candidates' => $candidates,
+                    'did' => $first['did'] ?? 0,
+                    'rr' => $first['rr'] ?? '',
+                    'domain_name' => $first['domain_name'] ?? '',
+                    'dns_type' => $first['dns_type'] ?? '',
+                    'dns_type_name' => $first['dns_type_name'] ?? '',
+                    'exists' => $first['exists'] ?? false,
                 ];
             }
 
@@ -92,6 +99,8 @@ class Optimizeipbatch extends BaseController
             if (!is_array($hostnames) || empty($hostnames)) {
                 throw new Exception('请选择要创建任务的自定义主机名');
             }
+            $targetSelections = json_decode((string)input('post.targets', '', 'trim'), true);
+            if (!is_array($targetSelections)) $targetSelections = [];
             if (count($hostnames) > self::MAX_BATCH_SIZE) {
                 throw new Exception('单次最多创建 ' . self::MAX_BATCH_SIZE . ' 个任务');
             }
@@ -146,10 +155,25 @@ class Optimizeipbatch extends BaseController
                         continue;
                     }
 
-                    $match = $this->matchManagedDomain($managedDomains, $hostname);
-                    if (!$match) {
+                    $candidates = $this->findManagedDomainCandidates($managedDomains, $hostname);
+                    if (empty($candidates)) {
                         $skipped++;
                         $errors[] = $hostname . '：未找到可写入的非 Cloudflare 解析域名';
+                        continue;
+                    }
+
+                    $selectedDid = intval($targetSelections[$hostname]['did'] ?? 0);
+                    $selectedRr = trim((string)($targetSelections[$hostname]['rr'] ?? ''));
+                    $match = null;
+                    foreach ($candidates as $candidate) {
+                        if ($candidate['did'] === $selectedDid && $candidate['rr'] === $selectedRr) {
+                            $match = $candidate;
+                            break;
+                        }
+                    }
+                    if (!$match) {
+                        $skipped++;
+                        $errors[] = $hostname . '：请选择有效的解析服务商';
                         continue;
                     }
 
@@ -244,6 +268,7 @@ class Optimizeipbatch extends BaseController
                 'domain_name' => $name,
                 'dns_type' => $dnsType,
                 'dns_type_name' => $this->formatDnsTypeName($dnsType),
+                'account_name' => trim((string)($row['account_name'] ?? '')),
             ];
         }
         return $domains;
@@ -258,11 +283,11 @@ class Optimizeipbatch extends BaseController
         return $map;
     }
 
-    private function matchManagedDomain(array $domains, string $hostname): ?array
+    private function findManagedDomainCandidates(array $domains, string $hostname): array
     {
         $matchHostname = preg_replace('/^\*\./', '', $hostname);
-        $best = null;
         $bestLength = -1;
+        $candidates = [];
 
         foreach ($domains as $domain) {
             $domainName = $domain['domain_name'];
@@ -277,17 +302,33 @@ class Optimizeipbatch extends BaseController
             }
             if ($rr === null) continue;
 
-            if (strlen($domainName) > $bestLength) {
-                $bestLength = strlen($domainName);
-                $best = [
-                    'did' => $domain['did'],
-                    'rr' => $rr,
-                    'domain_name' => $domainName,
-                    'dns_type_name' => $domain['dns_type_name'],
-                ];
+            $candidate = [
+                'did' => $domain['did'],
+                'rr' => $rr,
+                'domain_name' => $domainName,
+                'dns_type' => $domain['dns_type'],
+                'dns_type_name' => $domain['dns_type_name'],
+                'account_name' => $domain['account_name'],
+            ];
+
+            $domainLength = strlen($domainName);
+            if ($domainLength > $bestLength) {
+                $bestLength = $domainLength;
+                $candidates = [$candidate];
+            } elseif ($domainLength === $bestLength) {
+                $candidates[] = $candidate;
             }
         }
-        return $best;
+
+        usort($candidates, function ($a, $b) {
+            $providerCompare = strcmp($a['dns_type_name'], $b['dns_type_name']);
+            if ($providerCompare !== 0) return $providerCompare;
+            $accountCompare = strcmp($a['account_name'], $b['account_name']);
+            if ($accountCompare !== 0) return $accountCompare;
+            return strcmp($a['domain_name'], $b['domain_name']);
+        });
+
+        return $candidates;
     }
 
     private function normalizeHostname($hostname): string
