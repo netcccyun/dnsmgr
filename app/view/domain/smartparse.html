@@ -132,6 +132,7 @@
 								<option value="">自动检测</option>
 								<option value="A">A</option>
 								<option value="CNAME">CNAME</option>
+								<option value="ALIAS" id="aliasTypeOption" style="display:none;">ALIAS</option>
 								<option value="AAAA">AAAA</option>
 								<option value="NS">NS</option>
 								<option value="MX">MX</option>
@@ -227,7 +228,8 @@ var domainList = [];
 domainList.push({
 	id: '{$domain.id}',
 	name: '{$domain.name}',
-	dnsType: '{$domain.dnsType}'
+	dnsType: '{$domain.dnsType}',
+	supportsAlias: {if $domain.supportsAlias}true{else}false{/if}
 });
 {/foreach}
 
@@ -250,7 +252,20 @@ $(document).ready(function(){
 	$('#defaultDomainSelect').on('change', function(){ 
 		loadBatchLines($(this).val());
 	});
+	updateSmartparseAliasOption();
 });
+
+function updateSmartparseAliasOption(){
+	var $option = $('#aliasTypeOption');
+	if($option.length === 0) return;
+	var supported = domainList.some(function(domain){
+		return domain.supportsAlias;
+	});
+	$option.prop('disabled', !supported).toggle(supported);
+	if(!supported && $('#defaultTypeSelect').val() === 'ALIAS'){
+		$('#defaultTypeSelect').val('');
+	}
+}
 
 function isRootRecordLine(item){
 	return item.parent == null || item.parent === '';
@@ -513,6 +528,19 @@ function previewBatchData(){
 		var type = defaultType;
 		if(!type){
 			type = getDnsType(value);
+		}
+		if(type === 'ALIAS'){
+			var aliasDomainInfo = null;
+			$.each(domainList, function(i, d){
+				if(String(d.id) === String(finalDomainId)){
+					aliasDomainInfo = d;
+					return false;
+				}
+			});
+			if(!aliasDomainInfo || !aliasDomainInfo.supportsAlias){
+				errors.push('第' + (index + 1) + '行：域名 "' + finalDomainName + '" 的DNS提供商不支持ALIAS记录');
+				return;
+			}
 		}
 		
 		parsedBatchData.push({

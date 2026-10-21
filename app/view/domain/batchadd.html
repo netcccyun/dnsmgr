@@ -20,6 +20,7 @@
                 <option value="">A / CNAME / AAAA 自动识别</option>
                 <option value="A">A</option>
                 <option value="CNAME">CNAME</option>
+                {if $dnsconfig.alias}<option value="ALIAS">ALIAS</option>{/if}
                 <option value="AAAA">AAAA</option>
                 <option value="NS">NS</option>
                 <option value="MX">MX</option>

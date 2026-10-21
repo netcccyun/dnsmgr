@@ -30,6 +30,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 							<select name="type" class="form-control">
 								<option value="A">A</option>
 								<option value="CNAME">CNAME</option>
+								{if $dnsconfig.alias}<option value="ALIAS">ALIAS</option>{/if}
 								<option value="AAAA">AAAA</option>
 								<option value="NS">NS</option>
 								<option value="MX">MX</option>
@@ -107,6 +108,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 							<select name="type" class="form-control">
 								<option value="A">A</option>
 								<option value="CNAME">CNAME</option>
+								{if $dnsconfig.alias}<option value="ALIAS">ALIAS</option>{/if}
 								<option value="AAAA">AAAA</option>
 								<option value="NS">NS</option>
 								<option value="MX">MX</option>
@@ -201,6 +203,7 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 	<select name="type" class="form-control"><option value="">全部类型</option>
 		<option value="A">A</option>
 		<option value="CNAME">CNAME</option>
+		{if $dnsconfig.alias}<option value="ALIAS">ALIAS</option>{/if}
 		<option value="AAAA">AAAA</option>
 		<option value="NS">NS</option>
 		<option value="MX">MX</option>
@@ -362,7 +365,7 @@ $(document).ready(function(){
 					if(dnsconfig.remark == 1){
 						html += '<a href="javascript:setRemark(\''+row.RecordId+'\')" class="btn btn-info btn-xs">备注</a>&nbsp;&nbsp;';
 					}
-					var supportedTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA', 'PTR', 'LOC', 'LUA', 'REDIRECT_URL', 'FORWARD_URL'];
+					var supportedTypes = ['A', 'AAAA', 'CNAME', 'ALIAS', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA', 'PTR', 'LOC', 'LUA', 'REDIRECT_URL', 'FORWARD_URL'];
 					if(supportedTypes.includes(row.Type)){
 						html += '<a href="javascript:checkRecord(\''+row.RecordId+'\')" class="btn btn-success btn-xs" title="检测解析生效"><i class="fa fa-check-circle-o"></i></a>&nbsp;&nbsp;';
 					}
