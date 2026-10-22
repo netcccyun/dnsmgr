@@ -5,6 +5,18 @@ use think\facade\Request;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
+/**
+ * 获取进程内共享的 HTTP 客户端，复用批量请求的 TCP/TLS 连接。
+ */
+function http_client(): Client
+{
+    static $client = null;
+    if ($client === null) {
+        $client = new Client();
+    }
+    return $client;
+}
+
 function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $ua = 0, $nobody = 0, $addheader = [])
 {
     $options = [
@@ -40,8 +52,7 @@ function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $ua = 0, $nobody =
     $options['headers'] = normalize_http_headers($options['headers']);
 
     try {
-        $client = new Client();
-        $response = $client->request($method, $url, $options);
+        $response = http_client()->request($method, $url, $options);
 
         if ($nobody) {
             return '';
@@ -335,8 +346,7 @@ function check_proxy($url, $proxy_server, $proxy_port, $type, $proxy_user, $prox
     ];
 
     try {
-        $client = new Client();
-        $response = $client->request('GET', $url, $options);
+        $response = http_client()->request('GET', $url, $options);
         $httpCode = $response->getStatusCode();
 
         if ($httpCode >= 200 && $httpCode < 400) {
@@ -529,8 +539,7 @@ function http_request($url, $data = null, $referer = null, $cookie = null, $head
     $options['headers'] = normalize_http_headers($options['headers']);
 
     try {
-        $client = new Client();
-        $response = $client->request($method, $url, $options);
+        $response = http_client()->request($method, $url, $options);
         $code = $response->getStatusCode();
 
         // 取重定向URL
