@@ -78,7 +78,7 @@
             </div>
             <div class="batch-actions">
               <input type="text" class="form-control input-sm" id="hostnameSearch" placeholder="搜索主机名..." style="width:260px;" oninput="filterPreviewRows()">
-              <button type="button" class="btn btn-default btn-sm" onclick="toggleAllMatched(true)">全选可创建</button>
+              <button type="button" class="btn btn-default btn-sm" onclick="toggleAllNew(true)">全选新建</button>
               <button type="button" class="btn btn-default btn-sm" onclick="toggleAllMatched(false)">取消全选</button>
               <span class="batch-muted" id="selectedCount">已选择 0 个</span>
             </div>
@@ -345,6 +345,29 @@ function applyQuickProvider(providerType){
 function toggleAllMatched(checked){
   $('.hostname-check:not(:disabled)').prop('checked', checked);
   $('#checkAll').prop('checked', checked);
+  updateSelectedCount();
+}
+
+function getSelectedCandidateForCheckbox(checkbox){
+  var $checkbox = $(checkbox);
+  var hostname = String($checkbox.val() || '');
+  var row = findPreviewRow(hostname);
+  if(!row) return null;
+  return getCandidateBySelect(row, $checkbox.closest('tr').find('.provider-select'));
+}
+
+function toggleAllNew(checked){
+  var matched = 0;
+  $('.hostname-check:not(:disabled)').each(function(){
+    var candidate = getSelectedCandidateForCheckbox(this);
+    if(candidate && !candidate.exists){
+      $(this).prop('checked', checked);
+      matched++;
+    }
+  });
+  if(checked && matched === 0){
+    layer.msg('没有可新建的主机名', {icon: 0});
+  }
   updateSelectedCount();
 }
 
