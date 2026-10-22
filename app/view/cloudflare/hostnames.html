@@ -63,6 +63,7 @@
               <a href="javascript:refreshHostnameList()" class="btn btn-default btn-sm" title="刷新自定义主机名列表"><i class="fa fa-refresh"></i> 刷新</a>
               <a href="javascript:openAddDialog()" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> 添加自定义主机名</a>
               <a href="javascript:batchAddHostnames()" class="btn btn-primary btn-sm"><i class="fa fa-plus-circle"></i> 批量添加</a>
+              <button type="button" class="btn btn-warning btn-sm" onclick="selectPendingHostnames()"><i class="fa fa-filter"></i> 全选未接入</button>
               <button type="button" class="btn btn-info btn-sm" onclick="batchDcvDelegation()" disabled id="btnBatchDcv"><i class="fa fa-link"></i> 批量 DCV 委派</button>
               <button type="button" class="btn btn-default btn-sm" onclick="batchHostnameTxtVerification()" disabled id="btnBatchHostnameTxt"><i class="fa fa-check-circle"></i> 批量主机名验证</button>
               <button type="button" class="btn btn-default btn-sm" onclick="batchCertTxtVerification()" disabled id="btnBatchCertTxt"><i class="fa fa-certificate"></i> 批量证书验证</button>
@@ -775,7 +776,11 @@ function handleBatchLineLevelChange($select){
 
 var batchDnsLineCache = {};
 var batchDnsLineWaiters = {};
+var batchDnsLineQueue = [];
+var batchDnsLineActive = 0;
 var BATCH_DNS_LINE_CACHE_TTL = 24 * 60 * 60 * 1000;
+var BATCH_DNS_LINE_CONCURRENCY = 4;
+var BATCH_DNS_LINE_RETRIES = 2;
 
 function batchDnsLineCacheKey(domainId){
   return 'dnsmgr_batch_dns_lines_v2_' + String(domainId);
@@ -817,13 +822,13 @@ function applyBatchDnsLineData(task, groupIndex, data){
   if($cascade.length === 0) return;
   if(!data || !$.isArray(data.lines) || data.lines.length === 0){
     $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">获取线路失败</option></select>');
-    $cascade.data('loaded', false);
+    $cascade.data('loaded', false).data('loading', false).data('loadError', true);
     return;
   }
   var lines = data.lines;
   var tree = buildBatchLineTree(lines);
   var defaultLine = data.default_line != null ? String(data.default_line) : String(lines[0].value || '');
-  $cascade.data('allLines', lines).data('lineTree', tree).data('defaultLine', defaultLine).data('loaded', true);
+  $cascade.data('allLines', lines).data('lineTree', tree).data('defaultLine', defaultLine).data('loaded', true).data('loading', false).data('loadError', false);
   renderBatchLineCascade(task, groupIndex, defaultLine);
 }
 
@@ -831,7 +836,7 @@ function setBatchDnsLineError(task, groupIndex){
   var $cascade = $('#' + batchDnsControlId(task, 'lineCascade', groupIndex));
   if($cascade.length === 0) return;
   $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">获取线路失败</option></select>');
-  $cascade.data('loaded', false);
+  $cascade.data('loaded', false).data('loading', false).data('loadError', true);
 }
 
 function loadBatchDnsLines(task, groupIndex, domainId){
@@ -840,7 +845,7 @@ function loadBatchDnsLines(task, groupIndex, domainId){
   var $lineArea = $('#' + lineAreaId);
   var $cascade = $('#' + cascadeId);
 
-  $cascade.data('loaded', false).data('allLines', []).data('lineTree', null).data('defaultLine', '');
+  $cascade.data('loaded', false).data('loading', false).data('loadError', false).data('allLines', []).data('lineTree', null).data('defaultLine', '');
   if(!domainId){
     $lineArea.hide();
     refreshBatchQuickLines(task);
@@ -856,6 +861,7 @@ function loadBatchDnsLines(task, groupIndex, domainId){
   }
 
   $lineArea.show();
+  $cascade.data('loading', true).data('loadError', false);
   $cascade.html('<select class="form-control batch-dns-line-level" disabled><option value="">加载中...</option></select>');
 
   var cacheKey = String(domainId);
@@ -865,41 +871,72 @@ function loadBatchDnsLines(task, groupIndex, domainId){
   }
   batchDnsLineWaiters[cacheKey] = [{task: task, groupIndex: groupIndex}];
 
+   batchDnsLineQueue.push({task: task, groupIndex: groupIndex, domainId: cacheKey, attempt: 0});
+  drainBatchDnsLineQueue();
+}
+
+function drainBatchDnsLineQueue(){
+  while(batchDnsLineActive < BATCH_DNS_LINE_CONCURRENCY && batchDnsLineQueue.length > 0){
+    var item = batchDnsLineQueue.shift();
+    batchDnsLineActive++;
+    requestBatchDnsLine(item);
+  }
+}
+
+function requestBatchDnsLine(item){
   $.ajax({
     type: 'POST',
     url: '/cloudflare/get_domain_default_line',
-    data: {domain_id: domainId},
+    data: {domain_id: item.domainId},
     dataType: 'json',
+    timeout: 45000,
     success: function(res){
-      var waiters = batchDnsLineWaiters[cacheKey] || [];
-      delete batchDnsLineWaiters[cacheKey];
-      var data = (res.code === 0 && res.data && $.isArray(res.data.lines) && res.data.lines.length > 0) ? res.data : null;
-      if(data) cacheBatchDnsLineData(domainId, {lines: data.lines, default_line: data.default_line});
-      var tasks = {};
-      waiters.forEach(function(item){
-        if(data){
-          applyBatchDnsLineData(item.task, item.groupIndex, data);
-        }else{
-          setBatchDnsLineError(item.task, item.groupIndex);
-        }
-        tasks[item.task] = true;
-      });
-      Object.keys(tasks).forEach(function(taskName){
-        refreshBatchQuickLines(taskName);
-      });
+      batchDnsLineActive--;
+      if(res.code === 0 && res.data && $.isArray(res.data.lines) && res.data.lines.length > 0){
+        finishBatchDnsLine(item, res.data);
+      }else if(item.attempt < BATCH_DNS_LINE_RETRIES){
+        retryBatchDnsLine(item);
+      }else{
+        finishBatchDnsLine(item, null);
+      }
+      drainBatchDnsLineQueue();
     },
     error: function(){
-      var waiters = batchDnsLineWaiters[cacheKey] || [];
-      delete batchDnsLineWaiters[cacheKey];
-      var tasks = {};
-      waiters.forEach(function(item){
-        setBatchDnsLineError(item.task, item.groupIndex);
-        tasks[item.task] = true;
-      });
-      Object.keys(tasks).forEach(function(taskName){
-        refreshBatchQuickLines(taskName);
-      });
+      batchDnsLineActive--;
+      if(item.attempt < BATCH_DNS_LINE_RETRIES){
+        retryBatchDnsLine(item);
+      }else{
+        finishBatchDnsLine(item, null);
+      }
+      drainBatchDnsLineQueue();
     }
+  });
+}
+
+function retryBatchDnsLine(item){
+  item.attempt++;
+  setTimeout(function(){
+    batchDnsLineQueue.push(item);
+    drainBatchDnsLineQueue();
+  }, 700 * item.attempt);
+}
+
+function finishBatchDnsLine(item, data){
+  var cacheKey = item.domainId;
+  var waiters = batchDnsLineWaiters[cacheKey] || [];
+  delete batchDnsLineWaiters[cacheKey];
+  if(data) cacheBatchDnsLineData(item.domainId, {lines: data.lines, default_line: data.default_line});
+  var tasks = {};
+  waiters.forEach(function(waiter){
+    if(data){
+      applyBatchDnsLineData(waiter.task, waiter.groupIndex, data);
+    }else{
+      setBatchDnsLineError(waiter.task, waiter.groupIndex);
+    }
+    tasks[waiter.task] = true;
+  });
+  Object.keys(tasks).forEach(function(taskName){
+    refreshBatchQuickLines(taskName);
   });
 }
 
@@ -1032,21 +1069,35 @@ function refreshBatchQuickLines(task){
 
   var groupCount = 0;
   var readyCount = 0;
+  var loadingCount = 0;
+  var errorCount = 0;
   $('.batch-dns-provider[data-task="' + task + '"]').each(function(){
     var groupIndex = $(this).data('groupIndex');
     if(getBatchGroupProviderType(task, groupIndex) !== providerType) return;
     groupCount++;
     if(!$(this).val()) return;
     var $cascade = $('#' + batchDnsControlId(task, 'lineCascade', groupIndex));
-    if($cascade.data('loaded') === true) readyCount++;
+    if($cascade.data('loaded') === true){
+      readyCount++;
+    }else if($cascade.data('loading') === true){
+      loadingCount++;
+    }else if($cascade.data('loadError') === true){
+      errorCount++;
+    }
   });
 
   if(groupCount === 0){
     $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">没有分组匹配当前服务商</option></select>');
     return;
   }
-  if(readyCount < groupCount){
-    $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">请先完成服务商选择</option></select>');
+  if(readyCount === 0){
+    if(loadingCount > 0){
+      $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">正在加载线路（' + (groupCount - loadingCount) + '/' + groupCount + '）...</option></select>');
+    }else if(errorCount > 0){
+      $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">线路加载失败，请重新选择服务商重试</option></select>');
+    }else{
+      $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">请先完成服务商选择</option></select>');
+    }
     return;
   }
 
@@ -1057,6 +1108,7 @@ function refreshBatchQuickLines(task){
     $quick.html('<select class="form-control batch-dns-quick-line-level" disabled><option value="">没有可用线路</option></select>');
     return;
   }
+  $quick.attr('title', '已加载 ' + readyCount + '/' + groupCount + ' 个分组');
   appendQuickLineSelect($quick, quickTree.children, 0);
 }
 
@@ -3411,6 +3463,33 @@ function hostnameResponseHandler(res){
 function refreshHostnameList(){
   $("#hostnameSearchInput").val('');
   $("#listTable").bootstrapTable('refresh');
+}
+
+function isHostnameOnboarded(row){
+  var successStatuses = ['active', 'active_deployed', 'valid'];
+  var status = String(row.status || '').toLowerCase();
+  var sslStatus = String(row.ssl_status || '').toLowerCase();
+  var verificationStatus = String(row.verification_status || '').toLowerCase();
+  var statusOk = successStatuses.indexOf(status) !== -1;
+  var sslOk = successStatuses.indexOf(sslStatus) !== -1;
+  var verificationOk = verificationStatus === '' || verificationStatus === '-' || successStatuses.indexOf(verificationStatus) !== -1;
+  return statusOk && sslOk && verificationOk;
+}
+
+function selectPendingHostnames(){
+  var rows = $('#listTable').bootstrapTable('getData') || [];
+  var ids = [];
+  rows.forEach(function(row){
+    if(row && row.id && !isHostnameOnboarded(row)) ids.push(row.id);
+  });
+  if(ids.length === 0){
+    layer.msg('当前列表没有未接入成功的主机名', {icon: 0});
+    return;
+  }
+  $('#listTable').bootstrapTable('uncheckAll');
+  $('#listTable').bootstrapTable('checkBy', {field: 'id', values: ids});
+  updateBatchButtons();
+  layer.msg('已选择 ' + ids.length + ' 个未接入主机名', {icon: 1, time: 1500});
 }
 
 function formatStatus(value){
