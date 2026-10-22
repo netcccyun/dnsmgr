@@ -466,7 +466,7 @@ class henet implements DnsInterface
 
         $url = str_starts_with($path, 'http') ? $path : $this->baseUrl . $path;
         try {
-            $response = http_request($url, $params ? http_build_query($params) : null, $this->baseUrl, $this->cookie, null, $this->proxy, $method, 20);
+            $response = http_request($url, $params ? http_build_query($params) : null, $this->baseUrl, $this->cookie, null, $this->proxy, $method, current_http_request_timeout(20));
         } catch (Exception $e) {
             $this->setError($e->getMessage());
             return false;

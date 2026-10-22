@@ -17,10 +17,37 @@ function http_client(): Client
     return $client;
 }
 
+function set_http_request_timeout($timeout)
+{
+    if (extension_loaded('swoole') && \Swoole\Coroutine::getCid() >= 0) {
+        $context = \Swoole\Coroutine::getContext();
+        $previous = $context['http_request_timeout'] ?? null;
+        $context['http_request_timeout'] = $timeout;
+        return $previous;
+    }
+
+    $previous = $GLOBALS['http_request_timeout'] ?? null;
+    $GLOBALS['http_request_timeout'] = $timeout;
+    return $previous;
+}
+
+function current_http_request_timeout($default = 10)
+{
+    if (extension_loaded('swoole') && \Swoole\Coroutine::getCid() >= 0) {
+        $context = \Swoole\Coroutine::getContext();
+        $timeout = $context['http_request_timeout'] ?? null;
+    } else {
+        $timeout = $GLOBALS['http_request_timeout'] ?? null;
+    }
+
+    $timeout = intval($timeout);
+    return $timeout > 0 ? $timeout : intval($default);
+}
+
 function get_curl($url, $post = 0, $referer = 0, $cookie = 0, $ua = 0, $nobody = 0, $addheader = [])
 {
     $options = [
-        'timeout' => 10,
+        'timeout' => current_http_request_timeout(10),
         'verify' => false,
         'headers' => [
             'User-Agent' => $ua ?: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
@@ -433,12 +460,18 @@ function normalize_http_headers($headers)
  * @param array|null $headers 其他自定义请求头
  * @param bool $proxy 是否使用代理
  * @param string|null $method 请求方法，默认为 GET 或 POST（如果存在请求数据）
- * @param int $timeout 请求超时时间，默认为 10 秒
+ * @param int|null $timeout 请求超时时间；为空时使用当前任务超时或默认 10 秒
  * @return array 包含 HTTP 状态码、重定向 URL、响应头和响应体的数组
  * @throws Exception
  */
-function http_request($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = 10): array
+function http_request($url, $data = null, $referer = null, $cookie = null, $headers = null, $proxy = false, $method = null, $timeout = null): array
 {
+    if ($timeout === null) {
+        $timeout = current_http_request_timeout(10);
+    } else {
+        $timeout = intval($timeout);
+    }
+
     $options = [
         'timeout' => $timeout,
         'connect_timeout' => $timeout,

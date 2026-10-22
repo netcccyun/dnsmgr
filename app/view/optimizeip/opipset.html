@@ -56,6 +56,13 @@
 	  <div class="col-sm-9"><input type="text" name="optimize_ip_min" value="{:config_get('optimize_ip_min', '30')}" class="form-control" placeholder="单位：分钟"/></div>
 	</div>
 	<div class="form-group">
+	  <label class="col-sm-3 control-label">请求超时（秒）</label>
+	  <div class="col-sm-9">
+		<input type="number" min="5" max="300" name="optimize_ip_timeout" value="{:config_get('optimize_ip_timeout', '30')}" class="form-control"/>
+		<span class="help-block">单次 DNS 接口请求超时时间，默认 30 秒。DNSLA 等服务商响应较慢时可适当调大。</span>
+	  </div>
+	</div>
+	<div class="form-group">
 	  <label class="col-sm-3 control-label">任务并发数</label>
 	  <div class="col-sm-9">
 		<input type="number" min="1" max="20" name="optimize_ip_concurrency" value="{:config_get('optimize_ip_concurrency', '4')}" class="form-control"/>

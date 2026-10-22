@@ -233,6 +233,11 @@ class OptimizeService
         return max(1, min(20, intval(config_get('optimize_ip_account_concurrency', 2))));
     }
 
+    private function getRequestTimeout()
+    {
+        return max(5, min(300, intval(config_get('optimize_ip_timeout', 30))));
+    }
+
     private function canRunConcurrently()
     {
         return extension_loaded('swoole')
@@ -243,20 +248,25 @@ class OptimizeService
     private function preloadIpAddress(array $list)
     {
         $preloader = new self();
-        foreach ($list as $row) {
-            foreach (explode(',', (string)$row['ip_type']) as $ipType) {
-                $ipType = trim($ipType);
-                if ($ipType === '') {
-                    continue;
-                }
-                try {
-                    $preloader->get_ip_address2(intval($row['cdn_type']), $ipType);
-                } catch (\Throwable $e) {
-                    // 错误会按接口类型缓存，任务执行时直接复用，避免重复请求。
+        $previousTimeout = set_http_request_timeout($this->getRequestTimeout());
+        try {
+            foreach ($list as $row) {
+                foreach (explode(',', (string)$row['ip_type']) as $ipType) {
+                    $ipType = trim($ipType);
+                    if ($ipType === '') {
+                        continue;
+                    }
+                    try {
+                        $preloader->get_ip_address2(intval($row['cdn_type']), $ipType);
+                    } catch (\Throwable $e) {
+                        // 错误会按接口类型缓存，任务执行时直接复用，避免重复请求。
+                    }
                 }
             }
+            return [$preloader->ip_address, $preloader->ip_errors];
+        } finally {
+            set_http_request_timeout($previousTimeout);
         }
-        return [$preloader->ip_address, $preloader->ip_errors];
     }
 
     private function executeConcurrent(array $list, array $ipCache, array $ipErrors, int $concurrency, int $accountConcurrency)
@@ -383,6 +393,16 @@ class OptimizeService
     //执行单个优选任务
     public function execute_one($row)
     {
+        $previousTimeout = set_http_request_timeout($this->getRequestTimeout());
+        try {
+            return $this->executeOneTask($row);
+        } finally {
+            set_http_request_timeout($previousTimeout);
+        }
+    }
+
+    private function executeOneTask($row)
+    {
         $this->add_num = 0;
         $this->change_num = 0;
         $this->del_num = 0;
@@ -467,6 +487,12 @@ class OptimizeService
         if (array_key_exists($did, $this->dns_models)) {
             return $this->dns_models[$did];
         }
+        $accountConfig = json_decode($drow['config'] ?? '', true);
+        if (!is_array($accountConfig)) {
+            $accountConfig = [];
+        }
+        $accountConfig['timeout'] = $this->getRequestTimeout();
+        $drow['config'] = json_encode($accountConfig);
         $dns = DnsHelper::getModel2($drow);
         $this->dns_models[$did] = $dns ?: null;
         return $this->dns_models[$did];

@@ -316,7 +316,7 @@ class dnsla implements DnsInterface
 
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
             try {
-                $response = http_request($url, $body, null, null, $header, $this->proxy, $method, 30);
+                $response = http_request($url, $body, null, null, $header, $this->proxy, $method, current_http_request_timeout(30));
             } catch (\Exception $e) {
                 $lastError = $e->getMessage();
                 if ($attempt < $maxAttempts) {

@@ -14,14 +14,16 @@ class Aliyun
     private $Endpoint;
     private $Version;
     private $proxy = false;
+    private $timeout = 10;
 
-    public function __construct($AccessKeyId, $AccessKeySecret, $Endpoint, $Version, $proxy = false)
+    public function __construct($AccessKeyId, $AccessKeySecret, $Endpoint, $Version, $proxy = false, $timeout = 10)
     {
         $this->AccessKeyId = $AccessKeyId;
         $this->AccessKeySecret = $AccessKeySecret;
         $this->Endpoint = $Endpoint;
         $this->Version = $Version;
         $this->proxy = $proxy;
+        $this->timeout = max(1, intval($timeout));
     }
 
     /**
@@ -53,7 +55,7 @@ class Aliyun
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
         if ($method == 'POST') {
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));

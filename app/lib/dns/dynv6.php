@@ -342,7 +342,7 @@ class dynv6 implements DnsInterface
         }
 
         try {
-            $response = http_request($url, $body, null, null, $headers, $this->proxy, $method, 30);
+            $response = http_request($url, $body, null, null, $headers, $this->proxy, $method, current_http_request_timeout(30));
         } catch (Exception $e) {
             $this->setError($e->getMessage());
             return false;
