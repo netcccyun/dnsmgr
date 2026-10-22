@@ -26,6 +26,9 @@ class Optimizeip extends BaseController
                 if ($key == 'optimize_ip_concurrency') {
                     $value = (string)max(1, min(20, intval($value)));
                 }
+                if ($key == 'optimize_ip_account_concurrency') {
+                    $value = (string)max(1, min(20, intval($value)));
+                }
                 config_set($key, $value);
                 Cache::delete('configs');
             }

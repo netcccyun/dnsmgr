@@ -126,7 +126,50 @@ class dnsla implements DnsInterface
         }
         if ($Weight > 0) $param['weight'] = $Weight;
         $data = $this->execute('POST', '/api/record', $param);
-        return is_array($data) ? $data['id'] : false;
+        if (is_array($data) && isset($data['id'])) {
+            return $data['id'];
+        }
+
+        $error = $this->getError();
+        if ($this->shouldVerifyAddResult($error)) {
+            $record = $this->findCreatedRecord($Name, $Type, $Value, $Line);
+            if ($record) {
+                $this->setError('');
+                return $record['RecordId'];
+            }
+            $this->setError($error);
+        }
+        return false;
+    }
+
+    private function shouldVerifyAddResult($error)
+    {
+        $error = strtolower((string)$error);
+        return str_contains($error, 'timed out')
+            || str_contains($error, 'timeout')
+            || str_contains($error, 'empty reply')
+            || str_contains($error, 'http code: 5');
+    }
+
+    private function findCreatedRecord($Name, $Type, $Value, $Line)
+    {
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            if ($attempt > 0) {
+                usleep(1000000);
+            }
+            $result = $this->getSubDomainRecords($Name, 1, 100);
+            if (!is_array($result)) {
+                continue;
+            }
+            foreach ($result['list'] as $record) {
+                if ($record['Type'] === $Type
+                    && trim((string)$record['Value']) === trim((string)$Value)
+                    && (string)$record['Line'] === (string)$Line) {
+                    return $record;
+                }
+            }
+        }
+        return false;
     }
 
     //修改解析记录

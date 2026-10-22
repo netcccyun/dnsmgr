@@ -190,17 +190,23 @@ class OptimizeService
         }
 
         try {
-            $list = Db::name('optimizeip')->where('active', 1)->select()->toArray();
+            $list = Db::name('optimizeip')->alias('T')
+                ->leftJoin('domain D', 'T.did = D.id')
+                ->leftJoin('account A', 'D.aid = A.id')
+                ->where('T.active', 1)
+                ->field('T.*,A.id aid,A.type provider')
+                ->select()->toArray();
             if (count($list) == 0) {
                 return false;
             }
 
             $concurrency = min($this->getConcurrency(), count($list));
-            echo '开始执行IP优选任务，共获取到'.count($list).'个待执行任务，并发数'.$concurrency."\n";
+            $accountConcurrency = min($concurrency, $this->getAccountConcurrency());
+            echo '开始执行IP优选任务，共获取到'.count($list).'个待执行任务，并发数'.$concurrency.'，单账户并发数'.$accountConcurrency."\n";
 
             [$ipCache, $ipErrors] = $this->preloadIpAddress($list);
             if ($concurrency > 1 && $this->canRunConcurrently()) {
-                $this->executeConcurrent($list, $ipCache, $ipErrors, $concurrency);
+                $this->executeConcurrent($list, $ipCache, $ipErrors, $concurrency, $accountConcurrency);
             } else {
                 if ($concurrency > 1) {
                     echo '未安装 Swoole 扩展，自动降级为串行执行'."\n";
@@ -220,6 +226,11 @@ class OptimizeService
     private function getConcurrency()
     {
         return max(1, min(20, intval(config_get('optimize_ip_concurrency', 4))));
+    }
+
+    private function getAccountConcurrency()
+    {
+        return max(1, min(20, intval(config_get('optimize_ip_account_concurrency', 2))));
     }
 
     private function canRunConcurrently()
@@ -248,20 +259,38 @@ class OptimizeService
         return [$preloader->ip_address, $preloader->ip_errors];
     }
 
-    private function executeConcurrent(array $list, array $ipCache, array $ipErrors, int $concurrency)
+    private function executeConcurrent(array $list, array $ipCache, array $ipErrors, int $concurrency, int $accountConcurrency)
     {
         $total = count($list);
         $nextIndex = 0;
         $done = new \Swoole\Coroutine\Channel($concurrency);
+        $accountChannels = [];
+        foreach ($list as $row) {
+            $accountKey = (string)($row['aid'] ?? '0');
+            if (isset($accountChannels[$accountKey])) {
+                continue;
+            }
+            $channel = new \Swoole\Coroutine\Channel($accountConcurrency);
+            for ($i = 0; $i < $accountConcurrency; $i++) {
+                $channel->push(true);
+            }
+            $accountChannels[$accountKey] = $channel;
+        }
 
-        $worker = function () use (&$nextIndex, $total, $list, $ipCache, $ipErrors, $done) {
+        $worker = function () use (&$nextIndex, $total, $list, $ipCache, $ipErrors, $done, $accountChannels) {
             try {
                 while (true) {
                     $index = $nextIndex++;
                     if ($index >= $total) {
                         break;
                     }
-                    $this->runTaskRow($list[$index], $ipCache, $ipErrors, true);
+                    $accountKey = (string)($list[$index]['aid'] ?? '0');
+                    $accountChannels[$accountKey]->pop();
+                    try {
+                        $this->runTaskRow($list[$index], $ipCache, $ipErrors, true);
+                    } finally {
+                        $accountChannels[$accountKey]->push(true);
+                    }
                 }
             } finally {
                 $done->push(true);
