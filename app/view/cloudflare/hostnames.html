@@ -2408,13 +2408,13 @@ function renderCfOptimizedDnsGroups(dnsGroups, isSingle){
             lineSelect.html(opts || '<option value="" selected>请选择</option>');
             lineSelect.trigger('change.cfsub');
           } else {
-            var defLine = (res.code === 0 && res.data && res.data.default_line) ? res.data.default_line : '0';
+            var defLine = (res.code === 0 && res.data && res.data.default_line != null) ? String(res.data.default_line) : '';
             lineSelect.html('<option value="' + htmlEscape(defLine) + '" selected>默认</option>');
             lineSelect.data('allLines', []);
             subLineArea.hide();
           }
         },
-        error: function(){ lineSelect.html('<option value="0" selected>默认</option>'); lineSelect.data('allLines', []); subLineArea.hide(); }
+        error: function(){ lineSelect.html('<option value="" selected>默认</option>'); lineSelect.data('allLines', []); subLineArea.hide(); }
       });
     });
 
@@ -2563,7 +2563,7 @@ function confirmBatchCfOptimized(){
         var existingRecord = null;
         var existingInfo = '';
         // 获取用户选择的线路 value 和 label
-        var selLine = (sel && sel.line) ? sel.line : '0';
+        var selLine = (sel && sel.line !== undefined && sel.line !== null) ? String(sel.line) : '';
         var selLineLabel = (sel && sel.lineLabel) ? sel.lineLabel : '';
         if(res.code === 0 && res.data && res.data.length > 0){
           for(var i = 0; i < res.data.length; i++){
@@ -2717,7 +2717,7 @@ function preDetectAllHostnames(cnameTarget, dnsDomains, recordType, callback){
 
     (function(hn, rn, s){
       // 获取用户选择的线路 value 和 label（label 用于兜底匹配）
-      var selLine = s.line || '0';
+      var selLine = (s.line !== undefined && s.line !== null) ? String(s.line) : '';
       var selLineLabel = s.lineLabel || '';
       $.ajax({
         type: 'POST',
@@ -2888,7 +2888,7 @@ function executeCfOptimized(cnameTarget, dnsDomains, recordType){
 
   // 每个主机名使用自己组选择的线路，直接处理
   batchCfOptimizedData.forEach(function(item){
-    var itemLine = (item._dnsSel && item._dnsSel.line) ? item._dnsSel.line : '0';
+    var itemLine = (item._dnsSel && item._dnsSel.line !== undefined && item._dnsSel.line !== null) ? item._dnsSel.line : '';
     processOneItem(item, itemLine);
   });
 }
@@ -3328,7 +3328,7 @@ function submitQuickAddDcvCnameRecord(cnameValue, target){
     data: {domain_id: target.domain_id},
     dataType: 'json',
     success: function(lineRes){
-      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line) ? lineRes.data.default_line : '0';
+      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line != null) ? String(lineRes.data.default_line) : '';
       // 使用获取到的线路添加记录
       $.ajax({
         type: 'POST',
@@ -3898,7 +3898,7 @@ function submitQuickAddTxtRecord(value, target, isHostnameVerification){
     data: {domain_id: target.domain_id},
     dataType: 'json',
     success: function(lineRes){
-      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line) ? lineRes.data.default_line : '0';
+      var line = (lineRes.code === 0 && lineRes.data && lineRes.data.default_line != null) ? String(lineRes.data.default_line) : '';
       // 使用获取到的线路添加记录
       $.ajax({
         type: 'POST',

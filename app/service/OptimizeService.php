@@ -275,19 +275,15 @@ class OptimizeService
         $nextIndex = 0;
         $done = new \Swoole\Coroutine\Channel($concurrency);
         $accountChannels = [];
+        $accountKeys = [];
         foreach ($list as $row) {
             $accountKey = (string)($row['aid'] ?? '0');
-            if (isset($accountChannels[$accountKey])) {
-                continue;
+            if (!isset($accountKeys[$accountKey])) {
+                $accountKeys[$accountKey] = true;
             }
-            $channel = new \Swoole\Coroutine\Channel($accountConcurrency);
-            for ($i = 0; $i < $accountConcurrency; $i++) {
-                $channel->push(true);
-            }
-            $accountChannels[$accountKey] = $channel;
         }
 
-        $worker = function () use (&$nextIndex, $total, $list, $ipCache, $ipErrors, $done, $accountChannels) {
+        $worker = function () use (&$nextIndex, $total, $list, $ipCache, $ipErrors, $done, &$accountChannels) {
             try {
                 while (true) {
                     $index = $nextIndex++;
@@ -307,7 +303,14 @@ class OptimizeService
             }
         };
 
-        $runner = function () use ($worker, $concurrency, $done) {
+        $runner = function () use ($worker, $concurrency, $done, $accountKeys, $accountConcurrency, &$accountChannels) {
+            foreach ($accountKeys as $accountKey => $_) {
+                $channel = new \Swoole\Coroutine\Channel($accountConcurrency);
+                for ($i = 0; $i < $accountConcurrency; $i++) {
+                    $channel->push(true);
+                }
+                $accountChannels[$accountKey] = $channel;
+            }
             for ($i = 0; $i < $concurrency; $i++) {
                 \Swoole\Coroutine::create($worker);
             }
