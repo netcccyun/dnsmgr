@@ -11,6 +11,9 @@
 .batch-muted{color:#888;font-size:12px;}
 .batch-empty{padding:28px;text-align:center;color:#999;}
 .batch-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.batch-group-row td{background:#f1f5f9!important;border-top:2px solid #dce4ec!important;font-weight:600;}
+.batch-group-row label{margin-bottom:0;cursor:pointer;}
+.batch-group-row .group-count{margin-left:8px;font-weight:400;color:#777;font-size:12px;}
 </style>
 <div class="row">
   <div class="col-xs-12 center-block" style="float:none;">
@@ -79,6 +82,7 @@
             <div class="batch-actions">
               <input type="text" class="form-control input-sm" id="hostnameSearch" placeholder="搜索主机名..." style="width:260px;" oninput="filterPreviewRows()">
               <button type="button" class="btn btn-default btn-sm" onclick="toggleAllNew(true)">全选新建</button>
+              <button type="button" class="btn btn-primary btn-sm" id="showCreatableBtn" onclick="toggleCreatableOnly()">显示全部</button>
               <button type="button" class="btn btn-default btn-sm" onclick="toggleAllMatched(false)">取消全选</button>
               <span class="batch-muted" id="selectedCount">已选择 0 个</span>
             </div>
@@ -171,6 +175,7 @@
 <script>
 var previewRows = [];
 var selectedProviderByHostname = {};
+var showCreatableOnly = true;
 
 function escapeHtml(value){
   return $('<div>').text(value == null ? '' : String(value)).html();
@@ -197,7 +202,7 @@ function pullHostnames(){
     renderPreviewRows();
     $('#previewPanel').show();
     $('#taskPanel').show();
-    $('#previewSummary').text('共 ' + previewRows.length + ' 个，可创建 ' + res.data.matched + ' 个');
+    updatePreviewSummary();
     if(previewRows.length === 0){
       layer.msg('该 Cloudflare Zone 下没有自定义主机名');
     }
@@ -224,6 +229,15 @@ function renderProviderQuickOptions(){
     html += '<option value="' + escapeHtml(type) + '">' + escapeHtml(providers[type]) + '</option>';
   });
   $('#quickProviderSelect').html(html);
+}
+
+function getPreferredCandidate(row){
+  var candidates = row.candidates || [];
+  var selectedKey = selectedProviderByHostname[row.hostname] || '';
+  for(var i = 0; i < candidates.length; i++){
+    if(String(candidates[i].did) + '|' + candidates[i].rr === selectedKey) return candidates[i];
+  }
+  return candidates[0] || null;
 }
 
 function renderProviderSelect(row){
@@ -257,41 +271,130 @@ function renderRowStatus(candidate){
   return candidate.exists ? '<span class="label label-warning">已存在，将更新</span>' : '<span class="label label-success">可创建</span>';
 }
 
+function getCheckedHostnameMap(){
+  var map = {};
+  $('.hostname-check:checked').each(function(){
+    map[String($(this).val() || '')] = true;
+  });
+  return map;
+}
+
+function restoreCheckedHostnames(map){
+  $('.hostname-check:not(:disabled)').each(function(){
+    if(map[String($(this).val() || '')]) $(this).prop('checked', true);
+  });
+  updateSelectedCount();
+}
+
 function updateRowStatus(select){
   var $select = $(select);
   var hostname = String($select.attr('data-hostname') || '');
-  var row = findPreviewRow(hostname);
-  if(!row) return;
   selectedProviderByHostname[hostname] = String($select.val() || '');
-  var candidate = getCandidateBySelect(row, select);
-  var $tr = $select.closest('tr');
-  $tr.find('td').eq(2).text(candidate ? candidate.domain_name : '-');
-  $tr.find('td').eq(3).html(candidate ? '<code>' + escapeHtml(candidate.rr) + '</code>' : '-');
-  $tr.find('.row-status').html(renderRowStatus(candidate));
+  var checkedMap = getCheckedHostnameMap();
+  renderPreviewRows();
+  restoreCheckedHostnames(checkedMap);
+}
+
+function getStatusGroup(candidate, canCreate){
+  if(!canCreate || !candidate) return {type: 'unmatched', label: '未匹配解析域名', className: 'label-danger'};
+  if(candidate.exists) return {type: 'update', label: '已存在，将更新', className: 'label-warning'};
+  return {type: 'new', label: '可创建', className: 'label-success'};
 }
 
 function renderPreviewRows(){
   var keyword = $.trim($('#hostnameSearch').val()).toLowerCase();
-  var html = '';
-  previewRows.forEach(function(row, index){
+  var groups = {
+    new: {type: 'new', label: '可创建', className: 'label-success', rows: []},
+    update: {type: 'update', label: '已存在，将更新', className: 'label-warning', rows: []},
+    unmatched: {type: 'unmatched', label: '未匹配解析域名', className: 'label-danger', rows: []}
+  };
+
+  previewRows.forEach(function(row){
     if(keyword && row.hostname.toLowerCase().indexOf(keyword) === -1) return;
     var canCreate = row.matched && (row.candidates || []).length > 0;
-    var selectedCandidate = (row.candidates || [])[0] || null;
-    var htmlRow = '<tr data-hostname="' + escapeHtml(row.hostname) + '">';
-    htmlRow += '<td class="text-center"><input type="checkbox" class="hostname-check" value="' + escapeHtml(row.hostname) + '" ' + (canCreate ? '' : 'disabled') + ' onchange="updateSelectedCount()"></td>';
-    htmlRow += '<td class="batch-hostname"><strong>' + escapeHtml(row.hostname) + '</strong></td>';
-    htmlRow += '<td>' + (selectedCandidate ? escapeHtml(selectedCandidate.domain_name) : '-') + '</td>';
-    htmlRow += '<td>' + (selectedCandidate ? '<code>' + escapeHtml(selectedCandidate.rr) + '</code>' : '-') + '</td>';
-    htmlRow += '<td>' + (canCreate ? renderProviderSelect(row) : '-') + '</td>';
-    htmlRow += '<td class="row-status">' + (canCreate ? renderRowStatus(selectedCandidate) : '<span class="label label-danger">未匹配解析域名</span>') + '</td>';
-    htmlRow += '</tr>';
-    html += htmlRow;
+    var candidate = canCreate ? getPreferredCandidate(row) : null;
+    var statusGroup = getStatusGroup(candidate, canCreate);
+    if(showCreatableOnly && statusGroup.type !== 'new') return;
+    groups[statusGroup.type].rows.push({row: row, candidate: candidate, canCreate: canCreate});
   });
+
+  var html = '';
+  ['new', 'update', 'unmatched'].forEach(function(groupType){
+    var group = groups[groupType];
+    if(group.rows.length === 0) return;
+    html += '<tr class="batch-group-row" data-group-type="' + group.type + '">';
+    html += '<td colspan="6">';
+    if(group.type !== 'unmatched'){
+      html += '<label><input type="checkbox" class="group-check" data-group-type="' + group.type + '" onchange="toggleGroup(this.dataset.groupType, this.checked)"> ';
+    }
+    html += '<span class="label ' + group.className + '">' + escapeHtml(group.label) + '</span>';
+    html += '<span class="group-count">' + group.rows.length + ' 个</span>';
+    if(group.type !== 'unmatched') html += '</label>';
+    html += '</td></tr>';
+
+    group.rows.forEach(function(item){
+      var row = item.row;
+      var selectedCandidate = item.candidate;
+      var canCreate = item.canCreate;
+      var statusGroup = getStatusGroup(selectedCandidate, canCreate);
+      html += '<tr data-hostname="' + escapeHtml(row.hostname) + '" data-group-type="' + statusGroup.type + '">';
+      html += '<td class="text-center"><input type="checkbox" class="hostname-check" value="' + escapeHtml(row.hostname) + '" data-group-type="' + statusGroup.type + '" ' + (canCreate ? '' : 'disabled') + ' onchange="updateSelectedCount()"></td>';
+      html += '<td class="batch-hostname"><strong>' + escapeHtml(row.hostname) + '</strong></td>';
+      html += '<td>' + (selectedCandidate ? escapeHtml(selectedCandidate.domain_name) : '-') + '</td>';
+      html += '<td>' + (selectedCandidate ? '<code>' + escapeHtml(selectedCandidate.rr) + '</code>' : '-') + '</td>';
+      html += '<td>' + (canCreate ? renderProviderSelect(row) : '-') + '</td>';
+      html += '<td class="row-status">' + (canCreate ? renderRowStatus(selectedCandidate) : '<span class="label label-danger">未匹配解析域名</span>') + '</td>';
+      html += '</tr>';
+    });
+  });
+
   if(html === ''){
-    html = '<tr><td colspan="6" class="batch-empty">没有匹配的主机名</td></tr>';
+    html = '<tr><td colspan="6" class="batch-empty">' + (showCreatableOnly ? '没有可创建的主机名' : '没有匹配的主机名') + '</td></tr>';
   }
   $('#previewBody').html(html);
+  updatePreviewSummary();
   updateSelectedCount();
+}
+
+function updatePreviewSummary(){
+  var newCount = 0;
+  var updateCount = 0;
+  var unmatchedCount = 0;
+  previewRows.forEach(function(row){
+    var canCreate = row.matched && (row.candidates || []).length > 0;
+    var candidate = canCreate ? getPreferredCandidate(row) : null;
+    if(!candidate){
+      unmatchedCount++;
+    }else if(candidate.exists){
+      updateCount++;
+    }else{
+      newCount++;
+    }
+  });
+  var text = '共 ' + previewRows.length + ' 个，可创建 ' + newCount + ' 个，已存在 ' + updateCount + ' 个';
+  if(unmatchedCount > 0) text += '，未匹配 ' + unmatchedCount + ' 个';
+  $('#previewSummary').text(text);
+}
+
+function toggleGroup(groupType, checked){
+  $('.hostname-check[data-group-type="' + String(groupType).replace(/"/g, '\"') + '"]:not(:disabled)').prop('checked', checked);
+  updateSelectedCount();
+}
+
+function updateGroupChecks(){
+  $('.group-check').each(function(){
+    var groupType = String($(this).attr('data-group-type') || '');
+    var $items = $('.hostname-check[data-group-type="' + groupType.replace(/"/g, '\"') + '"]:not(:disabled)');
+    var total = $items.length;
+    var checked = $items.filter(':checked').length;
+    $(this).prop('checked', total > 0 && checked === total).prop('indeterminate', checked > 0 && checked < total);
+  });
+}
+
+function toggleCreatableOnly(){
+  showCreatableOnly = !showCreatableOnly;
+  $('#showCreatableBtn').toggleClass('btn-primary', showCreatableOnly).text(showCreatableOnly ? '显示全部' : '仅显示可创建');
+  renderPreviewRows();
 }
 
 function filterPreviewRows(){
@@ -329,14 +432,15 @@ function applyQuickProvider(providerType){
       }
     });
     if(matchedOption){
-      $select.val(matchedOption.val());
       selectedProviderByHostname[hostname] = String(matchedOption.val());
-      updateRowStatus(this);
       changed++;
     }else{
       missing++;
     }
   });
+  var checkedMap = getCheckedHostnameMap();
+  renderPreviewRows();
+  restoreCheckedHostnames(checkedMap);
   if(missing > 0){
     layer.msg('已应用 ' + changed + ' 个主机名，另有 ' + missing + ' 个没有该服务商', {time: 2600});
   }
@@ -375,7 +479,8 @@ function updateSelectedCount(){
   var count = $('.hostname-check:checked').length;
   $('#selectedCount').text('已选择 ' + count + ' 个');
   var total = $('.hostname-check:not(:disabled)').length;
-  $('#checkAll').prop('checked', total > 0 && count === total);
+  $('#checkAll').prop('checked', total > 0 && count === total).prop('indeterminate', count > 0 && count < total);
+  updateGroupChecks();
 }
 
 function getSelectedHostnames(){
