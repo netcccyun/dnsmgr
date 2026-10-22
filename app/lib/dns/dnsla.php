@@ -267,21 +267,41 @@ class dnsla implements DnsInterface
     private function curl($method, $path, $header, $body = null)
     {
         $url = $this->baseUrl . $path;
-        try {
-            $response = http_request($url, $body, null, null, $header, $this->proxy, $method);
-        } catch (\Exception $e) {
-            $this->setError($e->getMessage());
-            return false;
+        $method = strtoupper($method);
+        $maxAttempts = in_array($method, ['GET', 'PUT', 'DELETE'], true) ? 3 : 1;
+        $lastError = '';
+
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                $response = http_request($url, $body, null, null, $header, $this->proxy, $method, 30);
+            } catch (\Exception $e) {
+                $lastError = $e->getMessage();
+                if ($attempt < $maxAttempts) {
+                    usleep(600000 * $attempt);
+                    continue;
+                }
+                break;
+            }
+
+            $code = intval($response['code'] ?? 0);
+            if ($code == 200) {
+                return $response['body'];
+            }
+            if ($code == 401) {
+                $this->setError('认证失败');
+                return false;
+            }
+
+            $lastError = 'http code: ' . $code;
+            if (($code == 0 || $code >= 500) && $attempt < $maxAttempts) {
+                usleep(600000 * $attempt);
+                continue;
+            }
+            break;
         }
-        if ($response['code'] == 200) {
-            return $response['body'];
-        } elseif ($response['code'] == 401) {
-            $this->setError('认证失败');
-            return false;
-        } else {
-            $this->setError('http code: '.$response['code']);
-            return false;
-        }
+
+        $this->setError($lastError !== '' ? $lastError : '请求失败');
+        return false;
     }
 
     private function setError($message)
