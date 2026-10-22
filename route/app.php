@@ -133,6 +133,7 @@ Route::group(function () {
     Route::get('/optimizeip/batch', 'optimizeipbatch/index');
     Route::post('/optimizeip/batch/pull', 'optimizeipbatch/pull');
     Route::post('/optimizeip/batch/create', 'optimizeipbatch/create');
+    Route::post('/optimizeip/tasks/batch_edit', 'optimizeipbatch/batch_edit_tasks');
     Route::post('/optimizeip/queryapi', 'optimizeip/queryapi');
     Route::post('/optimizeip/opiplist/data', 'optimizeip/opiplist_data');
     Route::get('/optimizeip/opiplist', 'optimizeip/opiplist');

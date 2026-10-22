@@ -28,6 +28,7 @@ tbody tr>td:nth-child(2){overflow: hidden;text-overflow: ellipsis;white-space: n
   <a href="javascript:searchClear()" class="btn btn-default" title="刷新域名账户列表"><i class="fa fa-refresh"></i> 刷新</a>
   <a href="/optimizeip/opipform/add" class="btn btn-success"><i class="fa fa-plus"></i> 添加</a>
   <a href="/optimizeip/batch" class="btn btn-info"><i class="fa fa-cloud-download"></i> 批量任务</a>
+  <button type="button" class="btn btn-warning" id="batchEditBtn" onclick="openBatchEditDialog()" disabled><i class="fa fa-pencil"></i> 批量修改</button>
 </form>
 
       <table id="listTable">
@@ -35,6 +36,92 @@ tbody tr>td:nth-child(2){overflow: hidden;text-overflow: ellipsis;white-space: n
     </div>
   </div>
 </div>
+</div>
+
+<div class="modal" id="modal-batch-edit" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content animated flipInX">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">批量修改优选任务</h4>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" id="batchEditAlert"></div>
+        <form class="form-horizontal" id="batchEditForm" onsubmit="return false;">
+          <div class="form-group">
+            <label class="col-sm-3 control-label">解析线路类型</label>
+            <div class="col-sm-9">
+              <select name="line_type" class="form-control">
+                <option value="">保持不变</option>
+                <option value="0">电信/联通/移动线路</option>
+                <option value="1">默认/联通/移动线路</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">CDN服务商</label>
+            <div class="col-sm-9">
+              <select name="cdn_type" class="form-control">
+                <option value="">保持不变</option>
+                <option value="1">CloudFlare</option>
+                <option value="2">CloudFront</option>
+                <option value="3">Gcore</option>
+                <option value="4">EdgeOne</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">解析IP类型</label>
+            <div class="col-sm-9">
+              <select name="ip_type" class="form-control">
+                <option value="">保持不变</option>
+                <option value="v4">IPv4</option>
+                <option value="v6">IPv6</option>
+                <option value="v4,v6">IPv4 + IPv6</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">每线路解析数量</label>
+            <div class="col-sm-9">
+              <input type="number" class="form-control" name="recordnum" min="1" max="50" placeholder="留空保持不变">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">TTL</label>
+            <div class="col-sm-9">
+              <input type="number" class="form-control" name="ttl" min="1" max="3600" placeholder="留空保持不变">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">备注</label>
+            <div class="col-sm-9">
+              <select name="remark_mode" class="form-control" onchange="toggleBatchRemarkInput(this.value)">
+                <option value="keep">保持不变</option>
+                <option value="set">设置为</option>
+                <option value="clear">清空备注</option>
+              </select>
+              <input type="text" class="form-control" name="remark" maxlength="100" placeholder="留空则清空备注" style="margin-top:6px;display:none;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">任务状态</label>
+            <div class="col-sm-9">
+              <select name="active" class="form-control">
+                <option value="">保持不变</option>
+                <option value="1">启用</option>
+                <option value="0">停用</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-white" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-warning" onclick="submitBatchEdit()">确认修改</button>
+      </div>
+    </div>
+  </div>
 </div>
 {/block}
 {block name="script"}
@@ -60,6 +147,11 @@ $(document).ready(function(){
 		sortName: urlSort,
 		sortOrder: urlOrder,
 		columns: [
+			{
+				field: 'checkbox',
+				checkbox: true,
+				width: '36px'
+			},
 			{
 				field: 'id',
 				title: 'ID',
@@ -159,13 +251,88 @@ $(document).ready(function(){
 			},
 		],
 		onLoadSuccess: function(data) {
-			$('[data-toggle="tooltip"]').tooltip()
+			$('[data-toggle="tooltip"]').tooltip();
+			updateBatchEditButton();
 		},
 		onPageChange: function(number, size){
 			setStoredPageSize(pageSizeKey, size);
 		},
 	})
+
+	$("#listTable").on('check.bs.table uncheck.bs.table check-all.bs.table uncheck-all.bs.table', function(){
+		updateBatchEditButton();
+	});
 })
+
+function updateBatchEditButton(){
+	var count = $("#listTable").bootstrapTable('getSelections').length;
+	$("#batchEditBtn").prop('disabled', count === 0).html('<i class="fa fa-pencil"></i> 批量修改' + (count > 0 ? ' (' + count + ')' : ''));
+}
+
+function openBatchEditDialog(){
+	var selections = $("#listTable").bootstrapTable('getSelections');
+	if(selections.length === 0){
+		layer.msg('请先选择要修改的任务', {icon: 0});
+		return;
+	}
+	$('#batchEditForm')[0].reset();
+	toggleBatchRemarkInput('keep');
+	$('#batchEditAlert').html('已选择 <strong>' + selections.length + '</strong> 个任务；留空的选项保持不变。');
+	$('#modal-batch-edit').modal('show');
+}
+
+function toggleBatchRemarkInput(mode){
+	var $input = $('#batchEditForm input[name=remark]');
+	$input.toggle(mode === 'set');
+	if(mode !== 'set') $input.val('');
+}
+
+function submitBatchEdit(){
+	var selections = $("#listTable").bootstrapTable('getSelections');
+	if(selections.length === 0){
+		layer.msg('请先选择要修改的任务', {icon: 0});
+		return;
+	}
+	var ids = selections.map(function(row){ return row.id; });
+	var data = {
+		ids: ids,
+		line_type: $('#batchEditForm select[name=line_type]').val(),
+		cdn_type: $('#batchEditForm select[name=cdn_type]').val(),
+		ip_type: $('#batchEditForm select[name=ip_type]').val(),
+		recordnum: $('#batchEditForm input[name=recordnum]').val(),
+		ttl: $('#batchEditForm input[name=ttl]').val(),
+		remark_mode: $('#batchEditForm select[name=remark_mode]').val(),
+		remark: $('#batchEditForm input[name=remark]').val(),
+		active: $('#batchEditForm select[name=active]').val()
+	};
+	if(!data.line_type && !data.cdn_type && !data.ip_type && !data.recordnum && !data.ttl && data.remark_mode === 'keep' && !data.active){
+		layer.msg('没有填写需要修改的内容', {icon: 0});
+		return;
+	}
+	var ii = layer.load(2);
+	$.ajax({
+		type: 'POST',
+		url: '/optimizeip/tasks/batch_edit',
+		data: data,
+		dataType: 'json',
+		success: function(res){
+			layer.close(ii);
+			if(res.code === 0){
+				$('#modal-batch-edit').modal('hide');
+				layer.msg(res.msg || '批量修改成功', {icon: 1, time: 1500});
+				$('#listTable').bootstrapTable('uncheckAll');
+				$('#listTable').bootstrapTable('refresh');
+			}else{
+				layer.alert(res.msg || '批量修改失败', {icon: 2});
+			}
+		},
+		error: function(){
+			layer.close(ii);
+			layer.alert('批量修改失败', {icon: 2});
+		}
+	});
+}
+
 function setActive(id, active){
 	$.post('/optimizeip/opipform/setactive', {id: id, active: active}, function(data){
 		if(data.code == 0) {

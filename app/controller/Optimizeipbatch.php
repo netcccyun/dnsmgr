@@ -227,6 +227,78 @@ class Optimizeipbatch extends BaseController
         }
     }
 
+    public function batch_edit_tasks()
+    {
+        if (!checkPermission(2)) return json(['code' => -1, 'msg' => '无权限']);
+
+        try {
+            $ids = input('post.ids/a', []);
+            $ids = array_values(array_unique(array_filter(array_map('intval', (array)$ids), function ($id) {
+                return $id > 0;
+            })));
+            if (empty($ids)) throw new Exception('请先选择要修改的任务');
+            if (count($ids) > 2000) throw new Exception('单次最多修改 2000 个任务');
+
+            $data = [];
+            $lineType = trim((string)input('post.line_type', '', 'trim'));
+            if ($lineType !== '') {
+                if (!in_array($lineType, ['0', '1'], true)) throw new Exception('解析线路类型无效');
+                $data['type'] = intval($lineType);
+            }
+
+            $cdnType = trim((string)input('post.cdn_type', '', 'trim'));
+            if ($cdnType !== '') {
+                if (!in_array($cdnType, ['1', '2', '3', '4'], true)) throw new Exception('CDN服务商无效');
+                $data['cdn_type'] = intval($cdnType);
+            }
+
+            $ipType = trim((string)input('post.ip_type', '', 'trim'));
+            if ($ipType !== '') {
+                if (!in_array($ipType, ['v4', 'v6', 'v4,v6'], true)) throw new Exception('解析IP类型无效');
+                if (intval(config_get('optimize_ip_api', 0)) === 2 && str_contains($ipType, 'v6')) {
+                    throw new Exception('当前优选IP接口不支持IPv6');
+                }
+                $data['ip_type'] = $ipType;
+            }
+
+            $recordnum = trim((string)input('post.recordnum', '', 'trim'));
+            if ($recordnum !== '') {
+                $recordnum = intval($recordnum);
+                if ($recordnum < 1 || $recordnum > 50) throw new Exception('每线路解析数量必须在 1-50 之间');
+                $data['recordnum'] = $recordnum;
+            }
+
+            $ttl = trim((string)input('post.ttl', '', 'trim'));
+            if ($ttl !== '') {
+                $ttl = intval($ttl);
+                if ($ttl < 1 || $ttl > 3600) throw new Exception('TTL 必须在 1-3600 之间');
+                $data['ttl'] = $ttl;
+            }
+
+            $remarkMode = trim((string)input('post.remark_mode', '', 'trim'));
+            if ($remarkMode === 'set') {
+                $data['remark'] = mb_substr(trim((string)input('post.remark', '', 'trim')), 0, 100);
+            } elseif ($remarkMode === 'clear') {
+                $data['remark'] = null;
+            } elseif ($remarkMode !== '' && $remarkMode !== 'keep') {
+                throw new Exception('备注修改方式无效');
+            }
+
+            $active = trim((string)input('post.active', '', 'trim'));
+            if ($active !== '') {
+                if (!in_array($active, ['0', '1'], true)) throw new Exception('任务启用状态无效');
+                $data['active'] = intval($active);
+            }
+
+            if (empty($data)) throw new Exception('没有填写需要修改的内容');
+
+            $affected = Db::name('optimizeip')->whereIn('id', $ids)->update($data);
+            return json(['code' => 0, 'msg' => '批量修改成功，共更新 ' . intval($affected) . ' 个任务']);
+        } catch (Exception $e) {
+            return json(['code' => -1, 'msg' => $e->getMessage()]);
+        }
+    }
+
     private function getCloudflareContext(int $domainId): array
     {
         if ($domainId <= 0) throw new Exception('请选择 Cloudflare 自定义主机名所属域名');
