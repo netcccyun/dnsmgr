@@ -5,6 +5,7 @@ namespace app\service;
 use Exception;
 use think\facade\Db;
 use app\lib\DnsHelper;
+use app\lib\NewDb;
 
 /**
  * CF优选IP
@@ -12,11 +13,24 @@ use app\lib\DnsHelper;
 class OptimizeService
 {
     private $ip_address = [];
+    private $ip_errors = [];
     private $domain_rows = [];
     private $dns_models = [];
     private $add_num = 0;
     private $change_num = 0;
     private $del_num = 0;
+    private $conn;
+
+    public function __construct($ipAddress = null, $ipErrors = null, $conn = null)
+    {
+        if (is_array($ipAddress)) {
+            $this->ip_address = $ipAddress;
+        }
+        if (is_array($ipErrors)) {
+            $this->ip_errors = $ipErrors;
+        }
+        $this->conn = $conn;
+    }
 
     public static function get_license($api, $key)
     {
@@ -132,22 +146,30 @@ class OptimizeService
     public function get_ip_address2($cdn_type = 1, $ip_type = 'v4')
     {
         $key = $cdn_type.'_'.$ip_type;
-        if (!isset($this->ip_address[$key])) {
-            $info = $this->get_ip_address($cdn_type, $ip_type);
-            $res = [];
-            if (isset($info['DEF'])) {
-                $res['DEF'] = $info['DEF'];
+        if (isset($this->ip_errors[$key])) {
+            throw new Exception($this->ip_errors[$key]);
+        }
+        if (!array_key_exists($key, $this->ip_address)) {
+            try {
+                $info = $this->get_ip_address($cdn_type, $ip_type);
+                $res = [];
+                if (isset($info['DEF'])) {
+                    $res['DEF'] = $info['DEF'];
+                }
+                if (isset($info['CT'])) {
+                    $res['CT'] = $info['CT'];
+                }
+                if (isset($info['CU'])) {
+                    $res['CU'] = $info['CU'];
+                }
+                if (isset($info['CM'])) {
+                    $res['CM'] = $info['CM'];
+                }
+                $this->ip_address[$key] = $res;
+            } catch (\Throwable $e) {
+                $this->ip_errors[$key] = $e->getMessage() ?: '获取优选IP数据失败';
+                throw $e;
             }
-            if (isset($info['CT'])) {
-                $res['CT'] = $info['CT'];
-            }
-            if (isset($info['CU'])) {
-                $res['CU'] = $info['CU'];
-            }
-            if (isset($info['CM'])) {
-                $res['CM'] = $info['CM'];
-            }
-            $this->ip_address[$key] = $res;
         }
         return $this->ip_address[$key];
     }
@@ -160,23 +182,173 @@ class OptimizeService
         if ($last && strtotime($last) > time() - $minute * 60) {
             return false;
         }
-        $list = Db::name('optimizeip')->where('active', 1)->select();
-        if (count($list) == 0) {
+
+        $lock = $this->acquireExecutionLock();
+        if (!$lock) {
+            echo 'CF优选IP任务正在执行，跳过本次运行'."\n";
             return false;
         }
-        echo '开始执行IP优选任务，共获取到'.count($list).'个待执行任务'."\n";
+
+        try {
+            $list = Db::name('optimizeip')->where('active', 1)->select()->toArray();
+            if (count($list) == 0) {
+                return false;
+            }
+
+            $concurrency = min($this->getConcurrency(), count($list));
+            echo '开始执行IP优选任务，共获取到'.count($list).'个待执行任务，并发数'.$concurrency."\n";
+
+            [$ipCache, $ipErrors] = $this->preloadIpAddress($list);
+            if ($concurrency > 1 && $this->canRunConcurrently()) {
+                $this->executeConcurrent($list, $ipCache, $ipErrors, $concurrency);
+            } else {
+                if ($concurrency > 1) {
+                    echo '未安装 Swoole 扩展，自动降级为串行执行'."\n";
+                }
+                foreach ($list as $row) {
+                    $this->runTaskRow($row, $ipCache, $ipErrors, false);
+                }
+            }
+
+            config_set('optimize_ip_time', date("Y-m-d H:i:s"));
+            return true;
+        } finally {
+            $this->releaseExecutionLock($lock);
+        }
+    }
+
+    private function getConcurrency()
+    {
+        return max(1, min(20, intval(config_get('optimize_ip_concurrency', 4))));
+    }
+
+    private function canRunConcurrently()
+    {
+        return extension_loaded('swoole')
+            && class_exists('\Swoole\Coroutine\Channel')
+            && function_exists('Swoole\Coroutine\run');
+    }
+
+    private function preloadIpAddress(array $list)
+    {
+        $preloader = new self();
         foreach ($list as $row) {
-            try {
-                $result = $this->execute_one($row);
-                Db::name('optimizeip')->where('id', $row['id'])->update(['status' => 1, 'errmsg' => null, 'updatetime' => date('Y-m-d H:i:s')]);
-                echo '优选任务'.$row['id'].'执行成功：'.$result."\n";
-            } catch (Exception $e) {
-                Db::name('optimizeip')->where('id', $row['id'])->update(['status' => 2, 'errmsg' => $e->getMessage(), 'updatetime' => date('Y-m-d H:i:s')]);
-                echo '优选任务'.$row['id'].'执行失败：'.$e->getMessage()."\n";
+            foreach (explode(',', (string)$row['ip_type']) as $ipType) {
+                $ipType = trim($ipType);
+                if ($ipType === '') {
+                    continue;
+                }
+                try {
+                    $preloader->get_ip_address2(intval($row['cdn_type']), $ipType);
+                } catch (\Throwable $e) {
+                    // 错误会按接口类型缓存，任务执行时直接复用，避免重复请求。
+                }
             }
         }
-        config_set('optimize_ip_time', date("Y-m-d H:i:s"));
-        return true;
+        return [$preloader->ip_address, $preloader->ip_errors];
+    }
+
+    private function executeConcurrent(array $list, array $ipCache, array $ipErrors, int $concurrency)
+    {
+        $total = count($list);
+        $nextIndex = 0;
+        $done = new \Swoole\Coroutine\Channel($concurrency);
+
+        $worker = function () use (&$nextIndex, $total, $list, $ipCache, $ipErrors, $done) {
+            try {
+                while (true) {
+                    $index = $nextIndex++;
+                    if ($index >= $total) {
+                        break;
+                    }
+                    $this->runTaskRow($list[$index], $ipCache, $ipErrors, true);
+                }
+            } finally {
+                $done->push(true);
+            }
+        };
+
+        $runner = function () use ($worker, $concurrency, $done) {
+            for ($i = 0; $i < $concurrency; $i++) {
+                \Swoole\Coroutine::create($worker);
+            }
+            for ($i = 0; $i < $concurrency; $i++) {
+                $done->pop();
+            }
+        };
+
+        if (\Swoole\Coroutine::getCid() >= 0) {
+            $runner();
+            return;
+        }
+
+        if (defined('SWOOLE_HOOK_ALL')) {
+            $hookFlags = SWOOLE_HOOK_ALL;
+            if (defined('SWOOLE_HOOK_PROC')) {
+                $hookFlags &= ~SWOOLE_HOOK_PROC;
+            }
+            @\Swoole\Coroutine::set(['hook_flags' => $hookFlags]);
+        }
+        \Swoole\Coroutine\run($runner);
+    }
+
+    private function runTaskRow(array $row, array $ipCache, array $ipErrors, bool $usePool)
+    {
+        $conn = null;
+        $broken = false;
+        $taskService = new self($ipCache, $ipErrors);
+
+        try {
+            if ($usePool) {
+                $conn = NewDb::pool();
+                $taskService = new self($ipCache, $ipErrors, $conn);
+            }
+            $result = $taskService->execute_one($row);
+            $taskService->updateTaskStatus($row['id'], ['status' => 1, 'errmsg' => null, 'updatetime' => date('Y-m-d H:i:s')]);
+            echo '优选任务'.$row['id'].'执行成功：'.$result."\n";
+        } catch (\Throwable $e) {
+            try {
+                $taskService->updateTaskStatus($row['id'], ['status' => 2, 'errmsg' => $e->getMessage(), 'updatetime' => date('Y-m-d H:i:s')]);
+            } catch (\Throwable $dbError) {
+                $broken = true;
+                echo '优选任务'.$row['id'].'状态写入失败：'.$dbError->getMessage()."\n";
+            }
+            echo '优选任务'.$row['id'].'执行失败：'.$e->getMessage()."\n";
+        } finally {
+            if ($conn) {
+                NewDb::release($conn, $broken);
+            }
+        }
+    }
+
+    private function updateTaskStatus($id, array $data)
+    {
+        if ($this->conn) {
+            $this->conn->name('optimizeip')->where('id', $id)->update($data);
+        } else {
+            Db::name('optimizeip')->where('id', $id)->update($data);
+        }
+    }
+
+    private function acquireExecutionLock()
+    {
+        $handle = @fopen(app()->getRuntimePath().'optimizeip.lock', 'c');
+        if (!$handle) {
+            return false;
+        }
+        if (!flock($handle, LOCK_EX | LOCK_NB)) {
+            fclose($handle);
+            return false;
+        }
+        return $handle;
+    }
+
+    private function releaseExecutionLock($handle)
+    {
+        if (is_resource($handle)) {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
     }
 
     //执行单个优选任务
@@ -247,11 +419,15 @@ class OptimizeService
         if (array_key_exists($did, $this->domain_rows)) {
             return $this->domain_rows[$did];
         }
-        $drow = Db::name('domain')->alias('A')
+        $query = $this->conn ? $this->conn->name('domain') : Db::name('domain');
+        $drow = $query->alias('A')
             ->join('account B', 'A.aid = B.id')
             ->where('A.id', $did)
-            ->field('A.*,B.type')
+            ->field('A.*,B.type,B.config account_config')
             ->find();
+        if ($drow) {
+            $drow['config'] = $drow['account_config'] ?? '';
+        }
         $this->domain_rows[$did] = $drow ?: null;
         return $this->domain_rows[$did];
     }
@@ -262,7 +438,7 @@ class OptimizeService
         if (array_key_exists($did, $this->dns_models)) {
             return $this->dns_models[$did];
         }
-        $dns = DnsHelper::getModel($drow['aid'], $drow['name'], $drow['thirdid']);
+        $dns = DnsHelper::getModel2($drow);
         $this->dns_models[$did] = $dns ?: null;
         return $this->dns_models[$did];
     }
