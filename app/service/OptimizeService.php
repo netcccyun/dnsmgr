@@ -221,6 +221,7 @@ class OptimizeService
                 $record_num = $row['recordnum'];
                 $get_ips = array_column($iplist, 'ip');
                 if ($drow['type'] == 'huawei') {
+                    $get_ips = array_values(array_unique($get_ips));
                     sort($get_ips);
                     $get_ips = array_slice($get_ips, 0, $row['recordnum']);
                     $get_ips = [implode(',', $get_ips)];
@@ -295,44 +296,53 @@ class OptimizeService
             }
         }
 
-        $exist_ips = array_column($ip_records, 'Value');
-        $add_ips = array_diff($get_ips, $exist_ips);
-        $del_ips = array_diff($exist_ips, $get_ips);
-        $correct_ips = array_diff($exist_ips, $del_ips);
-        $correct_count = count($correct_ips);
-        if (!empty($del_ips)) {
-            foreach ($ip_records as $record) {
-                if (in_array($record['Value'], $del_ips)) {
-                    $add_ip = array_pop($add_ips);
-                    if ($add_ip) {
-                        $res = $dns->updateDomainRecord($record['RecordId'], $row['rr'], $ip_type == 'v6' ? 'AAAA' : 'A', $add_ip, $line_name, $row['ttl']);
-                        if (!$res) {
-                            throw new Exception('修改解析失败，'.$dns->getError());
-                        }
-                        $this->change_num++;
-                        $correct_count++;
-                    } else {
-                        $res = $dns->deleteDomainRecord($record['RecordId']);
-                        if (!$res) {
-                            throw new Exception('删除解析失败，'.$dns->getError());
-                        }
-                        $this->del_num++;
-                    }
-                }
+        $desired_ips = array_values(array_unique(array_filter(array_map('strval', $get_ips), function ($ip) {
+            return trim($ip) !== '';
+        })));
+        $desired_ips = array_slice($desired_ips, 0, max(1, intval($record_num)));
+        if (empty($desired_ips)) return;
+
+        $desired_map = array_fill_keys($desired_ips, true);
+        $kept_records = [];
+        $extra_records = [];
+
+        foreach ($ip_records as $record) {
+            $value = trim((string)$record['Value']);
+            if (isset($desired_map[$value]) && !isset($kept_records[$value])) {
+                $kept_records[$value] = $record;
+            } else {
+                $extra_records[] = $record;
             }
         }
-        if ($correct_count < $record_num && !empty($add_ips)) {
-            foreach ($add_ips as $add_ip) {
-                $res = $dns->addDomainRecord($row['rr'], $ip_type == 'v6' ? 'AAAA' : 'A', $add_ip, $line_name, $row['ttl']);
+
+        $missing_ips = array_values(array_filter($desired_ips, function ($ip) use ($kept_records) {
+            return !isset($kept_records[$ip]);
+        }));
+
+        foreach ($extra_records as $record) {
+            if (!empty($missing_ips)) {
+                $new_ip = array_shift($missing_ips);
+                $res = $dns->updateDomainRecord($record['RecordId'], $row['rr'], $ip_type == 'v6' ? 'AAAA' : 'A', $new_ip, $line_name, $row['ttl']);
                 if (!$res) {
-                    throw new Exception('添加解析失败，'.$dns->getError());
+                    throw new Exception('修改解析失败，'.$dns->getError());
                 }
-                $this->add_num++;
-                $correct_count++;
-                if ($correct_count >= $record_num) {
-                    break;
-                }
+                $this->change_num++;
+                continue;
             }
+
+            $res = $dns->deleteDomainRecord($record['RecordId']);
+            if (!$res) {
+                throw new Exception('删除解析失败，'.$dns->getError());
+            }
+            $this->del_num++;
+        }
+
+        foreach ($missing_ips as $add_ip) {
+            $res = $dns->addDomainRecord($row['rr'], $ip_type == 'v6' ? 'AAAA' : 'A', $add_ip, $line_name, $row['ttl']);
+            if (!$res) {
+                throw new Exception('添加解析失败，'.$dns->getError());
+            }
+            $this->add_num++;
         }
     }
 }
