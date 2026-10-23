@@ -238,10 +238,21 @@ class DeployHelper
                 ],
             ],
             'taskinputs' => [
+                'target' => [
+                    'name' => '部署对象',
+                    'type' => 'radio',
+                    'options' => [
+                        '0' => '网站',
+                        '1' => 'EasyPanel面板',
+                    ],
+                    'value' => '0',
+                    'required' => true,
+                ],
                 'name' => [
                     'name' => '网站用户名',
                     'type' => 'input',
                     'placeholder' => '',
+                    'show' => 'target==0',
                     'required' => true,
                 ],
                 'type' => [
@@ -251,6 +262,7 @@ class DeployHelper
                         '0' => '网站SSL证书',
                         '1' => '单域名SSL证书',
                     ],
+                    'show' => 'target==0',
                     'value' => '0',
                     'required' => true,
                 ],

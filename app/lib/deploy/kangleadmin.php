@@ -33,9 +33,17 @@ class kangleadmin implements DeployInterface
 
     public function deploy($fullchain, $privatekey, $config, &$info)
     {
-        if (empty($config['name'])) throw new Exception('网站用户名不能为空');
         $this->login();
         $this->log('登录成功 cookie:' . $this->cookie);
+
+        // target==1 为面板对象；旧版网站任务（type=0/1）无 target 字段，默认走网站分支
+        if (($config['target'] ?? '') == '1') {
+            $this->deployPanel($fullchain, $privatekey);
+            $this->log("EasyPanel面板本身的证书部署成功");
+            return;
+        }
+
+        if (empty($config['name'])) throw new Exception('网站用户名不能为空');
         $this->loginVhost($config['name']);
 
         if ($config['type'] == '1' && !empty($config['domains'])) {
@@ -89,6 +97,25 @@ class kangleadmin implements DeployInterface
         $post = [
             'certificate' => $fullchain,
             'certificate_key' => $privatekey,
+        ];
+        $response = http_request($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
+        if (strpos($response['body'], '成功')) {
+            return true;
+        } elseif (preg_match('/alert\(\'(.*?)\'\)/i', $response['body'], $match)) {
+            throw new Exception(htmlspecialchars($match[1]));
+        } elseif (strlen($response['body']) > 3 && strlen($response['body']) < 50) {
+            throw new Exception(htmlspecialchars($response['body']));
+        } else {
+            throw new Exception('原因未知(httpCode=' . $response['code'] . ')');
+        }
+    }
+
+    private function deployPanel($fullchain, $privatekey)
+    {
+        $path = $this->path . '/index.php?c=security&a=ssl';
+        $post = [
+            'crt' => $fullchain,
+            'key' => $privatekey,
         ];
         $response = http_request($this->url . $path, http_build_query($post), null, $this->cookie, null, $this->proxy);
         if (strpos($response['body'], '成功')) {
