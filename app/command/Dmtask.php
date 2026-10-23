@@ -45,8 +45,12 @@ class Dmtask extends Command
 
     private function runtask()
     {
-        \Co::set(['hook_flags' => SWOOLE_HOOK_ALL]);
-        \Co\run(function () {
+        $hookFlags = SWOOLE_HOOK_ALL;
+        if (!function_exists('proc_open') && defined('SWOOLE_HOOK_PROC')) {
+            $hookFlags &= ~SWOOLE_HOOK_PROC;
+        }
+        \Swoole\Coroutine::set(['hook_flags' => $hookFlags]);
+        \Swoole\Coroutine\run(function () {
             $date = date("Ymd");
             $count = config_get('run_count', null, true) ?? 0;
             while (true) {

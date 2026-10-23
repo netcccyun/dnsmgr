@@ -29,8 +29,9 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 						<div class="col-sm-9">
 							<select name="type" class="form-control">
 								<option value="A">A</option>
-								<option value="CNAME">CNAME</option>
 								<option value="AAAA">AAAA</option>
+								<option value="CNAME">CNAME</option>
+								{if $dnsconfig.alias}<option value="ALIAS">ALIAS</option>{/if}
 								<option value="NS">NS</option>
 								<option value="MX">MX</option>
 								<option value="SRV">SRV</option>
@@ -106,8 +107,9 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
 						<div class="col-sm-9">
 							<select name="type" class="form-control">
 								<option value="A">A</option>
-								<option value="CNAME">CNAME</option>
 								<option value="AAAA">AAAA</option>
+								<option value="CNAME">CNAME</option>
+								{if $dnsconfig.alias}<option value="ALIAS">ALIAS</option>{/if}
 								<option value="NS">NS</option>
 								<option value="MX">MX</option>
 								<option value="SRV">SRV</option>
@@ -200,8 +202,9 @@ td{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width:360px;
   <div class="form-group">
 	<select name="type" class="form-control"><option value="">全部类型</option>
 		<option value="A">A</option>
-		<option value="CNAME">CNAME</option>
 		<option value="AAAA">AAAA</option>
+		<option value="CNAME">CNAME</option>
+		{if $dnsconfig.alias}<option value="ALIAS">ALIAS</option>{/if}
 		<option value="NS">NS</option>
 		<option value="MX">MX</option>
 		<option value="SRV">SRV</option>
@@ -362,7 +365,7 @@ $(document).ready(function(){
 					if(dnsconfig.remark == 1){
 						html += '<a href="javascript:setRemark(\''+row.RecordId+'\')" class="btn btn-info btn-xs">备注</a>&nbsp;&nbsp;';
 					}
-					var supportedTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA', 'PTR', 'LOC', 'LUA', 'REDIRECT_URL', 'FORWARD_URL'];
+					var supportedTypes = ['A', 'AAAA', 'CNAME', 'ALIAS', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA', 'PTR', 'LOC', 'LUA', 'REDIRECT_URL', 'FORWARD_URL'];
 					if(supportedTypes.includes(row.Type)){
 						html += '<a href="javascript:checkRecord(\''+row.RecordId+'\')" class="btn btn-success btn-xs" title="检测解析生效"><i class="fa fa-check-circle-o"></i></a>&nbsp;&nbsp;';
 					}
@@ -1006,8 +1009,13 @@ function checkRecord(recordid) {
 	});
 }
 function copyToClipboard(text, selector) {
+    var el = null;
     if (!text && selector) {
-        var el = document.querySelector(selector);
+        if (selector.charAt(0) === '#') {
+            el = document.getElementById(selector.substring(1));
+        } else {
+            el = document.querySelector(selector);
+        }
         if (el) {
             text = el.getAttribute('data-value');
         }
@@ -1020,8 +1028,8 @@ function copyToClipboard(text, selector) {
     tempInput.select();
     document.execCommand('copy');
     document.body.removeChild(tempInput);
-    if(selector){
-        var icon = document.querySelector(selector + ' + a i');
+    if(el && el.nextElementSibling){
+        var icon = el.nextElementSibling.querySelector('i');
         if(icon){
             var oldClass = icon.className;
             icon.className = 'fa fa-check';

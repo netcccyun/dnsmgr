@@ -892,6 +892,32 @@ class DnsHelper
         'goedge' => ['DEF' => 'default'],
     ];
 
+    private static $record_type_support = [
+        'aliyun' => ['ALIAS'],
+        'henet' => ['ALIAS'],
+        'powerdns' => ['ALIAS'],
+        'spaceship' => ['ALIAS'],
+    ];
+
+    public static function supportsRecordType($dnstype, $type)
+    {
+        $type = strtoupper(trim((string)$type));
+        if ($type === '') return false;
+        return in_array($type, self::$record_type_support[$dnstype] ?? [], true);
+    }
+
+    public static function getTypesSupporting($type)
+    {
+        $type = strtoupper(trim((string)$type));
+        $types = [];
+        foreach (self::$record_type_support as $dnstype => $supported) {
+            if (in_array($type, $supported, true)) {
+                $types[] = $dnstype;
+            }
+        }
+        return $types;
+    }
+
     public static function getList()
     {
         return self::$dns_config;

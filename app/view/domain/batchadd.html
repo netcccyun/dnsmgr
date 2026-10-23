@@ -19,8 +19,9 @@
             <select name="type" class="form-control">
                 <option value="">A / CNAME / AAAA 自动识别</option>
                 <option value="A">A</option>
+				<option value="AAAA">AAAA</option>
                 <option value="CNAME">CNAME</option>
-                <option value="AAAA">AAAA</option>
+				{if $dnsconfig.alias}<option value="ALIAS">ALIAS</option>{/if}
                 <option value="NS">NS</option>
                 <option value="MX">MX</option>
                 <option value="SRV">SRV</option>

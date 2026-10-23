@@ -22,8 +22,9 @@ tbody tr>td:nth-child(3){min-width:300px;word-break:break-all;}
             <select name="type" class="form-control" v-model="set.type">
                 <option value="">A / CNAME / AAAA 自动识别</option>
                 <option value="A">A</option>
+				<option value="AAAA">AAAA</option>
                 <option value="CNAME">CNAME</option>
-                <option value="AAAA">AAAA</option>
+				<option v-if="canUseAlias" value="ALIAS">ALIAS</option>
                 <option value="NS">NS</option>
                 <option value="MX">MX</option>
                 <option value="SRV">SRV</option>
@@ -93,6 +94,7 @@ tbody tr>td:nth-child(3){min-width:300px;word-break:break-all;}
 <script src="/static/js/vue-2.7.16.min.js"></script>
 <script src="/static/js/layer/layer.js"></script>
 <script>
+var aliasSupportedTypes = {$aliasTypes|json_encode|raw};
 new Vue({
     el: '#app',
     data: {
@@ -106,6 +108,14 @@ new Vue({
 		},
 		existCF: false,
     },
+	computed: {
+		canUseAlias: function(){
+			if(this.domainList.length === 0) return false;
+			return this.domainList.every(function(item){
+				return aliasSupportedTypes.indexOf(item.type) !== -1;
+			});
+		}
+	},
 	watch: {
 		'set.type': function(val){
 			if(val == 'MX'){

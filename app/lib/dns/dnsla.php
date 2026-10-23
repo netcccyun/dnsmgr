@@ -115,6 +115,7 @@ class dnsla implements DnsInterface
     //添加解析记录
     public function addDomainRecord($Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
     {
+        if ((string)$Line === '0') $Line = '';
         $param = ['domainId' => $this->domainid, 'type' => $this->convertType($Type), 'host' => $Name, 'data' => $Value, 'ttl' => intval($TTL), 'lineId' => $Line];
         if ($Type == 'MX') $param['preference'] = intval($MX);
         if ($Type == 'REDIRECT_URL') {
@@ -132,6 +133,7 @@ class dnsla implements DnsInterface
     //修改解析记录
     public function updateDomainRecord($RecordId, $Name, $Type, $Value, $Line = '0', $TTL = 600, $MX = 1, $Weight = null, $Remark = null)
     {
+        if ((string)$Line === '0') $Line = '';
         $param = ['id' => $RecordId, 'type' => $this->convertType($Type), 'host' => $Name, 'data' => $Value, 'ttl' => intval($TTL), 'lineId' => $Line];
         if ($Type == 'MX') $param['preference'] = intval($MX);
         if ($Type == 'REDIRECT_URL') {
