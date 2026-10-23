@@ -123,8 +123,11 @@ class UpdateService
     private function requestJson(string $url): array
     {
         try {
-            $client = new Client($this->httpOptions(15, 10));
-            $response = $client->request('GET', $url);
+            $options = $this->httpOptions(15, 10);
+            // ponytail: auth.cccyun.cc 的CDN节点TLS1.3握手异常，检测接口固定使用TLS1.2
+            $options['crypto_method'] = STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
+            $options['crypto_method_max'] = STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
+            $response = (new Client($options))->request('GET', $url);
             $code = $response->getStatusCode();
             if ($code < 200 || $code >= 300) {
                 throw new Exception('检测更新失败，HTTP状态码：' . $code);
