@@ -613,8 +613,15 @@ function convertDomainToUtf8($domain) {
 function getDomainDate($domain)
 {
     try {
-        $whois = \Iodev\Whois\Factory::get()->createWhois();
-        $info = $whois->loadDomainInfo($domain);
+        // whois库仍会调用curl_close（PHP8.5起标记弃用），框架错误处理器会把弃用告警抛成异常，查询期间屏蔽弃用级别
+        $errLevel = error_reporting();
+        error_reporting($errLevel & ~E_DEPRECATED);
+        try {
+            $whois = \Iodev\Whois\Factory::get()->createWhois();
+            $info = $whois->loadDomainInfo($domain);
+        } finally {
+            error_reporting($errLevel);
+        }
         if ($info) {
             if ($info->expirationDate > 0) {
                 return [$info->creationDate > 0 ? date('Y-m-d H:i:s', $info->creationDate) : null, date('Y-m-d H:i:s', $info->expirationDate)];
