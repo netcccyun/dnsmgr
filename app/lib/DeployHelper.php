@@ -249,10 +249,9 @@ class DeployHelper
                     'required' => true,
                 ],
                 'name' => [
-                    'name' => '网站用户名列表',
+                    'name' => '网站用户名',
                     'type' => 'textarea',
                     'placeholder' => '填写要部署证书的网站用户名，每行一个',
-                    'note' => '泛域名证书需部署到同一服务器的多个网站时，可填写多个网站用户名',
                     'show' => 'target==0',
                     'required' => true,
                 ],
