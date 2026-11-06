@@ -508,12 +508,10 @@ class qzyun implements DeployInterface
         $body = curl_exec($ch);
         if ($body === false) {
             $error = curl_error($ch);
-            curl_close($ch);
             throw new Exception('全栈云 TLS 1.2 重试失败：' . $error);
         }
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL) ?: '';
-        curl_close($ch);
 
         return [
             'code' => $code,
