@@ -189,8 +189,8 @@ class DeployHelper
                 ],
                 'domains' => [
                     'name' => '域名列表',
-                    'type' => 'textarea',
-                    'placeholder' => '填写要部署证书的域名，每行一个',
+                    'type' => 'tags',
+                    'placeholder' => '输入域名后回车添加，支持粘贴多个',
                     'show' => 'type==1',
                     'required' => true,
                 ],
@@ -250,8 +250,8 @@ class DeployHelper
                 ],
                 'name' => [
                     'name' => '网站用户名',
-                    'type' => 'textarea',
-                    'placeholder' => '填写要部署证书的网站用户名，每行一个',
+                    'type' => 'tags',
+                    'placeholder' => '填写要部署证书的网站用户名，支持多个',
                     'show' => 'target==0',
                     'required' => true,
                 ],
@@ -268,8 +268,8 @@ class DeployHelper
                 ],
                 'domains' => [
                     'name' => '域名列表',
-                    'type' => 'textarea',
-                    'placeholder' => '填写要部署证书的域名，每行一个',
+                    'type' => 'tags',
+                    'placeholder' => '填写要部署证书的域名，支持多个',
                     'show' => 'type==1',
                     'required' => true,
                 ],

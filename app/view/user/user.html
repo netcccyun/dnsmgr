@@ -47,6 +47,13 @@
 							</div>
 						</div>
 					</div>
+					<div class="form-group" style="display:none" id="mcp_input">
+						<label class="col-sm-3 control-label no-padding-right">MCP接入配置</label>
+						<div class="col-sm-9">
+							<textarea class="form-control" id="mcp_config" rows="5" readonly style="font-family:monospace;font-size:12px"></textarea>
+							<span class="input-note">将以上配置添加到AI 客户端，即可通过 AI 管理本系统。修改密钥后需保存才会生效。</span>
+						</div>
+					</div>
 					<div class="form-group">
 						<label class="col-sm-3 control-label">用户等级</label>
 						<div class="col-sm-9">
@@ -313,6 +320,17 @@ function delItem(id) {
 	  });
 	});
 }
+function updateMcpConfig(){
+	var id = $("#form-store input[name=id]").val();
+	var apikey = $("#form-store input[name=apikey]").val();
+	if($("#form-store input[name=action]").val() != 'edit' || $("select[name=is_api]").val() != 1 || !id || !apikey){
+		$("#mcp_input").hide();
+		return;
+	}
+	var config = {mcpServers: {dnsmgr: { url: window.location.origin + '/mcp', headers: { Authorization: 'Bearer ' + id + ':' + apikey}}}};
+	$("#mcp_config").val(JSON.stringify(config, null, 2));
+	$("#mcp_input").show();
+}
 var CreatePassword = function (len)
 {
 	var str = "abcdefhjmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWYXZ";
@@ -328,6 +346,7 @@ $(document).ready(function(){
 		}else{
 			$("#apikey_input").hide();
 		}
+		updateMcpConfig();
 	});
 	$("select[name=level]").change(function(){
 		if($(this).val() == 2){
@@ -342,6 +361,7 @@ $(document).ready(function(){
 	});
 	$("#create_apikey").click(function(){
 		$("input[name='apikey']").val(CreatePassword(16));
+		updateMcpConfig();
 	});
 	$('[data-toggle="popover"]').popover()
 })

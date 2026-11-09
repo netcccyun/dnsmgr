@@ -9,6 +9,7 @@
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
 use app\middleware\AuthApi;
+use app\middleware\AuthMcp;
 use app\middleware\CheckLogin;
 use app\middleware\ViewOutput;
 use think\facade\Route;
@@ -31,6 +32,7 @@ Route::any('/dmtask/status', 'dmonitor/status');
 Route::any('/optimizeip/status', 'optimizeip/status');
 Route::get('/cron', 'system/cron');
 Route::any('/qqbot/webhook', 'qqbot/webhook');
+Route::any('/mcp', 'mcp/handle')->middleware(AuthMcp::class);
 
 Route::group(function () {
     Route::any('/', 'index/index');
