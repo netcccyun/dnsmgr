@@ -185,7 +185,7 @@ class UpdateService
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = str_replace('\\', '/', (string)$zip->getNameIndex($i));
-            if ($name === '' || str_starts_with($name, '/') || str_contains($name, '../')) {
+            if ($name === '' || str_starts_with($name, '/') || preg_match('#^[A-Za-z]:#', $name) || in_array('..', explode('/', $name), true)) {
                 $zip->close();
                 throw new Exception('更新包包含非法路径，已中止');
             }

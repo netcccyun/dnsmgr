@@ -284,7 +284,10 @@ $(document).ready(function(){
 		   {
 			   field: 'Name',
 			   title: '主机记录',
-			   sortable: dnsconfig.sort
+			   sortable: dnsconfig.sort,
+			   formatter: function(value, row, index) {
+				   return value == null ? '' : htmlEscape(value);
+			   }
 		   },
 			{
 				field: 'Type',
@@ -329,7 +332,10 @@ $(document).ready(function(){
 			{
 				field: 'Remark',
 				visible: dnsconfig.remark > 0,
-				title: '备注'
+				title: '备注',
+				formatter: function(value, row, index) {
+					return value == null ? '' : htmlEscape(value);
+				}
 			},
 			{
 				field: 'UpdateTime',
@@ -373,7 +379,7 @@ $(document).ready(function(){
 						if(row.Name === "@") var domain = "{$domainName}";
 						else var domain = row.Name + ".{$domainName}";
 						domain = domain.replace(/\*/g, 'www');
-						html += '<a href="http://' + domain + '" target="_blank" title="访问域名" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i></a>';
+						html += '<a href="http://' + htmlEscape(domain) + '" target="_blank" title="访问域名" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i></a>';
 					}
 					return html;
 				}
@@ -559,7 +565,7 @@ function setRemark(recordid) {
 		area: ['350px'],
 		closeBtn: 2,
 		title: '编辑备注',
-		content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark" value="'+(row.Remark==null?'':row.Remark)+'" autocomplete="off" placeholder="备注信息"></div></div>',
+		content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark" value="'+(row.Remark==null?'':htmlEscape(row.Remark))+'" autocomplete="off" placeholder="备注信息"></div></div>',
 		btn: ['确认', '取消'],
 		yes: function(){
 			var remark = $("input[name='remark']").val();
@@ -980,7 +986,7 @@ function checkRecord(recordid) {
 				var result = data.data;
 				var title = result.status === 'active' ? '<font color="green"><i class="fa fa-check-circle"></i> 解析已生效</font>' : (result.status === 'not_found' ? '<font color="red"><i class="fa fa-times-circle"></i> 未查询到解析</font>' : '<font color="red"><i class="fa fa-times-circle"></i> 解析值不匹配</font>');
 				var content = '<div style="padding:0 10px;">';
-				content += '<p><strong>主机记录：</strong>' + row.Name + '</p>';
+				content += '<p><strong>主机记录：</strong>' + htmlEscape(row.Name) + '</p>';
 				content += '<p><strong>记录类型：</strong>' + row.Type + '</p>';
 				content += '<p><strong>记录值：</strong>' + htmlEscape(row.Value) + '</p>';
 				content += '<hr style="margin:10px 0;">';

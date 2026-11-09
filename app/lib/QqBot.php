@@ -49,6 +49,10 @@ class QqBot
         if ($eventTs === '' || $plainToken === '') {
             throw new \Exception('回调校验参数不完整');
         }
+        // 签名密钥与事件验签共用，限制输入格式以防被用于伪造任意事件签名
+        if (!ctype_digit($eventTs) || strlen($plainToken) > 256 || strpbrk($plainToken, '{[') !== false) {
+            throw new \Exception('回调校验参数格式错误');
+        }
         $signature = $this->sign($eventTs . $plainToken);
         return [
             'plain_token' => $plainToken,

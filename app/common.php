@@ -128,12 +128,11 @@ function authcode($string, $operation = 'DECODE', $key = '', $expiry = 0)
 
 function random($length, $numeric = 0)
 {
-    $seed = base_convert(md5(microtime().$_SERVER['DOCUMENT_ROOT']), 16, $numeric ? 10 : 35);
-    $seed = $numeric ? (str_replace('0', '', $seed).'012340567890') : ($seed.'zZ'.strtoupper($seed));
+    $seed = $numeric ? '0123456789' : '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $hash = '';
     $max = strlen($seed) - 1;
     for ($i = 0; $i < $length; $i++) {
-        $hash .= $seed[mt_rand(0, $max)];
+        $hash .= $seed[random_int(0, $max)];
     }
     return $hash;
 }

@@ -396,6 +396,9 @@ class Cloudflare extends BaseController
             if (!$domainRow) {
                 throw new Exception('域名不存在');
             }
+            if (!checkPermission(0, $domainRow['name'])) {
+                throw new Exception('无权限');
+            }
 
             // 获取该域名的默认线路
             $recordLine = cache('record_line_' . $domainId);

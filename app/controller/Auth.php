@@ -40,6 +40,7 @@ class Auth extends BaseController
                 if ($user['status'] == 0) return json(['code' => -1, 'msg' => '此用户已被封禁', 'vcode' => 1]);
                 if (isset($user['totp_open']) && $user['totp_open'] == 1 && !empty($user['totp_secret'])) {
                     session('pre_login_user', $user['id']);
+                    session('totp_fail_count', null);
                     if (file_exists($login_limit_file)) {
                         unlink($login_limit_file);
                     }
@@ -87,6 +88,14 @@ class Auth extends BaseController
         try {
             $totp = \app\lib\TOTP::create($user['totp_secret']);
             if (!$totp->verify($code)) {
+                $fail_count = intval(session('totp_fail_count')) + 1;
+                if ($fail_count >= 5) {
+                    session('pre_login_user', null);
+                    session('totp_fail_count', null);
+                    Db::name('log')->insert(['uid' => $user['id'], 'action' => '登录失败', 'data' => 'IP:' . $this->clientip . ' 动态口令多次错误', 'addtime' => date("Y-m-d H:i:s")]);
+                    return json(['code' => -1, 'msg' => '动态口令错误次数过多，请重新登录']);
+                }
+                session('totp_fail_count', $fail_count);
                 return json(['code' => -1, 'msg' => '动态口令错误']);
             }
         } catch (Exception $e) {
@@ -94,6 +103,7 @@ class Auth extends BaseController
         }
         $this->loginUser($user);
         session('pre_login_user', null);
+        session('totp_fail_count', null);
         return json(['code' => 0]);
     }
 
@@ -118,7 +128,8 @@ class Auth extends BaseController
         if (md5(config_get('sys_key') . $domain . $timestamp . $token . config_get('sys_key')) !== $sign) {
             return $this->alert('error', '签名错误');
         }
-        if ($token != cache('quicklogin_' . $domain)) {
+        $cache_token = cache('quicklogin_' . $domain);
+        if (!is_string($cache_token) || !hash_equals($cache_token, $token)) {
             return $this->alert('error', 'Token无效');
         }
         $row = Db::name('domain')->where('name', $domain)->find();

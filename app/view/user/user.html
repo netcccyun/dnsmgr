@@ -335,8 +335,10 @@ var CreatePassword = function (len)
 {
 	var str = "abcdefhjmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWYXZ";
 	var pass = '';
+	var rand = new Uint32Array(len);
+	window.crypto.getRandomValues(rand);
     for (var i = 0; i < len; i++ ) 
-        pass += str.charAt(Math.floor( Math.random() * str.length));
+        pass += str.charAt(rand[i] % str.length);
 	return pass;
 }
 $(document).ready(function(){

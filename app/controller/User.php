@@ -42,7 +42,7 @@ class User extends BaseController
         } else {
             $select->order('id', 'desc');
         }
-        $rows = $select->limit($offset, $limit)->select();
+        $rows = $select->withoutField('password,totp_secret')->limit($offset, $limit)->select();
 
         return json(['total' => $total, 'rows' => $rows]);
     }
@@ -57,6 +57,7 @@ class User extends BaseController
             if (!$row) {
                 return json(['code' => -1, 'msg' => '用户不存在']);
             }
+            unset($row['password'], $row['totp_secret']);
             $row['permission'] = Db::name('permission')->where('uid', $id)->column('domain');
             return json(['code' => 0, 'data' => $row]);
         } elseif ($act == 'add') {

@@ -505,7 +505,7 @@ new Vue({
         area: ['350px'],
         closeBtn: 2,
         title: '编辑备注',
-        content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark" value="'+(p.Remark==null?'':p.Remark)+'" autocomplete="off" placeholder="备注信息"></div></div>',
+        content: '<div style="padding:15px"><div class="form-group"><input class="form-control" type="text" name="remark" value="'+(p.Remark==null?'':$('<div>').text(p.Remark).html().replace(/"/g, '&quot;'))+'" autocomplete="off" placeholder="备注信息"></div></div>',
         btn: ['确认', '取消'],
         yes: function(){
           var remark = $("input[name='remark']").val();
