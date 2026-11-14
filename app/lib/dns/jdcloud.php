@@ -238,7 +238,7 @@ class jdcloud implements DnsInterface
     private function convertType($type)
     {
         $convert_dict = ['REDIRECT_URL' => 'EXPLICIT_URL', 'FORWARD_URL' => 'IMPLICIT_URL'];
-        if (array_key_exists($type, $convert_dict)) {
+        if ($type !== null && array_key_exists($type, $convert_dict)) {
             return $convert_dict[$type];
         }
         return $type;

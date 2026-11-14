@@ -335,7 +335,7 @@ class aliyun implements DnsInterface
     private function convertLineCode($line)
     {
         $convert_dict = ['0' => 'default', '10=1' => 'unicom', '10=0' => 'telecom', '10=3' => 'mobile', '10=2' => 'edu', '3=0' => 'oversea', '10=22' => 'btvn', '80=0' => 'search', '7=0' => 'internal'];
-        if (array_key_exists($line, $convert_dict)) {
+        if ($line !== null && array_key_exists($line, $convert_dict)) {
             return $convert_dict[$line];
         }
         return $line;

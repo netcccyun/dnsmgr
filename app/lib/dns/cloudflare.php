@@ -261,7 +261,7 @@ class cloudflare implements DnsInterface
     private function convertType($type)
     {
         $convert_dict = ['REDIRECT_URL' => 'URI', 'FORWARD_URL' => 'URI'];
-        if (array_key_exists($type, $convert_dict)) {
+        if ($type !== null && array_key_exists($type, $convert_dict)) {
             return $convert_dict[$type];
         }
         return $type;
