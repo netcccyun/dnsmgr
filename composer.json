@@ -64,7 +64,7 @@
         "topthink/think-view": "^2.0"
     },
     "require-dev": {
-        "symfony/var-dumper": "^7.3",
+        "symfony/var-dumper": "^8.1",
         "topthink/think-trace":"^2.0",
         "swoole/ide-helper": "^6.0"
     },
