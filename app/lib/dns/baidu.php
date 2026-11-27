@@ -163,6 +163,7 @@ class baidu implements DnsInterface
         $params = ['rr' => $Name, 'type' => $this->convertType($Type), 'value' => $Value, 'line' => $Line, 'ttl' => intval($TTL), 'description' => $Remark];
         if ($Type == 'MX') $params['priority'] = intval($MX);
         $query = ['clientToken' => getSid()];
+        if (!$this->checkRecordId($RecordId)) return false;
         return $this->send_reuqest('PUT', '/v1/dns/zone/'.$this->domain.'/record/'.$RecordId, $query, $params);
     }
 
@@ -176,6 +177,7 @@ class baidu implements DnsInterface
     public function deleteDomainRecord($RecordId)
     {
         $query = ['clientToken' => getSid()];
+        if (!$this->checkRecordId($RecordId)) return false;
         return $this->send_reuqest('DELETE', '/v1/dns/zone/'.$this->domain.'/record/'.$RecordId, $query);
     }
 
@@ -184,6 +186,7 @@ class baidu implements DnsInterface
     {
         $Status = $Status == '1' ? 'enable' : 'disable';
         $query = [$Status => '', 'clientToken' => getSid()];
+        if (!$this->checkRecordId($RecordId)) return false;
         return $this->send_reuqest('PUT', '/v1/dns/zone/'.$this->domain.'/record/'.$RecordId, $query);
     }
 
@@ -248,6 +251,13 @@ class baidu implements DnsInterface
             $this->setError($e->getMessage());
             return false;
         }
+    }
+
+    private function checkRecordId($RecordId)
+    {
+        if (\app\lib\DnsHelper::isSafeRecordId($RecordId)) return true;
+        $this->setError('记录ID格式不正确');
+        return false;
     }
 
     private function setError($message)

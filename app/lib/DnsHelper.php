@@ -967,4 +967,9 @@ class DnsHelper
         }
         return false;
     }
+
+    public static function isSafeRecordId($RecordId): bool
+    {
+        return is_scalar($RecordId) && preg_match('/^[A-Za-z0-9_\-]{1,128}$/', (string)$RecordId) === 1;
+    }
 }

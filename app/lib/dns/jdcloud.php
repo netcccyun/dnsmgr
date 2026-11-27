@@ -150,6 +150,7 @@ class jdcloud implements DnsInterface
             $params['port'] = intval($values[2]);
             $params['hostValue'] = $values[3];
         }
+        if (!$this->checkRecordId($RecordId)) return false;
         return $this->send_request('PUT', '/domain/'.$this->domainid.'/ResourceRecord/'.$RecordId, ['req'=>$params]);
     }
 
@@ -162,6 +163,7 @@ class jdcloud implements DnsInterface
     //删除解析记录
     public function deleteDomainRecord($RecordId)
     {
+        if (!$this->checkRecordId($RecordId)) return false;
         return $this->send_request('DELETE', '/domain/'.$this->domainid.'/ResourceRecord/'.$RecordId);
     }
 
@@ -169,6 +171,7 @@ class jdcloud implements DnsInterface
     public function setDomainRecordStatus($RecordId, $Status)
     {
         $params = ['action' => $Status == '1' ? 'enable' : 'disable'];
+        if (!$this->checkRecordId($RecordId)) return false;
         $data = $this->send_request('PUT', '/domain/'.$this->domainid.'/ResourceRecord/'.$RecordId.'/status', $params);
         return is_array($data);
     }
@@ -253,6 +256,13 @@ class jdcloud implements DnsInterface
             $this->setError($e->getMessage());
             return false;
         }
+    }
+
+    private function checkRecordId($RecordId)
+    {
+        if (\app\lib\DnsHelper::isSafeRecordId($RecordId)) return true;
+        $this->setError('记录ID格式不正确');
+        return false;
     }
 
     private function setError($message)

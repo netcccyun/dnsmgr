@@ -188,10 +188,10 @@ class qingcloud implements DnsInterface
             $Value = '"'.$Value.'"';
         }
 
-        $recordId = explode('_', $RecordId);
-        $domain_record_id = $recordId[0];
-        $record_value_id = $recordId[1];
-        $data = $this->execute('GET', '/v1/dr_id/'.$domain_record_id);
+        $recordId = $this->parseRecordId($RecordId);
+        if (!$recordId) return false;
+        [$domain_record_id, $record_value_id] = $recordId;
+        $data = $this->getZoneRecord($domain_record_id);
         if (!$data) return false;
 
         if (($Type == 'A' || $Type == 'CNAME') && $mode == '3') $Weight = intval($Weight);
@@ -234,10 +234,10 @@ class qingcloud implements DnsInterface
             return $data !== false;
         }
 
-        $recordId = explode('_', $RecordId);
-        $domain_record_id = $recordId[0];
-        $record_value_id = $recordId[1];
-        $data = $this->execute('GET', '/v1/dr_id/'.$domain_record_id);
+        $recordId = $this->parseRecordId($RecordId);
+        if (!$recordId) return false;
+        [$domain_record_id, $record_value_id] = $recordId;
+        $data = $this->getZoneRecord($domain_record_id);
         if (!$data) return false;
 
         $record = [];
@@ -270,8 +270,9 @@ class qingcloud implements DnsInterface
     //设置解析记录状态
     public function setDomainRecordStatus($RecordId, $Status)
     {
-        $recordId = explode('_', $RecordId);
-        $record_value_id = $recordId[1];
+        $recordId = $this->parseRecordId($RecordId);
+        if (!$recordId) return false;
+        [$domain_record_id, $record_value_id] = $recordId;
         $param = ['ids' => json_encode([$record_value_id]), 'target' => 'value', 'action' => $Status == '0' ? 'stop' : 'enable'];
         $data = $this->execute('POST', '/v1/change_record_status/', $param);
         return $data !== false;
@@ -377,6 +378,29 @@ class qingcloud implements DnsInterface
             return false;
         }
         return $response;
+    }
+
+    //解析"记录ID_记录值ID"格式的RecordId
+    private function parseRecordId($RecordId)
+    {
+        $recordId = explode('_', (string)$RecordId);
+        if (count($recordId) != 2 || !\app\lib\DnsHelper::isSafeRecordId($recordId[0]) || !\app\lib\DnsHelper::isSafeRecordId($recordId[1])) {
+            $this->setError('记录ID格式不正确');
+            return false;
+        }
+        return $recordId;
+    }
+
+    //获取记录详情，并确认其属于当前域名
+    private function getZoneRecord($domain_record_id)
+    {
+        $data = $this->execute('GET', '/v1/dr_id/'.$domain_record_id);
+        if (!$data) return false;
+        if (!isset($data['data']['zone_name']) || strcasecmp(rtrim($data['data']['zone_name'], '.'), rtrim($this->domainid, '.')) !== 0) {
+            $this->setError('记录不属于当前域名');
+            return false;
+        }
+        return $data;
     }
 
     private function setError($message)

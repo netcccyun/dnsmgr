@@ -140,6 +140,7 @@ class cloudflare implements DnsInterface
     //获取解析记录详细信息
     public function getDomainRecordInfo($RecordId)
     {
+        if (!$this->checkRecordId($RecordId)) return false;
         $data = $this->send_reuqest('GET', '/zones/'.$this->domainid.'/dns_records/'.$RecordId);
         if ($data) {
             $name = $this->extractName($data['result']['name']);
@@ -189,6 +190,7 @@ class cloudflare implements DnsInterface
             unset($param['content']);
             $param['data'] = $this->convertValue($Value, $Type);
         }
+        if (!$this->checkRecordId($RecordId)) return false;
         $data = $this->send_reuqest('PATCH', '/zones/'.$this->domainid.'/dns_records/'.$RecordId, $param);
         return is_array($data);
     }
@@ -202,6 +204,7 @@ class cloudflare implements DnsInterface
     //删除解析记录
     public function deleteDomainRecord($RecordId)
     {
+        if (!$this->checkRecordId($RecordId)) return false;
         $data = $this->send_reuqest('DELETE', '/zones/'.$this->domainid.'/dns_records/'.$RecordId);
         return is_array($data);
     }
@@ -210,6 +213,7 @@ class cloudflare implements DnsInterface
     public function setDomainRecordStatus($RecordId, $Status)
     {
         $info = $this->getDomainRecordInfo($RecordId);
+        if (!$info) return false;
         $Name = $Status == '1' ? str_replace('_pause', '', $info['Name']) : $info['Name'] . '_pause';
         // @ 作为特殊字符不能设置为解析, 故设置暂停解析的时候, 替换为 __root__
         if ($Name == '__root__') {
@@ -340,6 +344,13 @@ class cloudflare implements DnsInterface
             $this->setError('返回数据解析失败');
             return false;
         }
+    }
+
+    private function checkRecordId($RecordId)
+    {
+        if (\app\lib\DnsHelper::isSafeRecordId($RecordId)) return true;
+        $this->setError('记录ID格式不正确');
+        return false;
     }
 
     private function setError($message)

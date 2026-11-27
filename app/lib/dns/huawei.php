@@ -115,6 +115,7 @@ class huawei implements DnsInterface
     //获取解析记录详细信息
     public function getDomainRecordInfo($RecordId)
     {
+        if (!$this->checkRecordId($RecordId)) return false;
         $data = $this->send_request('GET', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId);
         if ($data) {
             $name = substr($data['name'], 0, -(strlen($data['zone_name']) + 1));
@@ -157,6 +158,7 @@ class huawei implements DnsInterface
         $records = array_reverse(explode(',', $Value));
         $params = ['name' => $Name, 'type' => $this->convertType($Type), 'records' => $records, 'line' => $Line, 'ttl' => intval($TTL), 'description' => $Remark];
         if ($Weight > 0) $params['weight'] = intval($Weight);
+        if (!$this->checkRecordId($RecordId)) return false;
         $data = $this->send_request('PUT', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId, null, $params);
         return is_array($data);
     }
@@ -170,6 +172,7 @@ class huawei implements DnsInterface
     //删除解析记录
     public function deleteDomainRecord($RecordId)
     {
+        if (!$this->checkRecordId($RecordId)) return false;
         $data = $this->send_request('DELETE', '/v2.1/zones/'.$this->domainid.'/recordsets/'.$RecordId);
         return is_array($data);
     }
@@ -177,6 +180,8 @@ class huawei implements DnsInterface
     //设置解析记录状态
     public function setDomainRecordStatus($RecordId, $Status)
     {
+        // 状态接口不限定zone，先确认记录属于当前域名
+        if (!$this->getDomainRecordInfo($RecordId)) return false;
         $Status = $Status == '1' ? 'ENABLE' : 'DISABLE';
         $params = ['status' => $Status];
         $data = $this->send_request('PUT', '/v2.1/recordsets/'.$RecordId.'/statuses/set', null, $params);
@@ -267,6 +272,13 @@ class huawei implements DnsInterface
             $this->setError($e->getMessage());
             return false;
         }
+    }
+
+    private function checkRecordId($RecordId)
+    {
+        if (\app\lib\DnsHelper::isSafeRecordId($RecordId)) return true;
+        $this->setError('记录ID格式不正确');
+        return false;
     }
 
     private function setError($message)

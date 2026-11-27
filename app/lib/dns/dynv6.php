@@ -269,6 +269,7 @@ class dynv6 implements DnsInterface
             $params['priority'] = intval($MX);
         }
         
+        if (!$this->checkRecordId($RecordId)) return false;
         $data = $this->send_request('PATCH', '/zones/' . $zoneID . '/records/' . $RecordId, $params);
         return $data !== false;
     }
@@ -287,6 +288,7 @@ class dynv6 implements DnsInterface
             return false;
         }
         
+        if (!$this->checkRecordId($RecordId)) return false;
         $data = $this->send_request('DELETE', '/zones/' . $zoneID . '/records/' . $RecordId);
         return $data !== false;
     }
@@ -372,6 +374,13 @@ class dynv6 implements DnsInterface
             $this->setError('HTTP ' . $statusCode . ': ' . $response['body']);
         }
         
+        return false;
+    }
+
+    private function checkRecordId($RecordId)
+    {
+        if (\app\lib\DnsHelper::isSafeRecordId($RecordId)) return true;
+        $this->setError('记录ID格式不正确');
         return false;
     }
 
