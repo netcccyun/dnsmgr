@@ -44,7 +44,7 @@ class kangleadmin implements DeployInterface
         }
 
         if (empty($config['name'])) throw new Exception('网站用户名不能为空');
-        $names = explode("\n", $config['name']);
+        $names = explode(',', $config['name']);
 
         // ponytail: 部分网站失败仅记录日志、任务仍算成功（与仓库其它部署器一致）；如需严格失败，可在 $success < 有效网站数 时抛出
         $success = 0;
@@ -56,7 +56,7 @@ class kangleadmin implements DeployInterface
                 $this->loginVhost($name);
 
                 if ($config['type'] == '1' && !empty($config['domains'])) {
-                    $domainList = explode("\n", $config['domains']);
+                    $domainList = explode(',', $config['domains']);
                     $dcount = 0;
                     $derrmsg = null;
                     foreach ($domainList as $domain) {

@@ -10,7 +10,9 @@
         data: function () {
             return {
                 input: '',
-                focused: false
+                focused: false,
+                editingIndex: -1,
+                editingValue: ''
             };
         },
         computed: {
@@ -52,6 +54,37 @@
                 list.splice(index, 1);
                 this.emit(list);
             },
+            startEdit: function (index) {
+                if (this.disabled || this.editingIndex === index) return;
+                this.editingIndex = index;
+                this.editingValue = this.domains[index];
+                var that = this;
+                this.$nextTick(function () {
+                    var el = that.$el.querySelector('.domain-tag-edit');
+                    if (el) {
+                        el.focus();
+                        el.select();
+                    }
+                });
+            },
+            commitEdit: function () {
+                if (this.editingIndex < 0) return;
+                var index = this.editingIndex;
+                var oldValue = this.domains[index];
+                var value = this.normalize(this.editingValue);
+                this.editingIndex = -1;
+                if (!value || value === oldValue) return;
+                var list = this.domains.slice();
+                if (list.indexOf(value) !== -1) return;
+                list[index] = value;
+                this.emit(list);
+            },
+            cancelEdit: function () {
+                this.editingIndex = -1;
+            },
+            normalize: function (item) {
+                return String(item || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+            },
             clearAll: function () {
                 if (this.disabled) return;
                 this.input = '';
@@ -80,8 +113,9 @@
             '<div class="domain-tags-wrap">' +
                 '<div class="domain-tags" :class="{ focused: focused, disabled: disabled }" @click="$refs.input.focus()">' +
                     '<span class="domain-tag" v-for="(domain, index) in domains" :key="index" :title="domain">' +
-                        '<span class="domain-tag-text">{{ domain }}</span>' +
-                        '<a class="domain-tag-remove" v-if="!disabled" @click.stop="remove(index)" title="移除">&times;</a>' +
+                        '<input v-if="editingIndex === index" class="domain-tag-edit" type="text" v-model="editingValue" @keydown.enter.prevent="commitEdit" @keydown.esc.prevent="cancelEdit" @blur="commitEdit" @click.stop>' +
+                        '<span v-else class="domain-tag-text" @click.stop="startEdit(index)" title="点击修改">{{ domain }}</span>' +
+                        '<a class="domain-tag-remove" v-if="!disabled && editingIndex !== index" @click.stop="remove(index)" title="移除">&times;</a>' +
                     '</span>' +
                     '<input ref="input" class="domain-tag-input" type="text" v-model="input"' +
                         ' :placeholder="domains.length ? \'\' : placeholder" :disabled="disabled"' +

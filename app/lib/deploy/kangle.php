@@ -39,7 +39,7 @@ class kangle implements DeployInterface
         $this->getMain();
 
         if ($config['type'] == '1' && !empty($config['domains'])) {
-            $domains = explode("\n", $config['domains']);
+            $domains = explode(',', $config['domains']);
             $success = 0;
             $errmsg = null;
             foreach ($domains as $domain) {
